@@ -1,8 +1,0 @@
-#!/bin/bash 
-#PBS -m n 
-#PBS -q batch
-
-cd $PBS_O_WORKDIR
- ./script.sh 1> /dev/null 2> $PBS_JOBID.err 
- 
-exit 0

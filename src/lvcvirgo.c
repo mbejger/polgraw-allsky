@@ -107,13 +107,3 @@ rogcvir (void) {
 
   return 0;
 } /* rogcvir() */
-
-// lin2ast described in Phys. Rev. D 82, 022005 (2010) (arXiv:1003.0844)
-void
-lin2ast (double be1, double be2, int pm, double sepsm, double cepsm,	\
-	 double *sinal, double *cosal, double *sindel, double *cosdel) {
-  *sindel = be1*sepsm-(2*pm-3)*sqrt(1.-sqr(be1)-sqr(be2))*cepsm;
-  *cosdel = sqrt(1.-sqr(*sindel));
-  *sinal = (be1-sepsm*(*sindel))/(cepsm*(*cosdel));
-  *cosal = be2/(*cosdel);
-} /* lin2ast() */

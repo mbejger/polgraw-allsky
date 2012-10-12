@@ -9,6 +9,16 @@ extern int nd;
 extern double dt, *aa, *bb, *shftf, *shft, *t2, *F;
 extern complex double *xDatma, *xDatmb;
 
+// lin2ast described in Phys. Rev. D 82, 022005 (2010) (arXiv:1003.0844)
+void
+lin2ast (double be1, double be2, int pm, double sepsm, double cepsm,	\
+	 double *sinal, double *cosal, double *sindel, double *cosdel) {
+  *sindel = be1*sepsm-(2*pm-3)*sqrt(1.-sqr(be1)-sqr(be2))*cepsm;
+  *cosdel = sqrt(1.-sqr(*sindel));
+  *sinal = (be1-sepsm*(*sindel))/(cepsm*(*cosdel));
+  *cosal = be2/(*cosdel);
+} /* lin2ast() */
+
 void
 modvir (double sinal, double cosal, double sindel, double cosdel,	\
 	double sphir, double cphir, double *a, double *b, int Np) {
@@ -120,11 +130,11 @@ JobCore(int pm,			// hemisphere
   al2 = nn*M[11]+mm*M[15];
   sgnlv = NULL;
   *sgnlc = 0;
-  
+
   // check if the search is in an appropriate region of the grid
-  // if not, returns NULL
+  // if not, returns NULL 
   if((sqr(al1)+sqr(al2))/sqr(coft) > 1.) return NULL ; 
-    
+
     int ss;
     double shft1, phase, cp, sp;
     complex double exph;
@@ -216,11 +226,8 @@ JobCore(int pm,			// hemisphere
 	    nnintab (xDatmb, shftf, Npoints);
     */
 
-
-    if (write_st) 
-      printf (">>%d\t%d\t%d\t[%d..%d]\n", *FNum, mm, nn, smin, smax); 
-
-	
+    if (write_st)
+      printf ("\n>>%d\t%d\t%d\t[%d..%d]\n", *FNum, mm, nn, smin, smax);
 
     // if no-spindown
     if (s0) smin = smax;

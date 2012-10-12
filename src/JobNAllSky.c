@@ -10,9 +10,6 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <getopt.h>
-#include <gsl/gsl_linalg.h>
-
-//#include <time.h>
 
 #include "auxi.h"
 #include "lvcvirgo.h"
@@ -28,72 +25,61 @@ static int help_flag=0;
 #endif
 
 #ifndef DTAPREFIX
-#define DTAPREFIX .
+#define DTAPREFIX ../data
 #endif
 
-double *cosmodf, *sinmodf, *t2, *aa, *bb, \
-	   *shftf, *shft, *xDat, *xDatv, *DetSSB, *DetSSBv, *F;
+double *cosmodf, *sinmodf, *t2, *aa, *bb, *shftf, *shft, *xDat, *xDatv,	\
+  *DetSSB, *DetSSBv, *F;
 complex double *xDatma, *xDatmb;
 
 int
 JobNAllSky (int argc, char *argv[]) {
-  int i, j, pm, mm, nn, pst, mst, nst, sst, sgnlc, fd, hemi=0, Nzeros=0, \
-    Ninterp, FNum, nmin, nmax, spndr[2], nr[2], mr[2], pmr[2], gsize, c, \
-    ident=0, band=0, nfftf, exit_stat=0,
+  int i, pm, mm, nn, pst, mst, nst, sst, sgnlc, fd, hemi=0, Nzeros=0,	\
+    Ninterp, FNum, nmin, nmax, spndr[2], nr[2], mr[2], pmr[2], c,	\
+    ident=0, band=0, nfftf, 
 	fftinterp=INT; // default value
   char hostname[32], wfilename[96], filename[64], outname[64], qname[64], 
-    prefix[64], dtaprefix[64], label[64], range[64], addsig[64], *wd=NULL;
-  double *sgnlv, omrt, coft, cof, epsm, sepsm, cepsm, 
-		phir, sphir, cphir, *M, 
+    prefix[64], dtaprefix[64], label[64], range[64], *wd=NULL;
+  double *sgnlv, omrt, coft, epsm, sepsm, cepsm, phir, sphir, cphir,  
+    *M, // not used in current search *gamrn, *Mn, 
 	trl=20., // default value for the F-statistic threshold
 	fpo, sig2;
-  // if addsig - adding fake signal to the data stream	
-  double *aaddsig, *baddsig, h0, sinaadd, cosaadd, sindadd, cosdadd, 
-		phaseadd, shiftadd, signadd, thsnr=0., nSource[3], sgnlo[10], sgnlol[4];
-		
   fftw_complex *xa, *xb, *xao, *xbo, *xDa, *xDb, *rDa, *rDb;
   fftw_plan plan, pl_int, pl_inv;
   FILE *wisdom, *state, *data;
   struct flock lck;
   struct stat buffer;
-    
-  //clock_t uptime, downtime ;
-  //double time_in_seconds ; 
-  //uptime = clock() / (CLOCKS_PER_SEC / 1000 ) ; 	
 
   strcpy (prefix, TOSTR(PREFIX));
   strcpy (dtaprefix, TOSTR(DTAPREFIX));
   label[0] = '\0';
   range[0] = '\0';
-  addsig[0] = '\0';
 
   while (1) {
     static struct option long_options[] = {
       {"help", no_argument, &help_flag, 1},	
       {"whitenoise", no_argument, &white_flag, 1},
       {"nospindown", no_argument, &s0_flag, 1},
-      // add signal 
-      {"addsig", required_argument, 0, 'a'},
-      // frequency band number 
-      {"band", required_argument, 0, 'b'},
-      // change directory parameter
-      {"cwd", required_argument, 0, 'c'},
-      // input data directory 
-      {"data", required_argument, 0, 'd'},
-      // interpolation method
-      {"int/fft", required_argument, 0, 'f'},
-      // hemisphere
-      {"hemisphere", required_argument, 0, 'h'},
       // frame number
       {"ident", required_argument, 0, 'i'},
-      // non-standard label for naming files 
-      {"label", required_argument, 0, 'l'},
+      // frequency band number 
+      {"band", required_argument, 0, 'b'},
       // output directory
       {"output", required_argument, 0, 'o'},
+      // input data directory 
+      {"data", required_argument, 0, 'd'},
+      // non-standard label for naming files 
+      {"label", required_argument, 0, 'l'},
       // narrower grid range parameter file
       {"range", required_argument, 0, 'r'},
+      // change directory parameter
+      {"cwd", required_argument, 0, 'c'},
+      // interpolation method
+      {"int/fft", required_argument, 0, 'f'},
       // interpolation method
       {"threshold", required_argument, 0, 't'},
+      // hemisphere
+      {"hemisphere", required_argument, 0, 'h'},
       {0, 0, 0, 0}
     };
 
@@ -102,66 +88,63 @@ JobNAllSky (int argc, char *argv[]) {
      printf("*** Continuous GW search code using the F-statistic ***\n"); 
      printf("Usage: ./search -[switch1] <value1> -[switch2] <value2> ...\n") ;
      printf("Switches are:\n\n"); 
-     printf("-a		Add signal with parameters from <file>\n");
-     printf("-b		Band number\n"); 
-     printf("-c		Change to directory <dir>\n"); 
      printf("-d		Data directory (default is .)\n"); 
-     printf("-f		Intepolation method (INT [default] or FFT)\n"); 
-     printf("-h		Hemisphere (default is 0 - does both)\n");
-     printf("-i		Frame number\n"); 
-     printf("-l		Custom label for the input and output files\n"); 
      printf("-o		Output directory (default is ./candidates)\n"); 
+     printf("-i		Frame number\n"); 
+     printf("-b		Band number\n"); 
+     printf("-l		Custom label for the input and output files\n"); 
      printf("-r		Grid range filename\n"); 
+     printf("-c		Change to directory <dir>\n"); 
+     printf("-f		Intepolation method (INT [default] or FFT)\n"); 
      printf("-t		Threshold for the F-statistic (default is 20)\n\n");
+     printf("-h         Hemisphere (default is 0 - does both)\n\n");
      printf("Also:\n"); 
      printf("--whitenoise	Will assume white Gaussian noise\n"); 
      printf("--nospindown	Will assume that spindown is not important\n"); 
      printf("--help		This help\n"); 		
+
      exit (0);
 
   }
 
     int option_index = 0;
-    c = getopt_long (argc, argv, "a:b:c:d:f:h:i:l:o:r:t:", long_options,	\
+    c = getopt_long (argc, argv, "i:b:o:d:l:r:c:t:f:h:", long_options,	\
 		     &option_index);
     if (c == -1)
       break;
 
     switch (c) {
-    case 'a':
-      strcpy (addsig, optarg);
-      break;
-    case 'b':
-      band = atoi (optarg);
-      break;
-    case 'c':
-      wd = (char *) malloc (1+strlen(optarg));
-      strcpy (wd, optarg);
-      break;
-    case 'd':
-      strcpy (dtaprefix, optarg);
+    case 'i':
+      ident = atoi (optarg);
       break;
     case 'f': 
       if(!strcmp(optarg, "FFT")) fftinterp=FFT;
       break;
+    case 't':
+      trl = atof(optarg);
+      break;
     case 'h':
       hemi = atof(optarg);
       break;
-    case 'i':
-      ident = atoi (optarg);
+    case 'b':
+      band = atoi (optarg);
+      break;
+    case 'o':
+      strcpy (prefix, optarg);
+      break;
+    case 'd':
+      strcpy (dtaprefix, optarg);
       break;
     case 'l':
       label[0] = '_';
       strcpy (1+label, optarg);
       break;
-    case 'o':
-      strcpy (prefix, optarg);
-      break;
     case 'r':
       strcpy (range, optarg);
       break;
-    case 't':
-      trl = atof(optarg);
+    case 'c':
+      wd = (char *) malloc (1+strlen(optarg));
+      strcpy (wd, optarg);
       break;
     case '?':
       break;
@@ -169,34 +152,27 @@ JobNAllSky (int argc, char *argv[]) {
     } /* switch c */
   } /* while 1 */
 
-
   printf ("Data directory is %s\n", dtaprefix);
   printf ("Output directory is %s\n", prefix);
-  printf ("Frame number: %d, band number: %d\n", ident, band);
-    
-  if (strlen(label))
-    printf ("Using '%s' as data label; datafile is xdat_%02d_%03d%s.bin\n", 
-    label, ident, band, label);
-  else 
-    printf ("Datafile is xdat_%02d_%03d%s.bin\n", ident, band, label);
-      
+  printf ("Frame number is %d\n", ident);
+  printf ("Band number is %d\n", band);    
+
   if (white_flag)
-    printf ("Assuming white Gaussian noise\n");
+    printf ("Will assume white Gaussian noise\n");
   if (fftinterp==INT)
-    printf ("fftinterp=INT (FFT interpolation by interbinning)\n");
+    printf ("Will use fftinterp=INT (FFT interpolation by interbinning)\n");
   else 
-    printf ("fftinterp=FFT (FFT interpolation by zero-padding)\n");
+    printf ("Will use fftinterp=FFT (FFT interpolation by zero-padding)\n");
   if(trl!=20)
     printf ("Threshold for the F-statistic is %lf\n", trl);
   if(hemi)
     printf ("Search for hemisphere %d\n", hemi);
   if (s0_flag)
     printf ("Will assume s_1 = 0.\n");
+  if (strlen(label))
+    printf ("Will use '%s' as datat label\n", label);
   if (strlen(range))
-    printf ("Reading grid range from '%s'\n", range);
-  if (strlen(addsig))
-    printf ("Reading injection parameters from '%s'\n", addsig);
-
+    printf ("Will read grid range from '%s'\n", range);
   if (wd) {
     printf ("Changing working directory to %s\n", wd);
     if (chdir(wd)) {
@@ -221,6 +197,8 @@ JobNAllSky (int argc, char *argv[]) {
   }
 
   M = (double *) calloc (16, sizeof (double));
+  //gamrn = (double *) calloc (16, sizeof (double));
+  //Mn = (double *) calloc (16, sizeof (double));
   sprintf (filename, "%s/%02d/grid.bin", dtaprefix, ident);
   if ((data=fopen (filename, "r")) != NULL) {
     // fftpad: used to zero padding to fftpad*nfft data points 
@@ -228,12 +206,17 @@ JobNAllSky (int argc, char *argv[]) {
     // M: vector of 16 components consisting of 4 rows 
     // of 4x4 grid-generating matrix  
     fread ((void *)M, sizeof (double), 16, data);
+    // Following two matrices are not used in current search 
+    // gamrn: normalised Fisher matrix 
+    //fread ((void *)gamrn, sizeof (double), 16, data);
+    // Mn: normalised grid-generating matrix 
+    //fread ((void *)Mn, sizeof (double), 16, data);
     fclose (data);
   } else {
     perror (filename);
     return 1;
   }
-	         	        	
+
   // Starting band frequency
   fpo = 100. + 0.96875 * band;
   // Detector, ephemerides etc. constants 
@@ -243,18 +226,23 @@ JobNAllSky (int argc, char *argv[]) {
   // Establish grid range in which the search will be performed 
   // with the use of the M matrix from grid.bin  
   gridr (M, spndr, nr, mr);
-    
+
   // Hemispheres (with respect to the ecliptic)
   if(hemi) { 
+
 	pmr[0] = hemi; pmr[1] = hemi; 
+
   } else { 
-  	pmr[0] = 1; pmr[1] = 2;
+
+  	pmr[0] = 1;
+  	pmr[1] = 2;
+
   }
-			
+
   // If the parameter range is invoked, the search is performed 
   // within the range of grid parameters from an ascii file 
   // ("-r range_file" from the command line) 
-  if (strlen(range)) {
+  if (strlen (range)) {
     if ((data=fopen (range, "r")) != NULL) {
       fscanf (data, "%d %d", spndr, 1+spndr);
       fscanf (data, "%d %d", nr, 1+nr);
@@ -267,35 +255,6 @@ JobNAllSky (int argc, char *argv[]) {
     }
   }
 
-  // For the case of software injection: signal parameters 
-  // are fscanned here
-  if (strlen(addsig)) {
-    if ((data=fopen (addsig, "r")) != NULL) {
-		
-		fscanf (data, "%le %d %d", &h0, &gsize, pmr) ;   
-		for(i=0; i<10; i++)
-			fscanf(data, "%le",i+sgnlo) ; 	
-		fclose (data);
-                    
-    } else {
-      perror (addsig);
-      return 1;
-    }
-
-  if(sgnlo[0] - 2.*sgnlo[1]*Nv*(68-i) > 0.96875*M_PI)
-	  exit_stat=137;
-//  else 
-//	  exit(0) ; 
-
-  }
-  
-    //# Testing printout
-	//printf("GW amplitude h0: %le\n", h0);				 
-    //printf("sgnlo parameters:\n%.16le\n %.16le\n %.16le\n %.16le\n", 
-			//sgnlo[0], sgnlo[1], sgnlo[2], sgnlo[3]); 
-    //printf("%.16le\n %.16le\n %.16le\n %.16le\n %.16le\n %.16le\n", 
-			//sgnlo[4], sgnlo[5], sgnlo[6], sgnlo[7], sgnlo[8], sgnlo[9]) ; 
-  
   // Allocates and initializes to zero the data, detector ephemeris 
   // and the F-statistic arrays
   xDat = (double *) calloc (N, sizeof (double));
@@ -312,21 +271,22 @@ JobNAllSky (int argc, char *argv[]) {
     perror (filename);
     return 1;
   }
-  
-  // Checking for null values in the data 
-  for(i=0; i<N; i++) 
-	if(!xDat[i])
-		Nzeros++; 
 
-  // In case of white noise, factor N/(N - Nzeros) 
-  // accounts for null values in the data 
-  if (white_flag) sig2 = N*var (xDat, N)*N/(N - Nzeros);
-  else sig2 = -1.;
+  // Checking for null values in the data 
+  for(i=0; i<N; i++)
+	if(!xDat[i]) Nzeros++;
+  
+  if (white_flag)
+    // factor N/(N - Nzeros) to account for null values in the data 
+    sig2 = N*var (xDat, N)*N/(N - Nzeros);
+  else
+    sig2 = -1.;
 
   // Ephemeris file handling 
   sprintf (filename, "%s/%02d/DetSSB.bin", dtaprefix, ident);
   if ((data = fopen (filename, "r")) != NULL) {
-    // Detector position w.r.t solar system baricenter for every datapoint
+    // Detector position w.r.t solar system baricenter
+    // for every datapoint
     fread ((void *)(DetSSB), sizeof (double), 3*N, data);
     // Deterministic phase defining the position of the Earth 
     // in its diurnal motion at t=0  
@@ -352,110 +312,13 @@ JobNAllSky (int argc, char *argv[]) {
   t2 = (double *) calloc (Nv, sizeof (double));
   cosmodf = (double *) calloc (Nv, sizeof (double));
   sinmodf = (double *) calloc (Nv, sizeof (double));
-  
   for (i=0; i<Nv; i++) {
     omrt = omr*i;
     t2[i] = sqr ((double)i);
     cosmodf[i] = cos (omrt);
     sinmodf[i] = sin (omrt);
   }
-  
-  // if -a switch is used, software injection with parameters 
-  // the file is performed here
-  if(strlen(addsig)) { 
 
-		// VSR1 search-specific parametrization of freq. 
-		// for the software injection
-		// snglo[0]: frequency, sgnlo[1]: frequency. derivative  
-	sgnlo[0] += - 2.*sgnlo[1]*Nv*(68 - ident); 
-
-    		cof = oms + sgnlo[0] ; 
-        			  
-	    for(i=0; i<2; i++) sgnlol[i] = sgnlo[i] ; 
-	  
-	    sgnlol[2] = sgnlo[8]*cof ; 
-	    sgnlol[3] = sgnlo[9]*cof ;  
-		 	
-		// solving a linear system in order to translate 
-		// sky position, frequency and spindown (sgnlo parameters) 
-		// into the position in the grid
-		 
-		double *MM ; 
-		MM = (double *) calloc (16, sizeof (double));
-		for(i=0; i<16; i++) MM[i] = M[i] ;
-		
-		gsl_vector *x = gsl_vector_alloc (4);     
-		int s;
-		
-		gsl_matrix_view m = gsl_matrix_view_array (MM, 4, 4);
-		gsl_matrix_transpose (&m.matrix) ; 
-		gsl_vector_view b = gsl_vector_view_array (sgnlol, 4);
-		gsl_permutation *p = gsl_permutation_alloc (4);
-     
-		gsl_linalg_LU_decomp (&m.matrix, p, &s);
-		gsl_linalg_LU_solve (&m.matrix, p, &b.vector, x);
-     
-		spndr[0] = round(gsl_vector_get(x,1)); 
-		nr[0] 	= round(gsl_vector_get(x,2));
-		mr[0] 	= round(gsl_vector_get(x,3));
-       
-		gsl_permutation_free (p);
-		gsl_vector_free (x);
-		free (MM);
-       
-		// Define the grid range in which the signal will be looked for
-		spndr[1] = spndr[0] + gsize ; spndr[0] -= gsize ;  
-		nr[1] = nr[0] + gsize ; nr[0] -= gsize ;    
-		mr[1] = mr[0] + gsize ; mr[0] -= gsize ; 
-		pmr[1] = pmr[0] ; 
-       
-        //#
-		//printf("Grid range:\nspndr %d %d\nnr %d %d\nmr %d %d\npmr %d %d\n", 
-		//spndr[0], spndr[1], nr[0], nr[1], mr[0], mr[1], pmr[0], pmr[1]) ;
-       	  
-		// sgnlo[2]: declination, snglo[3]: right ascension 
-		sindadd = sin(sgnlo[2]) ; 
-		cosdadd = cos(sgnlo[2]) ; 
-		sinaadd = sin(sgnlo[3]) ;  
-		cosaadd = cos(sgnlo[3]) ; 
-			
-		aaddsig = (double *) calloc (Nv, sizeof (double));
-		baddsig = (double *) calloc (Nv, sizeof (double));
-				  	
-		modvir (sinaadd, cosaadd, sindadd, cosdadd, 
-		sphir, cphir, aaddsig, baddsig, Nv);
-
-		nSource[0] = cosaadd*cosdadd;
-		nSource[1] = sinaadd*cosdadd;
-		nSource[2] = sindadd;
-    								
-    	// adding signal to data (point by point)  								
-		for (i=0; i<Nv; i++) {
-
-			shiftadd = 0 ; 					 
-			for (j=0; j<3; j++)
-				shiftadd += nSource[j]*DetSSB[i*3+j];		 
-					 
-			phaseadd = sgnlo[0]*i + sgnlo[1]*t2[i] 
-					 + (oms + sgnlo[0] + 2.*sgnlo[1]*i)*shiftadd;
-
-			signadd = sgnlo[4]*aaddsig[i]*cos(phaseadd) 
-				    + sgnlo[6]*aaddsig[i]*sin(phaseadd) 
-				    + sgnlo[5]*baddsig[i]*cos(phaseadd) 
-				    + sgnlo[7]*baddsig[i]*sin(phaseadd);
-						
-			if(xDat[i]) { 
-				xDat[i] += h0*signadd ;
-				thsnr   += pow(signadd, 2.) ;
-			}	 
-		}
-  
-		free (aaddsig);
-		free (baddsig);  
-
-	fprintf(stderr,"SNR: %lf\n", h0*sqrt(thsnr/sig2*N)) ;
-  } 
-  
   // Because of frequency-domain filters, we search 
   // F-statistic in range (nmin+1, nmax) of data points 
   nmin = 2*NAV;
@@ -463,12 +326,6 @@ JobNAllSky (int argc, char *argv[]) {
 
   coft = oms; 
 
-  //#
-  //printf("%lf %lf\n", sgnlo[8], sgnlo[9]) ;
-  //printf("%lf %lf\n", (nr[0]*M[10]+mr[0]*M[14])/coft, 
-		//(nr[0]*M[11]+mr[0]*M[15])/coft) ;
-  //printf("nr, mr: %d %d\n", nr[0], mr[0]) ; 		
-  
   // Imports a "wisdom file" containing information about how to optimally 
   // compute Fourier transforms on a given machine. If such file is not 
   // present, it will be created after the measure runs of the fft_plans 
@@ -523,7 +380,7 @@ JobNAllSky (int argc, char *argv[]) {
 			FFTW_MEASURE);	// to get the optimal plan
 	// (more info at http://www.fftw.org/fftw3_doc/Advanced-Complex-DFTs.html)
 
-  // Case FFT (longer Fourier transforms, interpolation by zero padding)
+  // Case FFT (longer Fourier transforms, interplation by zero padding)
   } else { 
 
 	nfftf = fftpad*nfft ; 
@@ -619,7 +476,7 @@ JobNAllSky (int argc, char *argv[]) {
 	  state = fopen (qname, "w");
 	  fprintf (state, "%d %d %d %d %d\n", pm, mm, nn, sst, FNum);
 	  fclose (state);
-    
+
 	sgnlv = JobCore(pm,		// hemisphere 
 			mm,		// grid 'sky position' 		
 			nn,		// other grid 'sky position' 
@@ -661,7 +518,7 @@ JobNAllSky (int argc, char *argv[]) {
 			s0_flag		// No-spindown flag
 			);
 	sst = spndr[0];
-	    
+
 	/* Add trigger parameters to a file */
 
 	if (sgnlc) {
@@ -700,22 +557,14 @@ JobNAllSky (int argc, char *argv[]) {
   free (xDat);
   free (DetSSB);
   free (F);
+  
   free (t2);
   free (cosmodf);
   free (sinmodf);
-  
   fftw_free (xa);
-  
   // This array is defined only in the case of fftinterp==INT
   if(fftinterp==INT) fftw_free (xao);
-    
   free (M);
-
-  //downtime = clock() / (CLOCKS_PER_SEC / 1000 ) ; 
-  //time_in_seconds = (double)(downtime - uptime) / 1000 ;     
-  //printf("\nTime [s]: %.4lf\n", time_in_seconds) ; 
- 
-  if(exit_stat) exit(exit_stat);  
-  else return 0;
-
+  
+  return 0;
 } /* JobNAllSky() */
