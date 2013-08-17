@@ -28,8 +28,8 @@ static int help_flag=0;
 #define DTAPREFIX ../data
 #endif
 
-double *cosmodf, *sinmodf, *t2, *aa, *bb, *shftf, *shft, *xDat, *xDatv,	\
-  *DetSSB, *DetSSBv, *F;
+double *cosmodf, *sinmodf, *t2, *aa, *bb, \
+	   *shftf, *shft, *xDat, *DetSSB, *F;
 complex double *xDatma, *xDatmb;
 
 int
@@ -43,7 +43,7 @@ JobNAllSky (int argc, char *argv[]) {
   double *sgnlv, omrt, coft, epsm, sepsm, cepsm, phir, sphir, cphir, *M,          
 	trl=20.,        // default value for the F-statistic threshold
 	fpo, sig2;
-  fftw_complex *xa, *xb, *xao, *xbo, *xDa, *xDb, *rDa, *rDb;
+  fftw_complex *xa, *xao, *xDa, *rDa;
   fftw_plan plan, pl_int, pl_inv;
   FILE *wisdom, *state, *data;
   struct flock lck;
@@ -344,9 +344,7 @@ JobNAllSky (int argc, char *argv[]) {
   // case INT (simple interpolation [interbinning] of a shorter Fourier transform)
   if(fftinterp==INT) { 
 
-	xb = xa + nfft;
 	xao = fftw_malloc (2 * nfft * sizeof (fftw_complex));
-	xbo = xao + nfft;
  
 	// Plans a multidimensional DFT, where the input variables are:
 	plan = fftw_plan_many_dft 
@@ -376,7 +374,6 @@ JobNAllSky (int argc, char *argv[]) {
   } else { 
 
 	nfftf = fftpad*nfft ; 
-	xb = xa + nfftf ; 
 
 	// Plans a multidimensional DFT, where the input variables are:
 	plan = fftw_plan_many_dft 
@@ -408,14 +405,12 @@ JobNAllSky (int argc, char *argv[]) {
   // These two plans below are used in the resampling 
   // procedure in JobCore() 
   xDa = xa;
-  xDb = xDa + nfft;
   pl_int = fftw_plan_many_dft (1, &nfft, 2, xDa, NULL, 1, nfft, xDa,	\
 			       NULL, 1, nfft, FFTW_FORWARD,		\
 			       FFTW_MEASURE);
 
   rDa = xa;
   Ninterp = interpftpad*nfft;
-  rDb = rDa + Ninterp;
   pl_inv = fftw_plan_many_dft (1, &Ninterp, 2, rDa, NULL, 1, Ninterp,	\
 			       rDa, NULL, 1, Ninterp, FFTW_BACKWARD,	\
 			       FFTW_MEASURE);
