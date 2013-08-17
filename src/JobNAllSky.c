@@ -12,7 +12,7 @@
 #include <getopt.h>
 
 #include "auxi.h"
-#include "lvcvirgo.h"
+#include "settings.h"
 
 static int white_flag=0; 							//  white noise flag
 static int s0_flag=0;								// no spin-down flag
@@ -40,9 +40,8 @@ JobNAllSky (int argc, char *argv[]) {
 	fftinterp=INT; // default value
   char hostname[32], wfilename[96], filename[64], outname[64], qname[64], 
     prefix[64], dtaprefix[64], label[64], range[64], *wd=NULL;
-  double *sgnlv, omrt, coft, epsm, sepsm, cepsm, phir, sphir, cphir,  
-    *M, // not used in current search *gamrn, *Mn, 
-	trl=20., // default value for the F-statistic threshold
+  double *sgnlv, omrt, coft, epsm, sepsm, cepsm, phir, sphir, cphir, *M,          
+	trl=20.,        // default value for the F-statistic threshold
 	fpo, sig2;
   fftw_complex *xa, *xb, *xao, *xbo, *xDa, *xDb, *rDa, *rDb;
   fftw_plan plan, pl_int, pl_inv;
@@ -97,7 +96,7 @@ JobNAllSky (int argc, char *argv[]) {
      printf("-c		Change to directory <dir>\n"); 
      printf("-f		Intepolation method (INT [default] or FFT)\n"); 
      printf("-t		Threshold for the F-statistic (default is 20)\n\n");
-     printf("-h         Hemisphere (default is 0 - does both)\n\n");
+     printf("-h     Hemisphere (default is 0 - does both)\n\n");
      printf("Also:\n"); 
      printf("--whitenoise	Will assume white Gaussian noise\n"); 
      printf("--nospindown	Will assume that spindown is not important\n"); 
@@ -197,8 +196,6 @@ JobNAllSky (int argc, char *argv[]) {
   }
 
   M = (double *) calloc (16, sizeof (double));
-  //gamrn = (double *) calloc (16, sizeof (double));
-  //Mn = (double *) calloc (16, sizeof (double));
   sprintf (filename, "%s/%02d/grid.bin", dtaprefix, ident);
   if ((data=fopen (filename, "r")) != NULL) {
     // fftpad: used to zero padding to fftpad*nfft data points 
@@ -206,11 +203,6 @@ JobNAllSky (int argc, char *argv[]) {
     // M: vector of 16 components consisting of 4 rows 
     // of 4x4 grid-generating matrix  
     fread ((void *)M, sizeof (double), 16, data);
-    // Following two matrices are not used in current search 
-    // gamrn: normalised Fisher matrix 
-    //fread ((void *)gamrn, sizeof (double), 16, data);
-    // Mn: normalised grid-generating matrix 
-    //fread ((void *)Mn, sizeof (double), 16, data);
     fclose (data);
   } else {
     perror (filename);
@@ -219,8 +211,8 @@ JobNAllSky (int argc, char *argv[]) {
 
   // Starting band frequency
   fpo = 100. + 0.96875 * band;
-  // Detector, ephemerides etc. constants 
-  lvcvirgo (fpo);
+  // Detector, ephemerides, constants 
+  settings (fpo, ifo);
   // Amplitude modulation functions coefficients
   rogcvir ();
   // Establish grid range in which the search will be performed 
