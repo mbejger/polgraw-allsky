@@ -18,7 +18,7 @@ extern "C"
     omr, SIDday, TAIday, ephi, elam, eheight, egam, epsi, r, yr,	\
     tau_min, alfa, Smax, c1, c2, c3, c4, c5, c6, c7, c8, c9;
 
-  void settings (double, char);
+  void settings (double, char *);
   int rogcvir (void);
   void lin2ast (double, double, int, double, double,
 		double *, double *, double *, double *);

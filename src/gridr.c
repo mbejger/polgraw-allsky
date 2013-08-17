@@ -1,7 +1,7 @@
 #include <math.h>
 
 #include "auxi.h"
-#include "lvcvirgo.h"
+#include "settings.h"
 
 void
 gridr (double *M, int *spndr, int *nr, int *mr) {

@@ -2,7 +2,7 @@
 #include <fftw3.h>
 
 #include "auxi.h"
-#include "lvcvirgo.h"
+#include "settings.h"
 
 extern double *t2, oms;
 

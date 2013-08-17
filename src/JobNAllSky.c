@@ -35,12 +35,12 @@ complex double *xDatma, *xDatmb;
 int
 JobNAllSky (int argc, char *argv[]) {
   int i, pm, mm, nn, pst, mst, nst, sst, sgnlc, fd, hemi=0, Nzeros=0,	\
-    Ninterp, FNum, nmin, nmax, spndr[2], nr[2], mr[2], pmr[2], c,	\
+    Ninterp, FNum, nmin, nmax, spndr[2], nr[2], mr[2], pmr[2], c,		\
     ident=0, band=0, nfftf, 
 	fftinterp=INT; // default value
   char hostname[32], wfilename[96], filename[64], outname[64], qname[64], 
-    prefix[64], dtaprefix[64], label[64], range[64], *wd=NULL;
-  double *sgnlv, omrt, coft, epsm, sepsm, cepsm, phir, sphir, cphir, *M,          
+    prefix[64], dtaprefix[64], label[64], range[64], *ifo="V", *wd=NULL;
+  double *sgnlv, omrt, coft, epsm, sepsm, cepsm, phir, sphir, cphir, *M, 
 	trl=20.,        // default value for the F-statistic threshold
 	fpo, sig2;
   fftw_complex *xa, *xao, *xDa, *rDa;
@@ -59,26 +59,28 @@ JobNAllSky (int argc, char *argv[]) {
       {"help", no_argument, &help_flag, 1},	
       {"whitenoise", no_argument, &white_flag, 1},
       {"nospindown", no_argument, &s0_flag, 1},
-      // frame number
-      {"ident", required_argument, 0, 'i'},
       // frequency band number 
       {"band", required_argument, 0, 'b'},
-      // output directory
-      {"output", required_argument, 0, 'o'},
-      // input data directory 
-      {"data", required_argument, 0, 'd'},
-      // non-standard label for naming files 
-      {"label", required_argument, 0, 'l'},
-      // narrower grid range parameter file
-      {"range", required_argument, 0, 'r'},
       // change directory parameter
       {"cwd", required_argument, 0, 'c'},
+      // input data directory 
+      {"data", required_argument, 0, 'd'},
       // interpolation method
       {"int/fft", required_argument, 0, 'f'},
-      // interpolation method
-      {"threshold", required_argument, 0, 't'},
       // hemisphere
       {"hemisphere", required_argument, 0, 'h'},
+      // frame number
+      {"ident", required_argument, 0, 'i'},
+      // non-standard label for naming files 
+      {"label", required_argument, 0, 'l'},
+      // output directory
+      {"output", required_argument, 0, 'o'},
+      // narrower grid range parameter file
+      {"range", required_argument, 0, 'r'},
+      // interpolation method
+      {"threshold", required_argument, 0, 't'},
+      // the detector
+      {"detector", required_argument, 0, 'x'},
       {0, 0, 0, 0}
     };
 
@@ -87,16 +89,17 @@ JobNAllSky (int argc, char *argv[]) {
      printf("*** Continuous GW search code using the F-statistic ***\n"); 
      printf("Usage: ./search -[switch1] <value1> -[switch2] <value2> ...\n") ;
      printf("Switches are:\n\n"); 
-     printf("-d		Data directory (default is .)\n"); 
-     printf("-o		Output directory (default is ./candidates)\n"); 
-     printf("-i		Frame number\n"); 
      printf("-b		Band number\n"); 
-     printf("-l		Custom label for the input and output files\n"); 
-     printf("-r		Grid range filename\n"); 
      printf("-c		Change to directory <dir>\n"); 
+     printf("-d		Data directory (default is .)\n"); 
      printf("-f		Intepolation method (INT [default] or FFT)\n"); 
+     printf("-h		Hemisphere (default is 0 - does both)\n");
+     printf("-i		Frame number\n"); 
+     printf("-l		Custom label for the input and output files\n"); 
+     printf("-o		Output directory (default is ./candidates)\n"); 
+     printf("-r		Grid range filename\n"); 
      printf("-t		Threshold for the F-statistic (default is 20)\n\n");
-     printf("-h     Hemisphere (default is 0 - does both)\n\n");
+	 printf("-x		Detector (H, L or V; default is V)\n");  
      printf("Also:\n"); 
      printf("--whitenoise	Will assume white Gaussian noise\n"); 
      printf("--nospindown	Will assume that spindown is not important\n"); 
@@ -107,43 +110,47 @@ JobNAllSky (int argc, char *argv[]) {
   }
 
     int option_index = 0;
-    c = getopt_long (argc, argv, "i:b:o:d:l:r:c:t:f:h:", long_options,	\
+    c = getopt_long (argc, argv, "b:c:d:f:h:i:l:o:r:t:x:", long_options,	\
 		     &option_index);
     if (c == -1)
       break;
 
     switch (c) {
-    case 'i':
-      ident = atoi (optarg);
+    case 'b':
+      band = atoi (optarg);
+      break;
+    case 'c':
+      wd = (char *) malloc (1+strlen(optarg));
+      strcpy (wd, optarg);
+      break;
+    case 'd':
+      strcpy (dtaprefix, optarg);
       break;
     case 'f': 
       if(!strcmp(optarg, "FFT")) fftinterp=FFT;
       break;
-    case 't':
-      trl = atof(optarg);
-      break;
     case 'h':
       hemi = atof(optarg);
       break;
-    case 'b':
-      band = atoi (optarg);
-      break;
-    case 'o':
-      strcpy (prefix, optarg);
-      break;
-    case 'd':
-      strcpy (dtaprefix, optarg);
+    case 'i':
+      ident = atoi (optarg);
       break;
     case 'l':
       label[0] = '_';
       strcpy (1+label, optarg);
       break;
+    case 'o':
+      strcpy (prefix, optarg);
+      break;
     case 'r':
       strcpy (range, optarg);
       break;
-    case 'c':
-      wd = (char *) malloc (1+strlen(optarg));
-      strcpy (wd, optarg);
+    case 't':
+      trl = atof(optarg);
+      break;
+    case 'x':
+      ifo = (char *) malloc (1+strlen(optarg));
+      strcpy (ifo, optarg);
       break;
     case '?':
       break;
@@ -151,17 +158,34 @@ JobNAllSky (int argc, char *argv[]) {
     } /* switch c */
   } /* while 1 */
 
+  if(ifo[0]=='V')
+      printf ("The detector is Virgo\n"); 
+  else if(ifo[0]=='H')
+      printf ("The detector is LIGO Hanford\n");
+  else if(ifo[0]=='L')
+      printf ("The detector is LIGO Livingston\n");
+  else { 
+    printf ("Unknown detector %s! Cannot continue...\n", ifo); 
+    exit(0); 
+
+  }   
+
   printf ("Data directory is %s\n", dtaprefix);
   printf ("Output directory is %s\n", prefix);
-  printf ("Frame number is %d\n", ident);
-  printf ("Band number is %d\n", band);    
-
-  if (white_flag)
-    printf ("Will assume white Gaussian noise\n");
-  if (fftinterp==INT)
-    printf ("Will use fftinterp=INT (FFT interpolation by interbinning)\n");
+  printf ("Frame number: %d, band number: %d\n", ident, band);
+    
+  if (strlen(label))
+    printf ("Using '%s' as data label; datafile is xdat_%02d_%03d%s.bin\n", 
+    label, ident, band, label);
   else 
-    printf ("Will use fftinterp=FFT (FFT interpolation by zero-padding)\n");
+    printf ("Datafile is xdat_%02d_%03d%s.bin\n", ident, band, label);
+      
+  if (white_flag)
+    printf ("Assuming white Gaussian noise\n");
+  if (fftinterp==INT)
+    printf ("fftinterp=INT (FFT interpolation by interbinning)\n");
+  else 
+    printf ("fftinterp=FFT (FFT interpolation by zero-padding)\n");
   if(trl!=20)
     printf ("Threshold for the F-statistic is %lf\n", trl);
   if(hemi)
@@ -171,7 +195,8 @@ JobNAllSky (int argc, char *argv[]) {
   if (strlen(label))
     printf ("Will use '%s' as datat label\n", label);
   if (strlen(range))
-    printf ("Will read grid range from '%s'\n", range);
+    printf ("Reading grid range from '%s'\n", range);
+
   if (wd) {
     printf ("Changing working directory to %s\n", wd);
     if (chdir(wd)) {
@@ -263,22 +288,21 @@ JobNAllSky (int argc, char *argv[]) {
     perror (filename);
     return 1;
   }
-
-  // Checking for null values in the data 
-  for(i=0; i<N; i++)
-	if(!xDat[i]) Nzeros++;
   
-  if (white_flag)
-    // factor N/(N - Nzeros) to account for null values in the data 
-    sig2 = N*var (xDat, N)*N/(N - Nzeros);
-  else
-    sig2 = -1.;
+  // Checking for null values in the data 
+  for(i=0; i<N; i++) 
+	if(!xDat[i])
+		Nzeros++; 
+
+  // In case of white noise, factor N/(N - Nzeros) 
+  // accounts for null values in the data 
+  if (white_flag) sig2 = N*var (xDat, N)*N/(N - Nzeros);
+  else sig2 = -1.;
 
   // Ephemeris file handling 
   sprintf (filename, "%s/%02d/DetSSB.bin", dtaprefix, ident);
   if ((data = fopen (filename, "r")) != NULL) {
-    // Detector position w.r.t solar system baricenter
-    // for every datapoint
+    // Detector position w.r.t solar system baricenter for every datapoint
     fread ((void *)(DetSSB), sizeof (double), 3*N, data);
     // Deterministic phase defining the position of the Earth 
     // in its diurnal motion at t=0  
@@ -370,7 +394,7 @@ JobNAllSky (int argc, char *argv[]) {
 			FFTW_MEASURE);	// to get the optimal plan
 	// (more info at http://www.fftw.org/fftw3_doc/Advanced-Complex-DFTs.html)
 
-  // Case FFT (longer Fourier transforms, interplation by zero padding)
+  // Case FFT (longer Fourier transforms, interpolation by zero padding)
   } else { 
 
 	nfftf = fftpad*nfft ; 

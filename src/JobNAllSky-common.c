@@ -3,7 +3,7 @@
 #include <complex.h>
 #include <fftw3.h>
 #include "auxi.h"
-#include "lvcvirgo.h"
+#include "settings.h"
 
 extern int nd;
 extern double dt, *aa, *bb, *shftf, *shft, *t2, *F;
