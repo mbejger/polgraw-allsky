@@ -89,7 +89,7 @@ JobCore(int pm,			// hemisphere
 				// (used below to write to the file) 
 	int write_st,		// std output writing flag
 	int fftinterp,		// interpolation flag 
-				// (INT of FFT, see lvcvirgo.h) 
+				// (INT of FFT, see settings.h) 
 	int *FNum,		// Candidate signal number
 	double coft,		// = oms
 	double trl,		// F-statistic threshold

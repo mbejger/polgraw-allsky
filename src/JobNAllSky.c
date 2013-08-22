@@ -520,7 +520,7 @@ JobNAllSky (int argc, char *argv[]) {
 					// (used below to write to the file) 
 			1,		// std output writing flag
 			fftinterp,	// interpolation flag 
-					// (INT of FFT, see lvcvirgo.h) 
+					// (INT of FFT, see settings.h) 
 			&FNum,		// Candidate signal number 
 			coft,		// = oms 
 			trl,		// F-statistic threshold

@@ -17,7 +17,7 @@ gridr (double *M, int *spndr, int *nr, int *mr) {
 // *nr and *mr - pointers to the range of sky positions 
 // in grid units i.e., integer numbers
  
-// from lvcvirgo() :
+// from settings() :
 // maximal value of the spindown:
 // Smax = 2.*M_PI*(fpo+B)*dt*dt/(2.*tau_min)   
 // 
