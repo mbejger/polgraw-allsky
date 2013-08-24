@@ -158,17 +158,22 @@ JobNAllSky (int argc, char *argv[]) {
     } /* switch c */
   } /* while 1 */
 
-  if(ifo[0]=='V')
-      printf ("The detector is Virgo\n"); 
-  else if(ifo[0]=='H')
-      printf ("The detector is LIGO Hanford\n");
-  else if(ifo[0]=='L')
-      printf ("The detector is LIGO Livingston\n");
-  else { 
-    printf ("Unknown detector %s! Cannot continue...\n", ifo); 
-    exit(0); 
 
-  }   
+  // Detector choice, by first letter 
+  switch(ifo[0]) {
+    case 'V':
+        printf ("The detector is Virgo\n");
+        break; 
+    case 'H': 
+        printf ("The detector is LIGO Hanford\n");
+        break;  
+    case 'L':
+        printf ("The detector is LIGO Livingston\n");
+        break; 
+    default: 
+        printf ("Unknown detector %s! Cannot continue...\n", ifo);
+        exit(0); 
+  }
 
   printf ("Data directory is %s\n", dtaprefix);
   printf ("Output directory is %s\n", prefix);
