@@ -5,14 +5,12 @@
 #include "auxi.h"
 #include "settings.h" 
 
-/*
-// Device code
+// Dummy device code
 __global__ void Multiply(double* A, double* B, int N) {
     int i = blockDim.x * blockIdx.x + threadIdx.x;
     if (i < N)
         B[i] = A[i]*A[i];
 }
-*/
 
 static int white_flag=0;                            //  white noise flag
 static int s0_flag=0;                               // no spin-down flag
@@ -23,7 +21,7 @@ static int help_flag=0;
 #endif
 
 #ifndef DTAPREFIX
-#define DTAPREFIX ../data
+#define DTAPREFIX .
 #endif
 
 // Host code
@@ -34,7 +32,7 @@ int main(int argc, char *argv[]) {
     	ident=0, band=0, nfftf,
     	fftinterp=INT; // default value
 
-	double *sgnlv, omrt, coft, epsm, sepsm, cepsm, phir, sphir, cphir, *M, 
+	double *sgnlv, omrt, coft, epsm, phir, *M, 
 	trl=20.,        // default value for the F-statistic threshold
 	fpo, sig2;
 
@@ -220,7 +218,8 @@ int main(int argc, char *argv[]) {
 		// fftpad: used to zero padding to fftpad*nfft data points 
 		fread ((void *)&pars.fftpad, sizeof (int), 1, data);
 		// M: vector of 16 components consisting of 4 rows 
-		// of 4x4 grid-generating matrix  
+		// of 4x4 grid-generating matrix 
+		//#mb add to pars  
 		fread ((void *)M, sizeof (double), 16, data);
 		fclose (data);
 		} else {
@@ -269,9 +268,12 @@ int main(int argc, char *argv[]) {
 
 	set_search_parameters(100, ifo); 
 
-	printf("%d %lf %lf\n", pars.N, pars.c1, pars.Smax) ; 
+/* //#mb just for tests
+	printf("%d %lf %le\n", pars.N, pars.c1, pars.Smax) ; 
+	printf("%lf %d %d %d %d %d %d %d %d\n", fpo, pars.spndr[0], pars.spndr[1], 
+		pars.nr[0], pars.nr[1], pars.mr[0], pars.mr[1], pars.pmr[0], pars.pmr[1]) ; 
+*/ 
 
-/*
 
 	int N = pars.N; 
     size_t size = N * sizeof(double);
@@ -280,13 +282,80 @@ int main(int argc, char *argv[]) {
 	// Allocate memory for input data array on host 
 	xDat = (double *) malloc(size);
 
-	if ((data = fopen ("test.bin", "r")) != NULL) {
+	// Input time-domain data handling 
+  	sprintf (filename, "%s/%02d/xdat_%02d_%03d%s.bin", dtaprefix, ident,	\
+	   ident, band, label);
+
+	if ((data = fopen (filename, "r")) != NULL) {
     	fread ((void *)(xDat), sizeof (double), N, data);
     	fclose (data);
   	} else {
     	perror (filename);
     	return 1;
   	}
+
+/*
+  // Checking for null values in the data 
+  //#mb to be done on the device? 
+  for(i=0; i<N; i++) 
+	if(!xDat[i])
+		Nzeros++; 
+
+  // In case of white noise, factor N/(N - Nzeros) 
+  // accounts for null values in the data  
+  //#mb to be done on the device?
+  if (white_flag) sig2 = N*var (xDat, N)*N/(N - Nzeros);
+  else sig2 = -1.;
+*/
+
+	double *DetSSB; 
+      
+	// Allocate memory for input data array on host 
+	DetSSB = (double *) malloc(size);
+
+	// Ephemeris file handling 
+	sprintf (filename, "%s/%02d/DetSSB.bin", dtaprefix, ident);
+	if ((data = fopen (filename, "r")) != NULL) {
+		// Detector position w.r.t solar system baricenter for every datapoint
+		fread ((void *)(DetSSB), sizeof (double), 3*N, data);
+		// Deterministic phase defining the position of the Earth 
+		// in its diurnal motion at t=0  
+		fread ((void *)(&phir), sizeof (double), 1, data);
+		// Earth's axis inclination to the ecliptic at t=0  
+		fread ((void *)(&epsm), sizeof (double), 1, data);
+		fclose (data);
+	} else {
+		perror (filename);
+		return 1;
+	}
+
+//#mb check if sincos is really worth using 
+#ifdef HAVE_SINCOS
+	sincos (phir, &pars.sphir, &pars.cphir);
+	sincos (epsm, &pars.sepsm, &pars.cepsm);
+#else
+	pars.sphir = sin (phir);
+	pars.cphir = cos (phir);
+	pars.sepsm = sin (epsm);
+	pars.cepsm = cos (epsm);
+#endif
+
+
+	//#mb maybe it will be better to do this 
+	// on the device - to be checked
+	// (is done only once) 
+	double *t2, *cosmodf, *sinmodf; 
+
+	t2 = (double *) calloc (N, sizeof (double));
+	cosmodf = (double *) calloc (N, sizeof (double));
+	sinmodf = (double *) calloc (N, sizeof (double));
+	
+	for (i=0; i<N; i++) {
+		omrt = pars.omr*i;
+		t2[i] = sqr ((double)i);
+		cosmodf[i] = cos (omrt);
+		sinmodf[i] = sin (omrt);
+	}
 
 	for(int i=0; i<10; i++) printf("%lf\n", xDat[i]); 
 	
@@ -315,7 +384,6 @@ int main(int argc, char *argv[]) {
 
 	// Free host memory 
 	free (xDat);
-*/
 
 	return 0; 
 

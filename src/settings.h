@@ -17,7 +17,7 @@ typedef struct search_parameters_ {
 
     int nod, N, Nv, nd, s, nfft, fftpad, interpftpad;
 	int spndr[2], nr[2], mr[2], pmr[2]; 
-    double oms, epsma, omr, Smax;
+    double oms, epsma, omr, Smax, sepsm, cepsm, sphir, cphir;
 	double c1, c2, c3, c4, c5, c6, c7, c8, c9;
 
 } search_parameters;
