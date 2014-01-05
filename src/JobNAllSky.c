@@ -342,8 +342,8 @@ JobNAllSky (int argc, char *argv[]) {
 
   // Because of frequency-domain filters, we search 
   // F-statistic in range (nmin+1, nmax) of data points 
-  nmin = 2*NAV;
-  nmax = nfft-2*NAV;
+  nmin = fftpad*NAV;
+  nmax = (nfft/2 - NAV)*fftpad;
 
   coft = oms; 
 
