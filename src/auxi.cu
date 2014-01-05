@@ -3,7 +3,7 @@
 #include <stdarg.h>
 #include <math.h>
 #include <complex.h>
-
+#include <cuda.h>
 #include "auxi.h"
 
 int
@@ -113,7 +113,7 @@ lubksb (double *a, int n, int *indx, double *b)
 } /* lubksb() */
 
 void 
-spline(complex double *y, int n, complex double *y2)
+spline(complex float *y, int n, complex double *y2)
 {
   int i, k;
   complex double p, qn, un, *u;
@@ -135,7 +135,7 @@ spline(complex double *y, int n, complex double *y2)
 } /* spline() */
 
 complex double
-splint (complex double *ya, complex double *y2a, int n, double x)
+splint (complex float *ya, complex double *y2a, int n, double x)
 {
   int klo, khi;
   double b, a;
@@ -150,7 +150,7 @@ splint (complex double *ya, complex double *y2a, int n, double x)
 } /* splint() */
 
 void
-splintpad (complex double *ya, double *shftf, int N, int interpftpad,	\
+splintpad (complex float *ya, double *shftf, int N, int interpftpad,	\
 	   complex double *out) {
   /* Cubic spline with "natural" boundary conditions.
      Input:

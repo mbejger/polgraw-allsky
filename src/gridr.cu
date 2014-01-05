@@ -24,7 +24,7 @@ gridr (double *M, int *spndr, int *nr, int *mr) {
 // oms equals 2.*M_PI*fpo*dt 
 
   Ob = M_PI;
-  cof = pars.oms + Ob;
+  cof = oms + Ob;
 
   for (i=0; i<4; i++)
     for (j=0; j<4; j++)
@@ -45,7 +45,7 @@ gridr (double *M, int *spndr, int *nr, int *mr) {
   }
   for (i=0; i<2; i++)
     for (j=0; j<4; j++) {
-      smx[32*i+4*j+1] = -pars.Smax;
+      smx[32*i+4*j+1] = -Smax;
       smx[32*i+4*j+17] = 0.;
     }
   for (i=0; i<16; i++)

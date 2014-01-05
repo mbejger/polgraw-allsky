@@ -1,33 +1,48 @@
 #ifndef SETTINGS_H
 #define SETTINGS_H
 
-#define NPAR 5      // no. of trigger parameters
+//#include <fftw3.h>
+#include <complex.h>
+#include <cuda.h>
+#include <cufft.h>
 
-#define INT 1       // simplest interpolation
-#define FFT 2       // refined (fft) interpolation
+//#ifdef __cplusplus
+//extern "C"
+//{
+//#endif
 
-#ifdef __cplusplus
-extern "C"
-{
-#endif
+#define NPAR 5 		// no. of trigger parameters
 
-void set_search_parameters (double, char *);
+#define INT 1		// simplest interpolation
+#define FFT 2		// refined (fft) interpolation
 
-typedef struct search_parameters_ {
+  extern int nod, N, Nv, nfft, s, nd, fftpad, interpftpad;
+  extern double dt, B, oms, deg, c, AU, epsma, a, f, b, Omegar,		\
+    omr, SIDday, TAIday, ephi, elam, eheight, egam, epsi, r, yr,	\
+    tau_min, alfa, Smax, c1, c2, c3, c4, c5, c6, c7, c8, c9;
 
-    int nod, N, Nv, nd, s, nfft, fftpad, interpftpad;
-	int spndr[2], nr[2], mr[2], pmr[2]; 
-    double oms, epsma, omr, Smax, sepsm, cepsm, sphir, cphir;
-	double c1, c2, c3, c4, c5, c6, c7, c8, c9;
+  void settings (double, char *);
+  int rogcvir (void);
+	void lin2ast (double, double, int, double, double,
+		double *, double *, double *, double *);
+ void modvir (double, double, double, double, double, double,
+		double *, double *, int);
 
-} search_parameters;
+  double FStat (double *, int, int, int);
 
-extern search_parameters pars;
+  double *JobCore (int, int, int, int, int, double *,			\
+		   double *, double *, int, int,			\
+		   int,  			\
+		   complex float *, cufftComplex *,			\
+		   cufftHandle, cufftHandle, cufftHandle,			\
+		   int, int, double, double, double, double,	 	\
+		   int *, int, int, int *, double, double,		\
+		   double, int, double*, cufftComplex*, cufftComplex*,cufftComplex*, cufftComplex*,cufftComplex*, cufftComplex*, double*, double*, int*, float*);
 
-void gridr (double *, int *, int *, int *);
+  void gridr (double *, int *, int *, int *);
 
-#ifdef __cplusplus
-}
-#endif
+//#ifdef __cplusplus
+//}
+//#endif
 
 #endif // settings_h
