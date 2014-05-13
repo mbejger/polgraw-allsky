@@ -1,4 +1,7 @@
 #include <math.h>
+#include <string.h>
+#include <stdio.h> 
+#include <stdlib.h>
 #include "auxi.h"
 
 int nod, N, Nv, nfft, s, nd, fftpad, interpftpad;
@@ -9,10 +12,8 @@ double yr, tau_min, alfa, Smax;
 double c1, c2, c3, c4, c5, c6, c7, c8, c9;
 
 void
-settings (double fpo, char *ifo) {
-     
-                                // Offset frequency fpo
-                                // ifo: detector
+settings (double fpo,		// Offset frequency fpo
+		char *ifo_choice) { // Detector 
 
     dt = 0.5;                   // data sampling time 
     B = 0.5/dt;                 // Bandwidth
@@ -52,25 +53,58 @@ settings (double fpo, char *ifo) {
     fftpad = 2;   // Zero padding 
     interpftpad = 2;
 
-    // The detectors' settings 
+	if(!strcmp("V1", ifo_choice)) {  
+		// Geographical location of the Virgo detector
+		// 
+		// Geographical latitude phi in radians
+		ephi = (43.+37./60.+53.0880/3600.)/deg;
+		// Geographical longitude in radians 
+		elam = (10.+30./60.+16.1885/3600.)/deg;
+		// Height h above the Earth ellipsoid in meters
+		eheight = 53.238;
+		// Orientation of the detector gamma
+		egam = (135. - (19.0+25./60.0+57.96/3600.))/deg;
+  
+		printf("Using the Virgo detector...\n"); 
  
-    if(ifo[0]=='V') { 
-    
-        // Virgo detector 
+	} else if(!strcmp("H1", ifo_choice)) { 
+  
+		// Geographical location of the Hanford H1 detector
+		// 
+		// Geographical latitude phi in radians
+		ephi = (46+(27+18.528/60.)/60.)/deg;
+		// Geographical longitude in radians 
+		elam = -(119+(24+27.5657/60.)/60.)/deg;
+		// Height h above the Earth ellipsoid in meters
+		eheight = 142.554;
+		// Orientation of the detector gamma
+		egam  = 170.9994/deg; 
+	
+		printf("Using the LIGO Hanford detector...\n");
+  	
+    } else if(!strcmp("L1", ifo_choice)) {
 
-        ephi = (43.+37./60.+53.0880/3600.)/deg;     // Geographical latitude phi in rad
-        elam = (10.+30./60.+16.1885/3600.)/deg;     // Geographical longitude in rad
-        eheight = 53.238;                           // Height h 
-                                                    // above the Earth ellipsoid in meters
-        egam = (135. - (19.0+25./60.0+57.96/3600.))/deg; // Orientation of the detector gamma
+		// Geographical location of the Livingston L1 detector
+		// 
+		// Geographical latitude phi in radians
+		ephi = (30+(33+46.4196/60.)/60.)/deg;
+		// Geographical longitude in radians
+		elam = - (90+(46+27.2654/60.)/60.)/deg;
+		// Height h above the Earth ellipsoid in meters
+		eheight = - 6.574;
+		// Orientation of the detector gamma  
+		egam = 242.7165/deg;
 
-        epsi = atan(b*tan(ephi)/a);                 
-        r = a*cos(epsi) + eheight*cos(ephi)/1000.;  // Equatorial component r 
-                                                    // of the radius vector
+		printf("Using the LIGO Livingston detector...\n");
+
+	} else { 
+
+		printf("Meh, unknown detector. Exiting...\n"); 
+	 	exit(EXIT_FAILURE); 
 
     } 
 
-} // settings 
+} // settings()
 
 int
 rogcvir (void) {

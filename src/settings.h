@@ -1,3 +1,5 @@
+/* settings.h */
+
 #ifndef SETTINGS_H
 #define SETTINGS_H
 
@@ -8,10 +10,10 @@ extern "C"
 {
 #endif
 
-#define NPAR 5 		// no. of trigger parameters
+#define NPAR 5 		/* no. of trigger parameters */
 
-#define INT 1		// simplest interpolation
-#define FFT 2		// refined (fft) interpolation
+#define INT 1		/* simplest interpolation */
+#define FFT 2		/* refined (fft) interpolation */
 
   extern int nod, N, Nv, nfft, s, nd, fftpad, interpftpad;
   extern double dt, B, oms, deg, c, AU, epsma, a, f, b, Omegar,		\
@@ -33,7 +35,7 @@ extern "C"
 		   fftw_plan, fftw_plan, fftw_plan,			\
 		   int, int, double, double, double, double,	 	\
 		   int *, int, int, int *, double, double,		\
-		   double, int);
+		   double, double, int);
 
   void gridr (double *, int *, int *, int *);
 
@@ -41,4 +43,4 @@ extern "C"
 }
 #endif
 
-#endif // settings_h
+#endif                          /* SETTINGS_H */

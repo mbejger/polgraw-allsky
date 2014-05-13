@@ -35,14 +35,14 @@ complex double *xDatma, *xDatmb;
 int
 JobNAllSky (int argc, char *argv[]) {
   int i, pm, mm, nn, pst, mst, nst, sst, sgnlc, fd, hemi=0, Nzeros=0,	\
-    Ninterp, FNum, nmin, nmax, spndr[2], nr[2], mr[2], pmr[2], c,		\
+    Ninterp, FNum, nmin, nmax, spndr[2], nr[2], mr[2], pmr[2], c,	\
     ident=0, band=0, nfftf, 
 	fftinterp=INT; // default value
   char hostname[32], wfilename[96], filename[64], outname[64], qname[64], 
-    prefix[64], dtaprefix[64], label[64], range[64], *ifo="V", *wd=NULL;
+    prefix[64], dtaprefix[64], label[64], range[64], ifo_choice[2], *wd=NULL;
   double *sgnlv, omrt, coft, epsm, sepsm, cepsm, phir, sphir, cphir, *M, 
-	trl=20.,        // default value for the F-statistic threshold
-	fpo, sig2;
+	trl=20., // default value for the F-statistic threshold
+	fpo, fpo_val, sig2, crf0;
   fftw_complex *xa, *xao, *xDa, *rDa;
   fftw_plan plan, pl_int, pl_inv;
   FILE *wisdom, *state, *data;
@@ -54,33 +54,44 @@ JobNAllSky (int argc, char *argv[]) {
   label[0] = '\0';
   range[0] = '\0';
 
+  // Initial value of starting frequency 
+  // set to a negative quantity. If this is not 
+  // changed by the command line value 
+  // fpo is calculated from the band number b.
+  fpo_val = -1; 
+
+  // Default choice of the detector is Virgo:
+  strcpy(ifo_choice, "V1"); 
+
   while (1) {
     static struct option long_options[] = {
       {"help", no_argument, &help_flag, 1},	
       {"whitenoise", no_argument, &white_flag, 1},
       {"nospindown", no_argument, &s0_flag, 1},
-      // frequency band number 
-      {"band", required_argument, 0, 'b'},
-      // change directory parameter
-      {"cwd", required_argument, 0, 'c'},
-      // input data directory 
-      {"data", required_argument, 0, 'd'},
-      // interpolation method
-      {"int/fft", required_argument, 0, 'f'},
-      // hemisphere
-      {"hemisphere", required_argument, 0, 'h'},
       // frame number
       {"ident", required_argument, 0, 'i'},
-      // non-standard label for naming files 
-      {"label", required_argument, 0, 'l'},
+      // frequency band number 
+      {"band", required_argument, 0, 'b'},
       // output directory
       {"output", required_argument, 0, 'o'},
+      // input data directory 
+      {"data", required_argument, 0, 'd'},
+      // non-standard label for naming files 
+      {"label", required_argument, 0, 'l'},
       // narrower grid range parameter file
       {"range", required_argument, 0, 'r'},
+      // change directory parameter
+      {"cwd", required_argument, 0, 'c'},
+      // interpolation method
+      {"int/fft", required_argument, 0, 'f'},
       // interpolation method
       {"threshold", required_argument, 0, 't'},
-      // the detector
-      {"detector", required_argument, 0, 'x'},
+      // hemisphere
+      {"hemisphere", required_argument, 0, 'h'},
+      // detector 
+      {"detector", required_argument, 0, 'a'},
+      // fpo value
+      {"fpo value", required_argument, 0, 'p'},
       {0, 0, 0, 0}
     };
 
@@ -89,108 +100,88 @@ JobNAllSky (int argc, char *argv[]) {
      printf("*** Continuous GW search code using the F-statistic ***\n"); 
      printf("Usage: ./search -[switch1] <value1> -[switch2] <value2> ...\n") ;
      printf("Switches are:\n\n"); 
-     printf("-b		Band number\n"); 
-     printf("-c		Change to directory <dir>\n"); 
-     printf("-d		Data directory (default is .)\n"); 
-     printf("-f		Intepolation method (INT [default] or FFT)\n"); 
-     printf("-h		Hemisphere (default is 0 - does both)\n");
-     printf("-i		Frame number\n"); 
-     printf("-l		Custom label for the input and output files\n"); 
-     printf("-o		Output directory (default is ./candidates)\n"); 
-     printf("-r		Grid range filename\n"); 
-     printf("-t		Threshold for the F-statistic (default is 20)\n\n");
-	 printf("-x		Detector (H, L or V; default is V)\n");  
-     printf("Also:\n"); 
+     printf("-d	Data directory (default is .)\n"); 
+     printf("-o	Output directory (default is ./candidates)\n"); 
+     printf("-i	Frame number\n"); 
+     printf("-b	Band number\n"); 
+     printf("-l	Custom label for the input and output files\n"); 
+     printf("-r	Grid range filename\n"); 
+     printf("-c	Change to directory <dir>\n"); 
+     printf("-f	Intepolation method (INT [default] or FFT)\n"); 
+     printf("-t	Threshold for the F-statistic (default is 20)\n");
+     printf("-h	Hemisphere (default is 0 - does both)\n");
+	 printf("-a	Detector (L1, H1 or V1); default is V1\n");     
+     printf("-p	fpo (starting frequency) value\n\n");
+     printf("Also:\n\n"); 
      printf("--whitenoise	Will assume white Gaussian noise\n"); 
-     printf("--nospindown	Will assume that spindown is not important\n"); 
-     printf("--help		This help\n"); 		
+     printf("--nospindown	Will neglect spindowns\n"); 
+     printf("--help	This help\n"); 		
 
      exit (0);
 
   }
 
     int option_index = 0;
-    c = getopt_long (argc, argv, "b:c:d:f:h:i:l:o:r:t:x:", long_options,	\
-		     &option_index);
+    c = getopt_long (argc, argv, "i:b:o:d:l:r:c:t:f:h:a:p:", long_options, &option_index);
     if (c == -1)
       break;
 
     switch (c) {
-    case 'b':
-      band = atoi (optarg);
-      break;
-    case 'c':
-      wd = (char *) malloc (1+strlen(optarg));
-      strcpy (wd, optarg);
-      break;
-    case 'd':
-      strcpy (dtaprefix, optarg);
+    case 'i':
+      ident = atoi (optarg);
       break;
     case 'f': 
       if(!strcmp(optarg, "FFT")) fftinterp=FFT;
       break;
+    case 't':
+      trl = atof(optarg);
+      break;
     case 'h':
       hemi = atof(optarg);
       break;
-    case 'i':
-      ident = atoi (optarg);
+    case 'b':
+      band = atoi (optarg);
+      break;
+    case 'o':
+      strcpy (prefix, optarg);
+      break;
+    case 'd':
+      strcpy (dtaprefix, optarg);
       break;
     case 'l':
       label[0] = '_';
       strcpy (1+label, optarg);
       break;
-    case 'o':
-      strcpy (prefix, optarg);
-      break;
     case 'r':
       strcpy (range, optarg);
       break;
-    case 't':
-      trl = atof(optarg);
+    case 'c':
+      wd = (char *) malloc (1+strlen(optarg));
+      strcpy (wd, optarg);
       break;
-    case 'x':
-      ifo = (char *) malloc (1+strlen(optarg));
-      strcpy (ifo, optarg);
-      break;
+    case 'p':
+      fpo_val = atof(optarg); 
+      break; 	
+	case 'a':
+	  strcpy (ifo_choice, optarg); 
+	  break; 
     case '?':
       break;
     default: break ; 
     } /* switch c */
   } /* while 1 */
 
-
-  // Detector choice, by first letter 
-  switch(ifo[0]) {
-    case 'V':
-        printf ("The detector is Virgo\n");
-        break; 
-    case 'H': 
-        printf ("The detector is LIGO Hanford\n");
-        break;  
-    case 'L':
-        printf ("The detector is LIGO Livingston\n");
-        break; 
-    default: 
-        printf ("Unknown detector %s! Cannot continue...\n", ifo);
-        exit(0); 
-  }
-
   printf ("Data directory is %s\n", dtaprefix);
   printf ("Output directory is %s\n", prefix);
-  printf ("Frame number: %d, band number: %d\n", ident, band);
-    
-  if (strlen(label))
-    printf ("Using '%s' as data label; datafile is xdat_%02d_%03d%s.bin\n", 
-    label, ident, band, label);
-  else 
-    printf ("Datafile is xdat_%02d_%03d%s.bin\n", ident, band, label);
-      
+  printf ("Frame number is %d\n", ident);
+  printf ("Band number is %d\n", band);    
+
   if (white_flag)
-    printf ("Assuming white Gaussian noise\n");
+    printf ("Will assume white Gaussian noise\n");
   if (fftinterp==INT)
-    printf ("fftinterp=INT (FFT interpolation by interbinning)\n");
+    printf ("Will use fftinterp=INT (FFT interpolation by interbinning)\n");
   else 
-    printf ("fftinterp=FFT (FFT interpolation by zero-padding)\n");
+    printf ("Will use fftinterp=FFT (FFT interpolation by zero-padding)\n");
   if(trl!=20)
     printf ("Threshold for the F-statistic is %lf\n", trl);
   if(hemi)
@@ -198,10 +189,9 @@ JobNAllSky (int argc, char *argv[]) {
   if (s0_flag)
     printf ("Will assume s_1 = 0.\n");
   if (strlen(label))
-    printf ("Will use '%s' as datat label\n", label);
+    printf ("Will use '%s' as data label\n", label);
   if (strlen(range))
-    printf ("Reading grid range from '%s'\n", range);
-
+    printf ("Will read grid range from '%s'\n", range);
   if (wd) {
     printf ("Changing working directory to %s\n", wd);
     if (chdir(wd)) {
@@ -226,6 +216,7 @@ JobNAllSky (int argc, char *argv[]) {
   }
 
   M = (double *) calloc (16, sizeof (double));
+
   sprintf (filename, "%s/%02d/grid.bin", dtaprefix, ident);
   if ((data=fopen (filename, "r")) != NULL) {
     // fftpad: used to zero padding to fftpad*nfft data points 
@@ -239,10 +230,17 @@ JobNAllSky (int argc, char *argv[]) {
     return 1;
   }
 
-  // Starting band frequency
-  fpo = 100. + 0.96875 * band;
+  // Starting band frequency: 
+  // fpo_val is optionally read from the command line
+  // Its initial value is set to -1 
+  if(fpo_val>=0)
+      fpo = fpo_val; 
+  else 
+  // The usual definition: 
+      fpo = 100. + 0.96875 * band;
+
   // Detector, ephemerides, constants 
-  settings (fpo, ifo);
+  settings (fpo, ifo_choice);
   // Amplitude modulation functions coefficients
   rogcvir ();
   // Establish grid range in which the search will be performed 
@@ -293,21 +291,24 @@ JobNAllSky (int argc, char *argv[]) {
     perror (filename);
     return 1;
   }
-  
-  // Checking for null values in the data 
-  for(i=0; i<N; i++) 
-	if(!xDat[i])
-		Nzeros++; 
 
-  // In case of white noise, factor N/(N - Nzeros) 
-  // accounts for null values in the data 
-  if (white_flag) sig2 = N*var (xDat, N)*N/(N - Nzeros);
-  else sig2 = -1.;
+  // Checking for null values in the data 
+  for(i=0; i<N; i++)
+	if(!xDat[i]) Nzeros++;
+
+  // factor N/(N - Nzeros) to account for null values in the data 
+  crf0 = (double)N/(N-Nzeros); 
+  
+  if (white_flag)
+    sig2 = N*var (xDat, N);
+  else
+    sig2 = -1.;
 
   // Ephemeris file handling 
   sprintf (filename, "%s/%02d/DetSSB.bin", dtaprefix, ident);
   if ((data = fopen (filename, "r")) != NULL) {
-    // Detector position w.r.t solar system baricenter for every datapoint
+    // Detector position w.r.t solar system baricenter
+    // for every datapoint
     fread ((void *)(DetSSB), sizeof (double), 3*N, data);
     // Deterministic phase defining the position of the Earth 
     // in its diurnal motion at t=0  
@@ -367,7 +368,7 @@ JobNAllSky (int argc, char *argv[]) {
     xDatma = (complex double *) calloc (N, sizeof (complex double));
     xDatmb = (complex double *) calloc (N, sizeof (complex double));
 
-  xa = fftw_malloc (4 * fftpad * nfft * sizeof (fftw_complex));
+  xa = fftw_malloc (2 * fftpad * nfft * sizeof (fftw_complex));
 
   // FFT plans vary w.r.t the method of calculation: 
   // case INT (simple interpolation [interbinning] of a shorter Fourier transform)
@@ -402,7 +403,7 @@ JobNAllSky (int argc, char *argv[]) {
   // Case FFT (longer Fourier transforms, interpolation by zero padding)
   } else { 
 
-	nfftf = fftpad*nfft ; 
+	nfftf = fftpad*nfft ;
 
 	// Plans a multidimensional DFT, where the input variables are:
 	plan = fftw_plan_many_dft 
@@ -531,6 +532,7 @@ JobNAllSky (int argc, char *argv[]) {
 			trl,		// F-statistic threshold
 			sig2,		// N*(variance of xDat) if white_flag
 					// else sig2=-1 
+			crf0, 		// factor N/(N - Nzeros)
 			s0_flag		// No-spindown flag
 			);
 	sst = spndr[0];

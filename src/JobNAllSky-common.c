@@ -95,6 +95,7 @@ JobCore(int pm,			// hemisphere
 	double trl,		// F-statistic threshold
 	double sig2,		// N*(variance of xDat) if white_flag
 				// else sig2=-1 
+	double crf0, 		// factor N/(N - Nzeros)
 	int s0			// No-spindown flag
 	) {
 
@@ -289,14 +290,14 @@ JobCore(int pm,			// hemisphere
 	  (*FNum)++;
 
 	  for (i=nmin; i<nmax; i++)
-	    F[i] = sqr (creal(xao[i])) + sqr (cimag(xao[i])) +
-	      sqr (creal(xbo[i])) + sqr (cimag(xbo[i]));
+	    F[i] = (sqr (creal(xao[i])) + sqr (cimag(xao[i])) +
+	      sqr (creal(xbo[i])) + sqr (cimag(xbo[i])))/crf0;
 
 	  /* Normalize F-statistics */
           // if the noise is not white noise
 	  if (sig2 < 0.) FStat (F+nmin, nmax-nmin, NAV, 0);
 	  else for (i=nmin; i<nmax; i++) F[i] /= sig2;
-	  
+
 	  for (i=nmin; i<nmax; i++) {
 	    if ((Fc = F[i]) > trl) {
 	      /* Find local maximum for neighboring signals */
