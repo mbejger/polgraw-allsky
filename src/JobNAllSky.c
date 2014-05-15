@@ -217,7 +217,7 @@ JobNAllSky (int argc, char *argv[]) {
 
   M = (double *) calloc (16, sizeof (double));
 
-  sprintf (filename, "%s/%02d/grid.bin", dtaprefix, ident);
+  sprintf (filename, "%s/%03d/grid.bin", dtaprefix, ident);
   if ((data=fopen (filename, "r")) != NULL) {
     // fftpad: used to zero padding to fftpad*nfft data points 
     fread ((void *)&fftpad, sizeof (int), 1, data);
@@ -282,7 +282,7 @@ JobNAllSky (int argc, char *argv[]) {
   F = (double *) calloc (2*nfft, sizeof (double));
 
   // Input time-domain data handling 
-  sprintf (filename, "%s/%02d/xdat_%02d_%03d%s.bin", dtaprefix, ident,	\
+  sprintf (filename, "%s/%03d/xdatc_%03d_%03d%s.bin", dtaprefix, ident,	\
 	   ident, band, label);
   if ((data = fopen (filename, "r")) != NULL) {
     fread ((void *)(xDat), sizeof (double), N, data);
@@ -305,7 +305,7 @@ JobNAllSky (int argc, char *argv[]) {
     sig2 = -1.;
 
   // Ephemeris file handling 
-  sprintf (filename, "%s/%02d/DetSSB.bin", dtaprefix, ident);
+  sprintf (filename, "%s/%03d/DetSSB.bin", dtaprefix, ident);
   if ((data = fopen (filename, "r")) != NULL) {
     // Detector position w.r.t solar system baricenter
     // for every datapoint
@@ -368,7 +368,7 @@ JobNAllSky (int argc, char *argv[]) {
     xDatma = (complex double *) calloc (N, sizeof (complex double));
     xDatmb = (complex double *) calloc (N, sizeof (complex double));
 
-  xa = fftw_malloc (2 * fftpad * nfft * sizeof (fftw_complex));
+  xa = fftw_malloc (4 * fftpad * nfft * sizeof (fftw_complex));
 
   // FFT plans vary w.r.t the method of calculation: 
   // case INT (simple interpolation [interbinning] of a shorter Fourier transform)
@@ -454,9 +454,9 @@ JobNAllSky (int argc, char *argv[]) {
   fclose (wisdom);
 
   if(hemi)
-  	sprintf (qname, "state_%02d_%03d%s_%d.dat", ident, band, label, hemi);
+  	sprintf (qname, "state_%03d_%03d%s_%d.dat", ident, band, label, hemi);
   else 
-	sprintf (qname, "state_%02d_%03d%s.dat", ident, band, label);
+	sprintf (qname, "state_%03d_%03d%s.dat", ident, band, label);
 
   // Checkpointing 
   if ((state = fopen (qname, "r")) != NULL) {
@@ -484,7 +484,7 @@ JobNAllSky (int argc, char *argv[]) {
   // Main loops 
 
   for (pm=pst; pm<=pmr[1]; pm++) {	// loop over hemispheres 
-    sprintf (outname, "%s/triggers_%02d_%03d%s_%d.bin", prefix, ident,	\
+    sprintf (outname, "%s/triggers_%03d_%03d%s_%d.bin", prefix, ident,	\
 	     band, label, pm);
 
     for (mm=mst; mm<=mr[1]; mm++) {	// 2 loops over 
