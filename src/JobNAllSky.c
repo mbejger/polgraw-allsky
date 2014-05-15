@@ -282,7 +282,7 @@ JobNAllSky (int argc, char *argv[]) {
   F = (double *) calloc (2*nfft, sizeof (double));
 
   // Input time-domain data handling 
-  sprintf (filename, "%s/%03d/xdatc_%03d_%03d%s.bin", dtaprefix, ident,	\
+  sprintf (filename, "%s/%03d/xdat_%03d_%03d%s.bin", dtaprefix, ident,	\
 	   ident, band, label);
   if ((data = fopen (filename, "r")) != NULL) {
     fread ((void *)(xDat), sizeof (double), N, data);
