@@ -10,6 +10,7 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <getopt.h>
+#include <gsl/gsl_linalg.h>
 
 #include "auxi.h"
 #include "settings.h"
@@ -34,9 +35,9 @@ complex double *xDatma, *xDatmb;
 
 int
 JobNAllSky (int argc, char *argv[]) {
-  int i, pm, mm, nn, pst, mst, nst, sst, sgnlc, fd, hemi=0, Nzeros=0,	\
-    Ninterp, FNum, nmin, nmax, spndr[2], nr[2], mr[2], pmr[2], c,	\
-    ident=0, band=0, nfftf, 
+  int i, pm, mm, nn, pst, mst, nst, sst, sgnlc, fd, hemi=0, Nzeros=0, 
+    Ninterp, FNum, nmin, nmax, spndr[2], nr[2], mr[2], pmr[2], c, 
+    ident=0, band=0, nfftf, range_status, 
 	fftinterp=INT; // default value
   char hostname[32], wfilename[96], filename[64], outname[64], qname[64], 
     prefix[64], dtaprefix[64], label[64], range[64], ifo_choice[2], *wd=NULL;
@@ -48,6 +49,9 @@ JobNAllSky (int argc, char *argv[]) {
   FILE *wisdom, *state, *data;
   struct flock lck;
   struct stat buffer;
+
+  double pepoch, alpha, delta, f0, f1, f2; 
+  int gsize; 
 
   strcpy (prefix, TOSTR(PREFIX));
   strcpy (dtaprefix, TOSTR(DTAPREFIX));
@@ -264,16 +268,101 @@ JobNAllSky (int argc, char *argv[]) {
   // ("-r range_file" from the command line) 
   if (strlen (range)) {
     if ((data=fopen (range, "r")) != NULL) {
-      fscanf (data, "%d %d", spndr, 1+spndr);
-      fscanf (data, "%d %d", nr, 1+nr);
-      fscanf (data, "%d %d", mr, 1+mr);
-      fscanf (data, "%d %d", pmr, 1+pmr);
-      fclose (data);
+      	range_status = fscanf (data, "%d %d %d %d %d %d %d %d", 
+		spndr, 1+spndr, nr, 1+nr, mr, 1+mr, pmr, 1+pmr);
+
+		// the case when range file does not contain the grid ranges, 
+		// but the pulsar position, frequency, and spindowns. 
+		if(range_status!=8) { 
+
+			rewind(data);
+			range_status = fscanf (data, "%le %le %le %le %le %le %d", 
+			&pepoch, &alpha, &delta, &f0, &f1, &f2, &gsize);   
+
+			printf("%le %le %le %le %le %le %d\n", 
+			pepoch, alpha, delta, f0, f1, f2, gsize); 	
+		
+	       // mjd2gpslal
+    	   double pepoch_gps = (pepoch - 44244)*86400 - 51.184;
+		   double gps1 = (5.5149092418981483e4- 44244)*86400 - 51.184; 
+
+	       // VSR1 search-specific parametrization of freq. 
+	       // for the software injection
+           // snglo[0]: frequency, sgnlo[1]: frequency. derivative  
+/*           sgnlo[0] += - 2.*sgnlo[1]*Nv*(68 - ident); 
+           cof = oms + sgnlo[0] ; 
+                      
+           for(i=0; i<2; i++) sgnlol[i] = sgnlo[i] ; 
+      
+           sgnlol[2] = sgnlo[8]*cof ; 
+           sgnlol[3] = sgnlo[9]*cof ;  
+*/
+
+		   // Interpolation of ephemeris parameters to the starting time
+
+		   double *sgnlol;
+		   sgnlol = (double *) calloc (4, sizeof (double)); 
+
+		   sgnlol[0] = f0 + f1*(gps1 - pepoch_gps) 
+					+ f2*pow(gps1 - pepoch_gps, 2)/2.;
+		   sgnlol[0] = 2*M_PI*2*sgnlol[0]*dt - oms; 
+
+           sgnlol[1] = f1 + f2*(gps1 - pepoch_gps);
+		   sgnlol[1] = 0.5*2*M_PI*2*sgnlol[1]*dt*dt; 		
+
+           sgnlol[2] = alpha*(180/M_PI);
+		   sgnlol[3] = delta*(180/M_PI);  
+
+            
+           // solving a linear system in order to translate 
+           // sky position, frequency and spindown (sgnlo parameters) 
+           // into the position in the grid
+         
+           double *MM ; 
+           MM = (double *) calloc (16, sizeof (double));
+           for(i=0; i<16; i++) MM[i] = M[i] ;
+        
+           gsl_vector *x = gsl_vector_alloc (4);     
+           int s;
+        
+           gsl_matrix_view m = gsl_matrix_view_array (MM, 4, 4);
+           gsl_matrix_transpose (&m.matrix) ; 
+           gsl_vector_view b = gsl_vector_view_array (sgnlol, 4);
+           gsl_permutation *p = gsl_permutation_alloc (4);
+     
+           gsl_linalg_LU_decomp (&m.matrix, p, &s);
+           gsl_linalg_LU_solve (&m.matrix, p, &b.vector, x);
+     
+           spndr[0] = round(gsl_vector_get(x,1)); 
+           nr[0]   = round(gsl_vector_get(x,2));
+           mr[0]   = round(gsl_vector_get(x,3));
+       
+           gsl_permutation_free (p);
+           gsl_vector_free (x);
+           free (MM);
+		   free (sgnlol); 
+       
+           // Define the grid range in which the signal will be looked for
+           spndr[1] = spndr[0] + gsize ; spndr[0] -= gsize;  
+           nr[1] = nr[0] + gsize ; nr[0] -= gsize;    
+           mr[1] = mr[0] + gsize ; mr[0] -= gsize; 
+           pmr[1] = pmr[0];
+
+		   printf("spndr nr mr pmr %d %d %d %d %d %d %d %d\n", 
+			spndr[0], spndr[1], nr[0], nr[1], mr[0], mr[1], pmr[0], pmr[1]); 
+
+        } 
+
+//		printf("range_status: %d\n", range_status); 	  
+	    fclose (data);
+
     } else {
       perror (range);
       return 1;
     }
   }
+
+  return(0); 
 
   // Allocates and initializes to zero the data, detector ephemeris 
   // and the F-statistic arrays
