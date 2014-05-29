@@ -267,7 +267,9 @@ JobNAllSky (int argc, char *argv[]) {
   // within the range of grid parameters from an ascii file 
   // ("-r range_file" from the command line) 
   if (strlen (range)) {
+
     if ((data=fopen (range, "r")) != NULL) {
+
       	range_status = fscanf (data, "%d %d %d %d %d %d %d %d", 
 		spndr, 1+spndr, nr, 1+nr, mr, 1+mr, pmr, 1+pmr);
 
@@ -279,53 +281,53 @@ JobNAllSky (int argc, char *argv[]) {
 			range_status = fscanf (data, "%le %le %le %le %le %le %d", 
 			&pepoch, &alpha, &delta, &f0, &f1, &f2, &gsize);   
 
+			alfa =   (23 + 25./60. + 33.4997197871/3600.)*15/deg;
+	        delta = -(33 + 25./60. + 6.6608320859/3600.)/deg;
+
 			printf("%le %le %le %le %le %le %d\n", 
 			pepoch, alpha, delta, f0, f1, f2, gsize); 	
 		
 	       // mjd2gpslal
     	   double pepoch_gps = (pepoch - 44244)*86400 - 51.184;
-		   double gps1 = (5.5149092418981483e4- 44244)*86400 - 51.184; 
-
-	       // VSR1 search-specific parametrization of freq. 
-	       // for the software injection
-           // snglo[0]: frequency, sgnlo[1]: frequency. derivative  
-/*           sgnlo[0] += - 2.*sgnlo[1]*Nv*(68 - ident); 
-           cof = oms + sgnlo[0] ; 
-                      
-           for(i=0; i<2; i++) sgnlol[i] = sgnlo[i] ; 
-      
-           sgnlol[2] = sgnlo[8]*cof ; 
-           sgnlol[3] = sgnlo[9]*cof ;  
-*/
+		   double gps1 = (5.5149092418981483e+4 - 44244)*86400 - 51.184; 
 
 		   // Interpolation of ephemeris parameters to the starting time
 
 		   double *sgnlol;
 		   sgnlol = (double *) calloc (4, sizeof (double)); 
 
-		   sgnlol[0] = f0 + f1*(gps1 - pepoch_gps) 
-					+ f2*pow(gps1 - pepoch_gps, 2)/2.;
+		   double *be; 
+		   be = (double *) calloc (2, sizeof (double));	
+
+		   // ast2lin (auxi.c) returns the hemisphere number
+		   // and be vector (for sky position in linear coords.) 		
+		   pmr[0] = ast2lin(alpha, delta, epsm, be); 
+
+		   sgnlol[0] = f0 + f1*(gps1 - pepoch_gps) + f2*pow(gps1 - pepoch_gps, 2)/2.;
 		   sgnlol[0] = 2*M_PI*2*sgnlol[0]*dt - oms; 
 
            sgnlol[1] = f1 + f2*(gps1 - pepoch_gps);
-		   sgnlol[1] = 0.5*2*M_PI*2*sgnlol[1]*dt*dt; 		
+		   sgnlol[1] = 2*M_PI*sgnlol[1]*dt*dt; 		
 
-           sgnlol[2] = alpha*(180/M_PI);
-		   sgnlol[3] = delta*(180/M_PI);  
+           sgnlol[2] = be[0]*(oms + sgnlol[0]);
+		   sgnlol[3] = be[1]*(oms + sgnlol[0]);  
 
-            
            // solving a linear system in order to translate 
            // sky position, frequency and spindown (sgnlo parameters) 
            // into the position in the grid
          
-           double *MM ; 
-           MM = (double *) calloc (16, sizeof (double));
-           for(i=0; i<16; i++) MM[i] = M[i] ;
+//           double *MM ; 
+//           MM = (double *) calloc (16, sizeof (double));
+//           for(i=0; i<16; i++) MM[i] = M[i] ;
         
+
+//		   for(i=0; i<16; i++) printf("%le ", M[i]) ;
+//		   printf("\n\n"); 	
+
            gsl_vector *x = gsl_vector_alloc (4);     
            int s;
         
-           gsl_matrix_view m = gsl_matrix_view_array (MM, 4, 4);
+           gsl_matrix_view m = gsl_matrix_view_array (M, 4, 4);
            gsl_matrix_transpose (&m.matrix) ; 
            gsl_vector_view b = gsl_vector_view_array (sgnlol, 4);
            gsl_permutation *p = gsl_permutation_alloc (4);
@@ -339,9 +341,13 @@ JobNAllSky (int argc, char *argv[]) {
        
            gsl_permutation_free (p);
            gsl_vector_free (x);
-           free (MM);
+		   free (be); 
+//           free (MM);
 		   free (sgnlol); 
-       
+
+//		   for(i=0; i<16; i++) printf("%le ", M[i]) ;
+//		   printf("\n\n");	
+
            // Define the grid range in which the signal will be looked for
            spndr[1] = spndr[0] + gsize ; spndr[0] -= gsize;  
            nr[1] = nr[0] + gsize ; nr[0] -= gsize;    

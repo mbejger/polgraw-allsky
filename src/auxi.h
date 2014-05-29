@@ -23,6 +23,8 @@ extern "C"
   void sincos (double, double *, double *);
 #endif
 
+  int ast2lin (double, double, double, double *); 
+
   int ludcmp (double *, int, int *, double *);
   int lubksb (double *, int, int *, double *);
 
