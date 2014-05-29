@@ -28,9 +28,9 @@ J2000.0:
 	int pm; 
 
 	if(fabs(d1)  < 10.*DBL_EPSILON)
-    	pm = 1;
+		pm = 1;
 	else
-    	pm = 2;
+		pm = 2;
 
 	return pm; 
 

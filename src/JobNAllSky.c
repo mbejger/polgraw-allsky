@@ -46,7 +46,7 @@ JobNAllSky (int argc, char *argv[]) {
 	fpo, fpo_val, sig2, crf0;
   fftw_complex *xa, *xao, *xDa, *rDa;
   fftw_plan plan, pl_int, pl_inv;
-  FILE *wisdom, *state, *data;
+  FILE *wisdom, *state, *data, *data2;
   struct flock lck;
   struct stat buffer;
 
@@ -281,72 +281,65 @@ JobNAllSky (int argc, char *argv[]) {
 			range_status = fscanf (data, "%le %le %le %le %le %le %d", 
 			&pepoch, &alpha, &delta, &f0, &f1, &f2, &gsize);   
 
-			alfa =   (23 + 25./60. + 33.4997197871/3600.)*15/deg;
-	        delta = -(33 + 25./60. + 6.6608320859/3600.)/deg;
+			double gps1; 
 
-			printf("%le %le %le %le %le %le %d\n", 
-			pepoch, alpha, delta, f0, f1, f2, gsize); 	
-		
-	       // mjd2gpslal
+			sprintf (filename, "%s/%03d/starting_date", dtaprefix, ident);
+  			if ((data2 = fopen (filename, "r")) != NULL) {
+				fscanf (data2, "%le", &gps1); 
+				fclose(data2); 
+			} else { 
+				perror (filename);
+				return 1; 
+			} 
+
+	       // Conversion of mjd to gps time
     	   double pepoch_gps = (pepoch - 44244)*86400 - 51.184;
-		   double gps1 = (5.5149092418981483e+4 - 44244)*86400 - 51.184; 
+		   gps1 = (gps1 - 44244)*86400 - 51.184; 
 
 		   // Interpolation of ephemeris parameters to the starting time
 
-		   double *sgnlol;
-		   sgnlol = (double *) calloc (4, sizeof (double)); 
+		   double *sgnlo;
+		   sgnlo = (double *) calloc (4, sizeof (double)); 
 
 		   double *be; 
 		   be = (double *) calloc (2, sizeof (double));	
 
 		   // ast2lin (auxi.c) returns the hemisphere number
-		   // and be vector (for sky position in linear coords.) 		
+		   // and the vector be (used for sky position in linear coords.) 		
 		   pmr[0] = ast2lin(alpha, delta, epsm, be); 
 
-		   sgnlol[0] = f0 + f1*(gps1 - pepoch_gps) + f2*pow(gps1 - pepoch_gps, 2)/2.;
-		   sgnlol[0] = 2*M_PI*2*sgnlol[0]*dt - oms; 
+		   sgnlo[0] = f0 + f1*(gps1 - pepoch_gps) + f2*pow(gps1 - pepoch_gps, 2)/2.;
+		   sgnlo[0] = 2*M_PI*2*sgnlo[0]*dt - oms; 
 
-           sgnlol[1] = f1 + f2*(gps1 - pepoch_gps);
-		   sgnlol[1] = 2*M_PI*sgnlol[1]*dt*dt; 		
+           sgnlo[1] = f1 + f2*(gps1 - pepoch_gps);
+		   sgnlo[1] = M_PI*2*sgnlo[1]*dt*dt; 		
 
-           sgnlol[2] = be[0]*(oms + sgnlol[0]);
-		   sgnlol[3] = be[1]*(oms + sgnlol[0]);  
+           sgnlo[2] = be[0]*(oms + sgnlo[0]);
+		   sgnlo[3] = be[1]*(oms + sgnlo[0]);  
 
            // solving a linear system in order to translate 
            // sky position, frequency and spindown (sgnlo parameters) 
            // into the position in the grid
-         
-//           double *MM ; 
-//           MM = (double *) calloc (16, sizeof (double));
-//           for(i=0; i<16; i++) MM[i] = M[i] ;
         
-
-//		   for(i=0; i<16; i++) printf("%le ", M[i]) ;
-//		   printf("\n\n"); 	
-
            gsl_vector *x = gsl_vector_alloc (4);     
            int s;
         
            gsl_matrix_view m = gsl_matrix_view_array (M, 4, 4);
            gsl_matrix_transpose (&m.matrix) ; 
-           gsl_vector_view b = gsl_vector_view_array (sgnlol, 4);
+           gsl_vector_view b = gsl_vector_view_array (sgnlo, 4);
            gsl_permutation *p = gsl_permutation_alloc (4);
      
            gsl_linalg_LU_decomp (&m.matrix, p, &s);
            gsl_linalg_LU_solve (&m.matrix, p, &b.vector, x);
      
-           spndr[0] = round(gsl_vector_get(x,1)); 
-           nr[0]   = round(gsl_vector_get(x,2));
-           mr[0]   = round(gsl_vector_get(x,3));
+           spndr[0] = round(gsl_vector_get(x, 1)); 
+           nr[0]    = round(gsl_vector_get(x, 2));
+           mr[0]    = round(gsl_vector_get(x, 3));
        
            gsl_permutation_free (p);
            gsl_vector_free (x);
 		   free (be); 
-//           free (MM);
-		   free (sgnlol); 
-
-//		   for(i=0; i<16; i++) printf("%le ", M[i]) ;
-//		   printf("\n\n");	
+		   free (sgnlo); 
 
            // Define the grid range in which the signal will be looked for
            spndr[1] = spndr[0] + gsize ; spndr[0] -= gsize;  
