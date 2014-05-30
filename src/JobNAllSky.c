@@ -263,6 +263,62 @@ JobNAllSky (int argc, char *argv[]) {
 
   }
 
+  // Allocates and initializes to zero the data, detector ephemeris 
+  // and the F-statistic arrays
+  xDat = (double *) calloc (N, sizeof (double));
+  DetSSB = (double *) calloc (3*N, sizeof (double));
+  F = (double *) calloc (2*nfft, sizeof (double));
+
+  // Input time-domain data handling 
+  sprintf (filename, "%s/%03d/xdat_%03d_%03d%s.bin", dtaprefix, ident,	\
+	   ident, band, label);
+  if ((data = fopen (filename, "r")) != NULL) {
+    fread ((void *)(xDat), sizeof (double), N, data);
+    fclose (data);
+  } else {
+    perror (filename);
+    return 1;
+  }
+
+  // Checking for null values in the data 
+  for(i=0; i<N; i++)
+	if(!xDat[i]) Nzeros++;
+
+  // factor N/(N - Nzeros) to account for null values in the data 
+  crf0 = (double)N/(N-Nzeros); 
+  
+  if (white_flag)
+    sig2 = N*var (xDat, N);
+  else
+    sig2 = -1.;
+
+  // Ephemeris file handling 
+  sprintf (filename, "%s/%03d/DetSSB.bin", dtaprefix, ident);
+  if ((data = fopen (filename, "r")) != NULL) {
+    // Detector position w.r.t solar system baricenter
+    // for every datapoint
+    fread ((void *)(DetSSB), sizeof (double), 3*N, data);
+    // Deterministic phase defining the position of the Earth 
+    // in its diurnal motion at t=0  
+    fread ((void *)(&phir), sizeof (double), 1, data);
+    // Earth's axis inclination to the ecliptic at t=0  
+    fread ((void *)(&epsm), sizeof (double), 1, data);
+    fclose (data);
+  } else {
+    perror (filename);
+    return 1;
+  }
+
+#ifdef HAVE_SINCOS
+  sincos (phir, &sphir, &cphir);
+  sincos (epsm, &sepsm, &cepsm);
+#else
+  sphir = sin (phir);
+  cphir = cos (phir);
+  sepsm = sin (epsm);
+  cepsm = cos (epsm);
+#endif
+
   // If the parameter range is invoked, the search is performed 
   // within the range of grid parameters from an ascii file 
   // ("-r range_file" from the command line) 
@@ -281,8 +337,8 @@ JobNAllSky (int argc, char *argv[]) {
 			range_status = fscanf (data, "%le %le %le %le %le %le %d", 
 			&pepoch, &alpha, &delta, &f0, &f1, &f2, &gsize);   
 
+			// GPS time of the first sample
 			double gps1; 
-
 			sprintf (filename, "%s/%03d/starting_date", dtaprefix, ident);
   			if ((data2 = fopen (filename, "r")) != NULL) {
 				fscanf (data2, "%le", &gps1); 
@@ -297,7 +353,6 @@ JobNAllSky (int argc, char *argv[]) {
 		   gps1 = (gps1 - 44244)*86400 - 51.184; 
 
 		   // Interpolation of ephemeris parameters to the starting time
-
 		   double *sgnlo;
 		   sgnlo = (double *) calloc (4, sizeof (double)); 
 
@@ -362,62 +417,6 @@ JobNAllSky (int argc, char *argv[]) {
   }
 
   return(0); 
-
-  // Allocates and initializes to zero the data, detector ephemeris 
-  // and the F-statistic arrays
-  xDat = (double *) calloc (N, sizeof (double));
-  DetSSB = (double *) calloc (3*N, sizeof (double));
-  F = (double *) calloc (2*nfft, sizeof (double));
-
-  // Input time-domain data handling 
-  sprintf (filename, "%s/%03d/xdat_%03d_%03d%s.bin", dtaprefix, ident,	\
-	   ident, band, label);
-  if ((data = fopen (filename, "r")) != NULL) {
-    fread ((void *)(xDat), sizeof (double), N, data);
-    fclose (data);
-  } else {
-    perror (filename);
-    return 1;
-  }
-
-  // Checking for null values in the data 
-  for(i=0; i<N; i++)
-	if(!xDat[i]) Nzeros++;
-
-  // factor N/(N - Nzeros) to account for null values in the data 
-  crf0 = (double)N/(N-Nzeros); 
-  
-  if (white_flag)
-    sig2 = N*var (xDat, N);
-  else
-    sig2 = -1.;
-
-  // Ephemeris file handling 
-  sprintf (filename, "%s/%03d/DetSSB.bin", dtaprefix, ident);
-  if ((data = fopen (filename, "r")) != NULL) {
-    // Detector position w.r.t solar system baricenter
-    // for every datapoint
-    fread ((void *)(DetSSB), sizeof (double), 3*N, data);
-    // Deterministic phase defining the position of the Earth 
-    // in its diurnal motion at t=0  
-    fread ((void *)(&phir), sizeof (double), 1, data);
-    // Earth's axis inclination to the ecliptic at t=0  
-    fread ((void *)(&epsm), sizeof (double), 1, data);
-    fclose (data);
-  } else {
-    perror (filename);
-    return 1;
-  }
-
-#ifdef HAVE_SINCOS
-  sincos (phir, &sphir, &cphir);
-  sincos (epsm, &sepsm, &cepsm);
-#else
-  sphir = sin (phir);
-  cphir = cos (phir);
-  sepsm = sin (epsm);
-  cepsm = cos (epsm);
-#endif
    
   t2 = (double *) calloc (Nv, sizeof (double));
   cosmodf = (double *) calloc (Nv, sizeof (double));
