@@ -251,18 +251,6 @@ JobNAllSky (int argc, char *argv[]) {
   // with the use of the M matrix from grid.bin  
   gridr (M, spndr, nr, mr);
 
-  // Hemispheres (with respect to the ecliptic)
-  if(hemi) { 
-
-	pmr[0] = hemi; pmr[1] = hemi; 
-
-  } else { 
-
-  	pmr[0] = 1;
-  	pmr[1] = 2;
-
-  }
-
   // Allocates and initializes to zero the data, detector ephemeris 
   // and the F-statistic arrays
   xDat = (double *) calloc (N, sizeof (double));
@@ -319,6 +307,18 @@ JobNAllSky (int argc, char *argv[]) {
   cepsm = cos (epsm);
 #endif
 
+  // Hemispheres (with respect to the ecliptic)
+  if(hemi) { 
+
+	pmr[0] = hemi; pmr[1] = hemi; 
+
+  } else { 
+
+  	pmr[0] = 1;
+  	pmr[1] = 2;
+
+  }
+
   // If the parameter range is invoked, the search is performed 
   // within the range of grid parameters from an ascii file 
   // ("-r range_file" from the command line) 
@@ -350,7 +350,7 @@ JobNAllSky (int argc, char *argv[]) {
 
 	       // Conversion of mjd to gps time
     	   double pepoch_gps = (pepoch - 44244)*86400 - 51.184;
-		   gps1 = (gps1 - 44244)*86400 - 51.184; 
+//		   gps1 = (gps1 - 44244)*86400 - 51.184; 
 
 		   // Interpolation of ephemeris parameters to the starting time
 		   double *sgnlo;
@@ -390,11 +390,24 @@ JobNAllSky (int argc, char *argv[]) {
            spndr[0] = round(gsl_vector_get(x, 1)); 
            nr[0]    = round(gsl_vector_get(x, 2));
            mr[0]    = round(gsl_vector_get(x, 3));
-       
+      
+/* //#mb 
+		   printf("gsl_vector %lf %lf %lf\n", 
+			gsl_vector_get(x, 1), 
+			gsl_vector_get(x, 2),
+			gsl_vector_get(x, 3)); 
+*/
+
            gsl_permutation_free (p);
            gsl_vector_free (x);
 		   free (be); 
 		   free (sgnlo); 
+
+
+		   // Warnings and infos
+			if(hemi)  
+
+			printf("Warning: -h switch hemisphere choice (%d) may be altered\nby the choice of -r grid range...\n", hemi); 
 
            // Define the grid range in which the signal will be looked for
            spndr[1] = spndr[0] + gsize ; spndr[0] -= gsize;  
@@ -402,12 +415,11 @@ JobNAllSky (int argc, char *argv[]) {
            mr[1] = mr[0] + gsize ; mr[0] -= gsize; 
            pmr[1] = pmr[0];
 
-		   printf("spndr nr mr pmr %d %d %d %d %d %d %d %d\n", 
-			spndr[0], spndr[1], nr[0], nr[1], mr[0], mr[1], pmr[0], pmr[1]); 
+			printf("Will use the following grid range\n");  
+			printf("(spndr, nr, mr, pmr pairs): %d %d %d %d %d %d %d %d\n", spndr[0], spndr[1], nr[0], nr[1], mr[0], mr[1], pmr[0], pmr[1]); 
 
         } 
 
-//		printf("range_status: %d\n", range_status); 	  
 	    fclose (data);
 
     } else {
