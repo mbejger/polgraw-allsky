@@ -45,6 +45,27 @@ search - narrow band all-sky search for periodic signals of GW
 	--nospindown	Will neglect spindowns
 	--help 			This help
 
+	The range file may either contain 8 integers that denote the ranges 
+	on the spindown and sky positions grid and the range of hemispheres 
+	to search in: spndr1 spndr2 nr1 nr2 mr1 mr2 hemi1 hemi2, for example
+	131 137
+	8 14
+	41 47
+	2 2
+	
+	The same switch -r may also be used to feed the code with an
+	astronomical position and parameters of the object - these
+	parameters will be translated to grid positions. In this case 
+	the order of parameters is: 
+	EPOCH (in MJD)
+	alpha
+	delta (both in radians)
+	FO
+	F1
+	F2	(spin frequency, first and second derivative of a star)
+	gsize (integer, how large the grid should be). 
+
+ 
 4. Structure of VSR1 data
 
    The  VSR1 data  is divided  into  68 time  frames, each  of them  2
