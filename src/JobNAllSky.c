@@ -15,18 +15,19 @@
 #include "auxi.h"
 #include "settings.h"
 
-static int white_flag=0; 							//  white noise flag
+static int white_flag=0; 							// white noise flag
 static int s0_flag=0;								// no spin-down flag
+static int checkp_flag=1;							// checkpointing flag 
 static int help_flag=0; 
 
 /* Default output and data directories */
 
 #ifndef PREFIX
-#define PREFIX .
+#define PREFIX ./candidates
 #endif
 
 #ifndef DTAPREFIX
-#define DTAPREFIX ../data
+#define DTAPREFIX .
 #endif
 
 double *cosmodf, *sinmodf, *t2, *aa, *bb, \
@@ -72,6 +73,7 @@ JobNAllSky (int argc, char *argv[]) {
       {"help", no_argument, &help_flag, 1},	
       {"whitenoise", no_argument, &white_flag, 1},
       {"nospindown", no_argument, &s0_flag, 1},
+      {"nocheckpoint", no_argument, &checkp_flag, 0},
       // frame number
       {"ident", required_argument, 0, 'i'},
       // frequency band number 
@@ -109,7 +111,7 @@ JobNAllSky (int argc, char *argv[]) {
      printf("-i	Frame number\n"); 
      printf("-b	Band number\n"); 
      printf("-l	Custom label for the input and output files\n"); 
-     printf("-r	Grid range filename\n"); 
+     printf("-r	File with grid range or pulsar position\n"); 
      printf("-c	Change to directory <dir>\n"); 
      printf("-f	Intepolation method (INT [default] or FFT)\n"); 
      printf("-t	Threshold for the F-statistic (default is 20)\n");
@@ -117,9 +119,10 @@ JobNAllSky (int argc, char *argv[]) {
 	 printf("-a	Detector (L1, H1 or V1); default is V1\n");     
      printf("-p	fpo (starting frequency) value\n\n");
      printf("Also:\n\n"); 
-     printf("--whitenoise	Will assume white Gaussian noise\n"); 
-     printf("--nospindown	Will neglect spindowns\n"); 
-     printf("--help	This help\n"); 		
+     printf("--whitenoise	white Gaussian noise assumed\n"); 
+     printf("--nospindown	spindowns neglected\n"); 
+     printf("--nocheckpoint	state file won't be created (no checkpointing)\n");
+     printf("--help		This help\n"); 		
 
      exit (0);
 
@@ -181,21 +184,21 @@ JobNAllSky (int argc, char *argv[]) {
   printf ("Band number is %d\n", band);    
 
   if (white_flag)
-    printf ("Will assume white Gaussian noise\n");
+    printf ("Assuming white Gaussian noise\n");
   if (fftinterp==INT)
-    printf ("Will use fftinterp=INT (FFT interpolation by interbinning)\n");
+    printf ("Using fftinterp=INT (FFT interpolation by interbinning)\n");
   else 
-    printf ("Will use fftinterp=FFT (FFT interpolation by zero-padding)\n");
+    printf ("Using fftinterp=FFT (FFT interpolation by zero-padding)\n");
   if(trl!=20)
     printf ("Threshold for the F-statistic is %lf\n", trl);
   if(hemi)
     printf ("Search for hemisphere %d\n", hemi);
   if (s0_flag)
-    printf ("Will assume s_1 = 0.\n");
+    printf ("Assuming s_1 = 0.\n");
   if (strlen(label))
-    printf ("Will use '%s' as data label\n", label);
+    printf ("Using '%s' as data label\n", label);
   if (strlen(range))
-    printf ("Will read grid range from '%s'\n", range);
+    printf ("Obtaining grid range from '%s'\n", range);
   if (wd) {
     printf ("Changing working directory to %s\n", wd);
     if (chdir(wd)) {
@@ -247,9 +250,6 @@ JobNAllSky (int argc, char *argv[]) {
   settings (fpo, ifo_choice);
   // Amplitude modulation functions coefficients
   rogcvir ();
-  // Establish grid range in which the search will be performed 
-  // with the use of the M matrix from grid.bin  
-  gridr (M, spndr, nr, mr);
 
   // Allocates and initializes to zero the data, detector ephemeris 
   // and the F-statistic arrays
@@ -325,12 +325,13 @@ JobNAllSky (int argc, char *argv[]) {
   if (strlen (range)) {
 
     if ((data=fopen (range, "r")) != NULL) {
-
+		
       	range_status = fscanf (data, "%d %d %d %d %d %d %d %d", 
 		spndr, 1+spndr, nr, 1+nr, mr, 1+mr, pmr, 1+pmr);
 
-		// the case when range file does not contain the grid ranges, 
-		// but the pulsar position, frequency, and spindowns. 
+		// the case when range file does not contain 8 integers 
+		// describing the grid ranges, but other values: 
+		// the pulsar position, frequency, and spindowns. 
 		if(range_status!=8) { 
 
 			rewind(data);
@@ -415,9 +416,6 @@ JobNAllSky (int argc, char *argv[]) {
            mr[1] = mr[0] + gsize ; mr[0] -= gsize; 
            pmr[1] = pmr[0];
 
-			printf("Will use the following grid range\n");  
-			printf("(spndr, nr, mr, pmr pairs): %d %d %d %d %d %d %d %d\n", spndr[0], spndr[1], nr[0], nr[1], mr[0], mr[1], pmr[0], pmr[1]); 
-
         } 
 
 	    fclose (data);
@@ -426,10 +424,20 @@ JobNAllSky (int argc, char *argv[]) {
       perror (range);
       return 1;
     }
-  }
 
-  return(0); 
-   
+	printf("The following grid range is used\n");  
+	printf("(spndr, nr, mr, pmr pairs): %d %d %d %d %d %d %d %d\n", \
+		spndr[0], spndr[1], nr[0], nr[1], mr[0], mr[1], pmr[0], pmr[1]); 
+
+  } else {
+ 
+	// Establish the grid range in which the search will be performed 
+	// with the use of the M matrix from grid.bin  
+	gridr (M, spndr, nr, mr);
+
+  } 
+
+
   t2 = (double *) calloc (Nv, sizeof (double));
   cosmodf = (double *) calloc (Nv, sizeof (double));
   sinmodf = (double *) calloc (Nv, sizeof (double));
@@ -552,33 +560,38 @@ JobNAllSky (int argc, char *argv[]) {
   }
   fclose (wisdom);
 
-  if(hemi)
-  	sprintf (qname, "state_%03d_%03d%s_%d.dat", ident, band, label, hemi);
-  else 
-	sprintf (qname, "state_%03d_%03d%s.dat", ident, band, label);
-
   // Checkpointing 
-  if ((state = fopen (qname, "r")) != NULL) {
+  if(checkp_flag) { 
 
-    // Scan the state file to get last recorded parameters
-    if ((fscanf (state, "%d %d %d %d %d", &pst, &mst, &nst, &sst, &FNum) \
-	 ) == EOF) {
+	// filename of checkpoint state file, depending on the hemisphere 
+	if(hemi)
+		sprintf (qname, "state_%03d_%03d%s_%d.dat", ident, band, label, hemi);
+	else 
+		sprintf (qname, "state_%03d_%03d%s.dat", ident, band, label);
 
-	// This means that state file is empty (=end of the calculations)
-	fprintf (stderr, "state file empty: ending...\n") ;
-	fclose (state);
-	return 0;
+	if ((state = fopen (qname, "r")) != NULL) {
 
-    } fclose (state);
+		// Scan the state file to get last recorded parameters
+		if ((fscanf (state, "%d %d %d %d %d", &pst, &mst, &nst, &sst, &FNum)) == EOF) {
 
-  // No state file - start from the beginning
-  } else {
-    pst = pmr[0];
-    mst = mr[0];
-    nst = nr[0];
-    sst = spndr[0];
-    FNum = 0;
-  } /* if state */
+			// This means that state file is empty (=end of the calculations)
+			fprintf (stderr, "State file empty: nothing to do...\n");
+			fclose (state);
+			return 0;
+
+    	} 
+		fclose (state);
+    	
+	// No state file - start from the beginning
+	} else {
+		pst = pmr[0]; mst = mr[0]; nst = nr[0]; sst = spndr[0];
+		FNum = 0;
+	} // if state 
+
+  } else { 
+	pst = pmr[0]; mst = mr[0]; nst = nr[0]; sst = spndr[0];
+	FNum = 0;
+  } // if checkp_flag 
 
   // Main loops 
 
@@ -589,9 +602,12 @@ JobNAllSky (int argc, char *argv[]) {
     for (mm=mst; mm<=mr[1]; mm++) {	// 2 loops over 
       for (nn=nst; nn<=nr[1]; nn++) {	// sky positions 
 
-	  state = fopen (qname, "w");
-	  fprintf (state, "%d %d %d %d %d\n", pm, mm, nn, sst, FNum);
-	  fclose (state);
+
+	if(checkp_flag) { 
+		state = fopen (qname, "w");
+		fprintf (state, "%d %d %d %d %d\n", pm, mm, nn, sst, FNum);
+		fclose (state);
+	}
 
 	sgnlv = JobCore(pm,		// hemisphere 
 			mm,		// grid 'sky position' 		
@@ -656,14 +672,17 @@ JobNAllSky (int argc, char *argv[]) {
 
 	} /* if sgnlc */
 	free (sgnlv);
-      } /* for nn */
+      } // for nn
       nst = nr[0];
-    } /* for mm */
+    } // for mm
     mst = mr[0];
-  } /* for pm */
+  } // for pm 
 
-    state = fopen (qname, "w");
+  // state file zeroed at the end of calculations 
+  if(checkp_flag) { 
+	state = fopen (qname, "w");
     fclose (state);
+  } 
 
   free (aa);
   free (bb);
@@ -681,7 +700,14 @@ JobNAllSky (int argc, char *argv[]) {
   fftw_free (xa);
   // This array is defined only in the case of fftinterp==INT
   if(fftinterp==INT) fftw_free (xao);
+  
+  // Grid-generating matrix memory free 
   free (M);
+
+  // Memory free for FFTW plans 
+  fftw_destroy_plan(plan); 
+  fftw_destroy_plan(pl_int); 
+  fftw_destroy_plan(pl_inv); 
   
   return 0;
 } /* JobNAllSky() */
