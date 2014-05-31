@@ -1,6 +1,5 @@
 CC = cc
-CFLAGS	= -Wall -DHAVE_SINCOS -DPREFIX="./candidates" \
-	-DDTAPREFIX="."
+CFLAGS	= -Wall -DHAVE_SINCOS 
 LDFLAGS =
 LOADLIBES = -lm -lgsl -lgslcblas -lfftw3 -lc
 
