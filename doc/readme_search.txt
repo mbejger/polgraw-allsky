@@ -22,10 +22,10 @@ search - narrow band all-sky search for periodic signals of GW
    provided (for example, from a directory containing the data):
 
    ./search -d . -o ./candidates -i 42 -b 271 -a L1 --whitenoise
-
-   The program will proceed assuming white noise and use 
-   Livingston L1 detector location parameters (see settings.c) 
  
+   The program will proceed assuming white noise and use 
+   Livingston L1 detector location parameters (defined in settings.c) 
+
    Additional switches:
 
 	-d	Data directory (default is .)
@@ -33,7 +33,7 @@ search - narrow band all-sky search for periodic signals of GW
 	-i	Frame number
 	-b	Band number
 	-l	Custom label for the input and output files
-	-r	Grid range filename
+	-r	File with grid range or pulsar position
 	-c	Change to directory <dir>
 	-f	Intepolation method (INT [default] or FFT)
 	-t	Threshold for the F-statistic (default is 20)
@@ -41,9 +41,12 @@ search - narrow band all-sky search for periodic signals of GW
 	-a	Detector (L1, H1 or V1); default is V1
 	-p	fpo (starting frequency) value
 
-	--whitenoise	Will assume white Gaussian noise
-	--nospindown	Will neglect spindowns
-	--help 			This help
+	Also:
+
+	--whitenoise	white Gaussian noise assumed
+	--nospindown	spindowns neglected
+	--nocheckpoint	state file won't be created (no checkpointing)
+	--help		This help
 
 	The range file may either contain 8 integers that denote the ranges 
 	on the spindown and sky positions grid and the range of hemispheres 
@@ -65,7 +68,6 @@ search - narrow band all-sky search for periodic signals of GW
 	F2	(spin frequency, first and second derivative of a star)
 	gsize (integer, how large the grid should be). 
 
- 
 4. Structure of VSR1 data
 
    The  VSR1 data  is divided  into  68 time  frames, each  of them  2
