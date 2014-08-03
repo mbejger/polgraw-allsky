@@ -11,6 +11,7 @@
 #include <fcntl.h>
 #include <getopt.h>
 #include <gsl/gsl_linalg.h>
+#include <time.h>
 
 #include "auxi.h"
 #include "settings.h"
@@ -50,6 +51,9 @@ JobNAllSky (int argc, char *argv[]) {
   FILE *wisdom, *state, *data, *data2;
   struct flock lck;
   struct stat buffer;
+
+  clock_t cstart, cend; 
+  double time_elapsed;   
 
   double pepoch, alpha, delta, f0, f1, f2; 
   int gsize; 
@@ -222,6 +226,8 @@ JobNAllSky (int argc, char *argv[]) {
     }
   }
 
+  cstart = clock(); 
+
   M = (double *) calloc (16, sizeof (double));
 
   sprintf (filename, "%s/%03d/grid.bin", dtaprefix, ident);
@@ -245,6 +251,8 @@ JobNAllSky (int argc, char *argv[]) {
   else 
   // The usual definition: 
       fpo = 100. + 0.96875 * band;
+
+  printf("The reference frequency (fpo) is %f\n", fpo); 
 
   // Detector, ephemerides, constants 
   settings (fpo, ifo_choice);
@@ -392,13 +400,6 @@ JobNAllSky (int argc, char *argv[]) {
            nr[0]    = round(gsl_vector_get(x, 2));
            mr[0]    = round(gsl_vector_get(x, 3));
       
-/* //#mb 
-		   printf("gsl_vector %lf %lf %lf\n", 
-			gsl_vector_get(x, 1), 
-			gsl_vector_get(x, 2),
-			gsl_vector_get(x, 3)); 
-*/
-
            gsl_permutation_free (p);
            gsl_vector_free (x);
 		   free (be); 
@@ -511,6 +512,7 @@ JobNAllSky (int argc, char *argv[]) {
   } else { 
 
 	nfftf = fftpad*nfft ;
+    xao = xa; 
 
 	// Plans a multidimensional DFT, where the input variables are:
 	plan = fftw_plan_many_dft 
@@ -592,6 +594,13 @@ JobNAllSky (int argc, char *argv[]) {
 	pst = pmr[0]; mst = mr[0]; nst = nr[0]; sst = spndr[0];
 	FNum = 0;
   } // if checkp_flag 
+
+  cend = clock(); 
+
+  time_elapsed = (cend - cstart)/(double)CLOCKS_PER_SEC; 
+  printf("Time elapsed at prerequisites - reading input data, wisdom file: %.3f s\n", time_elapsed); 
+
+  cstart = clock();    
 
   // Main loops 
 
@@ -677,6 +686,11 @@ JobNAllSky (int argc, char *argv[]) {
     } // for mm
     mst = mr[0];
   } // for pm 
+
+  cend = clock(); 
+
+  time_elapsed = (cend - cstart)/(double)CLOCKS_PER_SEC;
+  printf("\nTime elapsed in the main loop: %f s\n", time_elapsed);
 
   // state file zeroed at the end of calculations 
   if(checkp_flag) { 

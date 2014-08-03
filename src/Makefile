@@ -1,5 +1,5 @@
 CC = cc
-CFLAGS	= -Wall -DHAVE_SINCOS 
+CFLAGS	= -Wall -Ofast -Os -DHAVE_SINCOS 
 LDFLAGS =
 LOADLIBES = -lm -lgsl -lgslcblas -lfftw3 -lc
 
