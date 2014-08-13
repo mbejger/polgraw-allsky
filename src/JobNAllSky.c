@@ -42,7 +42,7 @@ JobNAllSky (int argc, char *argv[]) {
     ident=0, band=0, nfftf, range_status, 
 	fftinterp=INT; // default value
   char hostname[32], wfilename[96], filename[64], outname[64], qname[64], 
-    prefix[64], dtaprefix[64], label[64], range[64], ifo_choice[2], *wd=NULL;
+    prefix[64], dtaprefix[64], label[64], range[64], ifo_choice[3], *wd=NULL;
   double *sgnlv, omrt, coft, epsm, sepsm, cepsm, phir, sphir, cphir, *M, 
 	trl=20., // default value for the F-statistic threshold
 	fpo, fpo_val, sig2, crf0;
