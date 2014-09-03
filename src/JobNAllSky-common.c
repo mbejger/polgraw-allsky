@@ -202,24 +202,39 @@ JobCore(int pm,			// hemisphere
       xDa[i] = 0.;
       xDb[i] = 0.;
     }
+
+	// Fourier transform of the original time series
     fftw_execute (pl_int);
+
+	// "padding the FFT series with an appropriate amount of zeros"
+	// Ninterp = interpftpad*nfft
+
     nyqst = (nfft+2)/2;
     for (i=0; i<nyqst; i++)
       rDb[i] = xDb[i];
     for (i=nyqst; i<nyqst+Ninterp-nfft; i++)
       rDb[i] = 0.;
+
+	// interpftpad=2
+    // for(i=3n/2+1,j=n/2+1; i<2n; i++,j++) {
     for (i=nyqst+Ninterp-nfft,j=nyqst; i<Ninterp; i++,j++) {
       rDb[i] = xDb[j];
       rDa[i] = xDa[j];
     }
+    // for(i=n/2+1,j=3n/2+1; i<2n; i++,j++) {
     for (i=nyqst; i<nyqst+Ninterp-nfft; i++)
       rDa[i] = 0.;
+
+    // transform back to the time domain by inverse FFT
     fftw_execute (pl_inv);
+
     ft = (double)interpftpad/Ninterp;
     for (i=0; i<Ninterp; i++) {
       rDa[i] *= ft;
       rDb[i] *= ft;
     }
+
+    // applying splines to upsampled series
     splintpad (rDa, shftf, Npoints, interpftpad, xDatma);
     splintpad (rDb, shftf, Npoints, interpftpad, xDatmb);
     /* nearest neighbor interpolation */

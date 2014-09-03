@@ -238,6 +238,21 @@ JobNAllSky (int argc, char *argv[]) {
     // of 4x4 grid-generating matrix  
     fread ((void *)M, sizeof (double), 16, data);
     fclose (data);
+
+    /*
+    //#mb for tests: 
+    printf("Grid read from the '%s' file\n", filename);
+
+    //#mb warning: this fftpad is just for check (the value 
+	// with which the grid was generated)
+	// It is overwritten as soon as settings() is called 
+	printf("fftpad from grid.bin: %d\n", fftpad); 
+	printf("%e %e %e %e\n", M[0], M[1], M[2], M[3]);
+	printf("%e %e %e %e\n", M[4], M[5], M[6], M[7]);
+	printf("%e %e %e %e\n", M[8], M[9], M[10], M[11]);
+	printf("%e %e %e %e\n", M[12], M[13], M[14], M[15]);  
+    */ 
+
   } else {
     perror (filename);
     return 1;

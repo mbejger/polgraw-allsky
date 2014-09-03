@@ -50,7 +50,7 @@ settings (double fpo,		// Offset frequency fpo
 
     alfa = .01;       // False alarm probability   
     nd = 2;		// Degree of freedom, 2*nd = no. of degrees of freedom for Chi^2
-    fftpad = 1;   // Zero padding 
+    fftpad = 2;   // Zero padding (original grid: 2, new grids: 1)
     interpftpad = 2;
 
 	if(!strcmp("V1", ifo_choice)) {  
