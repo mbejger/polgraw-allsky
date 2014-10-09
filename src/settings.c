@@ -37,7 +37,7 @@ void settings (Detector_settings* sett, Command_line_opts *opts, Arrays *arr)
 	nfft = 1 << (int)ceil(log(N)/log(2.));		// length of FFT
 	s = 1;												// No. of spindowns
 	Smin = 1000.*C_YEARSEC;						// Minimum spindown time in sec.
-	Smax = 10.*2.*M_PI*(fpo+B)*dt*dt/(2.*Smin); // Maximum spindown (1000 years)
+	Smax = 2.*M_PI*(fpo+B)*dt*dt/(2.*Smin); // Maximum spindown (1000 years)
 	// [angular, dimensionless]
 
 
