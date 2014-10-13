@@ -44,7 +44,7 @@ settings (double fpo,		// Offset frequency fpo
     s = 1;                          // No. of spindowns
     yr = 365.25*TAIday;             // 1 year in sec.
     tau_min = 1000.*yr;             // Minimum spindown time in sec.
-    Smax = 10.*2.*M_PI*(fpo+B)*dt*dt/(2.*tau_min); // Maximum spindown (1000 years) 
+    Smax = 2.*M_PI*(fpo+B)*dt*dt/(2.*tau_min); // Maximum spindown (1000 years) 
                                                // [angular, dimensionless]
      
 
