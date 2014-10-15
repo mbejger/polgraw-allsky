@@ -3,9 +3,8 @@
 
 #include <sys/time.h>
 
+struct timespec get_current_time();
 
-struct timeval get_current_time();
-
-double get_time_difference(struct timeval tstart, struct timeval tend);
+double get_time_difference(struct timespec t0, struct timespec t1);
 
 #endif

@@ -21,7 +21,7 @@ search - narrow band all-sky search for periodic signals of GW
    discussion). The following  command should  work with a testfile
    provided (for example, from a directory containing the data):
 
-   ./search -d . -o ./candidates -i 42 -b 271 -a L1 --whitenoise
+   ./gwsearch-gpu -d . -o ./candidates -i 42 -b 271 -a L1 --whitenoise
  
    The program will proceed assuming white noise and use 
    Livingston L1 detector location parameters (defined in settings.c) 

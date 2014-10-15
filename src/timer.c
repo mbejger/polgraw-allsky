@@ -1,13 +1,12 @@
+#define NANO_INV 1000000000L
+#include "time.h"
 
-
-#include "timer.h"
-
-struct timeval get_current_time() {
-	struct timeval t;
-	gettimeofday(&t, 0);
-	return t;
+struct timespec get_current_time() {
+  struct timespec t;
+  clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &t);
+  return t;
 }
 
-double get_time_difference(struct timeval tstart, struct timeval tend) { // in s
-	return (tend.tv_sec - tstart.tv_sec) + 1e-6 * (tend.tv_usec - tstart.tv_usec);
+double get_time_difference(struct timespec t0, struct timespec t1) { // in s
+  return (t1.tv_sec-t0.tv_sec)+(double)(t1.tv_nsec-t0.tv_nsec)/(double)NANO_INV;
 }
