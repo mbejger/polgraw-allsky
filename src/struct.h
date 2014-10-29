@@ -71,23 +71,27 @@ typedef struct _aux_arrays {
 
 typedef struct _detector_settings {
 	double fpo, //frequency
-			 dt, //sampling time
-			 B, // bandwidth
-			 oms, //dimensionless angular frequency (fpo)
-			 omr, //C_OMEGA_R * dt - dimensionless Earth's angular frequency
-			 crf0, //number of 0 as: N/(N-Nzeros)
-			 Smin, //minimum spindown
-			 Smax, //maximum spindown
-			 alfa, //false alarm probability
-			 ephi, 		//position
-			 elam, 		//of
-			 eheight, 	//the
-			 egam, 		//detector
-			 sig2,		//variance of signal
-			 sepsm,		// sin(epsm)
-			 cepsm,		// cos(epsm)
-			 sphir,		// sin(phi_r)
-			 cphir;		// cos(phi_r)
+			dt, //sampling time
+			B, // bandwidth
+			oms, //dimensionless angular frequency (fpo)
+			omr, //C_OMEGA_R * dt - dimensionless Earth's angular frequency
+
+			//#mb 
+			crf0, //number of 0 as: N/(N-Nzeros)
+			Smin, //minimum spindown
+			Smax, //maximum spindown
+			alfa, //false alarm probability
+			//#mb
+			ephi, 		//position
+			elam, 		//of
+			eheight, 	//the
+			egam, 		//detector
+
+			sig2,		//variance of signal
+			sepsm,		// sin(epsm)
+			cepsm,		// cos(epsm)
+			sphir,		// sin(phi_r)
+			cphir;		// cos(phi_r)
 
 	int nfft, // length of fft
 		 nod, //number of days of observation
@@ -107,8 +111,7 @@ typedef struct _detector_settings {
 
 //Amplitude modulation function coefficients
 typedef struct _ampl_mod_coeff {
-	double c1,c2,c3,c4,c5,c6,c7,c8,c9;
-
+	double c1, c2, c3, c4, c5, c6, c7, c8, c9;
 } Ampl_mod_coeff;
 
 

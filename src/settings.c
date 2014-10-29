@@ -18,29 +18,33 @@ void settings (Detector_settings* sett, Command_line_opts *opts, Aux_arrays *aux
 
   int nod, N, nfft, s, nd, fftpad, interpftpad;
   double dt, B, oms;
-  double  omr;
+  double omr;
   double ephi, elam, eheight, egam;//, epsi;
   double alfa, Smin, Smax;
 
-  dt = 0.5;			 // data sampling time
-  B = 0.5/dt;			 // Bandwidth
-  oms = 2.*M_PI*fpo*dt;		 // Dimensionless angular frequency
+  dt = 0.5;					// data sampling time
+  B = 0.5/dt;				// Bandwidth
+  oms = 2.*M_PI*fpo*dt;		// Dimensionless angular frequency
 
   omr = C_OMEGA_R*dt;
 
-  nod = 2;			// Observation time in days
-  N = round (nod*C_SIDDAY/dt);  // No. of data points
+  nod = 2;					// Observation time in days
+  N = round (nod*C_SIDDAY/dt);	// No. of data points
 
   nfft = 1 << (int)ceil(log(N)/log(2.));	// length of FFT
-  s = 1;					// No. of spindowns
-  Smin = 1000.*C_YEARSEC;			// Minimum spindown time in sec.
+  s = 1;									// No. of spindowns
+
+  Smin = 1000.*C_YEARSEC;					// Minimum spindown time 
+											// [sec.]
+
   Smax = 2.*M_PI*(fpo+B)*dt*dt/(2.*Smin);   // Maximum spindown (1000 years)
-                                                // [angular, dimensionless]
+											// [angular, dimensionless]
 
+  alfa = .01;			// False alarm probability
+  nd = 2;				// Degree of freedom, 
+						// (2*nd = deg. no ofrees of freedom for chi^2)
 
-  alfa = .01;		 // False alarm probability
-  nd = 2;		 // Degree of freedom, 2*nd = deg. no ofrees of freedom for Chi^2
-  fftpad = 2;	         // Zero padding (original grid: 2, new grids: 1)
+  fftpad = 2;			// Zero padding (original grid: 2, new grids: 1)
   interpftpad = 2;
 
   if(!strcmp("V1", ifo_choice)) {
@@ -95,15 +99,13 @@ void settings (Detector_settings* sett, Command_line_opts *opts, Aux_arrays *aux
   }
 
 
-  /*
-    ############ Earth's rotation ################
-  */
-	
+  // Auxiliary arrays, Earth's rotation
   int i;
   aux->t2 = (double *) calloc (N, sizeof (double));
   aux->cosmodf = (double *) calloc (N, sizeof (double));
   aux->sinmodf = (double *) calloc (N, sizeof (double));
   double omrt;
+
   for (i=0; i<N; i++) {
     omrt = omr*i;     //Earth angular velocity * dt * i
     aux->t2[i] = sqr ((double)i);
@@ -126,6 +128,8 @@ void settings (Detector_settings* sett, Command_line_opts *opts, Aux_arrays *aux
   sett->nd=nd;        //degrees of freedom
   sett->fftpad=fftpad; //zero padding
   sett->interpftpad=interpftpad;
+
+  //#mb separate struct for each detector
   sett->ephi=ephi;
   sett->elam=elam;
   sett->eheight=eheight;
@@ -141,18 +145,20 @@ void settings (Detector_settings* sett, Command_line_opts *opts, Aux_arrays *aux
 } // settings()
 
 
+	//----------------------------------------------------
+	// Coefficients of the amplitude modulation functions
+	// of the Virgo detector
+	//----------------------------------------------------
 
-void rogcvir (Ampl_mod_coeff* amod, Detector_settings* sett) {
-
-  /* Coefficients of the amplitude modulation functions
-     for VIRGO detector
-  */
+void rogcvir (
+	Ampl_mod_coeff* amod, 
+	Detector_settings* sett) {
 
   // In the notation of Phys. Rev. D 58, 063001 (1998):
   // ephi = lambda (geographical latitude phi in radians)
   // egam = gamma (orientation of the detector)
   //
-  // (see modvir function in JobNAllSky-common.c
+  // (see modvir function in jobcore.c
   // for full Eqs. 12 and 13)
 
   amod->c1 = .25*sin(2.*sett->egam)*(1+sqr(sin(sett->ephi)));
@@ -165,4 +171,4 @@ void rogcvir (Ampl_mod_coeff* amod, Detector_settings* sett) {
   amod->c8 = cos(2.*sett->egam)*cos(sett->ephi);
   amod->c9 = .5*sin(2.*sett->egam)*sin(2.*sett->ephi);
 
-} /* rogcvir() */
+} // rogcvir
