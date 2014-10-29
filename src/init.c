@@ -220,48 +220,39 @@ void handle_opts(
 	// Define network (by checking data in the input directory)
 	//---------------------------------------------------------- 
 
-void define_network(
+char *define_network(
 	Command_line_opts *opts) {
 
   char dirname[512];
   // Input directory name 
   sprintf (dirname, "%s/%03d", opts->dtaprefix, opts->ident); 
 
-  char xdatprfx[16], detssbprfx[16];
-  sprintf (xdatprfx, "xdat_%03d_%03d_", opts->ident, opts->band); 
-  sprintf (detssbprfx, "DetSSB_"); 
-
-
-/*  DIR *dp;
+  DIR *dp;
   struct dirent *ep;
+  static char *detectors; 
+  int n = 0; 
 
   dp = opendir (dirname);
   if (dp != NULL) {
-      while ((ep = readdir (dp)))
-        puts (ep->d_name);
+      while ((ep = readdir (dp))) { 
+		// checking for directories; 
+		// by convention they have to be 
+		// 2 character long (e.g., V1, L1, H1...) 
+		if((ep->d_type == DT_DIR) && 
+		   (strlen(ep->d_name)==2) && 
+            strncmp(&ep->d_name[0],".",1)) { 
+			  detectors[n] = ep->d_name; 
+  			  n++; 
+			  puts(ep->d_name);
+		}
+ 
+      } 
+
       (void) closedir (dp);
 
-  } else
-    perror ("Couldn't open the directory");
-*/
+  } else perror ("Couldn't open the directory");
 
-  struct dirent **namelist;
-  int n;
-
-  n = scandir(dirname, &namelist, NULL, alphasort);
-  if (n < 0)
-    perror("scandir");
-  else {
-    while (n--) {
-//      printf("%s\n", namelist[n]->d_name);
-			printf("%s %d\n", namelist[n]->d_name, namelist[n]->d_type);
- 
-      free(namelist[n]);
-           
-    }
-    free(namelist);
-       
-  }
+  return detectors; 
 
 } 
 
@@ -559,7 +550,8 @@ void plan_fftw(
     fclose (wisdom);
   }
 
-  int N = sett->N;
+  //#mb notneeded
+  //int N = sett->N;
 
   sett->Ninterp = sett->interpftpad*sett->nfft; 
   // array length (xa, xb) is max{fftpad*nfft, Ninterp}

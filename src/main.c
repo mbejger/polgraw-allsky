@@ -39,6 +39,8 @@ int main (int argc, char* argv[]) {
   double *F; 			// F-statistic array
   Signals sig; 			// signals
   Search_range s_range;
+  char *detectors; 
+  int i; 
 
   // Command line options 
   handle_opts(argc, argv, &opts, &sett);  
@@ -61,7 +63,11 @@ int main (int argc, char* argv[]) {
   }
 
   // Input data discovery 
-  define_network(&opts); 
+  detectors = define_network(&opts); 
+
+  for(i=0; i<3; i++) 
+	printf("%s\n", *(detectors + i)); 
+  
 
   return 0; 
  
