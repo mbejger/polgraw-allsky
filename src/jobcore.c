@@ -37,7 +37,7 @@ void save_array_double(double *arr, int N, const char* file) {
 
 //main searching function (loops inside)
 void search(
-	    Detector_settings *sett,
+	    Search_settings *sett,
 	    Command_line_opts *opts,
 	    Search_range *s_range,
 	    FFTW_arrays *fftw_arr,
@@ -92,7 +92,7 @@ void search(
 			 pm,          // hemisphere
 			 mm,	      // grid 'sky position'
 			 nn,	      // other grid 'sky position'
-			 sett,        // detector settings
+			 sett,        // search settings
 			 opts,        // cmd opts
 			 s_range,     // range for searching
 			 sig,         // signals
@@ -164,7 +164,7 @@ double* job_core(
 		 int pm,		  // hemisphere
 		 int mm,		  // grid 'sky position'
 		 int nn,		  // other grid 'sky position'
-		 Detector_settings *sett, // detector settings
+		 Search_settings *sett, // search settings
 		 Command_line_opts *opts, // cmd opts
 		 Search_range *s_range,	  // range for searching
 		 Signals *sig,		  // signals
@@ -432,16 +432,18 @@ double* job_core(
 
       /* Computing F-STATISTICS from Fa, Fb */
       for (i=sett->nmin; i<sett->nmax; i++) {
-	F[i] = (sqr (creal(fftw_arr->xa[i])) + sqr (cimag(fftw_arr->xa[i])) +
-		sqr (creal(fftw_arr->xb[i])) + sqr (cimag(fftw_arr->xb[i])))/sett->crf0;
+	    F[i] = (sqr(creal(fftw_arr->xa[i])) 
+           + sqr(cimag(fftw_arr->xa[i])) 
+           + sqr(creal(fftw_arr->xb[i])) 
+           + sqr(cimag(fftw_arr->xb[i])))/ifo[0].crf0;
       }
 
       /* Normalize F-statistics */
-      if ( sett->sig2 < 0.)	// if the noise is not white noise
+      if ( ifo[0].sig2 < 0.)	// if the noise is not white noise
 	FStat (F + sett->nmin, sett->nmax - sett->nmin, NAV, 0);
       else
 	for (i = sett->nmin; i < sett->nmax; i++)
-	  F[i] /= sett->sig2; //normalize by variance
+	  F[i] /= ifo[0].sig2; //normalize by variance
 
       //			save_array_double(F, sett->nfft, "F.dat");
 

@@ -12,7 +12,6 @@
 #include <getopt.h>
 #include <gsl/gsl_linalg.h>
 #include <time.h>
-#include <dirent.h>
 
 #include "init.h"
 #include "struct.h"
@@ -21,15 +20,14 @@
 
 
 
-	//-------------------------------
-	// Command line options handling 
-	//-------------------------------
+	/*	Command line options handling 
+	 */ 
 	
 void handle_opts(
 	int argc, 
 	char* argv[], 
 	Command_line_opts *opts, 
-	Detector_settings *sett) {
+	Search_settings *sett) {
 	
   opts->hemi=0;
   opts->wd=NULL;
@@ -50,7 +48,7 @@ void handle_opts(
   // #mb read the detectors' data according to 
   // what is found in the input directory 
   // Default choice of the detector is Virgo:
-  strcpy(opts->ifo_choice, "V1");
+  // strcpy(opts->ifo_choice, "V1");
 
   opts->help_flag=0;
   opts->white_flag=0;
@@ -216,56 +214,11 @@ void handle_opts(
 } // end of command line options handling 
 
 
-	//----------------------------------------------------------
-	// Define network (by checking data in the input directory)
-	//---------------------------------------------------------- 
-
-char **detector_network(
-	Command_line_opts *opts) {
-
-  char dirname[512];
-  // Input directory name 
-  sprintf (dirname, "%s/%03d", opts->dtaprefix, opts->ident); 
-
-  DIR *dp;
-  struct dirent *ep;
-  char **detnames = malloc(MAX_DETECTORS*sizeof(char*));   
-  int n = 0; 
-
-  dp = opendir (dirname);
-  if (dp != NULL) {
-      while ((ep = readdir (dp))) { 
-
-		// checking for directories with data 
-		// from different detectors: 
-		// by convention their names have to be  
-		// 2 character long (e.g., V1, L1, H1...) 
-		if((ep->d_type == DT_DIR) && 
-		   (strlen(ep->d_name)==2) && 
-		   strncmp(&ep->d_name[0],".",1)) { 
-
-			  detnames[n] = malloc(DETNAME_LENGTH); 
-			  strncpy(detnames[n], ep->d_name, DETNAME_LENGTH); 
-  			  n++; 
-		}
-      } 
-      (void) closedir (dp);
-
-  } else perror ("Couldn't open the input directory");
-
-  printf("Number of detectors: %d\n", n); 
-
-  return detnames; 
-
-} 
-
-
-	//--------------------------------------------
-    // Generate grid from the M matrix (grid.bin)
-	//--------------------------------------------
+	/* Generate grid from the M matrix (grid.bin)
+	 */ 
 
 void read_grid(
-	Detector_settings *sett, 
+	Search_settings *sett, 
 	Command_line_opts *opts) {
 
   sett->M = (double *) calloc (16, sizeof (double));
@@ -273,10 +226,10 @@ void read_grid(
   FILE *data;
   char filename[64];
   sprintf (filename, "%s/%03d/grid.bin", opts->dtaprefix, opts->ident);
-  if ((data=fopen (filename, "r")) != NULL) {
-    // fftpad: used to zero padding to fftpad*nfft data points
-	// WARNING! This value is not used, overwritten by sett->fftpad
-	// from settings.c
+	if ((data=fopen (filename, "r")) != NULL) {
+  	// fftpad: used to zero padding to fftpad*nfft data points
+		// WARNING! This value is not used, overwritten by sett->fftpad
+		// from settings.c
     fread ((void *)&sett->fftpad, sizeof (int), 1, data);
     // M: vector of 16 components consisting of 4 rows
     // of 4x4 grid-generating matrix
@@ -290,17 +243,15 @@ void read_grid(
 } // end of read grid 
 
 
-
-	//----------------------
-	// Array initialization 
-	//----------------------
+  /* Array initialization 
+	 */ 
 
 void init_arrays(
 	Signals *sig, 
 	Aux_arrays *aux_arr, 
 	double** F, 
 	Command_line_opts *opts, 
-	Detector_settings *sett) {
+	Search_settings *sett) {
 
   // Allocates and initializes to zero the data, detector ephemeris
   // and the F-statistic arrays
@@ -339,14 +290,14 @@ void init_arrays(
     if(!sig->xDat[i]) Nzeros++;
 
   // factor N/(N - Nzeros) to account for null values in the data
-  sett->crf0 = (double)sett->N/(sett->N-Nzeros);
+  ifo[0].crf0 = (double)sett->N/(sett->N-Nzeros);
 
 
   //if white noise...
   if (opts->white_flag)
-    sett->sig2 = sett->N*var (sig->xDat, sett->N);
+    ifo[0].sig2 = sett->N*var (sig->xDat, sett->N);
   else
-    sett->sig2 = -1.;
+    ifo[0].sig2 = -1.;
 
   double epsm, phir;
 
@@ -376,14 +327,13 @@ void init_arrays(
 } // end of init arrays 
 
 
-	//--------------
-	// Search range 
-	//--------------
+	/* Search range 
+	 */ 
 
 void set_search_range(
 	Search_range *s_range, 
 	Command_line_opts *opts, 
-	Detector_settings *sett) {
+	Search_settings *sett) {
 
   // Hemispheres (with respect to the ecliptic)
   if(opts->hemi) {
@@ -412,6 +362,8 @@ void set_search_range(
 			
       }
       /*
+      //#mb commented-out for now - useful for tests 
+
       // the case when range file does not contain 8 integers
       // describing the grid ranges, but other values:
       // the pulsar position, frequency, and spindowns.
@@ -527,26 +479,26 @@ void set_search_range(
 } // end of set search range 
 
 
-	//-----------
-    // FFT Plans 
-	//-----------
+  /* FFT Plans 
+	 */
 
 void plan_fftw(
 	FFTW_plans *plans, 
 	FFTW_arrays *fftw_arr, 
 	Signals *sig,
 	Aux_arrays *aux_arr, 
-	Detector_settings *sett, 
+	Search_settings *sett, 
 	Command_line_opts *opts) {
 
   char hostname[32], wfilename[64];
   FILE *wisdom;
 
-  // Imports a "wisdom file" containing information about how to optimally
-  // compute Fourier transforms on a given machine. If such file is not
-  // present, it will be created after the measure runs of the fft_plans
-  // are performed below
-  // (more info at http://www.fftw.org/fftw3_doc/Wisdom.html)
+  /* Imports a "wisdom file" containing information about how to optimally
+   * compute Fourier transforms on a given machine. If such file is not
+   * present, it will be created after the measure runs of the fft_plans
+   * are performed below (see http://www.fftw.org/fftw3_doc/Wisdom.html)
+   */ 
+
   gethostname (hostname, 32);
   sprintf (wfilename, "wisdom-%s.dat", hostname);
   if ((wisdom = fopen (wfilename, "r")) != NULL) {
@@ -554,14 +506,12 @@ void plan_fftw(
     fclose (wisdom);
   }
 
-  //#mb notneeded
-  //int N = sett->N;
-
   sett->Ninterp = sett->interpftpad*sett->nfft; 
   // array length (xa, xb) is max{fftpad*nfft, Ninterp}
-  fftw_arr->arr_len = (sett->fftpad * sett->nfft > sett->Ninterp ? sett->fftpad * sett->nfft : sett->Ninterp);
+  fftw_arr->arr_len = (sett->fftpad*sett->nfft > sett->Ninterp 
+                    ? sett->fftpad*sett->nfft : sett->Ninterp);
 
-  //#mb here loop over detectors 
+  //#mb here loop over detectors or one long malloc 
   fftw_arr->xa = fftw_malloc( 2 * fftw_arr->arr_len*sizeof(fftw_complex));
   fftw_arr->xb = fftw_arr->xa + fftw_arr->arr_len;
 
@@ -647,7 +597,7 @@ void read_checkpoints(
 	//-----------------------
 
 void cleanup(
-	Detector_settings *sett,
+	Search_settings *sett,
 	Command_line_opts *opts,
 	Search_range *s_range,
 	FFTW_arrays *fftw_arr,
@@ -655,7 +605,6 @@ void cleanup(
 	FFTW_plans *plans,
 	Aux_arrays *aux,
 	Ampl_mod_coeff *amod,
-	char **detnames, 
 	double *F) {
 
   free(sig->xDat);
@@ -671,12 +620,14 @@ void cleanup(
   free(aux->DetSSB);
   free(F);
 
+/*
+//#mb 
   int i; 
   for(i=0; i<MAX_DETECTORS; i++)
 	free(detnames[i]); 
 
   free(detnames); 
-
+*/ 
 	
   fftw_free(fftw_arr->xa);
   //	if (opts->fftinterp ==) {

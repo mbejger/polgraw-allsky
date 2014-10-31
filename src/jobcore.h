@@ -5,7 +5,7 @@
 
 
 void search(
-				Detector_settings *sett,
+				Search_settings *sett,
 				Command_line_opts *opts,
 				Search_range *s_range,
 				FFTW_arrays *fftw_arr,
@@ -22,7 +22,7 @@ double* job_core(
 			int pm,			// hemisphere
 			int mm,			// grid 'sky position'
 			int nn,			// other grid 'sky position'
-			Detector_settings *sett, // detector settings
+			Search_settings *sett, // search settings
 			Command_line_opts *opts, // cmd opts
 			Search_range *s_range,	 // range for searching
 			Signals *sig,

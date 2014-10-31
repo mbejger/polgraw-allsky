@@ -34,7 +34,7 @@
 int main (int argc, char* argv[]) {
 
   Command_line_opts opts;
-  Detector_settings sett;
+  Search_settings sett;
   Aux_arrays aux_arr;
   double *F; 			// F-statistic array
   Signals sig; 			// signals
@@ -59,26 +59,16 @@ int main (int argc, char* argv[]) {
       return 1;
     }
   }
-
-  // Input data discovery
-  char **detnames = detector_network(&opts);
-  int numofdet = 0; 
-  
-  while(*detnames) {
-    *detnames++; 
-	numofdet++; 
-  } 
-  
-  printf("Number of detectors: %d\n", numofdet); 
-
-  return 0; 
  
   // Grid data 
   read_grid(&sett, &opts);	
 	
-  // Search and detector settings
+  // Search and detector network settings
   settings(&sett, &opts, &aux_arr); 
 
+  return 0; 
+
+/*
   // Amplitude modulation functions
   Ampl_mod_coeff amod;
   rogcvir(&amod, &sett); 
@@ -128,8 +118,8 @@ int main (int argc, char* argv[]) {
 	&fftw_plans, 
 	&aux_arr, 
 	&amod,
-	&*detnames,  
 	F);
+*/ 
 
   return 0; 
 	
