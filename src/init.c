@@ -220,7 +220,7 @@ void handle_opts(
 	// Define network (by checking data in the input directory)
 	//---------------------------------------------------------- 
 
-char *define_network(
+char **detector_network(
 	Command_line_opts *opts) {
 
   char dirname[512];
@@ -229,30 +229,33 @@ char *define_network(
 
   DIR *dp;
   struct dirent *ep;
-  static char *detectors; 
+  char **detnames = malloc(MAX_DETECTORS*sizeof(char*));   
   int n = 0; 
 
   dp = opendir (dirname);
   if (dp != NULL) {
       while ((ep = readdir (dp))) { 
-		// checking for directories; 
-		// by convention they have to be 
+
+		// checking for directories with data 
+		// from different detectors: 
+		// by convention their names have to be  
 		// 2 character long (e.g., V1, L1, H1...) 
 		if((ep->d_type == DT_DIR) && 
 		   (strlen(ep->d_name)==2) && 
-            strncmp(&ep->d_name[0],".",1)) { 
-			  detectors[n] = ep->d_name; 
-  			  n++; 
-			  puts(ep->d_name);
-		}
- 
-      } 
+		   strncmp(&ep->d_name[0],".",1)) { 
 
+			  detnames[n] = malloc(DETNAME_LENGTH); 
+			  strncpy(detnames[n], ep->d_name, DETNAME_LENGTH); 
+  			  n++; 
+		}
+      } 
       (void) closedir (dp);
 
-  } else perror ("Couldn't open the directory");
+  } else perror ("Couldn't open the input directory");
 
-  return detectors; 
+  printf("Number of detectors: %d\n", n); 
+
+  return detnames; 
 
 } 
 
@@ -316,12 +319,13 @@ void init_arrays(
   char filename[64];
   FILE *data;
   // Input time-domain data handling
-  sprintf (filename, "%s/%03d/xdat_%03d_%03d%s.bin", \
+  sprintf (filename, "%s/%03d/xdat_%03d_%03d%s.bin", 
 	opts->dtaprefix, opts->ident, 
 	opts->ident, opts->band, opts->label);
-
+ 
+  int status; 
   if ((data = fopen (filename, "r")) != NULL) {
-    fread ((void *)(sig->xDat), sizeof (double), sett->N, data); // !!! wczytanie danych
+    status = fread ((void *)(sig->xDat), sizeof (double), sett->N, data);
     fclose (data);
   } else {
     perror (filename);
@@ -351,12 +355,12 @@ void init_arrays(
   if ((data = fopen (filename, "r")) != NULL) {
     // Detector position w.r.t solar system baricenter
     // for every datapoint
-    fread ((void *)(aux_arr->DetSSB), sizeof (double), 3*sett->N, data);
+    status = fread ((void *)(aux_arr->DetSSB), sizeof (double), 3*sett->N, data);
     // Deterministic phase defining the position of the Earth
     // in its diurnal motion at t=0
-    fread ((void *)(&phir), sizeof (double), 1, data);
+    status = fread ((void *)(&phir), sizeof (double), 1, data);
     // Earth's axis inclination to the ecliptic at t=0
-    fread ((void *)(&epsm), sizeof (double), 1, data);
+    status = fread ((void *)(&epsm), sizeof (double), 1, data);
     fclose (data);
   } else {
     perror (filename);
@@ -651,6 +655,7 @@ void cleanup(
 	FFTW_plans *plans,
 	Aux_arrays *aux,
 	Ampl_mod_coeff *amod,
+	char **detnames, 
 	double *F) {
 
   free(sig->xDat);
@@ -665,6 +670,13 @@ void cleanup(
   free(aux->shft);
   free(aux->DetSSB);
   free(F);
+
+  int i; 
+  for(i=0; i<MAX_DETECTORS; i++)
+	free(detnames[i]); 
+
+  free(detnames); 
+
 	
   fftw_free(fftw_arr->xa);
   //	if (opts->fftinterp ==) {

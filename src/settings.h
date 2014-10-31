@@ -36,7 +36,8 @@
 
 #define C_YEARSEC (365.25*C_TAIDAY)//31557600.0 //year in seconds = 365.25 * 86400
 
-
+#define MAX_DETECTORS 8
+#define DETNAME_LENGTH 2 
 
 void settings (Detector_settings* sett, Command_line_opts *opts, Aux_arrays *aux);
 void rogcvir (Ampl_mod_coeff* amod, Detector_settings* sett);

@@ -9,10 +9,9 @@
 
 #define TINY 1.0e-20
 #define NINTERP 3			 /* degree of the interpolation polynomial */
-/* Do not change this value!!! */
+							 /* Do not change this value!!! */
 #define NAV 4096
 #define round(x) floor((x)+0.5)
-
 
 void lin2ast (double be1, double be2, int pm, double sepsm, double cepsm,	\
          double *sinal, double *cosal, double *sindel, double *cosdel);
@@ -24,7 +23,6 @@ double var (double *, int);
 
 void gridr (double *, int *, int *, int *, double, double);
 double FStat (double *, int, int, int);
-
 
 int ludcmp (double *, int, int *, double *);
 int lubksb (double *, int, int *, double *);
