@@ -67,7 +67,7 @@ int main (int argc, char* argv[]) {
   // Search and detector network settings
   settings(&sett, &opts, &aux_arr); 
 
-  // Amplitude modulation functions 
+  // Amplitude modulation functions for each detector  
   for(i=0; i<sett.nifo; i++) {  
     rogcvir(&ifo[i]); 
     //#mb testing printout 

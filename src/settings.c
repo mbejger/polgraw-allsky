@@ -189,7 +189,6 @@ void settings(
 
 void rogcvir(Detector_settings *ifo) {
 
-
   /* In the notation of Phys. Rev. D 58, 063001 (1998):
    * ephi = lambda (geographical latitude phi in radians)
    * egam = gamma (orientation of the detector)
