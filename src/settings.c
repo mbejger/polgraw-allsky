@@ -154,7 +154,9 @@ void settings(
       printf("Using %s IFO (as detector #%d)...\n", ifo[i].name, i);
 
     } else {
-      printf("Meh, unknown detector %s (see settings.c) Exiting...\n", detnames[i]);
+
+      printf("Meh, unknown detector %s (see settings.c) Exiting...\n", 
+              detnames[i]);
       exit(EXIT_FAILURE);
     }
 
@@ -171,7 +173,8 @@ void settings(
   double omrt;
 
   for (i=0; i<N; i++) {
-    omrt = omr*i;     //Earth angular velocity * dt * i
+    omrt = omr*i;     // Earth angular velocity * dt * i
+
     aux->t2[i] = sqr((double)i);
     aux->cosmodf[i] = cos (omrt);
     aux->sinmodf[i] = sin (omrt);
@@ -184,26 +187,25 @@ void settings(
    * of the Virgo detector
    */ 
 
-void rogcvir(
-	Ampl_mod_coeff* amod, 
-	Search_settings* sett) {
+void rogcvir(Detector_settings *ifo) {
 
-  // In the notation of Phys. Rev. D 58, 063001 (1998):
-  // ephi = lambda (geographical latitude phi in radians)
-  // egam = gamma (orientation of the detector)
-  //
-  // (see modvir function in jobcore.c
-  // for full Eqs. 12 and 13)
 
-  amod->c1 = .25*sin(2.*ifo[0].egam)*(1+sqr(sin(ifo[0].ephi)));
-  amod->c2 = -.5*cos(2.*ifo[0].egam)*sin(ifo[0].ephi);
-  amod->c3 = .5*sin(2.*ifo[0].egam)*sin(2.*ifo[0].ephi);
-  amod->c4 = -cos(2.*ifo[0].egam)*cos(ifo[0].ephi);
-  amod->c5 = .75*sin(2.*ifo[0].egam)*sqr(cos(ifo[0].ephi));
-  amod->c6 = cos(2.*ifo[0].egam)*sin(ifo[0].ephi);
-  amod->c7 = .5*sin(2.*ifo[0].egam)*(1.+sqr(sin(ifo[0].ephi)));
-  amod->c8 = cos(2.*ifo[0].egam)*cos(ifo[0].ephi);
-  amod->c9 = .5*sin(2.*ifo[0].egam)*sin(2.*ifo[0].ephi);
+  /* In the notation of Phys. Rev. D 58, 063001 (1998):
+   * ephi = lambda (geographical latitude phi in radians)
+   * egam = gamma (orientation of the detector)
+   * 
+   * (see modvir function in jobcore.c for Eqs. 12 and 13)
+   */ 
+
+  ifo->c1 = .25*sin(2.*ifo->egam)*(1+sqr(sin(ifo->ephi)));
+  ifo->c2 = -.5*cos(2.*ifo->egam)*sin(ifo->ephi);
+  ifo->c3 = .5*sin(2.*ifo->egam)*sin(2.*ifo->ephi);
+  ifo->c4 = -cos(2.*ifo->egam)*cos(ifo->ephi);
+  ifo->c5 = .75*sin(2.*ifo->egam)*sqr(cos(ifo->ephi));
+  ifo->c6 = cos(2.*ifo->egam)*sin(ifo->ephi);
+  ifo->c7 = .5*sin(2.*ifo->egam)*(1.+sqr(sin(ifo->ephi)));
+  ifo->c8 = cos(2.*ifo->egam)*cos(ifo->ephi);
+  ifo->c9 = .5*sin(2.*ifo->egam)*sin(2.*ifo->ephi);
 
 } // rogcvir
 

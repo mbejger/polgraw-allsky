@@ -115,12 +115,17 @@ typedef struct _search_settings {
 typedef struct _detector { 
 
   char name[DETNAME_LENGTH]; 
-  double ephi, 		// position
-			   elam, 		// of
-			   eheight, // the
-			   egam, 		// detector
+  double ephi, 		// Geographical latitude phi in radians
+			   elam, 		// Geographical longitude in radians 
+			   eheight, // Height h above the Earth ellipsoid in meters
+			   egam, 		// Orientation of the detector gamma  
+
          crf0,    // number of 0 as: N/(N-Nzeros)
-         sig2;		// variance of signal
+         sig2, 	  // variance of signal
+
+         c1, c2, c3,    // Amplitude modulation 
+         c4, c5, c6,    // function coefficients
+         c7, c8, c9;  
  
 } Detector_settings; 
 
@@ -131,6 +136,7 @@ typedef struct _detector {
 struct _detector ifo[MAX_DETECTORS]; 
 
 
+//#mb to be removed 
   /* Amplitude modulation function coefficients
    */ 
 
