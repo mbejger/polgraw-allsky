@@ -196,15 +196,15 @@ void rogcvir(Detector_settings *ifo) {
    * (see modvir function in jobcore.c for Eqs. 12 and 13)
    */ 
 
-  ifo->c1 = .25*sin(2.*ifo->egam)*(1+sqr(sin(ifo->ephi)));
-  ifo->c2 = -.5*cos(2.*ifo->egam)*sin(ifo->ephi);
-  ifo->c3 = .5*sin(2.*ifo->egam)*sin(2.*ifo->ephi);
-  ifo->c4 = -cos(2.*ifo->egam)*cos(ifo->ephi);
-  ifo->c5 = .75*sin(2.*ifo->egam)*sqr(cos(ifo->ephi));
-  ifo->c6 = cos(2.*ifo->egam)*sin(ifo->ephi);
-  ifo->c7 = .5*sin(2.*ifo->egam)*(1.+sqr(sin(ifo->ephi)));
-  ifo->c8 = cos(2.*ifo->egam)*cos(ifo->ephi);
-  ifo->c9 = .5*sin(2.*ifo->egam)*sin(2.*ifo->ephi);
+  ifo->amod.c1 = .25*sin(2.*ifo->egam)*(1+sqr(sin(ifo->ephi)));
+  ifo->amod.c2 = -.5*cos(2.*ifo->egam)*sin(ifo->ephi);
+  ifo->amod.c3 = .5*sin(2.*ifo->egam)*sin(2.*ifo->ephi);
+  ifo->amod.c4 = -cos(2.*ifo->egam)*cos(ifo->ephi);
+  ifo->amod.c5 = .75*sin(2.*ifo->egam)*sqr(cos(ifo->ephi));
+  ifo->amod.c6 = cos(2.*ifo->egam)*sin(ifo->ephi);
+  ifo->amod.c7 = .5*sin(2.*ifo->egam)*(1.+sqr(sin(ifo->ephi)));
+  ifo->amod.c8 = cos(2.*ifo->egam)*cos(ifo->ephi);
+  ifo->amod.c9 = .5*sin(2.*ifo->egam)*sin(2.*ifo->ephi);
 
 } // rogcvir
 

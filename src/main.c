@@ -39,7 +39,7 @@ int main (int argc, char* argv[]) {
   double *F; 			// F-statistic array
   Signals sig; 			// signals
   Search_range s_range; 
-  int i, nifo; 
+  int i; 
 
   // Command line options 
   handle_opts(argc, argv, &opts, &sett);  
@@ -72,19 +72,17 @@ int main (int argc, char* argv[]) {
     rogcvir(&ifo[i]); 
     //#mb testing printout 
     printf("%s\n", ifo[i].name); 
-    printf("%f %f %f\n", ifo[i].c1, ifo[i].c2, ifo[i].c3); 
-    printf("%f %f %f\n", ifo[i].c4, ifo[i].c5, ifo[i].c6);
-    printf("%f %f %f\n", ifo[i].c7, ifo[i].c8, ifo[i].c9);
+    printf("%f %f %f\n", 
+      ifo[i].amod.c1, ifo[i].amod.c2, ifo[i].amod.c3);
+    printf("%f %f %f\n", 
+      ifo[i].amod.c4, ifo[i].amod.c5, ifo[i].amod.c6);
+    printf("%f %f %f\n", 
+      ifo[i].amod.c7, ifo[i].amod.c8, ifo[i].amod.c9);
   } 
 
   return 0; 
 
 /*
-  //#mb to be removed (now in detector struct)  
-  // Amplitude modulation functions
-  Ampl_mod_coeff amod;
-  rogcvir(&amod, &sett); 
-
   // Array initialization
   init_arrays(&sig, &aux_arr, &F, &opts, &sett);
 

@@ -109,6 +109,14 @@ typedef struct _search_settings {
 } Search_settings;
 
 
+  /* Amplitude modulation function coefficients
+   */ 
+
+typedef struct _ampl_mod_coeff {
+	double c1, c2, c3, c4, c5, c6, c7, c8, c9;
+} Ampl_mod_coeff;
+
+
   /* Detector and its data related settings 
    */ 
 
@@ -121,12 +129,10 @@ typedef struct _detector {
 			   egam, 		// Orientation of the detector gamma  
 
          crf0,    // number of 0 as: N/(N-Nzeros)
-         sig2, 	  // variance of signal
+         sig2; 	  // variance of signal
 
-         c1, c2, c3,    // Amplitude modulation 
-         c4, c5, c6,    // function coefficients
-         c7, c8, c9;  
- 
+  Ampl_mod_coeff amod; 
+  
 } Detector_settings; 
 
 
@@ -134,15 +140,6 @@ typedef struct _detector {
    */ 
 
 struct _detector ifo[MAX_DETECTORS]; 
-
-
-//#mb to be removed 
-  /* Amplitude modulation function coefficients
-   */ 
-
-typedef struct _ampl_mod_coeff {
-	double c1, c2, c3, c4, c5, c6, c7, c8, c9;
-} Ampl_mod_coeff;
 
 #endif 
 
