@@ -247,83 +247,106 @@ void read_grid(
 	 */ 
 
 void init_arrays(
-	Signals *sig, 
-	Aux_arrays *aux_arr, 
-	double** F, 
-	Command_line_opts *opts, 
-	Search_settings *sett) {
+  Search_settings *sett, 
+  Command_line_opts *opts,
+  Aux_arrays *aux_arr,
+  double** F) {
 
+  int i, status; 
   // Allocates and initializes to zero the data, detector ephemeris
   // and the F-statistic arrays
-  sig->xDat = (double *) calloc (sett->N, sizeof (double));
-  aux_arr->DetSSB = (double *) calloc (3*sett->N, sizeof (double));
-  *F = (double *) calloc (2*sett->nfft, sizeof (double));
 
-  aux_arr->aa = (double *) calloc (sett->N, sizeof (double));
-  aux_arr->bb = (double *) calloc (sett->N, sizeof (double));
-
-  aux_arr->shft = (double *) calloc (sett->N, sizeof (double));
-  aux_arr->shftf = (double *) calloc (sett->N, sizeof (double));
-  sig->xDatma = (complex double *) calloc (sett->N, sizeof (complex double));
-  sig->xDatmb = (complex double *) calloc (sett->N, sizeof (complex double));
-
-  char filename[64];
+  char filename[512];
   FILE *data;
-  // Input time-domain data handling
-  sprintf (filename, "%s/%03d/xdat_%03d_%03d%s.bin", 
-	opts->dtaprefix, opts->ident, 
-	opts->ident, opts->band, opts->label);
+
+  for(i=0; i<sett->nifo; i++) { 
+
+    ifo[i].sig.xDat = (double *) calloc(sett->N, sizeof(double));
+
+    // Input time-domain data handling
+    sprintf (filename, "%s/%03d/%s/xdat_%03d_%03d%s.bin", 
+	      opts->dtaprefix, opts->ident, ifo[i].name, 
+	      opts->ident, opts->band, opts->label);
  
-  int status; 
-  if ((data = fopen (filename, "r")) != NULL) {
-    status = fread ((void *)(sig->xDat), sizeof (double), sett->N, data);
-    fclose (data);
-  } else {
-    perror (filename);
-    return;
-  }
+    if((data = fopen(filename, "r")) != NULL) {
+      status = fread((void *)(ifo[i].sig.xDat), 
+               sizeof(double), sett->N, data);
+      fclose (data);
 
-  int Nzeros=0;
-  int i;
-  // Checking for null values in the data
-  for(i=0; i < sett->N; i++)
-    if(!sig->xDat[i]) Nzeros++;
+    } else {
+      perror (filename);
+      return;
+    }
 
-  // factor N/(N - Nzeros) to account for null values in the data
-  ifo[0].crf0 = (double)sett->N/(sett->N-Nzeros);
+    int j, Nzeros=0;
+    // Checking for null values in the data
+    for(j=0; j < sett->N; j++)
+      if(!ifo[i].sig.xDat[j]) Nzeros++;
+
+    ifo[i].sig.Nzeros = Nzeros; 
+
+    // factor N/(N - Nzeros) to account for null values in the data
+    ifo[i].sig.crf0 = (double)sett->N/(ifo[i].sig.Nzeros);
+
+    // In case of white noise assumption, 
+    // the variance is estimated... 
+    if (opts->white_flag)
+      ifo[i].sig.sig2 = sett->N*var(ifo[i].sig.xDat, sett->N);
+    else
+      ifo[i].sig.sig2 = -1.;
+
+    printf("%e %d\n", ifo[i].sig.xDat[6], ifo[i].sig.Nzeros); 
+
+    ifo[i].sig.DetSSB = (double *) calloc(3*sett->N, sizeof(double));
+
+    // Ephemeris file handling
+    sprintf (filename, "%s/%03d/%s/DetSSB.bin", 
+        opts->dtaprefix, opts->ident, ifo[i].name);
+
+    if((data = fopen(filename, "r")) != NULL) {
+      // Detector position w.r.t Solar System Baricenter
+      // for every datapoint
+      status = fread((void *)(ifo[i].sig.DetSSB), 
+               sizeof(double), 3*sett->N, data);
+
+      // Deterministic phase defining the position of the Earth
+      // in its diurnal motion at t=0 
+      status = fread((void *)(&ifo[i].sig.phir), 
+               sizeof(double), 1, data);
+
+      // Earth's axis inclination to the ecliptic at t=0
+      status = fread((void *)(&ifo[i].sig.epsm), 
+               sizeof(double), 1, data);
+      fclose (data);
+
+    } else {
+      perror (filename);
+      return ;
+    }
+
+    printf("%e %e\n", ifo[i].sig.phir, ifo[i].sig.epsm);
+
+    // sincos 
+    ifo[i].sig.sphir = sin(ifo[i].sig.phir);
+    ifo[i].sig.cphir = cos(ifo[i].sig.phir);
+    ifo[i].sig.sepsm = sin(ifo[i].sig.epsm);
+    ifo[i].sig.cepsm = cos(ifo[i].sig.epsm);
 
 
-  //if white noise...
-  if (opts->white_flag)
-    ifo[0].sig2 = sett->N*var (sig->xDat, sett->N);
-  else
-    ifo[0].sig2 = -1.;
+    ifo[i].sig.xDatma = (complex double *) calloc(sett->N, sizeof(complex double));
+    ifo[i].sig.xDatmb = (complex double *) calloc(sett->N, sizeof(complex double));
 
-  double epsm, phir;
 
-  // Ephemeris file handling
-  sprintf (filename, "%s/%03d/DetSSB.bin", opts->dtaprefix, opts->ident);
-  if ((data = fopen (filename, "r")) != NULL) {
-    // Detector position w.r.t solar system baricenter
-    // for every datapoint
-    status = fread ((void *)(aux_arr->DetSSB), sizeof (double), 3*sett->N, data);
-    // Deterministic phase defining the position of the Earth
-    // in its diurnal motion at t=0
-    status = fread ((void *)(&phir), sizeof (double), 1, data);
-    // Earth's axis inclination to the ecliptic at t=0
-    status = fread ((void *)(&epsm), sizeof (double), 1, data);
-    fclose (data);
-  } else {
-    perror (filename);
-    return ;
-  }
+  } 
 
-  // sincos
-  sett->sphir = sin (phir);
-  sett->cphir = cos (phir);
-  sett->sepsm = sin (epsm);
-  sett->cepsm = cos (epsm);
+  *F = (double *) calloc(2*sett->nfft, sizeof(double));
 
+  aux_arr->aa = (double *) calloc(sett->N, sizeof(double));
+  aux_arr->bb = (double *) calloc(sett->N, sizeof(double));
+
+  aux_arr->shft = (double *) calloc(sett->N, sizeof(double));
+  aux_arr->shftf = (double *) calloc(sett->N, sizeof(double));
+   
 } // end of init arrays 
 
 
@@ -331,9 +354,9 @@ void init_arrays(
 	 */ 
 
 void set_search_range(
-	Search_range *s_range, 
+	Search_settings *sett, 
 	Command_line_opts *opts, 
-	Search_settings *sett) {
+	Search_range *s_range) { 
 
   // Hemispheres (with respect to the ecliptic)
   if(opts->hemi) {
@@ -468,12 +491,13 @@ void set_search_range(
     // Establish the grid range in which the search will be performed
     // with the use of the M matrix from grid.bin
     gridr(
-	sett->M, 
-	s_range->spndr,
-	s_range->nr,
-	s_range->mr,
-	sett->oms,
-	sett->Smax);
+	    sett->M, 
+	    s_range->spndr,
+	    s_range->nr,
+	    s_range->mr,
+	    sett->oms,
+	    sett->Smax);
+
   }
 
 } // end of set search range 
@@ -557,10 +581,10 @@ void read_checkpoints(
 	  opts->ident, opts->band, opts->label);
 
     FILE *state;
-    if ((state = fopen (opts->qname, "r")) != NULL) {
+    if((state = fopen(opts->qname, "r")) != NULL) {
 
       // Scan the state file to get last recorded parameters
-      if ((fscanf (state, "%d %d %d %d %d", &s_range->pst, &s_range->mst,
+      if((fscanf(state, "%d %d %d %d %d", &s_range->pst, &s_range->mst,
 		   &s_range->nst, &s_range->sst, FNum)) == EOF) {
 
 		// This means that state file is empty (=end of the calculations)
@@ -592,23 +616,28 @@ void read_checkpoints(
 } // end reading checkpoints
 
 
-	//-----------------------
-	// Cleanup & Memory free 
-	//-----------------------
+  /* Cleanup & memory free 
+	 */
 
 void cleanup(
 	Search_settings *sett,
 	Command_line_opts *opts,
 	Search_range *s_range,
-	FFTW_arrays *fftw_arr,
-	Signals *sig,
-	FFTW_plans *plans,
+//	FFTW_arrays *fftw_arr,
+//	FFTW_plans *plans,
 	Aux_arrays *aux,
-	Ampl_mod_coeff *amod,
 	double *F) {
 
-  free(sig->xDat);
-  free(sig->xDatma);
+  
+  int i; 
+
+  for(i=0; i<sett->nifo; i++) {
+
+    free(ifo[i].sig.xDat);
+    free(ifo[i].sig.xDatma);
+    free(ifo[i].sig.DetSSB);
+
+  } 
 	
   free(aux->sinmodf);
   free(aux->cosmodf);
@@ -617,27 +646,18 @@ void cleanup(
   free(aux->bb);
   free(aux->shftf);
   free(aux->shft);
-  free(aux->DetSSB);
+//  free(aux->DetSSB);
   free(F);
-
-/*
-//#mb 
-  int i; 
-  for(i=0; i<MAX_DETECTORS; i++)
-	free(detnames[i]); 
-
-  free(detnames); 
-*/ 
 	
-  fftw_free(fftw_arr->xa);
+//  fftw_free(fftw_arr->xa);
   //	if (opts->fftinterp ==) {
   //		fftw_free(fftw_arr->xao);
   //	}
 	
   free(sett->M);
 	
-  fftw_destroy_plan(plans->plan);
-  fftw_destroy_plan(plans->pl_int);
-  fftw_destroy_plan(plans->pl_inv);
+//  fftw_destroy_plan(plans->plan);
+//  fftw_destroy_plan(plans->pl_int);
+//  fftw_destroy_plan(plans->pl_inv);
 
 } // end of cleanup & memory free 

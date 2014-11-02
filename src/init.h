@@ -14,17 +14,27 @@ void handle_opts(
 	Command_line_opts *opts, 
 	Search_settings *sett);
 
-void init_arrays(
+/*
+//#mb older version
+  void init_arrays(
 	Signals *sig, 
 	Aux_arrays *aux_arr, 
 	double** F, 
 	Command_line_opts *opts, 
 	Search_settings *sett);
+*/ 
+
+void init_arrays(
+  Search_settings *sett,
+  Command_line_opts *opts, 
+  Aux_arrays *aux_arr, 
+  double** F);
+
 
 void set_search_range(
-	Search_range *s_range, 
+	Search_settings *sett, 
 	Command_line_opts *opts, 
-	Search_settings *sett);
+	Search_range *s_range);  
 
 void read_grid(
 	Search_settings *sett, 
@@ -47,11 +57,10 @@ void cleanup(
 	Search_settings *sett,
 	Command_line_opts *opts,
 	Search_range *s_range,
-	FFTW_arrays *fftw_arr,
-	Signals *sig,
-	FFTW_plans *plans,
+//#mb 
+//	FFTW_arrays *fftw_arr,
+//	FFTW_plans *plans,
 	Aux_arrays *aux,
-	Ampl_mod_coeff *amod,
 	double *F);
 
 #endif

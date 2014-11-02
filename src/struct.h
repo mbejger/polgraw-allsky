@@ -29,7 +29,19 @@ typedef struct __comm_line_opts {
 typedef struct _signals {
 	
 	double *xDat;
+	double *DetSSB; // ephemeris of the detector
+  double epsm, phir, 
+         sepsm,	  // sin(epsm)
+		     cepsm,	  // cos(epsm)
+			   sphir,	  // sin(phi_r)
+			   cphir,	  // cos(phi_r)
+         crf0,    // number of 0s as: N/(N-Nzeros)
+         sig2; 	  // variance of signal
+
+  int Nzeros; 
+
 	complex double *xDatma, *xDatmb;
+
 } Signals;
 
 
@@ -66,7 +78,7 @@ typedef struct _aux_arrays {
 	double *t2; // time^2
 	double *aa, *bb; //amplitude modulation functions
 	double *shftf, *shft; //used to resample and shift time
-	double *DetSSB; //ephemeris of the detector
+  double *DetSSB; // ephemeris of the detector
 
 } Aux_arrays;
 
@@ -88,6 +100,8 @@ typedef struct _search_settings {
           Smin,   // Minimum spindown
 			    Smax,   // Maximum spindown
 			    alfa,   // False alarm probability
+
+  //#mb moved to Signals struct
     			sepsm,	// sin(epsm)
 		    	cepsm,	// cos(epsm)
 			    sphir,	// sin(phi_r)
@@ -126,13 +140,11 @@ typedef struct _detector {
   double ephi, 		// Geographical latitude phi in radians
 			   elam, 		// Geographical longitude in radians 
 			   eheight, // Height h above the Earth ellipsoid in meters
-			   egam, 		// Orientation of the detector gamma  
-
-         crf0,    // number of 0 as: N/(N-Nzeros)
-         sig2; 	  // variance of signal
+			   egam; 		// Orientation of the detector gamma  
 
   Ampl_mod_coeff amod; 
-  
+  Signals sig;  
+ 
 } Detector_settings; 
 
 
@@ -142,4 +154,3 @@ typedef struct _detector {
 struct _detector ifo[MAX_DETECTORS]; 
 
 #endif 
-

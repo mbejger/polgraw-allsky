@@ -435,15 +435,15 @@ double* job_core(
 	    F[i] = (sqr(creal(fftw_arr->xa[i])) 
            + sqr(cimag(fftw_arr->xa[i])) 
            + sqr(creal(fftw_arr->xb[i])) 
-           + sqr(cimag(fftw_arr->xb[i])))/ifo[0].crf0;
+           + sqr(cimag(fftw_arr->xb[i])))/ifo[0].sig.crf0;
       }
 
       /* Normalize F-statistics */
-      if ( ifo[0].sig2 < 0.)	// if the noise is not white noise
+      if ( ifo[0].sig.sig2 < 0.)	// if the noise is not white noise
 	FStat (F + sett->nmin, sett->nmax - sett->nmin, NAV, 0);
       else
 	for (i = sett->nmin; i < sett->nmax; i++)
-	  F[i] /= ifo[0].sig2; //normalize by variance
+	  F[i] /= ifo[0].sig.sig2; //normalize by variance
 
       //			save_array_double(F, sett->nfft, "F.dat");
 

@@ -68,26 +68,27 @@ int main (int argc, char* argv[]) {
   settings(&sett, &opts, &aux_arr); 
 
   // Amplitude modulation functions for each detector  
-  for(i=0; i<sett.nifo; i++) {  
+  for(i=0; i<sett.nifo; i++)   
     rogcvir(&ifo[i]); 
-    //#mb testing printout 
-    printf("%s\n", ifo[i].name); 
-    printf("%f %f %f\n", 
-      ifo[i].amod.c1, ifo[i].amod.c2, ifo[i].amod.c3);
-    printf("%f %f %f\n", 
-      ifo[i].amod.c4, ifo[i].amod.c5, ifo[i].amod.c6);
-    printf("%f %f %f\n", 
-      ifo[i].amod.c7, ifo[i].amod.c8, ifo[i].amod.c9);
-  } 
+
+  // Array initialization
+  init_arrays(&sett, &opts, &aux_arr, &F);
+
+  // Set search range 
+  set_search_range(&sett, &opts, &s_range);
+
+  // Cleanup & memory free 
+  cleanup(&sett, &opts, &s_range, 
+//	&fftw_arr, 
+//	&fftw_plans, 
+	&aux_arr, F);
 
   return 0; 
 
 /*
+
   // Array initialization
   init_arrays(&sig, &aux_arr, &F, &opts, &sett);
-
-  // Set search range 
-  set_search_range(&s_range, &opts, &sett);
 
   // FFT plans 
   FFTW_plans fftw_plans;
