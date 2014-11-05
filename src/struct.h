@@ -20,16 +20,20 @@ typedef struct __comm_line_opts {
 	double fpo_val;
 	
 	char prefix[64], dtaprefix[64], label[64], range[64], *wd,
+  //#mb remove ifo_choice
 			ifo_choice[3];
 	char qname[64];
 } Command_line_opts;
 
 
-//signal arrays
+// input signal arrays
 typedef struct _signals {
 	
 	double *xDat;
 	double *DetSSB; // ephemeris of the detector
+	double *aa, *bb; //amplitude modulation functions
+	double *shftf, *shft; //used to resample and shift time
+
   double epsm, phir, 
          sepsm,	  // sin(epsm)
 		     cepsm,	  // cos(epsm)
@@ -76,9 +80,14 @@ typedef struct _aux_arrays {
 
 	double *sinmodf, *cosmodf; // Earth position
 	double *t2; // time^2
+
+  // this will hold the modulations for each 
+  // detector divided by respective variance sig2 
 	double *aa, *bb; //amplitude modulation functions
-	double *shftf, *shft; //used to resample and shift time
-  double *DetSSB; // ephemeris of the detector
+
+  //#mb arrays below moved to _signals
+//	double *shftf, *shft; //used to resample and shift time
+//  double *DetSSB; // ephemeris of the detector
 
 } Aux_arrays;
 

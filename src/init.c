@@ -333,20 +333,24 @@ void init_arrays(
     ifo[i].sig.cepsm = cos(ifo[i].sig.epsm);
 
 
-    ifo[i].sig.xDatma = (complex double *) calloc(sett->N, sizeof(complex double));
-    ifo[i].sig.xDatmb = (complex double *) calloc(sett->N, sizeof(complex double));
+    ifo[i].sig.xDatma = 
+      (complex double *) calloc(sett->N, sizeof(complex double));
+    ifo[i].sig.xDatmb = 
+      (complex double *) calloc(sett->N, sizeof(complex double));
 
+    ifo[i].sig.aa = (double *) calloc(sett->N, sizeof(double));
+    ifo[i].sig.bb = (double *) calloc(sett->N, sizeof(double));
 
+    ifo[i].sig.shft = (double *) calloc(sett->N, sizeof(double));
+    ifo[i].sig.shftf = (double *) calloc(sett->N, sizeof(double));
+ 
   } 
 
   *F = (double *) calloc(2*sett->nfft, sizeof(double));
-
+      
   aux_arr->aa = (double *) calloc(sett->N, sizeof(double));
   aux_arr->bb = (double *) calloc(sett->N, sizeof(double));
 
-  aux_arr->shft = (double *) calloc(sett->N, sizeof(double));
-  aux_arr->shftf = (double *) calloc(sett->N, sizeof(double));
-   
 } // end of init arrays 
 
 

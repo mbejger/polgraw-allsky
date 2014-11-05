@@ -46,12 +46,11 @@ void search(
 	    Aux_arrays *aux,
 	    Ampl_mod_coeff *amod,
 	    int *FNum,
-	    double *F
-	    )
-{
-  struct flock lck;
-  //struct stat buffer;
+	    double *F) {
 
+  // struct stat buffer;
+  struct flock lck;
+ 
   //	clock_t cstart, cend; //clock
   //	double time_elapsed; //for measuring time
 
@@ -160,29 +159,34 @@ void search(
 }
 
 
+  /* Main job 
+   */ 
+
 double* job_core(
-		 int pm,		  // hemisphere
-		 int mm,		  // grid 'sky position'
-		 int nn,		  // other grid 'sky position'
-		 Search_settings *sett, // search settings
-		 Command_line_opts *opts, // cmd opts
-		 Search_range *s_range,	  // range for searching
+  int pm,		  // hemisphere
+  int mm,		  // grid 'sky position'
+  int nn,		  // other grid 'sky position'
+  Search_settings *sett, // search settings
+  Command_line_opts *opts, // cmd opts
+  Search_range *s_range,	  // range for searching
+//#mb 
 		 Signals *sig,		  // signals
-		 FFTW_arrays *fftw_arr,   // arrays for fftw
-		 FFTW_plans *plans,       // plans for fftw
-		 Aux_arrays *aux, 	  // auxiliary arrays
-		 Ampl_mod_coeff *amod,    // amplitude modulation functions coefficients 
-		 double *F,		  // F-statistics array
-		 int *sgnlc,		  // reference to array with the parameters
+  FFTW_arrays *fftw_arr,   // arrays for fftw
+  FFTW_plans *plans,       // plans for fftw
+  Aux_arrays *aux, 	  // auxiliary arrays
+//#mb remove 		 
+     Ampl_mod_coeff *amod,    // amplitude modulation functions coefficients 
+  double *F,		  // F-statistics array
+  int *sgnlc,		  // reference to array with the parameters
 		                          // of the candidate signal
 		                          // (used below to write to the file)
-		 int *FNum		  // Candidate signal number
+  int *FNum		  // Candidate signal number
 		 )
 {
 
   int j, i;
   int smin = s_range->sst, smax = s_range->spndr[1];
-  double al1, al2, sinalt, cosalt, sindelt, cosdelt, sgnlt[NPAR], \
+  double al1, al2, sinalt, cosalt, sindelt, cosdelt, sgnlt[NPAR], 
     nSource[3], het0, sgnl0, *sgnlv, ft;
 
 
@@ -201,10 +205,10 @@ double* job_core(
 
      Array M[.] is related to matrix M(.,.) in the following way;
 
-     [ M[0] M[4] M[8]	M[12] ]
-     M(.,.) =	    [ M[1] M[5] M[9]	M[13] ]
-     [ M[2] M[6] M[10] M[14] ]
-     [ M[3] M[7] M[11] M[15] ]
+                    [ M[0] M[4] M[8]	M[12] ]
+      M(.,.) =	    [ M[1] M[5] M[9]	M[13] ]
+                    [ M[2] M[6] M[10] M[14] ]
+                    [ M[3] M[7] M[11] M[15] ]
 
      and
 
@@ -226,8 +230,6 @@ double* job_core(
   // check if the search is in an appropriate region of the grid
   // if not, returns NULL
   if((sqr(al1)+sqr(al2))/sqr(sett->oms) > 1.) return NULL ;
-
-  //	printf("%lf %lf\n", al1, al2);
 
   int ss;
   double shft1, phase, cp, sp;
@@ -263,8 +265,13 @@ double* job_core(
 
 
   /* amplitude modulation functions */
-  modvir (sinalt, cosalt, sindelt, cosdelt,
-	  sett->sphir, sett->cphir, aux->aa, aux->bb, sett->N, amod, aux);
+//#mb
+//  modvir (sinalt, cosalt, sindelt, cosdelt,
+//	  sett->sphir, sett->cphir, aux->aa, aux->bb, sett->N, amod, aux);
+
+//#mb penultimate int is the detector number 
+	modvir (sinalt, cosalt, sindelt, cosdelt,
+	  sett->sphir, sett->cphir, aux->aa, aux->bb, sett->N, 0, aux);
 	
   //calculate detector positions with respect to baricenter
   nSource[0] = cosalt*cosdelt;
@@ -391,7 +398,6 @@ double* job_core(
       printf (".");
       fflush (stdout);
 
-      // ?????????????????????????????????????????????????????????????????????????????????????????????????????????????????????
       het1 = fmod(ss*sett->M[4], sett->M[0]);
       if (het1<0) het1 += sett->M[0];
 
@@ -494,31 +500,40 @@ double* job_core(
 	 spindown_timer, spindown_timer/spindown_counter, spindown_counter);
 
   return sgnlv;
-} /* JobCore() */
+
+} // jobcore
 
 
+  /* Amplitude modulation of the signal
+   */ 
 
+void modvir(
+  double sinal, 
+  double cosal, 
+  double sindel, 
+  double cosdel,
+  double sphir,
+  double cphir, 
+  double *a, 
+  double *b, 
+  int Np,
+  int n, 
+  //Ampl_mod_coeff *amod, 
+  Aux_arrays *aux) {
 
-
-
-
-
-void modvir (double sinal, double cosal, double sindel, double cosdel, 
-	     double sphir, double cphir, double *a, double *b, int Np, 
-	     Ampl_mod_coeff *amod, Aux_arrays *aux) {
-  /* Amplitude modulation functions */
+  // Amplitude modulation functions 
   int t;
   double cosalfr, sinalfr, c2d, c2sd, c, s, c2s, cs, as, bs;
 
-  double c1 = amod->c1,
-    c2 = amod->c2,
-    c3 = amod->c3,
-    c4 = amod->c4,
-    c5 = amod->c5,
-    c6 = amod->c6,
-    c7 = amod->c7,
-    c8 = amod->c8,
-    c9 = amod->c9;
+  double c1 = ifo[n].amod.c1,
+    c2 = ifo[n].amod.c2,
+    c3 = ifo[n].amod.c3,
+    c4 = ifo[n].amod.c4,
+    c5 = ifo[n].amod.c5,
+    c6 = ifo[n].amod.c6,
+    c7 = ifo[n].amod.c7,
+    c8 = ifo[n].amod.c8,
+    c9 = ifo[n].amod.c9;
 			 	
 
   cosalfr = cosal*cphir+sinal*sphir;
@@ -547,5 +562,7 @@ void modvir (double sinal, double cosal, double sindel, double cosdel,
   for (t=0; t<Np; t++) { // normalize a[] and b[]
     a[t] /= as;
     b[t] /= bs;
+
   }
-} /* modvir() */
+
+} // modvir

@@ -39,8 +39,12 @@ double* job_core(
 
 
 void
-modvir (double sinal, double cosal, double sindel, double cosdel,	\
-        double sphir, double cphir, double *a, double *b, int Np, Ampl_mod_coeff *amod,
-        Aux_arrays *aux);
+//modvir (double sinal, double cosal, double sindel, double cosdel,	\
+//        double sphir, double cphir, double *a, double *b, int Np, Ampl_mod_coeff *amod, Aux_arrays *aux);
+
+modvir (double sinal, double cosal, double sindel, double cosdel,	
+        double sphir, double cphir, double *a, double *b, int Np, 
+        int detnum, Aux_arrays *aux);
+
 
 #endif
