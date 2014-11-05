@@ -9,10 +9,12 @@ void search(
 				Command_line_opts *opts,
 				Search_range *s_range,
 				FFTW_arrays *fftw_arr,
-				Signals *sig,
+//#mb 
+//				Signals *sig,
 				FFTW_plans *plans,
 				Aux_arrays *aux,
-				Ampl_mod_coeff *amod,
+//#mb 
+//				Ampl_mod_coeff *amod,
 				int *Fnum,
 				double *F
 				);
@@ -25,11 +27,13 @@ double* job_core(
 			Search_settings *sett, // search settings
 			Command_line_opts *opts, // cmd opts
 			Search_range *s_range,	 // range for searching
-			Signals *sig,
+//#mb 
+//			Signals *sig,
 			FFTW_arrays *fftw_arr,   // arrays for fftw
 			FFTW_plans *plans,       // plans for fftw
 			Aux_arrays *aux, 			 // auxiliary arrays
-			Ampl_mod_coeff *amod,    //amplitude modulation functions coefficients 
+//#mb 
+//			Ampl_mod_coeff *amod,    //amplitude modulation functions coefficients 
 			double *F,		// F-statistics array
 			int *sgnlc,		// reference to array with the parameters
 								// of the candidate signal
@@ -38,13 +42,11 @@ double* job_core(
        );
 
 
-void
-//modvir (double sinal, double cosal, double sindel, double cosdel,	\
-//        double sphir, double cphir, double *a, double *b, int Np, Ampl_mod_coeff *amod, Aux_arrays *aux);
+//#mb 
+//void modvir (double sinal, double cosal, double sindel, double cosdel, double sphir, double cphir, double *a, double *b, int Np, Ampl_mod_coeff *amod, Aux_arrays *aux);
 
-modvir (double sinal, double cosal, double sindel, double cosdel,	
-        double sphir, double cphir, double *a, double *b, int Np, 
-        int detnum, Aux_arrays *aux);
+void modvir (double sinal, double cosal, double sindel, double cosdel,	
+        int Np, Detector_settings *ifo, Aux_arrays *aux);
 
 
 #endif

@@ -37,16 +37,18 @@ void save_array_double(double *arr, int N, const char* file) {
 
 //main searching function (loops inside)
 void search(
-	    Search_settings *sett,
-	    Command_line_opts *opts,
-	    Search_range *s_range,
-	    FFTW_arrays *fftw_arr,
-	    Signals *sig,
-	    FFTW_plans *plans,
-	    Aux_arrays *aux,
-	    Ampl_mod_coeff *amod,
-	    int *FNum,
-	    double *F) {
+  Search_settings *sett,
+  Command_line_opts *opts,
+  Search_range *s_range,
+  FFTW_arrays *fftw_arr,
+//#mb 
+//  Signals *sig,
+  FFTW_plans *plans,
+  Aux_arrays *aux,
+//#mb
+//  Ampl_mod_coeff *amod,
+  int *FNum,
+  double *F) {
 
   // struct stat buffer;
   struct flock lck;
@@ -69,42 +71,53 @@ void search(
       sprintf (qname, "state_%03d_%03d%s.dat", opts->ident, opts->band, opts->label);
 
     state = fopen (qname, "w");
+
   }
 
 	
   struct timespec tstart = get_current_time(), tend;
 		
-  for (pm=s_range->pst; pm<=s_range->pmr[1]; pm++) {	// loop over hemispheres
-    sprintf (outname, "%s/triggers_%03d_%03d%s_%d.bin", opts->prefix, opts->ident,
-	     opts->band, opts->label, pm);
+ 
+  /* Loop over hemispheres
+   */ 
 
-    for (mm=s_range->mst; mm<=s_range->mr[1]; mm++) {	// 2 loops over
-      for (nn=s_range->nst; nn<=s_range->nr[1]; nn++) {	// sky positions
+  for (pm=s_range->pst; pm<=s_range->pmr[1]; pm++) {	
 
-	if(opts->checkp_flag) {
-	  fprintf (state, "%d %d %d %d %d\n", pm, mm, nn, s_range->sst, *FNum);
-	  fflush (state);
-	}
+    sprintf (outname, "%s/triggers_%03d_%03d%s_%d.bin", 
+        opts->prefix, opts->ident, opts->band, opts->label, pm);
+
+    /* Two main loops over sky positions 
+     */ 
+
+    for (mm=s_range->mst; mm<=s_range->mr[1]; mm++) {	
+
+      for (nn=s_range->nst; nn<=s_range->nr[1]; nn++) {	
+
+	      if(opts->checkp_flag) {
+	        fprintf(state, "%d %d %d %d %d\n", 
+              pm, mm, nn, s_range->sst, *FNum);
+	        fflush(state);
+	      }
 
 	/* Loop over Spindows here */
-	sgnlv = job_core(
-			 pm,          // hemisphere
-			 mm,	      // grid 'sky position'
-			 nn,	      // other grid 'sky position'
-			 sett,        // search settings
-			 opts,        // cmd opts
-			 s_range,     // range for searching
-			 sig,         // signals
-			 fftw_arr,    // arrays for fftw
-			 plans,       // plans for fftw
-			 aux, 	      // auxiliary arrays
-			 amod,        // amplitude modulation functions coefficients 
-			 F,	      // F-statistics array
-			 &sgnlc,      // reference to array with the parameters
+	      sgnlv = job_core(
+			          pm,          // hemisphere
+			          mm,	      // grid 'sky position'
+			          nn,	      // other grid 'sky position'
+			          sett,        // search settings
+			          opts,        // cmd opts
+			          s_range,     // range for searching
+//	          		sig,         // signals
+			          fftw_arr,    // arrays for fftw
+			          plans,       // plans for fftw
+			          aux, 	      // auxiliary arrays
+//			          amod,        // amplitude modulation functions coefficients 
+			          F,	      // F-statistics array
+			          &sgnlc,      // reference to array with the parameters
 			              // of the candidate signal
 			              // (used below to write to the file)
-			 FNum	      // Candidate signal number
-			 );
+			          FNum	      // Candidate signal number
+			          );
 				
 	//get back to regular spin-down range
 	s_range->sst = s_range->spndr[0];
@@ -170,12 +183,12 @@ double* job_core(
   Command_line_opts *opts, // cmd opts
   Search_range *s_range,	  // range for searching
 //#mb 
-		 Signals *sig,		  // signals
+//		 Signals *sig,		  // signals
   FFTW_arrays *fftw_arr,   // arrays for fftw
   FFTW_plans *plans,       // plans for fftw
   Aux_arrays *aux, 	  // auxiliary arrays
 //#mb remove 		 
-     Ampl_mod_coeff *amod,    // amplitude modulation functions coefficients 
+//     Ampl_mod_coeff *amod,    // amplitude modulation functions coefficients 
   double *F,		  // F-statistics array
   int *sgnlc,		  // reference to array with the parameters
 		                          // of the candidate signal
@@ -184,7 +197,7 @@ double* job_core(
 		 )
 {
 
-  int j, i;
+  int i, j, n;
   int smin = s_range->sst, smax = s_range->spndr[1];
   double al1, al2, sinalt, cosalt, sindelt, cosdelt, sgnlt[NPAR], 
     nSource[3], het0, sgnl0, *sgnlv, ft;
@@ -198,17 +211,17 @@ double* job_core(
      where bin is the frequency bin number and alpha_1 and alpha_2 are
      defined on p. 22 of PolGrawCWAllSkyReview1.pdf file.
 
-     [omega]													 [bin]
-     [omegadot]				= M(.,.) \times [ss]
-     [alpha_1/omega]									 [nn]
-     [alpha_2/omega]									 [mm]
+     [omega]													[bin]
+     [omegadot]	 			= M(.,.) \times [ss]
+     [alpha_1/omega]									[nn]
+     [alpha_2/omega]									[mm]
 
      Array M[.] is related to matrix M(.,.) in the following way;
 
-                    [ M[0] M[4] M[8]	M[12] ]
-      M(.,.) =	    [ M[1] M[5] M[9]	M[13] ]
-                    [ M[2] M[6] M[10] M[14] ]
-                    [ M[3] M[7] M[11] M[15] ]
+                 [ M[0] M[4] M[8]	M[12] ]
+      M(.,.) =	 [ M[1] M[5] M[9]	M[13] ]
+                 [ M[2] M[6] M[10] M[14] ]
+                 [ M[3] M[7] M[11] M[15] ]
 
      and
 
@@ -217,15 +230,12 @@ double* job_core(
   */
 
   //grid positions
-  al1 = nn*sett->M[10]+mm*sett->M[14];
-  al2 = nn*sett->M[11]+mm*sett->M[15];
+
+  al1 = nn*sett->M[10] + mm*sett->M[14];
+  al2 = nn*sett->M[11] + mm*sett->M[15];
 
   sgnlv = NULL;
   *sgnlc = 0;
-
-  /*
-    ############ Checking coordinates ################
-  */
 
   // check if the search is in an appropriate region of the grid
   // if not, returns NULL
@@ -254,9 +264,9 @@ double* job_core(
   //	} /* case fftinterp */
 
   //change linear (grid) coordinates to real coordinates
-  lin2ast (al1/sett->oms, al2/sett->oms, pm, sett->sepsm, sett->cepsm,
-	   &sinalt, &cosalt, &sindelt, &cosdelt);
-
+  lin2ast(al1/sett->oms, al2/sett->oms, 
+      pm, sett->sepsm, sett->cepsm,
+	    &sinalt, &cosalt, &sindelt, &cosdelt);
 
   // calculate declination and right ascention
   // written in file as candidate signal sky positions
@@ -268,43 +278,51 @@ double* job_core(
 //#mb
 //  modvir (sinalt, cosalt, sindelt, cosdelt,
 //	  sett->sphir, sett->cphir, aux->aa, aux->bb, sett->N, amod, aux);
-
-//#mb penultimate int is the detector number 
-	modvir (sinalt, cosalt, sindelt, cosdelt,
-	  sett->sphir, sett->cphir, aux->aa, aux->bb, sett->N, 0, aux);
+ 
+  for(n=0; n<sett->nifo;n++) { 
+    modvir(sinalt, cosalt, sindelt, cosdelt,
+	         sett->N, &ifo[n], aux);
 	
-  //calculate detector positions with respect to baricenter
-  nSource[0] = cosalt*cosdelt;
-  nSource[1] = sinalt*cosdelt;
-  nSource[2] = sindelt;
-  //some magic
-  shft1 = 0.;
-  for (j=0; j<3; j++)
-    shft1 += nSource[j]*aux->DetSSB[j];
-  het0 = fmod (nn*sett->M[8]+mm*sett->M[12], sett->M[0]);
+    //calculate detector positions with respect to baricenter
+    nSource[0] = cosalt*cosdelt;
+    nSource[1] = sinalt*cosdelt;
+    nSource[2] = sindelt;
 
-  for (i=0; i<sett->N; i++) {
-    aux->shft[i] = 0.;
+    shft1 = 0.;
     for (j=0; j<3; j++)
-      aux->shft[i] += nSource[j] * aux->DetSSB[i*3+j];
-    aux->shftf[i] = aux->shft[i]-shft1;
+      shft1 += nSource[j]*(ifo[n].sig.DetSSB[j]);
 
-    /* Phase modulation */
-    phase = het0*i+sett->oms*aux->shft[i];
-    cp = cos (phase);
-    sp = sin (phase);
-    exph = cp - I*sp;
-    /* Matched filter */
-    sig->xDatma[i] = sig->xDat[i]*aux->aa[i]*exph;
-    sig->xDatmb[i] = sig->xDat[i]*aux->bb[i]*exph;
-  } /* for i */
+    het0 = fmod (nn*sett->M[8] + mm*sett->M[12], sett->M[0]);
+
+    for (i=0; i<sett->N; i++) {
+      ifo[n].sig.shft[i] = 0.;
+
+      for (j=0; j<3; j++)
+        ifo[n].sig.shft[i] += nSource[j]*(ifo[n].sig.DetSSB[i*3+j]);
+    
+      ifo[n].sig.shftf[i] = ifo[n].sig.shft[i] - shft1;
+
+      // Phase modulation 
+      phase = het0*i  +sett->oms*(ifo[n].sig.shft[i]);
+      cp = cos(phase);
+      sp = sin(phase);
+      exph = cp - I*sp;
+
+      // Matched filter 
+      ifo[n].sig.xDatma[i] = 
+        ifo[n].sig.xDat[i]*ifo[n].sig.aa[i]*exph;
+      ifo[n].sig.xDatmb[i] = 
+        ifo[n].sig.xDat[i]*ifo[n].sig.bb[i]*exph;
+  
+    } 
+
+  }
 
 
-
-  /* Resampling */
-  /*
-    This part is performed to double the sampling rate (get twice more samples)
-  */
+  /* Resampling
+   */ 
+//    This part is performed to double the sampling rate (get twice more samples)
+  
   for (i=0; i < sett->N; i++) { //rewrite data
     fftw_arr->xa[i] = sig->xDatma[i];
     fftw_arr->xb[i] = sig->xDatmb[i];
@@ -323,8 +341,6 @@ double* job_core(
 
   //	save_array(fftw_arr->xa, sett->nfft, "xa1.dat");
   //	save_array(fftw_arr->xb, sett->nfft, "xb1.dat");
-
-
 
   int nyqst = (sett->nfft+2)/2; // Nyquist frequency
 	
@@ -512,56 +528,61 @@ void modvir(
   double cosal, 
   double sindel, 
   double cosdel,
-  double sphir,
-  double cphir, 
-  double *a, 
-  double *b, 
   int Np,
-  int n, 
-  //Ampl_mod_coeff *amod, 
+  Detector_settings *ifo, 
   Aux_arrays *aux) {
 
-  // Amplitude modulation functions 
   int t;
   double cosalfr, sinalfr, c2d, c2sd, c, s, c2s, cs, as, bs;
 
-  double c1 = ifo[n].amod.c1,
-    c2 = ifo[n].amod.c2,
-    c3 = ifo[n].amod.c3,
-    c4 = ifo[n].amod.c4,
-    c5 = ifo[n].amod.c5,
-    c6 = ifo[n].amod.c6,
-    c7 = ifo[n].amod.c7,
-    c8 = ifo[n].amod.c8,
-    c9 = ifo[n].amod.c9;
+  double c1 = ifo->amod.c1,
+         c2 = ifo->amod.c2,
+         c3 = ifo->amod.c3,
+         c4 = ifo->amod.c4,
+         c5 = ifo->amod.c5,
+         c6 = ifo->amod.c6,
+         c7 = ifo->amod.c7,
+         c8 = ifo->amod.c8,
+         c9 = ifo->amod.c9;
 			 	
 
-  cosalfr = cosal*cphir+sinal*sphir;
-  sinalfr = sinal*cphir-cosal*sphir;
+  cosalfr = cosal*ifo->sig.cphir + sinal*ifo->sig.sphir;
+  sinalfr = sinal*ifo->sig.cphir - cosal*ifo->sig.sphir;
   c2d = sqr(cosdel);
   c2sd = sindel*cosdel;
 
   as = bs = 0.;
-  for (t=0; t<Np; t++) { //for every time step
-    c = cosalfr * aux->cosmodf[t] + sinalfr * aux->sinmodf[t];
-    s = sinalfr * aux->cosmodf[t] - cosalfr * aux->sinmodf[t];
+
+  // For every time point 
+  for (t=0; t<Np; t++) { 
+
+    c = cosalfr*aux->cosmodf[t] + sinalfr*aux->sinmodf[t];
+    s = sinalfr*aux->cosmodf[t] - cosalfr*aux->sinmodf[t];
     c2s = 2.*sqr(c);
     cs = c*s;
-    /* modulation factors */ // compute values in time t
-    a[t] = c1*(2.-c2d)*c2s + c2*(2.-c2d)*2.*cs +
+
+    // modulation factors 
+    ifo->sig.aa[t] = c1*(2.-c2d)*c2s + c2*(2.-c2d)*2.*cs +
            c3*c2sd*c + c4*c2sd*s - c1*(2.-c2d) + c5*c2d;
-    b[t] = c6*sindel*c2s + c7*sindel*2.*cs + 
+
+    ifo->sig.bb[t] = c6*sindel*c2s + c7*sindel*2.*cs + 
            c8*cosdel*c + c9*cosdel*s - c6*sindel;
-    as += sqr(a[t]); // sum square of values
-    bs += sqr(b[t]);
-  } /* for t */
+
+    // sum of squares for both modulations
+    as += sqr(aa[t]); 
+    bs += sqr(bb[t]);
+  } 
+
   as /= Np;       //scale sum of squares by length
   bs /= Np;
-  as = sqrt (as); // take square root of sum squares
-  bs = sqrt (bs);
-  for (t=0; t<Np; t++) { // normalize a[] and b[]
-    a[t] /= as;
-    b[t] /= bs;
+
+  as = sqrt(as); // take square root of sum squares
+  bs = sqrt(bs);
+
+  // normalization 
+  for (t=0; t<Np; t++) { 
+    ifo->sig.aa[t] /= as;
+    ifo->sig.bb[t] /= bs;
 
   }
 
