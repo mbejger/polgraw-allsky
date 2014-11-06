@@ -50,7 +50,7 @@ void settings(
 			}
     } 
       
-		(void) closedir (dp);
+		(void) closedir(dp);
 
   } else perror ("Couldn't open the input directory");
 

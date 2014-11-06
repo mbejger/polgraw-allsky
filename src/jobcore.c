@@ -85,7 +85,6 @@ void search(
      */ 
 
     for (mm=s_range->mst; mm<=s_range->mr[1]; mm++) {	
-
       for (nn=s_range->nst; nn<=s_range->nr[1]; nn++) {	
 
 	      if(opts->checkp_flag) {
@@ -231,7 +230,6 @@ double* job_core(
   double shft1, phase, cp, sp;
   complex double exph;
 
-
   //	fftw_arr->xDb = fftw_arr->xDa + sett->nfft; //position of 'b' array
   //	fftw_arr->rDb = fftw_arr->rDa + sett->Ninterp; //same
   //	fftw_arr->xb = fftw_arr->xbo =
@@ -256,8 +254,8 @@ double* job_core(
 
   // calculate declination and right ascention
   // written in file as candidate signal sky positions
-  sgnlt[2] = asin (sindelt);
-  sgnlt[3] = fmod (atan2 (sinalt, cosalt)+2.*M_PI, 2.*M_PI);
+  sgnlt[2] = asin(sindelt);
+  sgnlt[3] = fmod(atan2 (sinalt, cosalt)+2.*M_PI, 2.*M_PI);
 
 
   // Loop for each detector 
@@ -270,9 +268,6 @@ double* job_core(
 
     modvir(sinalt, cosalt, sindelt, cosdelt,
 	         sett->N, &ifo[n], aux);
-
-    printf("ifo[%d]->sig.aa[666]=%f ifo[%d].sig.bb[666]=%f\n", 
-      n, ifo[n].sig.aa[666], n, ifo[n].sig.bb[666]); 
 	
     // Calculate detector positions with respect to baricenter
     nSource[0] = cosalt*cosdelt;
@@ -544,7 +539,7 @@ void modvir(
          c9 = ifo->amod.c9;
 			 	
 
-  printf("%f %f\n", c1, c3); 
+  printf("c1 c3 %f %f\n", c1, c3); 
 
   cosalfr = cosal*(ifo->sig.cphir) + sinal*(ifo->sig.sphir);
   sinalfr = sinal*(ifo->sig.cphir) - cosal*(ifo->sig.sphir);
@@ -553,7 +548,12 @@ void modvir(
 
   as = bs = 0.;
 
-//  printf("%f %f\n", c2d, c2sd); 
+  printf("c2d c2sd %f %f\n", c2d, c2sd);
+
+  printf("ifo->sig.cphir %f ifo->sig.sphir %f\n", ifo->sig.cphir,
+  ifo->sig.sphir);  
+
+  printf("cosalfr %f sinalfr %f\n", cosalfr, sinalfr); 
 
   double t1, t2; 
   // For every time point 
@@ -575,8 +575,8 @@ void modvir(
     t2 = c6*sindel*c2s + c7*sindel*2.*cs + 
            c8*cosdel*c + c9*cosdel*s - c6*sindel;
 
-    printf("modvir: ifo->sig.aa[%d]=%f ifo->sig.bb[%d]=%f\n",
-          t, t1, t, t2);
+//    printf("modvir: ifo->sig.aa[%d]=%f ifo->sig.bb[%d]=%f\n",
+//          t, t1, t, t2);
 
     // sum of squares for both modulations
     as += sqr(ifo->sig.aa[t]); 
