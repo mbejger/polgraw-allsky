@@ -34,7 +34,8 @@ typedef struct _signals {
 	double *aa, *bb; //amplitude modulation functions
 	double *shftf, *shft; //used to resample and shift time
 
-  double epsm, phir, 
+  double epsm, 
+         phir, 
          sepsm,	  // sin(epsm)
 		     cepsm,	  // cos(epsm)
 			   sphir,	  // sin(phi_r)
@@ -104,12 +105,8 @@ typedef struct _search_settings {
           Smin,   // Minimum spindown
 			    Smax,   // Maximum spindown
 			    alfa,   // False alarm probability
-
-  //#mb moved to Signals struct
     			sepsm,	// sin(epsm)
-		    	cepsm,	// cos(epsm)
-			    sphir,	// sin(phi_r)
-			    cphir;	// cos(phi_r)
+		    	cepsm;	// cos(epsm)
 
   int nfft,     // length of fft
 		  nod,      // number of days of observation

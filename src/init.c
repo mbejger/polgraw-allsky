@@ -332,6 +332,9 @@ void init_arrays(
     ifo[i].sig.sepsm = sin(ifo[i].sig.epsm);
     ifo[i].sig.cepsm = cos(ifo[i].sig.epsm);
 
+    sett->sepsm = ifo[i].sig.sepsm; 
+    sett->cepsm = ifo[i].sig.cepsm; 
+
     ifo[i].sig.xDatma = 
       (complex double *) calloc(sett->N, sizeof(complex double));
     ifo[i].sig.xDatmb = 
@@ -343,7 +346,21 @@ void init_arrays(
     ifo[i].sig.shft = (double *) calloc(sett->N, sizeof(double));
     ifo[i].sig.shftf = (double *) calloc(sett->N, sizeof(double));
  
+  } // end loop for detectors 
+
+  // Check if the ephemerids have the same epsm parameter
+  for(i=1; i<sett->nifo; i++) {  
+    if(!(ifo[i-1].sig.sepsm == ifo[i].sig.sepsm)) { 
+      printf("The parameter epsm (DetSSB.bin) differs for detectors %s and %s. Aborting...\n", ifo[i-1].name, ifo[i].name); 
+      exit(EXIT_FAILURE);
+
+    } 
+
   } 
+
+  // if all is well with epsm, take the first value 
+  sett->sepsm = ifo[0].sig.sepsm;
+  sett->cepsm = ifo[0].sig.cepsm;
 
   *F = (double *) calloc(2*sett->nfft, sizeof(double));
       

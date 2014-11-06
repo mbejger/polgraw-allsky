@@ -361,7 +361,7 @@ double* job_core(
 
 	  //	struct timeval tstart = get_current_time(), tend;
 
-    // spline interpolation to xDatm(a/b) arrays
+    // Spline interpolation to xDatma, xDatmb arrays
     splintpad(fftw_arr->xa, ifo[n].sig.shftf, sett->N, 
       sett->interpftpad, ifo[n].sig.xDatma);   
     splintpad(fftw_arr->xb, ifo[n].sig.shftf, sett->N, 
@@ -372,7 +372,7 @@ double* job_core(
   //	double time_elapsed = get_time_difference(tstart, tend);
   //	printf("Time elapsed, 2 splines: %e s\n", time_elapsed);
 	
-  	save_array(ifo[0].sig.xDatma, sett->N, "xa.dat");
+  //	save_array(ifo[0].sig.xDatma, sett->N, "xa.dat");
 
   } // end of detector loop 
 
@@ -539,8 +539,6 @@ void modvir(
          c9 = ifo->amod.c9;
 			 	
 
-  printf("c1 c3 %f %f\n", c1, c3); 
-
   cosalfr = cosal*(ifo->sig.cphir) + sinal*(ifo->sig.sphir);
   sinalfr = sinal*(ifo->sig.cphir) - cosal*(ifo->sig.sphir);
   c2d = sqr(cosdel);
@@ -548,15 +546,7 @@ void modvir(
 
   as = bs = 0.;
 
-  printf("c2d c2sd %f %f\n", c2d, c2sd);
-
-  printf("ifo->sig.cphir %f ifo->sig.sphir %f\n", ifo->sig.cphir,
-  ifo->sig.sphir);  
-
-  printf("cosalfr %f sinalfr %f\n", cosalfr, sinalfr); 
-
-  double t1, t2; 
-  // For every time point 
+  // Modulation factor for every data point 
   for (t=0; t<Np; t++) { 
 
     c = cosalfr*aux->cosmodf[t] + sinalfr*aux->sinmodf[t];
@@ -564,26 +554,19 @@ void modvir(
     c2s = 2.*sqr(c);
     cs = c*s;
 
-//    printf("c, s: %f %f\n", c, s); 
-
-    // modulation factors 
-    // ifo->sig.aa[t] 
-    t1 = c1*(2.-c2d)*c2s + c2*(2.-c2d)*2.*cs +
+    // modulation factors aa and bb  
+    ifo->sig.aa[t] = c1*(2.-c2d)*c2s + c2*(2.-c2d)*2.*cs +
            c3*c2sd*c + c4*c2sd*s - c1*(2.-c2d) + c5*c2d;
 
-    // ifo->sig.bb[t] 
-    t2 = c6*sindel*c2s + c7*sindel*2.*cs + 
+    ifo->sig.bb[t] = c6*sindel*c2s + c7*sindel*2.*cs + 
            c8*cosdel*c + c9*cosdel*s - c6*sindel;
-
-//    printf("modvir: ifo->sig.aa[%d]=%f ifo->sig.bb[%d]=%f\n",
-//          t, t1, t, t2);
 
     // sum of squares for both modulations
     as += sqr(ifo->sig.aa[t]); 
     bs += sqr(ifo->sig.bb[t]);
   } 
 
-  as /= Np;       //scale sum of squares by length
+  as /= Np;       // scale sum of squares by length
   bs /= Np;
 
   as = sqrt(as); // take square root of sum squares
@@ -594,9 +577,5 @@ void modvir(
     ifo->sig.aa[t] /= as;
     ifo->sig.bb[t] /= bs;
   }
-
-  printf("modvir: ifo->sig.aa[666]=%g ifo->sig.bb[666]=%g\n",
-          ifo->sig.aa[666], ifo->sig.bb[666]);
-
 
 } // modvir
