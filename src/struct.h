@@ -81,13 +81,8 @@ typedef struct _aux_arrays {
 	double *sinmodf, *cosmodf; // Earth position
 	double *t2; // time^2
 
-  // this will hold the modulations for each 
-  // detector divided by respective variance sig2 
+  //#mb common modulation function 
 	double *aa, *bb; //amplitude modulation functions
-
-  //#mb arrays below moved to _signals
-//	double *shftf, *shft; //used to resample and shift time
-//  double *DetSSB; // ephemeris of the detector
 
 } Aux_arrays;
 
@@ -126,7 +121,7 @@ typedef struct _search_settings {
 		  nd,       // degrees of freedom
 		  interpftpad,
 		  fftpad,   // zero padding
-		  Ninterp, 	// for resampling
+		  Ninterp, 	// for resampling (set in plan_fftw() init.c)
       nifo;     // number of detectors 			 
 
 } Search_settings;

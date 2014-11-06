@@ -3,21 +3,15 @@
 
 #include "struct.h"
 
-
 void search(
-				Search_settings *sett,
-				Command_line_opts *opts,
-				Search_range *s_range,
-				FFTW_arrays *fftw_arr,
-//#mb 
-//				Signals *sig,
-				FFTW_plans *plans,
-				Aux_arrays *aux,
-//#mb 
-//				Ampl_mod_coeff *amod,
-				int *Fnum,
-				double *F
-				);
+	Search_settings *sett,
+	Command_line_opts *opts,
+	Search_range *s_range,
+  FFTW_plans *plans,
+	FFTW_arrays *fftw_arr,
+	Aux_arrays *aux,
+	int *Fnum,
+	double *F);
 
 
 double* job_core(
@@ -27,13 +21,9 @@ double* job_core(
 			Search_settings *sett, // search settings
 			Command_line_opts *opts, // cmd opts
 			Search_range *s_range,	 // range for searching
-//#mb 
-//			Signals *sig,
+      FFTW_plans *plans,       // plans for fftw
 			FFTW_arrays *fftw_arr,   // arrays for fftw
-			FFTW_plans *plans,       // plans for fftw
 			Aux_arrays *aux, 			 // auxiliary arrays
-//#mb 
-//			Ampl_mod_coeff *amod,    //amplitude modulation functions coefficients 
 			double *F,		// F-statistics array
 			int *sgnlc,		// reference to array with the parameters
 								// of the candidate signal

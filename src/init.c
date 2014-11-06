@@ -24,10 +24,10 @@
 	 */ 
 	
 void handle_opts(
+  Search_settings *sett, 
+  Command_line_opts *opts,
 	int argc, 
-	char* argv[], 
-	Command_line_opts *opts, 
-	Search_settings *sett) {
+	char* argv[]) {
 	
   opts->hemi=0;
   opts->wd=NULL;
@@ -332,7 +332,6 @@ void init_arrays(
     ifo[i].sig.sepsm = sin(ifo[i].sig.epsm);
     ifo[i].sig.cepsm = cos(ifo[i].sig.epsm);
 
-
     ifo[i].sig.xDatma = 
       (complex double *) calloc(sett->N, sizeof(complex double));
     ifo[i].sig.xDatmb = 
@@ -350,6 +349,20 @@ void init_arrays(
       
   aux_arr->aa = (double *) calloc(sett->N, sizeof(double));
   aux_arr->bb = (double *) calloc(sett->N, sizeof(double));
+
+  // Auxiliary arrays, Earth's rotation
+  aux_arr->t2 = (double *) calloc(sett->N, sizeof (double));
+  aux_arr->cosmodf = (double *) calloc(sett->N, sizeof (double));
+  aux_arr->sinmodf = (double *) calloc(sett->N, sizeof (double));
+  double omrt;
+
+  for (i=0; i<sett->N; i++) {
+    omrt = (sett->omr)*i;     // Earth angular velocity * dt * i
+    aux_arr->t2[i] = sqr((double)i);
+    aux_arr->cosmodf[i] = cos(omrt);
+    aux_arr->sinmodf[i] = sin(omrt);
+
+  }
 
 } // end of init arrays 
 
@@ -511,41 +524,42 @@ void set_search_range(
 	 */
 
 void plan_fftw(
+  Search_settings *sett, 
+	Command_line_opts *opts,
 	FFTW_plans *plans, 
 	FFTW_arrays *fftw_arr, 
-	Signals *sig,
-	Aux_arrays *aux_arr, 
-	Search_settings *sett, 
-	Command_line_opts *opts) {
+	Aux_arrays *aux_arr) {
 
-  char hostname[32], wfilename[64];
+  char hostname[256], wfilename[256];
   FILE *wisdom;
 
-  /* Imports a "wisdom file" containing information about how to optimally
-   * compute Fourier transforms on a given machine. If such file is not
-   * present, it will be created after the measure runs of the fft_plans
-   * are performed below (see http://www.fftw.org/fftw3_doc/Wisdom.html)
+  /* Imports a "wisdom file" containing information 
+   * (previous tests) about how to optimally compute Fourier 
+   * transforms on a given machine. If wisdom file is not present, 
+   * it will be created after the test (measure) runs 
+   * of the fft_plans are performed below 
+   * (see http://www.fftw.org/fftw3_doc/Wisdom.html)
    */ 
 
-  gethostname (hostname, 32);
+  gethostname(hostname, 256);
   sprintf (wfilename, "wisdom-%s.dat", hostname);
-  if ((wisdom = fopen (wfilename, "r")) != NULL) {
-    fftw_import_wisdom_from_file (wisdom);
+  if((wisdom = fopen (wfilename, "r")) != NULL) {
+    fftw_import_wisdom_from_file(wisdom);
     fclose (wisdom);
   }
 
   sett->Ninterp = sett->interpftpad*sett->nfft; 
+
   // array length (xa, xb) is max{fftpad*nfft, Ninterp}
   fftw_arr->arr_len = (sett->fftpad*sett->nfft > sett->Ninterp 
                     ? sett->fftpad*sett->nfft : sett->Ninterp);
 
-  //#mb here loop over detectors or one long malloc 
-  fftw_arr->xa = fftw_malloc( 2 * fftw_arr->arr_len*sizeof(fftw_complex));
+  fftw_arr->xa = fftw_malloc(2*fftw_arr->arr_len*sizeof(fftw_complex));
   fftw_arr->xb = fftw_arr->xa + fftw_arr->arr_len;
 
   sett->nfftf = sett->fftpad*sett->nfft;
 
-   plans->plan = fftw_plan_dft_1d(sett->nfftf, fftw_arr->xa, fftw_arr->xa, FFTW_FORWARD, FFTW_MEASURE);
+  plans->plan = fftw_plan_dft_1d(sett->nfftf, fftw_arr->xa, fftw_arr->xa, FFTW_FORWARD, FFTW_MEASURE);
   plans->plan2 = fftw_plan_dft_1d(sett->nfftf, fftw_arr->xb, fftw_arr->xb, FFTW_FORWARD, FFTW_MEASURE);
 	                             
   plans->pl_int = fftw_plan_dft_1d(sett->nfft, fftw_arr->xa, fftw_arr->xa, FFTW_FORWARD, FFTW_MEASURE);
@@ -554,10 +568,10 @@ void plan_fftw(
   plans->pl_inv = fftw_plan_dft_1d(sett->Ninterp, fftw_arr->xa, fftw_arr->xa, FFTW_BACKWARD, FFTW_MEASURE);
   plans->pl_inv2 = fftw_plan_dft_1d(sett->Ninterp, fftw_arr->xb, fftw_arr->xb, FFTW_BACKWARD, FFTW_MEASURE);
 	                             
-  // Generates a 'wisdom' FFT file if there is none
-  if ((wisdom = fopen (wfilename, "r")) == NULL) {
-    wisdom = fopen (wfilename, "w");
-    fftw_export_wisdom_to_file (wisdom);
+  // Generates a wisdom FFT file if there is none
+  if((wisdom = fopen(wfilename, "r")) == NULL) {
+    wisdom = fopen(wfilename, "w");
+    fftw_export_wisdom_to_file(wisdom);
   }
 
   fclose (wisdom);
@@ -565,42 +579,41 @@ void plan_fftw(
 } // end of FFT plans 
 
 
-	//---------------
-	// Checkpointing
-	//---------------
+  /* Checkpointing
+	 */
 
 void read_checkpoints(
-	Search_range *s_range, 
-	int *FNum, 
-	Command_line_opts *opts) {
+	Command_line_opts *opts, 
+  Search_range *s_range, 
+	int *FNum) {
 
   if(opts->checkp_flag) {
 		
     // filename of checkpoint state file, depending on the hemisphere
     if(opts->hemi)
-      sprintf (opts->qname, "state_%03d_%03d%s_%d.dat", \
-	  opts->ident, opts->band, opts->label, opts->hemi);
+      sprintf(opts->qname, "state_%03d_%03d%s_%d.dat",  
+	            opts->ident, opts->band, opts->label, opts->hemi);
     else
-      sprintf (opts->qname, "state_%03d_%03d%s.dat", \
-	  opts->ident, opts->band, opts->label);
+      sprintf(opts->qname, "state_%03d_%03d%s.dat", 
+	            opts->ident, opts->band, opts->label);
 
     FILE *state;
     if((state = fopen(opts->qname, "r")) != NULL) {
 
       // Scan the state file to get last recorded parameters
       if((fscanf(state, "%d %d %d %d %d", &s_range->pst, &s_range->mst,
-		   &s_range->nst, &s_range->sst, FNum)) == EOF) {
+		      &s_range->nst, &s_range->sst, FNum)) == EOF) {
 
-		// This means that state file is empty (=end of the calculations)
-		fprintf (stderr, "State file empty: nothing to do...\n");
-		fclose (state);
-		return;
+        // This means that state file is empty (=end of the calculations)
+		    fprintf (stderr, "State file empty: nothing to do...\n");
+		    fclose (state);
+		    return;
 
       }
 
       fclose (state);
 
-      // No state file - start from the beginning
+    // No state file - start from the beginning
     } else {
       s_range->pst = s_range->pmr[0];
       s_range->mst = s_range->mr[0];
@@ -627,41 +640,42 @@ void cleanup(
 	Search_settings *sett,
 	Command_line_opts *opts,
 	Search_range *s_range,
-//	FFTW_arrays *fftw_arr,
-//	FFTW_plans *plans,
+	FFTW_plans *plans,
+	FFTW_arrays *fftw_arr,
 	Aux_arrays *aux,
 	double *F) {
 
-  
   int i; 
 
   for(i=0; i<sett->nifo; i++) {
-
     free(ifo[i].sig.xDat);
     free(ifo[i].sig.xDatma);
     free(ifo[i].sig.DetSSB);
-
+    free(ifo[i].sig.aa);
+    free(ifo[i].sig.bb);
+    free(ifo[i].sig.shftf);
+    free(ifo[i].sig.shft);
   } 
 	
   free(aux->sinmodf);
   free(aux->cosmodf);
   free(aux->t2);
-  free(aux->aa);
-  free(aux->bb);
-  free(aux->shftf);
-  free(aux->shft);
-//  free(aux->DetSSB);
+//#mb common modulation 
+//  free(aux->aa);
+//  free(aux->bb);
   free(F);
 	
-//  fftw_free(fftw_arr->xa);
+  fftw_free(fftw_arr->xa);
+
+//#mb 
   //	if (opts->fftinterp ==) {
   //		fftw_free(fftw_arr->xao);
   //	}
 	
   free(sett->M);
 	
-//  fftw_destroy_plan(plans->plan);
-//  fftw_destroy_plan(plans->pl_int);
-//  fftw_destroy_plan(plans->pl_inv);
+  fftw_destroy_plan(plans->plan);
+  fftw_destroy_plan(plans->pl_int);
+  fftw_destroy_plan(plans->pl_inv);
 
 } // end of cleanup & memory free 

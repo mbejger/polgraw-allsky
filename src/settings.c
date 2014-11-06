@@ -168,20 +168,6 @@ void settings(
 
   free(detnames); 
 
-  // Auxiliary arrays, Earth's rotation
-  aux->t2 = (double *) calloc(N, sizeof (double));
-  aux->cosmodf = (double *) calloc(N, sizeof (double));
-  aux->sinmodf = (double *) calloc(N, sizeof (double));
-  double omrt;
-
-  for (i=0; i<N; i++) {
-    omrt = omr*i;     // Earth angular velocity * dt * i
-
-    aux->t2[i] = sqr((double)i);
-    aux->cosmodf[i] = cos(omrt);
-    aux->sinmodf[i] = sin(omrt);
-  }
-
 } // settings
 
 

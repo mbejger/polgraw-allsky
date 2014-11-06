@@ -35,14 +35,13 @@ int main (int argc, char* argv[]) {
 
   Command_line_opts opts;
   Search_settings sett;
-  Aux_arrays aux_arr;
-  double *F; 			// F-statistic array
-  Signals sig; 			// signals
   Search_range s_range; 
+  Aux_arrays aux_arr;
+  double *F; 			  // F-statistic array
   int i; 
 
   // Command line options 
-  handle_opts(argc, argv, &opts, &sett);  
+  handle_opts(&sett, &opts, argc, argv);  
 	
   // Output data handling
   struct stat buffer;
@@ -50,10 +49,10 @@ int main (int argc, char* argv[]) {
   if (stat(opts.prefix, &buffer) == -1) {
     if (errno == ENOENT) {
       // Output directory apparently does not exist, try to create one
-      if (mkdir(opts.prefix, S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH	\
-		| S_IXOTH) == -1) {
-	perror (opts.prefix);
-	return 1;
+      if(mkdir(opts.prefix, S_IRWXU | S_IRGRP | S_IXGRP 
+          | S_IROTH	| S_IXOTH) == -1) {
+	      perror (opts.prefix);
+	      return 1;
       }
     } else { // can't access output directory
       perror (opts.prefix);
@@ -67,50 +66,29 @@ int main (int argc, char* argv[]) {
   // Search and detector network settings
   settings(&sett, &opts, &aux_arr); 
 
+  // Array initialization
+  init_arrays(&sett, &opts, &aux_arr, &F);
+
   // Amplitude modulation functions for each detector  
   for(i=0; i<sett.nifo; i++)   
     rogcvir(&ifo[i]); 
 
-  // Array initialization
-  init_arrays(&sett, &opts, &aux_arr, &F);
-
   // Set search range 
   set_search_range(&sett, &opts, &s_range);
-
-  // Cleanup & memory free 
-  cleanup(&sett, &opts, &s_range, 
-//	&fftw_arr, 
-//	&fftw_plans, 
-	&aux_arr, F);
-
-  return 0; 
-
-/*
-
-  // Array initialization
-  init_arrays(&sig, &aux_arr, &F, &opts, &sett);
 
   // FFT plans 
   FFTW_plans fftw_plans;
   FFTW_arrays fftw_arr;
-  plan_fftw(&fftw_plans, &fftw_arr, &sig, &aux_arr, &sett, &opts);
+  plan_fftw(&sett, &opts, &fftw_plans, &fftw_arr, &aux_arr);
 
   // Checkpointing
-  int Fnum;			// candidate signal number
-  read_checkpoints(&s_range, &Fnum, &opts);
-	
+  int Fnum;			        // candidate signal number
+  read_checkpoints(&opts, &s_range, &Fnum);
+
   // main search job
-  search(
-	&sett,
-	&opts,
-	&s_range,
-	&fftw_arr,
-	&sig,
-	&fftw_plans,
-	&aux_arr,
-	&amod,
-	&Fnum,
-	F);
+  search(&sett, &opts, &s_range, 
+        &fftw_plans, &fftw_arr, &aux_arr,
+	      &Fnum, F);
 
   // state file zeroed at the end of the run
   FILE *state;
@@ -120,17 +98,8 @@ int main (int argc, char* argv[]) {
   }
 	
   // Cleanup & memory free 
-  cleanup(
-	&sett,
-	&opts, 
-	&s_range, 
-	&fftw_arr, 
-	&sig, 
-	&fftw_plans, 
-	&aux_arr, 
-	&amod,
-	F);
-*/ 
+  cleanup(&sett, &opts, &s_range, 
+          &fftw_plans, &fftw_arr, &aux_arr, F);
 
   return 0; 
 	
