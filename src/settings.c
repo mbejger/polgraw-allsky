@@ -41,7 +41,7 @@ void settings(
 
 			// Subdirectory names: 2 char long
 			if((ep->d_type == DT_DIR) && 
-		  	(strlen(ep->d_name)==2) && 
+		  	(strlen(ep->d_name)==DETNAME_LENGTH) && 
 		  	strncmp(&ep->d_name[0],".",1)) { 
 
 			  	detnames[i] = malloc(DETNAME_LENGTH); 
@@ -151,7 +151,7 @@ void settings(
       // Orientation of the detector gamma
       ifo[i].egam = 242.7165/RAD_TO_DEG;
 
-      printf("Using %s IFO (as detector #%d)...\n", ifo[i].name, i);
+      printf("Using %s IFO as detector #%d...\n", ifo[i].name, i);
 
     } else {
 

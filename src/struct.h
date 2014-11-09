@@ -7,6 +7,7 @@
 #define MAX_DETECTORS 8
 #define DETNAME_LENGTH 2 
 
+
 typedef struct __comm_line_opts {
 
 	int white_flag, 			// white noise flag
@@ -19,10 +20,9 @@ typedef struct __comm_line_opts {
 	double trl;
 	double fpo_val;
 	
-	char prefix[64], dtaprefix[64], label[64], range[64], *wd,
-  //#mb remove ifo_choice
-			ifo_choice[3];
-	char qname[64];
+	char prefix[64], dtaprefix[64], label[64], 
+       range[64], *wd, qname[64];
+
 } Command_line_opts;
 
 
@@ -59,14 +59,15 @@ typedef struct _fftw_arrays {
 	
 } FFTW_arrays;
 
-//search range
+
+// search range
 typedef struct _search_range {
 	int pmr[2], mr[2], nr[2], spndr[2];
 	int pst, mst, nst, sst;
 } Search_range;
 
 
-//fftw plans
+// fftw plans
 typedef struct _fftw_plans {
 	fftw_plan plan, //main plan
 				  pl_int, //interpolation forward
@@ -76,14 +77,17 @@ typedef struct _fftw_plans {
 				  pl_inv2; //interpolation backward
 } FFTW_plans;
 
-//auxiluary arrays
+
+  /* Auxiluary arrays
+   */ 
+
 typedef struct _aux_arrays {
 
 	double *sinmodf, *cosmodf; // Earth position
 	double *t2; // time^2
 
-  //#mb common modulation function 
-	double *aa, *bb; //amplitude modulation functions
+  // Amplitude modulation functions for the network  
+	double *aa, *bb; 
 
 } Aux_arrays;
 
@@ -108,18 +112,18 @@ typedef struct _search_settings {
     			sepsm,	// sin(epsm)
 		    	cepsm;	// cos(epsm)
 
-  int nfft,     // length of fft
-		  nod,      // number of days of observation
-		  N,        // number of data points
-		  nfftf,    // nfft * fftpad
-		  nmax,	 	  // first and last point
-		  nmin, 		// of Fstat
-		  s,        // number of spindowns
-		  nd,       // degrees of freedom
+  int nfft,       // length of fft
+		  nod,        // number of days of observation
+		  N,          // number of data points
+		  nfftf,      // nfft * fftpad
+		  nmax,	 	    // first and last point
+		  nmin, 		  // of Fstat
+		  s,          // number of spindowns
+		  nd,         // degrees of freedom
 		  interpftpad,
-		  fftpad,   // zero padding
-		  Ninterp, 	// for resampling (set in plan_fftw() init.c)
-      nifo;     // number of detectors 			 
+		  fftpad,     // zero padding
+		  Ninterp, 	  // for resampling (set in plan_fftw() init.c)
+      nifo;       // number of detectors 			 
 
 } Search_settings;
 

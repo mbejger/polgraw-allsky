@@ -1,7 +1,6 @@
 #ifndef __SETTINGS_H__
 #define __SETTINGS_H__
 
-
 #include <fftw3.h>
 #include "struct.h"
 
@@ -11,8 +10,6 @@
 #define FFT 2		/* refined (fft) interpolation */
 
 #define NAV 4096
-
-
 
 #define RAD_TO_DEG (180/M_PI) // = 180/pi
 

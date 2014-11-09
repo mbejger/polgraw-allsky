@@ -189,9 +189,6 @@ double* job_core(
   double al1, al2, sinalt, cosalt, sindelt, cosdelt, sgnlt[NPAR], 
     nSource[3], het0, sgnl0, *sgnlv, ft;
 
-
-  //sgnlt includes current parameters
-	
   /* Matrix	M(.,.) (defined on page 22 of PolGrawCWAllSkyReview1.pdf file)
      defines the transformation form integers (bin, ss, nn, mm) determining
      a grid point to linear coordinates omega, omegadot, alpha_1, alpha_2),
@@ -335,8 +332,8 @@ double* job_core(
     // loop length: nfft - nyqst = nfft - nfft/2 - 1 = nfft/2 - 1
     for(i=nyqst + sett->Ninterp - sett->nfft, j=nyqst; 
         i<sett->Ninterp; i++, j++) {
-    fftw_arr->xa[i] = fftw_arr->xa[j];
-    fftw_arr->xb[i] = fftw_arr->xb[j];
+      fftw_arr->xa[i] = fftw_arr->xa[j];
+      fftw_arr->xb[i] = fftw_arr->xb[j];
     }
 	
     //  zero frequencies higher than nyquist
@@ -348,8 +345,7 @@ double* job_core(
     //	save_array(fftw_arr->xa, sett->nfft, "xa2.dat");
     //	save_array(fftw_arr->xb, sett->nfft, "xb2.dat");
 
-    // Backward fft (len Ninterp = nfft  *interpftpad
-
+    // Backward fft (len Ninterp = nfft*interpftpad)
     fftw_execute (plans->pl_inv);     
     fftw_execute (plans->pl_inv2); 
 
@@ -373,6 +369,7 @@ double* job_core(
   //	printf("Time elapsed, 2 splines: %e s\n", time_elapsed);
 	
   //	save_array(ifo[0].sig.xDatma, sett->N, "xa.dat");
+  //  exit(0); 
 
   } // end of detector loop 
 

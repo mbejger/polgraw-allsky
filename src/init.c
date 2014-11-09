@@ -45,11 +45,6 @@ void handle_opts(
   // fpo is calculated from the band number b.
   sett->fpo = -1;
 
-  // #mb read the detectors' data according to 
-  // what is found in the input directory 
-  // Default choice of the detector is Virgo:
-  // strcpy(opts->ifo_choice, "V1");
-
   opts->help_flag=0;
   opts->white_flag=0;
   opts->s0_flag=0;
@@ -85,8 +80,6 @@ void handle_opts(
       {"threshold", required_argument, 0, 't'},
       // hemisphere
       {"hemisphere", required_argument, 0, 'h'},
-      // detector
-      {"detector", required_argument, 0, 'a'},
       // fpo value
       {"fpo value", required_argument, 0, 'p'},
       {0, 0, 0, 0}
@@ -107,7 +100,6 @@ void handle_opts(
       printf("-f	Intepolation method (INT [default] or FFT)\n");
       printf("-t	Threshold for the F-statistic (default is 20)\n");
       printf("-h	Hemisphere (default is 0 - does both)\n");
-      printf("-a	Detector (L1, H1 or V1); default is V1\n");
       printf("-p	fpo (starting frequency) value\n\n");
       printf("Also:\n\n");
       printf("--whitenoise	white Gaussian noise assumed\n");
@@ -119,7 +111,7 @@ void handle_opts(
     }
 
     int option_index = 0;
-    int c = getopt_long (argc, argv, "i:b:o:d:l:r:c:t:f:h:a:p:", long_options, &option_index);
+    int c = getopt_long (argc, argv, "i:b:o:d:l:r:c:t:f:h:p:", long_options, &option_index);
     if (c == -1)
       break;
 
@@ -158,9 +150,6 @@ void handle_opts(
       break;
     case 'p':
       sett->fpo = atof(optarg);
-      break;
-    case 'a':
-      strcpy (opts->ifo_choice, optarg);
       break;
     case '?':
       break;
