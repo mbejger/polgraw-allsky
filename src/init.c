@@ -275,16 +275,16 @@ void init_arrays(
     ifo[i].sig.Nzeros = Nzeros; 
 
     // factor N/(N - Nzeros) to account for null values in the data
-    ifo[i].sig.crf0 = (double)sett->N/(ifo[i].sig.Nzeros);
+    ifo[i].sig.crf0 = (double)sett->N/(sett->N - ifo[i].sig.Nzeros);
 
     // In case of white noise assumption, 
     // the variance is estimated... 
     if (opts->white_flag)
-      ifo[i].sig.sig2 = sett->N*var(ifo[i].sig.xDat, sett->N);
+//#mbcheck 
+//      ifo[i].sig.sig2 = sett->N*var(ifo[i].sig.xDat, sett->N);
+      ifo[i].sig.sig2 = (ifo[i].sig.crf0)*var(ifo[i].sig.xDat, sett->N);
     else
       ifo[i].sig.sig2 = -1.;
-
-    printf("%e %d\n", ifo[i].sig.xDat[6], ifo[i].sig.Nzeros); 
 
     ifo[i].sig.DetSSB = (double *) calloc(3*sett->N, sizeof(double));
 

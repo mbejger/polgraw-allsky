@@ -30,9 +30,9 @@ typedef struct __comm_line_opts {
 typedef struct _signals {
 	
 	double *xDat;
-	double *DetSSB; // ephemeris of the detector
-	double *aa, *bb; //amplitude modulation functions
-	double *shftf, *shft; //used to resample and shift time
+	double *DetSSB;       // Ephemeris of the detector
+	double *aa, *bb;      // Amplitude modulation functions
+	double *shftf, *shft; // Resampling and time-shifting
 
   double epsm, 
          phir, 
@@ -84,7 +84,7 @@ typedef struct _fftw_plans {
 typedef struct _aux_arrays {
 
 	double *sinmodf, *cosmodf; // Earth position
-	double *t2; // time^2
+	double *t2;                // time^2
 
   // Amplitude modulation functions for the network  
 	double *aa, *bb; 
