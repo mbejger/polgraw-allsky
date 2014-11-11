@@ -121,7 +121,7 @@ void settings(
       // Orientation of the detector gamma
       ifo[i].egam = (135. - (19.0+25./60.0+57.96/3600.))/RAD_TO_DEG;
 
-      printf("Using %s IFO (as detector #%d)...\n", ifo[i].name, i);
+      printf("Using %s IFO as detector #%d...\n", ifo[i].name, i);
 
     // Hanford H1 detector
     } else if(!strcmp("H1", detnames[i])) {
@@ -136,7 +136,7 @@ void settings(
       // Orientation of the detector gamma
       ifo[i].egam	= 170.9994/RAD_TO_DEG;
 
-      printf("Using %s IFO (as detector #%d)...\n", ifo[i].name, i);
+      printf("Using %s IFO as detector #%d...\n", ifo[i].name, i);
   
     // Livingston L1 detector
     } else if(!strcmp("L1", detnames[i])) {

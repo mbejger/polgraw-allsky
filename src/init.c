@@ -279,12 +279,14 @@ void init_arrays(
 
     // In case of white noise assumption, 
     // the variance is estimated... 
-    if (opts->white_flag)
+//    if (opts->white_flag)
 //#mbcheck 
 //      ifo[i].sig.sig2 = sett->N*var(ifo[i].sig.xDat, sett->N);
-      ifo[i].sig.sig2 = (ifo[i].sig.crf0)*var(ifo[i].sig.xDat, sett->N);
-    else
-      ifo[i].sig.sig2 = -1.;
+//      ifo[i].sig.sig2 = (ifo[i].sig.crf0)*(sett->N)*var(ifo[i].sig.xDat, sett->N);
+//    else
+//      ifo[i].sig.sig2 = -1.;
+
+    ifo[i].sig.sig2 = (ifo[i].sig.crf0)*(sett->N)*var(ifo[i].sig.xDat, sett->N);
 
     ifo[i].sig.DetSSB = (double *) calloc(3*sett->N, sizeof(double));
 
@@ -312,8 +314,6 @@ void init_arrays(
       perror (filename);
       return ;
     }
-
-    printf("%e %e\n", ifo[i].sig.phir, ifo[i].sig.epsm);
 
     // sincos 
     ifo[i].sig.sphir = sin(ifo[i].sig.phir);
@@ -353,8 +353,8 @@ void init_arrays(
 
   *F = (double *) calloc(2*sett->nfft, sizeof(double));
       
-  aux_arr->aa = (double *) calloc(sett->N, sizeof(double));
-  aux_arr->bb = (double *) calloc(sett->N, sizeof(double));
+//  aux_arr->aa = (double *) calloc(sett->N, sizeof(double));
+//  aux_arr->bb = (double *) calloc(sett->N, sizeof(double));
 
   // Auxiliary arrays, Earth's rotation
   aux_arr->t2 = (double *) calloc(sett->N, sizeof (double));

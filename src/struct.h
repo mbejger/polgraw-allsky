@@ -60,21 +60,25 @@ typedef struct _fftw_arrays {
 } FFTW_arrays;
 
 
-// search range
+  /* Search range
+   */ 
+
 typedef struct _search_range {
 	int pmr[2], mr[2], nr[2], spndr[2];
 	int pst, mst, nst, sst;
 } Search_range;
 
 
-// fftw plans
+  /* FFTW plans
+   */ 
+
 typedef struct _fftw_plans {
-	fftw_plan plan, //main plan
-				  pl_int, //interpolation forward
-				  pl_inv; //interpolation backward
-	fftw_plan plan2, //main plan
-				  pl_int2, //interpolation forward
-				  pl_inv2; //interpolation backward
+	fftw_plan plan,  // main plan
+				  pl_int,  // interpolation forward
+				  pl_inv;  // interpolation backward
+	fftw_plan plan2, // main plan
+				  pl_int2, // interpolation forward
+				  pl_inv2; // interpolation backward
 } FFTW_plans;
 
 
@@ -85,9 +89,6 @@ typedef struct _aux_arrays {
 
 	double *sinmodf, *cosmodf; // Earth position
 	double *t2;                // time^2
-
-  // Amplitude modulation functions for the network  
-	double *aa, *bb; 
 
 } Aux_arrays;
 
@@ -153,7 +154,7 @@ typedef struct _detector {
 } Detector_settings; 
 
 
-  /* Array of detectors 
+  /* Array of detectors (network) 
    */ 
 
 struct _detector ifo[MAX_DETECTORS]; 
