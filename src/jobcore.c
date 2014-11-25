@@ -364,6 +364,7 @@ double* job_core(
   //	printf("Time elapsed, 2 splines: %e s\n", time_elapsed);
 	
   //	save_array(ifo[0].sig.xDatma, sett->N, "xa.dat");
+  //  exit(0); 
 
   } // end of detector loop 
 
@@ -423,6 +424,11 @@ double* job_core(
       for(i=0; i<sett->N; i++) {
 	      phase = het1*i + sgnlt[1]*(aux->t2[i] + 2.*i*ifo[0].sig.shft[i]);  
 
+<<<<<<< HEAD
+=======
+//fprintf(fphase, "%d %lf %lf %lf %lf %lf\n", i, -phase, het1, sgnlt[1], ifo[0].sig.shft[i], aux->t2[i]);
+
+>>>>>>> 0bb71dced80e7a558322f79dc3703355470411f7
         cp = cos(phase);
 	      sp = sin(phase);
 	      exph = cp - I*sp;
@@ -454,8 +460,13 @@ double* job_core(
       for(i = sett->N; i<sett->fftpad*sett->nfft; i++)
 	      fftw_arr->xa[i] = fftw_arr->xb[i] = 0.; 
 			
+<<<<<<< HEAD
 //      save_array(fftw_arr->xa, sett->nfft, "xa-prefft.dat");
 //      save_array(fftw_arr->xb, sett->nfft, "xb-prefft.dat");
+=======
+      //	save_array(fftw_arr->xa, sett->nfft, "xa-prefft.dat");
+      // 	save_array(fftw_arr->xb, sett->nfft, "xb-prefft.dat");
+>>>>>>> 0bb71dced80e7a558322f79dc3703355470411f7
 
       fftw_execute (plans->plan);
       fftw_execute (plans->plan2);
@@ -472,6 +483,8 @@ double* job_core(
              + (sqr(creal(fftw_arr->xb[i])) 
              + sqr(cimag(fftw_arr->xb[i])))/bb;
       }
+
+      printf("aa %f bb %f\n", aa, bb);  
 
       // Normalize F-statistics 
       if(!(opts->white_flag))	// if the noise is not white noise
@@ -511,12 +524,18 @@ double* job_core(
 	} // if Fc > trl 
       } // for i 
 
+<<<<<<< HEAD
     
       /* //#mb for debugging 
 
       tend = get_current_time();
       spindown_timer += get_time_difference(tstart, tend);
       spindown_counter++;
+=======
+      //tend = get_current_time();
+      //spindown_timer += get_time_difference(tstart, tend);
+      //spindown_counter++;
+>>>>>>> 0bb71dced80e7a558322f79dc3703355470411f7
 
       if(spindown_counter %10 == 0 && spindown_counter > 0 ) {
         printf("\nTotal spindown loop time: %e s, mean spindown time: %e s (%d runs)\n", spindown_timer, spindown_timer/spindown_counter, spindown_counter);
