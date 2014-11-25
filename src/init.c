@@ -277,7 +277,6 @@ void init_arrays(
     // factor N/(N - Nzeros) to account for null values in the data
     ifo[i].sig.crf0 = (double)sett->N/(sett->N - ifo[i].sig.Nzeros);
 
-
     // In case of white noise assumption, 
     // the variance is estimated... 
     //#mbcheck 
