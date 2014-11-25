@@ -70,7 +70,7 @@ void search(
 
   }
 	
-  struct timespec tstart = get_current_time(), tend;
+  //struct timespec tstart = get_current_time(), tend;
 		
  
   /* Loop over hemispheres
@@ -127,7 +127,7 @@ void search(
 	  lck.l_len = 0L;
 	  if (fcntl (fd, F_SETLKW, &lck) < 0) perror ("fcntl()");
 
-	  /* For debbuging */
+    /* //#mb debugging  
 	  int jj, kk;
 	  printf("\nParameters to save:\n");
 	  for (jj=0; jj<sgnlc; jj++) {
@@ -136,7 +136,8 @@ void search(
 	    }
 	    printf("\n");
 	  }
-	  /* */										
+	  */
+										
 	  write (fd, (void *)(sgnlv), sgnlc*NPAR*sizeof (double));
 
 	  if (close (fd) < 0) perror ("close()");
@@ -153,12 +154,12 @@ void search(
     fclose (state);
   }
 
-  tend = get_current_time();
+  //tend = get_current_time();
 	
   // printf("tstart = %d . %d\ntend = %d . %d\n", tstart.tv_sec, tstart.tv_usec, tend.tv_sec, tend.tv_usec);
 	
-  double time_elapsed = get_time_difference(tstart, tend);
-  printf("Time elapsed: %e s\n", time_elapsed);
+  //double time_elapsed = get_time_difference(tstart, tend);
+  //printf("Time elapsed: %e s\n", time_elapsed);
 
 }
 
@@ -167,31 +168,24 @@ void search(
    */ 
 
 double* job_core(
-  int pm,		  // hemisphere
-  int mm,		  // grid 'sky position'
-  int nn,		  // other grid 'sky position'
-  Search_settings *sett, // search settings
-  Command_line_opts *opts, // cmd opts
-  Search_range *s_range,	  // range for searching
-  FFTW_plans *plans,       // plans for fftw
-  FFTW_arrays *fftw_arr,   // arrays for fftw
-  Aux_arrays *aux, 	  // auxiliary arrays
-  double *F,		  // F-statistics array
-  int *sgnlc,		  // reference to array with the parameters
-		                          // of the candidate signal
-		                          // (used below to write to the file)
-  int *FNum		  // Candidate signal number
-		 )
-{
+  int pm,		                // Hemisphere
+  int mm,		                // Grid 'sky position'
+  int nn,		                // Second grid 'sky position'
+  Search_settings *sett,    // Search settings
+  Command_line_opts *opts,  // Search options 
+  Search_range *s_range,	  // Range for searching
+  FFTW_plans *plans,        // Plans for fftw
+  FFTW_arrays *fftw_arr,    // Arrays for fftw
+  Aux_arrays *aux, 	        // Auxiliary arrays
+  double *F,		            // F-statistics array
+  int *sgnlc,		            // Candidate trigger parameters 
+  int *FNum) {	            // Candidate signal number
 
   int i, j, n;
   int smin = s_range->sst, smax = s_range->spndr[1];
   double al1, al2, sinalt, cosalt, sindelt, cosdelt, sgnlt[NPAR], 
     nSource[3], het0, sgnl0, *sgnlv, ft;
 
-
-  //sgnlt includes current parameters
-	
   /* Matrix	M(.,.) (defined on page 22 of PolGrawCWAllSkyReview1.pdf file)
      defines the transformation form integers (bin, ss, nn, mm) determining
      a grid point to linear coordinates omega, omegadot, alpha_1, alpha_2),
@@ -255,15 +249,16 @@ double* job_core(
   // calculate declination and right ascention
   // written in file as candidate signal sky positions
   sgnlt[2] = asin(sindelt);
-  sgnlt[3] = fmod(atan2 (sinalt, cosalt)+2.*M_PI, 2.*M_PI);
+  sgnlt[3] = fmod(atan2(sinalt, cosalt) + 2.*M_PI, 2.*M_PI);
 
+  het0 = fmod(nn*sett->M[8] + mm*sett->M[12], sett->M[0]);
 
   // Loop for each detector 
   for(n=0; n<sett->nifo;n++) { 
 
     /* Amplitude modulation functions aa and bb 
-     * for each detector (in sub-struct of _detector, 
-     * ifo[n].sig.aa, ifo[n].sig.bb) 
+     * for each detector (in signal sub-struct 
+     * of _detector, ifo[n].sig.aa, ifo[n].sig.bb) 
      */
 
     modvir(sinalt, cosalt, sindelt, cosdelt,
@@ -278,18 +273,16 @@ double* job_core(
     for (j=0; j<3; j++)
       shft1 += nSource[j]*(ifo[n].sig.DetSSB[j]);
 
-    het0 = fmod (nn*sett->M[8] + mm*sett->M[12], sett->M[0]);
-
-    for (i=0; i<sett->N; i++) {
+    for(i=0; i<sett->N; i++) {
       ifo[n].sig.shft[i] = 0.;
 
-      for (j=0; j<3; j++)
+      for(j=0; j<3; j++)
         ifo[n].sig.shft[i] += nSource[j]*(ifo[n].sig.DetSSB[i*3+j]);
     
       ifo[n].sig.shftf[i] = ifo[n].sig.shft[i] - shft1;
 
       // Phase modulation 
-      phase = het0*i  +sett->oms*(ifo[n].sig.shft[i]);
+      phase = het0*i + sett->oms*(ifo[n].sig.shft[i]);
       cp = cos(phase);
       sp = sin(phase);
       exph = cp - I*sp;
@@ -303,10 +296,9 @@ double* job_core(
     } 
 
 
-    /* Resampling using spline interpolation 
+    /* Resampling using spline interpolation:
+     * This will double the sampling rate 
      */ 
-
-    // This will double the sampling rate (get twice more samples)
   
     for(i=0; i < sett->N; i++) { 
       fftw_arr->xa[i] = ifo[n].sig.xDatma[i];
@@ -335,8 +327,8 @@ double* job_core(
     // loop length: nfft - nyqst = nfft - nfft/2 - 1 = nfft/2 - 1
     for(i=nyqst + sett->Ninterp - sett->nfft, j=nyqst; 
         i<sett->Ninterp; i++, j++) {
-    fftw_arr->xa[i] = fftw_arr->xa[j];
-    fftw_arr->xb[i] = fftw_arr->xb[j];
+      fftw_arr->xa[i] = fftw_arr->xa[j];
+      fftw_arr->xb[i] = fftw_arr->xb[j];
     }
 	
     //  zero frequencies higher than nyquist
@@ -348,8 +340,7 @@ double* job_core(
     //	save_array(fftw_arr->xa, sett->nfft, "xa2.dat");
     //	save_array(fftw_arr->xb, sett->nfft, "xb2.dat");
 
-    // Backward fft (len Ninterp = nfft  *interpftpad
-
+    // Backward fft (len Ninterp = nfft*interpftpad)
     fftw_execute (plans->pl_inv);     
     fftw_execute (plans->pl_inv2); 
 
@@ -377,138 +368,170 @@ double* job_core(
   } // end of detector loop 
 
 
+  // square sums of modulation factors 
+  double aa = 0.; 
+  double bb = 0.; 
+
+  for(n=0; n<sett->nifo;n++) {
+
+    double aatemp = 0.; 
+    double bbtemp = 0.;
+ 
+    for(i=0; i<sett->N; i++) {
+      aatemp += sqr(ifo[n].sig.aa[i]);
+      bbtemp += sqr(ifo[n].sig.bb[i]);
+    }
+
+    aa += aatemp/ifo[n].sig.sig2; 
+    bb += bbtemp/ifo[n].sig.sig2;   
+  }
+
+
   /* Spindown loop 
    */
 
-  return 0; 
-
-/*
-  struct timespec tstart, tend;
-  double spindown_timer=0;
-  int spindown_counter = 0;
+  //struct timespec tstart, tend;
+  //double spindown_timer=0;
+  //int spindown_counter = 0;
 
   printf ("\n>>%d\t%d\t%d\t[%d..%d]\n", *FNum, mm, nn, smin, smax);
 
   // if no-spindown
-  if (opts->s0_flag) smin = smax;
+  if(opts->s0_flag) smin = smax;
   // if spindown parameter is taken into account,
   // smin != smax
-  for (ss=smin; ss<=smax; ss++) {
-    tstart = get_current_time();
+  for(ss=smin; ss<=smax; ss++) {
+    //tstart = get_current_time();
     // Spindown parameter
-    sgnlt[1] = (opts->s0_flag ? 0. : ss * sett->M[5] + nn * sett->M[9] + mm * sett->M[13]);
+    sgnlt[1] = (opts->s0_flag ? 0. : ss*sett->M[5] + nn*sett->M[9] + mm*sett->M[13]);
 
-    if (sgnlt[1] >= -sett->Smax && sgnlt[1] <= 0.) { //look only for negative-valued spindowns
+    if(sgnlt[1] >= -sett->Smax && sgnlt[1] <= 0.) { //look only for negative-valued spindowns
       int ii;
-      double phase2, cosPH, sinPH, Fc, het1;
+      double Fc, het1;
 
       //print a 'dot' every new spindown
-      printf (".");
-      fflush (stdout);
+      printf ("."); fflush (stdout);
 
       het1 = fmod(ss*sett->M[4], sett->M[0]);
-      if (het1<0) het1 += sett->M[0];
+      if(het1<0) het1 += sett->M[0];
 
-      sgnl0 = het0+het1;
+      sgnl0 = het0 + het1;
 
-      //			FILE *fphase= fopen("phase.dat", "w");
+//      FILE *fphase= fopen("phase.dat", "w");
       // phase modulation before fft
-      for (i=0; i < sett->N; i++) {
-	phase2 = het1*i + sgnlt[1]*(aux->t2[i]+2.*i*aux->shft[i]);
-				
-	// fprintf(fphase, "%d %lf %lf %lf %lf %lf\n",i, -phase2, het1, sgnlt[1], aux->shft[i], aux->t2[i]);
-	cosPH = cos (phase2);
-	sinPH = sin (phase2);
-	exph = cosPH - I*sinPH;
-	fftw_arr->xa[i] = sig->xDatma[i]*exph;
-	fftw_arr->xb[i] = sig->xDatmb[i]*exph;
-      } // for i
-      // fclose(fphase);
+
+      for(i=0; i<sett->N; i++) {
+	      phase = het1*i + sgnlt[1]*(aux->t2[i] + 2.*i*ifo[0].sig.shft[i]);  
+
+        cp = cos(phase);
+	      sp = sin(phase);
+	      exph = cp - I*sp;
+
+        fftw_arr->xa[i] = ifo[0].sig.xDatma[i]*exph/(ifo[0].sig.sig2);
+        fftw_arr->xb[i] = ifo[0].sig.xDatmb[i]*exph/(ifo[0].sig.sig2);    
+        
+      }
+
+      for(n=1; n<sett->nifo; n++) {
+
+        for(i=0; i<sett->N; i++) {
+	        phase = het1*i + sgnlt[1]*(aux->t2[i] + 2.*i*ifo[n].sig.shft[i]);  
+          cp = cos(phase);
+	        sp = sin(phase);
+	        exph = cp - I*sp;
+
+          fftw_arr->xa[i] += ifo[n].sig.xDatma[i]*exph/(ifo[n].sig.sig2);
+          fftw_arr->xb[i] += ifo[n].sig.xDatmb[i]*exph/(ifo[n].sig.sig2);    
+        }
+      } 
+
+//      fclose(fphase);
 
 
-      //!
-      //			switch (opts->fftinterp) {
-      for (i = sett->N; i < sett->fftpad * sett->nfft; i++)
-	fftw_arr->xa[i] = fftw_arr->xb[i] = 0.; //pad zeros
+      //#mb currently only one option: FFT
+      //			switch (opts->fftinterp) { 
+      // Padding by fftpad times zeros
+      for(i = sett->N; i<sett->fftpad*sett->nfft; i++)
+	      fftw_arr->xa[i] = fftw_arr->xb[i] = 0.; 
 			
-      //	save_array(fftw_arr->xa, sett->nfft, "xa-prefft.dat");
-      //	save_array(fftw_arr->xb, sett->nfft, "xb-prefft.dat");
+//      save_array(fftw_arr->xa, sett->nfft, "xa-prefft.dat");
+//      save_array(fftw_arr->xb, sett->nfft, "xb-prefft.dat");
 
-      //			fftw_execute (plans->plan);
       fftw_execute (plans->plan);
       fftw_execute (plans->plan2);
 
-      //	save_array(fftw_arr->xa, sett->nfft, "xa-postfft.dat");
-      //	save_array(fftw_arr->xb, sett->nfft, "xb-postfft.dat");
-
+//      save_array(fftw_arr->xa, sett->nfft, "xa-postfft.dat");
+//      save_array(fftw_arr->xb, sett->nfft, "xb-postfft.dat");
 
       (*FNum)++;
 
-      // Computing F-STATISTICS from Fa, Fb 
+      // Computing F-statistic 
       for (i=sett->nmin; i<sett->nmax; i++) {
-	    F[i] = (sqr(creal(fftw_arr->xa[i])) 
-           + sqr(cimag(fftw_arr->xa[i])) 
-           + sqr(creal(fftw_arr->xb[i])) 
-           + sqr(cimag(fftw_arr->xb[i])))/ifo[0].sig.crf0;
+	      F[i] = (sqr(creal(fftw_arr->xa[i])) 
+             + sqr(cimag(fftw_arr->xa[i])))/aa  
+             + (sqr(creal(fftw_arr->xb[i])) 
+             + sqr(cimag(fftw_arr->xb[i])))/bb;
       }
 
       // Normalize F-statistics 
-      if ( ifo[0].sig.sig2 < 0.)	// if the noise is not white noise
-	FStat (F + sett->nmin, sett->nmax - sett->nmin, NAV, 0);
-      else
-	for (i = sett->nmin; i < sett->nmax; i++)
-	  F[i] /= ifo[0].sig.sig2; //normalize by variance
+      if(!(opts->white_flag))	// if the noise is not white noise
+	      FStat(F + sett->nmin, sett->nmax - sett->nmin, NAV, 0);
 
-      //			save_array_double(F, sett->nfft, "F.dat");
+//      save_array_double(F, sett->nfft, "F.dat");
 
+      for(i=sett->nmin; i<sett->nmax; i++) {
+	      if ((Fc = F[i]) > opts->trl) { //if F-stat exceeds trl (critical value)
+	        // Find local maximum for neighboring signals 
+	        ii = i;
 
-
-      for ( i = sett->nmin;  i < sett->nmax; i++) {
-	if ((Fc = F[i]) > opts->trl) { //if F-stat exceeds trl (critical value)
-	  // Find local maximum for neighboring signals 
-	  ii = i;
-	  while (++i < sett->nmax && F[i] > opts->trl) {
-	    if (F[i] >= Fc) {
-	      ii = i;
-	      Fc = F[i];
-	    } // if F[i] 
-	  } // while i 
+	        while (++i < sett->nmax && F[i] > opts->trl) {
+      	    if(F[i] >= Fc) {
+	            ii = i;
+	            Fc = F[i];
+	          } // if F[i] 
+	        } // while i 
 	  // Candidate signal frequency
 					
-	  sgnlt[0] = 2.*M_PI*ii/((double) sett->fftpad * sett->nfft)+sgnl0;
+	  sgnlt[0] = 2.*M_PI*ii/((double) sett->fftpad*sett->nfft) + sgnl0;
 	  // Signal-to-noise ratio
-	  sgnlt[4] = sqrt (2.*(Fc-sett->nd));
+	  sgnlt[4] = sqrt(2.*(Fc-sett->nd));
 
 	  printf("\n%lf %lf %lf %lf %lf\n", 
-		 sgnlt[0], sgnlt[1], sgnlt[2], sgnlt[3], sgnlt[4]);
-	  (*sgnlc)++; //increase found number
+		  sgnlt[0], sgnlt[1], sgnlt[2], sgnlt[3], sgnlt[4]);
+	    (*sgnlc)++; // increase found number
+
 	  // Add new parameters to output array 
-	  sgnlv = (double *) realloc (sgnlv,			\
-				      NPAR*(*sgnlc)*sizeof (double));
+	  sgnlv = (double *)realloc(sgnlv, NPAR*(*sgnlc)*sizeof (double));
+
 	  for (j=0; j<NPAR; j++) // save new parameters
 	    sgnlv[NPAR*(*sgnlc-1)+j] = sgnlt[j];
 
-	  printf ("\nSignal %d: %d %d %d %d %d \tsnr=%.2f\n", \
+	  printf ("\nSignal %d: %d %d %d %d %d \tsnr=%.2f\n", 
 		  *sgnlc, pm, mm, nn, ss, ii, sgnlt[4]);
 	} // if Fc > trl 
       } // for i 
+
+    
+      /* //#mb for debugging 
+
       tend = get_current_time();
       spindown_timer += get_time_difference(tstart, tend);
       spindown_counter++;
 
-      //if (spindown_counter %10 == 0 && spindown_counter > 0 ) {
-      //	printf("\nTotal spindown loop time: %e s, mean spindown time: %e s (%d runs)\n",
-      //		spindown_timer, spindown_timer/spindown_counter, spindown_counter);
-      //	}
+      if(spindown_counter %10 == 0 && spindown_counter > 0 ) {
+        printf("\nTotal spindown loop time: %e s, mean spindown time: %e s (%d runs)\n", spindown_timer, spindown_timer/spindown_counter, spindown_counter);
+
+      }
+
+      */ 
 
     } // if sgnlt[1] 
   } // for ss 
 
-  printf("\nTotal spindown loop time: %e s, mean spindown time: %e s (%d runs)\n",
-	 spindown_timer, spindown_timer/spindown_counter, spindown_counter);
+  //printf("\nTotal spindown loop time: %e s, mean spindown time: %e s (%d runs)\n",
+	// spindown_timer, spindown_timer/spindown_counter, spindown_counter);
 
   return sgnlv;
-*/
 
 } // jobcore
 
@@ -526,7 +549,7 @@ void modvir(
   Aux_arrays *aux) {
 
   int t;
-  double cosalfr, sinalfr, c2d, c2sd, c, s, c2s, cs, as, bs;
+  double cosalfr, sinalfr, c2d, c2sd, c, s, c2s, cs;
 
   double c1 = ifo->amod.c1,
          c2 = ifo->amod.c2,
@@ -544,8 +567,6 @@ void modvir(
   c2d = sqr(cosdel);
   c2sd = sindel*cosdel;
 
-  as = bs = 0.;
-
   // Modulation factor for every data point 
   for (t=0; t<Np; t++) { 
 
@@ -561,21 +582,6 @@ void modvir(
     ifo->sig.bb[t] = c6*sindel*c2s + c7*sindel*2.*cs + 
            c8*cosdel*c + c9*cosdel*s - c6*sindel;
 
-    // sum of squares for both modulations
-    as += sqr(ifo->sig.aa[t]); 
-    bs += sqr(ifo->sig.bb[t]);
   } 
-
-  as /= Np;       // scale sum of squares by length
-  bs /= Np;
-
-  as = sqrt(as); // take square root of sum squares
-  bs = sqrt(bs);
-
-  // normalization 
-  for (t=0; t<Np; t++) { 
-    ifo->sig.aa[t] /= as;
-    ifo->sig.bb[t] /= bs;
-  }
 
 } // modvir
