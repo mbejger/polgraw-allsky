@@ -231,7 +231,7 @@ void read_grid(Detector_settings *sett, Command_line_opts *opts)
   FILE *data;
   char filename[CHAR_BUFFER_SIZE];
   sprintf (filename, "%s/%03d/grid.bin", opts->dtaprefix, opts->ident);
-  printf("%s\n",filename);	
+
   if ((data=fopen (filename, "r")) != NULL) {
     // fftpad: used to zero padding to fftpad*nfft data points
     fread ((void *)&sett->fftpad, sizeof (int), 1, data);
@@ -241,7 +241,8 @@ void read_grid(Detector_settings *sett, Command_line_opts *opts)
     fclose (data);
   } else {
     perror (filename);
-    return;
+    printf("Problem with %s... Exiting...\n", filename);
+    exit(1); 
   }
 
 }
@@ -273,7 +274,8 @@ void init_arrays(Arrays *arr, FLOAT_TYPE** cu_F,
     fclose (data);
   } else {
     perror (filename);
-    return ;
+    printf("Problem with %s... Exiting...\n", filename);
+    exit(1); 
   }
   //copy to device
   CudaSafeCall ( cudaMemcpy(arr->cu_xDat, arr->xDat, sizeof(double)*sett->N, cudaMemcpyHostToDevice));
@@ -315,7 +317,8 @@ void init_arrays(Arrays *arr, FLOAT_TYPE** cu_F,
     fclose (data);
   } else {
     perror (filename);
-    return ;
+    printf("Problem with %s... Exiting...\n", filename);
+    exit(1);
   }
 
   //copy DetSSB to device
@@ -519,9 +522,6 @@ void plan_fft(FFT_plans *plans, Arrays *arr,
   /*
     ############ FFT Plans ################
   */
-
-  //#mb unused variables
-  //char hostname[CHAR_BUFFER_SIZE], wfilename[CHAR_BUFFER_SIZE];
 
   //arrlen is maximum of Ninterp and fftpad*nfft
   arr->arr_len = (sett->fftpad * sett->nfft > sett->Ninterp ? sett->fftpad * sett->nfft : sett->Ninterp);
