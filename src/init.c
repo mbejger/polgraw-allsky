@@ -396,7 +396,6 @@ void add_signal(
   // Signal parameters are read
   if ((data=fopen (opts->addsig, "r")) != NULL) {
 	
-    //#mb	
     fscanf (data, "%le %d %d", &h0, &gsize, s_range->pmr);     
 	  for(i=0; i<10; i++)
 			fscanf(data, "%le",i+sgnlo); 	
@@ -485,7 +484,7 @@ void add_signal(
 		  nSource[0] = cosaadd*cosdadd;
 		  nSource[1] = sinaadd*cosdadd;
 		  nSource[2] = sindadd;
-    								
+								
       // adding signal to data (point by point)  								
 		  for (i=0; i<sett->N; i++) {
 

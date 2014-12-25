@@ -311,15 +311,9 @@ double* job_core(
       fftw_arr->xa[i] = 0.;
       fftw_arr->xb[i] = 0.;
     }
-	
-    //	save_array(fftw_arr->xa, sett->nfft, "xa0.dat");
-    //	save_array(fftw_arr->xb, sett->nfft, "xb0.dat");
 
     fftw_execute(plans->pl_int);  //forward fft (len nfft)
     fftw_execute(plans->pl_int2); //forward fft (len nfft)
-
-    //	save_array(fftw_arr->xa, sett->nfft, "xa1.dat");
-    //	save_array(fftw_arr->xb, sett->nfft, "xb1.dat");
 
     int nyqst = (sett->nfft+2)/2; // Nyquist frequency
 	
@@ -336,9 +330,6 @@ double* job_core(
       fftw_arr->xa[i] = 0;
       fftw_arr->xb[i] = 0;
     }
-	
-    //	save_array(fftw_arr->xa, sett->nfft, "xa2.dat");
-    //	save_array(fftw_arr->xb, sett->nfft, "xb2.dat");
 
     // Backward fft (len Ninterp = nfft*interpftpad)
     fftw_execute (plans->pl_inv);     
@@ -362,8 +353,6 @@ double* job_core(
 	
   //	double time_elapsed = get_time_difference(tstart, tend);
   //	printf("Time elapsed, 2 splines: %e s\n", time_elapsed);
-	
-  //	save_array(ifo[0].sig.xDatma, sett->N, "xa.dat");
 
   } // end of detector loop 
 
@@ -417,7 +406,6 @@ double* job_core(
 
       sgnl0 = het0 + het1;
 
-//      FILE *fphase= fopen("phase.dat", "w");
       // phase modulation before fft
 
       for(i=0; i<sett->N; i++) {
@@ -445,23 +433,14 @@ double* job_core(
         }
       } 
 
-//      fclose(fphase);
-
-
       //#mb currently only one option: FFT
       //			switch (opts->fftinterp) { 
       // Padding by fftpad times zeros
       for(i = sett->N; i<sett->fftpad*sett->nfft; i++)
 	      fftw_arr->xa[i] = fftw_arr->xb[i] = 0.; 
-			
-//      save_array(fftw_arr->xa, sett->nfft, "xa-prefft.dat");
-//      save_array(fftw_arr->xb, sett->nfft, "xb-prefft.dat");
 
       fftw_execute (plans->plan);
       fftw_execute (plans->plan2);
-
-//      save_array(fftw_arr->xa, sett->nfft, "xa-postfft.dat");
-//      save_array(fftw_arr->xb, sett->nfft, "xb-postfft.dat");
 
       (*FNum)++;
 
@@ -476,8 +455,6 @@ double* job_core(
       // Normalize F-statistics 
       if(!(opts->white_flag))	// if the noise is not white noise
 	      FStat(F + sett->nmin, sett->nmax - sett->nmin, NAV, 0);
-
-//      save_array_double(F, sett->nfft, "F.dat");
 
       for(i=sett->nmin; i<sett->nmax; i++) {
 	      if ((Fc = F[i]) > opts->trl) { //if F-stat exceeds trl (critical value)
@@ -497,9 +474,12 @@ double* job_core(
 	  sgnlt[4] = sqrt(2.*(Fc-sett->nd));
 
     //#mb
-	  //printf("\n%lf %lf %lf %lf %lf\n", 
-		//  sgnlt[0], sgnlt[1], sgnlt[2], sgnlt[3], sgnlt[4]);
-	    (*sgnlc)++; // increase found number
+    /* 
+	  printf("\n%lf %lf %lf %lf %lf\n", 
+      sgnlt[0], sgnlt[1], sgnlt[2], sgnlt[3], sgnlt[4]);
+    */ 
+
+	  (*sgnlc)++; // increase found number
 
 	  // Add new parameters to output array 
 	  sgnlv = (double *)realloc(sgnlv, NPAR*(*sgnlc)*sizeof (double));
