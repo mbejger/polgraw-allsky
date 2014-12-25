@@ -36,8 +36,10 @@ void handle_opts(
 	
   strcpy (opts->prefix, TOSTR(PREFIX));
   strcpy (opts->dtaprefix, TOSTR(DTAPREFIX));
-  opts->label[0] = '\0';
-  opts->range[0] = '\0';
+
+  opts->label[0]  = '\0';
+  opts->range[0]  = '\0';
+  opts->addsig[0] = '\0';
 	
   // Initial value of starting frequency
   // set to a negative quantity. If this is not
@@ -82,6 +84,8 @@ void handle_opts(
       {"hemisphere", required_argument, 0, 'h'},
       // fpo value
       {"fpo value", required_argument, 0, 'p'},
+      // add signal parameters
+      {"addsig", required_argument, 0, 'x'},
       {0, 0, 0, 0}
     };
 
@@ -100,7 +104,9 @@ void handle_opts(
       printf("-f	Intepolation method (INT [default] or FFT)\n");
       printf("-t	Threshold for the F-statistic (default is 20)\n");
       printf("-h	Hemisphere (default is 0 - does both)\n");
-      printf("-p	fpo (starting frequency) value\n\n");
+      printf("-p	fpo (starting frequency) value\n");
+      printf("-x	Add signal with parameters from <file>\n\n");
+
       printf("Also:\n\n");
       printf("--whitenoise	white Gaussian noise assumed\n");
       printf("--nospindown	spindowns neglected\n");
@@ -111,7 +117,7 @@ void handle_opts(
     }
 
     int option_index = 0;
-    int c = getopt_long (argc, argv, "i:b:o:d:l:r:c:t:f:h:p:", long_options, &option_index);
+    int c = getopt_long (argc, argv, "i:b:o:d:l:r:c:t:f:h:p:x:", long_options, &option_index);
     if (c == -1)
       break;
 
@@ -151,6 +157,9 @@ void handle_opts(
     case 'p':
       sett->fpo = atof(optarg);
       break;
+    case 'x':
+      strcpy (opts->addsig, optarg);
+      break;
     case '?':
       break;
     default:
@@ -183,6 +192,8 @@ void handle_opts(
     printf ("Using '%s' as data label\n", opts->label);
   if (strlen(opts->range))
     printf ("Obtaining grid range from '%s'\n", opts->range);
+  if (strlen(opts->addsig))
+    printf ("Adding signal from '%s'\n", opts->addsig);
   if (opts->wd) {
     printf ("Changing working directory to %s\n", opts->wd);
     if (chdir(opts->wd)) {
@@ -279,7 +290,6 @@ void init_arrays(
 
     // In case of white noise assumption, 
     // the variance is estimated... 
-    //#mbcheck 
 //    if (opts->white_flag)
       ifo[i].sig.sig2 = (ifo[i].sig.crf0)*var(ifo[i].sig.xDat, sett->N);
 //    else
@@ -349,9 +359,6 @@ void init_arrays(
   sett->cepsm = ifo[0].sig.cepsm;
 
   *F = (double *) calloc(2*sett->nfft, sizeof(double));
-      
-//  aux_arr->aa = (double *) calloc(sett->N, sizeof(double));
-//  aux_arr->bb = (double *) calloc(sett->N, sizeof(double));
 
   // Auxiliary arrays, Earth's rotation
   aux_arr->t2 = (double *) calloc(sett->N, sizeof (double));
@@ -368,6 +375,143 @@ void init_arrays(
   }
 
 } // end of init arrays 
+
+
+  /* Add signal to data
+   */ 
+
+void add_signal(
+  Search_settings *sett,
+  Command_line_opts *opts,
+  Aux_arrays *aux_arr,
+  Search_range *s_range) {
+
+  int i, j, n, gsize; 
+  double h0, cof; 
+  double sinaadd, cosaadd, sindadd, cosdadd, phaseadd, shiftadd, signadd; 
+  double nSource[3], sgnlo[10], sgnlol[4];
+
+  FILE *data;
+
+  // Signal parameters are read
+  if ((data=fopen (opts->addsig, "r")) != NULL) {
+	
+    //#mb	
+    fscanf (data, "%le %d %d", &h0, &gsize, s_range->pmr);     
+	  for(i=0; i<10; i++)
+			fscanf(data, "%le",i+sgnlo); 	
+		fclose (data);
+                    
+    } else {
+      perror (opts->addsig);
+    }
+  
+ 		// VSR1 search-specific parametrization of freq. 
+		// for the software injection
+		// snglo[0]: frequency, sgnlo[1]: frequency. derivative  
+	  //#mb fixme
+	  sgnlo[0] += - 2.*sgnlo[1]*(sett->N)*(68 - opts->ident); 
+
+    cof = sett->oms + sgnlo[0]; 
+        			  
+    for(i=0; i<2; i++) sgnlol[i] = sgnlo[i]; 
+	  
+    sgnlol[2] = sgnlo[8]*cof; 
+	  sgnlol[3] = sgnlo[9]*cof;  
+		 	
+		// solving a linear system in order to translate 
+		// sky position, frequency and spindown (sgnlo parameters) 
+		// into the position in the grid
+		 
+		double *MM ; 
+		MM = (double *) calloc (16, sizeof (double));
+		for(i=0; i<16; i++) MM[i] = sett->M[i] ;
+		
+		gsl_vector *x = gsl_vector_alloc (4);     
+		int s;
+		
+		gsl_matrix_view m = gsl_matrix_view_array (MM, 4, 4);
+		gsl_matrix_transpose (&m.matrix) ; 
+		gsl_vector_view b = gsl_vector_view_array (sgnlol, 4);
+		gsl_permutation *p = gsl_permutation_alloc (4);
+     
+		gsl_linalg_LU_decomp (&m.matrix, p, &s);
+		gsl_linalg_LU_solve (&m.matrix, p, &b.vector, x);
+     
+		s_range->spndr[0] = round(gsl_vector_get(x,1)); 
+		s_range->nr[0] 	= round(gsl_vector_get(x,2));
+		s_range->mr[0] 	= round(gsl_vector_get(x,3));
+       
+		gsl_permutation_free (p);
+		gsl_vector_free (x);
+		free (MM);
+       
+		// Define the grid range in which the signal will be looked for
+		s_range->spndr[1] = s_range->spndr[0] + gsize; 
+    s_range->spndr[0] -= gsize;
+		s_range->nr[1] = s_range->nr[0] + gsize; 
+    s_range->nr[0] -= gsize;
+		s_range->mr[1] = s_range->mr[0] + gsize; 
+    s_range->mr[0] -= gsize;
+		s_range->pmr[1] = s_range->pmr[0]; 
+       	  
+		// sgnlo[2]: declination, snglo[3]: right ascension 
+		sindadd = sin(sgnlo[2]); 
+		cosdadd = cos(sgnlo[2]); 
+		sinaadd = sin(sgnlo[3]);  
+		cosaadd = cos(sgnlo[3]); 
+		
+    // Loop for each detector 
+    for(n=0; n<sett->nifo; n++) {
+
+      modvir(sinaadd, cosaadd, sindadd, cosdadd,
+             sett->N, &ifo[n], aux_arr);
+
+      // Normalization of the modulation amplitudes 
+      double as = 0, bs = 0;
+      for (i=0; i<sett->N; i++) {
+        as += sqr(ifo[n].sig.aa[i]); 
+        bs += sqr(ifo[n].sig.bb[i]);
+      }
+
+      as /= sett->N; bs /= sett->N;
+      as = sqrt (as); bs = sqrt (bs);
+ 
+      for (i=0; i<sett->N; i++) {
+        ifo[n].sig.aa[i] /= as;
+        ifo[n].sig.bb[i] /= bs; 
+      }
+
+		  nSource[0] = cosaadd*cosdadd;
+		  nSource[1] = sinaadd*cosdadd;
+		  nSource[2] = sindadd;
+    								
+      // adding signal to data (point by point)  								
+		  for (i=0; i<sett->N; i++) {
+
+			  shiftadd = 0.; 					 
+			  for (j=0; j<3; j++)
+				  shiftadd += nSource[j]*ifo[n].sig.DetSSB[i*3+j];		 
+					 
+			  phaseadd = sgnlo[0]*i + sgnlo[1]*aux_arr->t2[i]  
+				  	 + (sett->oms + sgnlo[0] + 2.*sgnlo[1]*i)*shiftadd;
+
+			  signadd = sgnlo[4]*(ifo[n].sig.aa[i])*cos(phaseadd) 
+				        + sgnlo[6]*(ifo[n].sig.aa[i])*sin(phaseadd) 
+				        + sgnlo[5]*(ifo[n].sig.bb[i])*cos(phaseadd) 
+				        + sgnlo[7]*(ifo[n].sig.bb[i])*sin(phaseadd);
+						
+			  if(ifo[n].sig.xDat[i]) { 
+				  ifo[n].sig.xDat[i] += h0*signadd;
+//				  thsnr   += pow(signadd, 2.);
+			  }	 
+		  }
+  
+    }
+
+
+
+} 
 
 
 	/* Search range 

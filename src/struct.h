@@ -21,7 +21,7 @@ typedef struct __comm_line_opts {
 	double fpo_val;
 	
 	char prefix[64], dtaprefix[64], label[64], 
-       range[64], *wd, qname[64];
+       range[64], qname[64], addsig[64], *wd;
 
 } Command_line_opts;
 
@@ -53,8 +53,6 @@ typedef struct _signals {
 //fftw arrays
 typedef struct _fftw_arrays {
 	fftw_complex *xa, *xb;
-					//  *xDa, *xDb,
-					 // *rDa, *rDb;
 	int arr_len;
 	
 } FFTW_arrays;

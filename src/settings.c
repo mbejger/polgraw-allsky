@@ -83,7 +83,7 @@ void settings(
   nd = 2;					// Degree of freedom, 
 									// (2*nd = deg. no ofrees of freedom for chi^2)
 
-  fftpad = 2;			// Zero padding (original grid: 2, new grids: 1)
+  fftpad = 1;			// Zero padding (original grid: 2, new grids: 1)
   interpftpad = 2;
 
   sett->dt=dt;        	// sampling time
@@ -195,4 +195,55 @@ void rogcvir(Detector_settings *ifo) {
   ifo->amod.c9 = .5*sin(2.*ifo->egam)*sin(2.*ifo->ephi);
 
 } // rogcvir
+
+
+  /* Amplitude modulation of the signal
+   */ 
+
+void modvir(
+  double sinal, 
+  double cosal, 
+  double sindel, 
+  double cosdel,
+  int Np,
+  Detector_settings *ifo, 
+  Aux_arrays *aux) {
+
+  int t;
+  double cosalfr, sinalfr, c2d, c2sd, c, s, c2s, cs;
+
+  double c1 = ifo->amod.c1,
+         c2 = ifo->amod.c2,
+         c3 = ifo->amod.c3,
+         c4 = ifo->amod.c4,
+         c5 = ifo->amod.c5,
+         c6 = ifo->amod.c6,
+         c7 = ifo->amod.c7,
+         c8 = ifo->amod.c8,
+         c9 = ifo->amod.c9;
+			 	
+
+  cosalfr = cosal*(ifo->sig.cphir) + sinal*(ifo->sig.sphir);
+  sinalfr = sinal*(ifo->sig.cphir) - cosal*(ifo->sig.sphir);
+  c2d = sqr(cosdel);
+  c2sd = sindel*cosdel;
+
+  // Modulation factor for every data point 
+  for (t=0; t<Np; t++) { 
+
+    c = cosalfr*aux->cosmodf[t] + sinalfr*aux->sinmodf[t];
+    s = sinalfr*aux->cosmodf[t] - cosalfr*aux->sinmodf[t];
+    c2s = 2.*sqr(c);
+    cs = c*s;
+
+    // modulation factors aa and bb  
+    ifo->sig.aa[t] = c1*(2.-c2d)*c2s + c2*(2.-c2d)*2.*cs +
+           c3*c2sd*c + c4*c2sd*s - c1*(2.-c2d) + c5*c2d;
+
+    ifo->sig.bb[t] = c6*sindel*c2s + c7*sindel*2.*cs + 
+           c8*cosdel*c + c9*cosdel*s - c6*sindel;
+
+  } 
+
+} // modvir
 

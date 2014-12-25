@@ -15,6 +15,12 @@ void init_arrays(
   Aux_arrays *aux_arr, 
   double** F);
 
+void add_signal(
+  Search_settings *sett,
+  Command_line_opts *opts,
+  Aux_arrays *aux_arr,
+  Search_range *s_range);
+
 void set_search_range(
 	Search_settings *sett, 
 	Command_line_opts *opts, 

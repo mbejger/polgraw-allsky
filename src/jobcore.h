@@ -31,13 +31,4 @@ double* job_core(
 	int *FNum);		            // Candidate signal number
       
 
-void modvir(
-  double sinal, 
-  double cosal, 
-  double sindel, 
-  double cosdel,	
-  int Np, 
-  Detector_settings *ifo, 
-  Aux_arrays *aux);
-
 #endif

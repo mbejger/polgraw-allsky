@@ -44,4 +44,13 @@ void settings(
 
 void rogcvir(Detector_settings *ifo); 
 
+void modvir(
+  double sinal, 
+  double cosal, 
+  double sindel, 
+  double cosdel,	
+  int Np, 
+  Detector_settings *ifo, 
+  Aux_arrays *aux);
+
 #endif
