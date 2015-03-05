@@ -13,7 +13,7 @@ ${TARGET}: ${OBJS}
 	g++ -c -Wall -pedantic -std=c++0x ${CFLAGS} ${MACROS} -o $@ $+
 
 %.o: %.cu
-	nvcc --ptxas-options=-v -c -G --use_fast_math -arch=sm_35 ${CFLAGS} ${MACROS} -o $@ $+
+	nvcc --ptxas-options=-v -c -G -use_fast_math -arch=sm_35 ${CFLAGS} ${MACROS} -o $@ $+
 
 clean:
 	rm -f ${TARGET} ${OBJS}

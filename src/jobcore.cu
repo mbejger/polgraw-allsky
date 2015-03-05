@@ -491,7 +491,9 @@ void save_candidates(FLOAT_TYPE* cu_cand_buffer, FLOAT_TYPE* cand_buffer,
   lck.l_len = 0L;
   if (fcntl (fd, F_SETLKW, &lck) < 0) perror ("fcntl()");
 
+  //#mb 
   // For debbuging
+  /*
   int jj, kk;
   printf("\nParameters to save:\n");
   for (jj=0; jj<*cand_buffer_count; jj++) {
@@ -500,6 +502,7 @@ void save_candidates(FLOAT_TYPE* cu_cand_buffer, FLOAT_TYPE* cand_buffer,
     }
     printf("\n");
   }
+  */ 
 
   write (fd, (void *)(cand_buffer), *cand_buffer_count*NPAR*sizeof(FLOAT_TYPE));
 
