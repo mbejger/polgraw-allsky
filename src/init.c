@@ -231,6 +231,9 @@ void read_grid(
 		// WARNING! This value is not used, overwritten by sett->fftpad
 		// from settings.c
     fread ((void *)&sett->fftpad, sizeof (int), 1, data);
+
+	printf("fftpad from grid file: %d\n", sett->fftpad); 
+	
     // M: vector of 16 components consisting of 4 rows
     // of 4x4 grid-generating matrix
     fread ((void *)sett->M, sizeof (double), 16, data);
@@ -409,7 +412,7 @@ void add_signal(
 		// for the software injection
 		// snglo[0]: frequency, sgnlo[1]: frequency. derivative  
 	  //#mb fixme
-	  sgnlo[0] += - 2.*sgnlo[1]*(sett->N)*(68 - opts->ident); 
+	  //sgnlo[0] += - 2.*sgnlo[1]*(sett->N)*(68 - opts->ident); 
 
     cof = sett->oms + sgnlo[0]; 
         			  

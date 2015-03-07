@@ -37,20 +37,24 @@
 //31557600.0          // year in seconds = 365.25 * 86400
 
 
-void settings(
+void search_settings(
     Search_settings* sett, 
-    Command_line_opts *opts, 
-    Aux_arrays *aux);
+    Command_line_opts *opts);
 
-void rogcvir(Detector_settings *ifo); 
+void detectors_settings(
+    Search_settings* sett, 
+    Command_line_opts *opts);
+
+void rogcvir(
+    Detector_settings *ifo); 
 
 void modvir(
-  double sinal, 
-  double cosal, 
-  double sindel, 
-  double cosdel,	
-  int Np, 
-  Detector_settings *ifo, 
-  Aux_arrays *aux);
+    double sinal, 
+    double cosal, 
+    double sindel, 
+    double cosdel,	
+    int Np, 
+    Detector_settings *ifo, 
+    Aux_arrays *aux);
 
 #endif

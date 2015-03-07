@@ -512,6 +512,8 @@ double* job_core(
   //printf("\nTotal spindown loop time: %e s, mean spindown time: %e s (%d runs)\n",
 	// spindown_timer, spindown_timer/spindown_counter, spindown_counter);
 
+  printf("\n"); 
+
   return sgnlv;
 
 } // jobcore

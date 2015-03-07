@@ -8,58 +8,18 @@
 #include "auxi.h"
 #include "struct.h"
 
-/* Initializes settings structs: 
- * first creates local variables, initializes them 
- * and copies them to struct of which pointer is passed as the third argument
+
+/* Search settings: 
+ * FFT lenghts & other details, bandwidth and Earth parameters
  */
 
-void settings(
+void search_settings(
 	Search_settings* sett, 
-	Command_line_opts *opts, 
-	Aux_arrays *aux) {
+	Command_line_opts *opts) {
 
   double dt, B, oms, omr, alfa, Smin, Smax;
-  int i=0, nod, N, nfft, s, nd, fftpad, interpftpad;
+  int nod, N, nfft, s, nd, fftpad, interpftpad;
 
-  /* Network of detectors' discovery: 
-   * subdirectories in the main input directory
-   * by convention should be named like V1, L1, H1 
-	 * and contain input data and ephemerids. 
-	 */ 
-
-  char dirname[512];
-  // Main input directory name 
-  sprintf (dirname, "%s/%03d", opts->dtaprefix, opts->ident); 
-
-  DIR *dp;
-  struct dirent *ep;
-  char **detnames = malloc(MAX_DETECTORS*sizeof(char*));   
-
-  dp = opendir (dirname);
-  if (dp != NULL) {
-		while ((ep = readdir (dp))) { 
-
-			// Subdirectory names: 2 char long
-			if((ep->d_type == DT_DIR) && 
-		  	(strlen(ep->d_name)==DETNAME_LENGTH) && 
-		  	strncmp(&ep->d_name[0],".",1)) { 
-
-			  	detnames[i] = malloc(DETNAME_LENGTH); 
-			  	strncpy(detnames[i], ep->d_name, DETNAME_LENGTH);
-  			  i++; 
-			}
-    } 
-      
-		(void) closedir(dp);
-
-  } else perror ("Couldn't open the input directory");
-
-	sett->nifo=i;      // number of detectors  
-  printf("Settings - number of detectors: %d\n", sett->nifo); 
-
-	/* Search settings: 
-	 * lenghts, bandwidth and Earth details
-   */
 
   dt = 0.5;												// data sampling time
   B = 0.5/dt;											// Bandwidth
@@ -105,6 +65,54 @@ void settings(
   // F-statistic in range (nmin+1, nmax) of data points
   sett->nmin = sett->fftpad*NAV;
   sett->nmax = (sett->nfft/2 - NAV)*sett->fftpad;
+
+} // search settings  
+
+
+
+/* Network of detectors' discovery: 
+ * finds subdirectories in the main input directory, 
+ * which by convention should be named like V1, L1, H1 
+ * and which contain input data and ephemerids; 
+ * writes appropriate detector-related data into structs. 
+ */ 
+
+void detectors_settings(
+	Search_settings* sett, 
+	Command_line_opts *opts) {
+
+  int i=0; 
+
+  char dirname[512];
+  // Main input directory name 
+  sprintf (dirname, "%s/%03d", opts->dtaprefix, opts->ident); 
+
+  DIR *dp;
+  struct dirent *ep;
+  char **detnames = malloc(MAX_DETECTORS*sizeof(char*));   
+
+  dp = opendir (dirname);
+  if (dp != NULL) {
+		while ((ep = readdir (dp))) { 
+
+			// Subdirectory names: 2 char long
+			if((ep->d_type == DT_DIR) && 
+		  	(strlen(ep->d_name)==DETNAME_LENGTH) && 
+		  	strncmp(&ep->d_name[0],".",1)) { 
+
+			  	detnames[i] = malloc(DETNAME_LENGTH); 
+			  	strncpy(detnames[i], ep->d_name, DETNAME_LENGTH);
+  			  i++; 
+			}
+    } 
+      
+		(void) closedir(dp);
+
+  } else perror ("Couldn't open the input directory...");
+
+	sett->nifo=i;      // number of detectors  
+  printf("Settings - number of detectors: %d\n", sett->nifo); 
+
 
   for(i=0; i<sett->nifo; i++) { 
 
@@ -168,7 +176,7 @@ void settings(
 
   free(detnames); 
 
-} // settings
+} // detectors settings
 
 
   /* Coefficients of the amplitude modulation functions

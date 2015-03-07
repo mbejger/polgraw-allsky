@@ -63,8 +63,11 @@ int main (int argc, char* argv[]) {
   // Grid data 
   read_grid(&sett, &opts);	
 	
-  // Search and detector network settings
-  settings(&sett, &opts, &aux_arr); 
+  // Search settings
+  search_settings(&sett, &opts); 
+
+  // Detector network settings
+  detectors_settings(&sett, &opts); 
 
   // Array initialization
   init_arrays(&sett, &opts, &aux_arr, &F);
@@ -72,7 +75,6 @@ int main (int argc, char* argv[]) {
   // Amplitude modulation functions for each detector  
   for(i=0; i<sett.nifo; i++)   
     rogcvir(&ifo[i]); 
-
 
   // Grid search range
   if(strlen(opts.addsig))
@@ -84,6 +86,14 @@ int main (int argc, char* argv[]) {
 
     // Set search range from range file  
     set_search_range(&sett, &opts, &s_range);
+
+  
+  //#mb Print grid ranges 
+  printf("Grid range:\n%d %d\n%d %d\n%d %d\n%d %d\n", 
+    s_range.spndr[0], s_range.spndr[1], 
+    s_range.nr[0], s_range.nr[1], 
+    s_range.mr[0], s_range.mr[1], 
+    s_range.pmr[0], s_range.pmr[1]); 
 
   // FFT plans 
   FFTW_plans fftw_plans;
