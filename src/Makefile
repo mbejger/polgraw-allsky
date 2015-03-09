@@ -1,10 +1,14 @@
-CC = cc
+CC = gcc
 CFLAGS	= -Wall -O3 -DPREFIX="./candidates" -DDTAPREFIX="." -DTIMERS=1
 LDFLAGS =
 LIBS = -lm -lgsl -lgslcblas -lfftw3 -lc -lrt
 
-search: main.o jobcore.o timer.o\
-	settings.o auxi.o init.o 
+search: main.o\
+  jobcore.o timer.o settings.o auxi.o init.o 
+	$(CC) -gnatv -o $@ $^ $(LIBS)
+
+sigen: sigen.o\
+	settings.o auxi.o
 	$(CC) -gnatv -o $@ $^ $(LIBS)
 
 clean:

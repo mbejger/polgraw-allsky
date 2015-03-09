@@ -64,7 +64,7 @@ int main (int argc, char* argv[]) {
   read_grid(&sett, &opts);	
 	
   // Search settings
-  search_settings(&sett, &opts); 
+  search_settings(&sett); 
 
   // Detector network settings
   detectors_settings(&sett, &opts); 

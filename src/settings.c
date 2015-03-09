@@ -14,8 +14,7 @@
  */
 
 void search_settings(
-	Search_settings* sett, 
-	Command_line_opts *opts) {
+	Search_settings* sett) {
 
   double dt, B, oms, omr, alfa, Smin, Smax;
   int nod, N, nfft, s, nd, fftpad, interpftpad;

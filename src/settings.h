@@ -38,8 +38,7 @@
 
 
 void search_settings(
-    Search_settings* sett, 
-    Command_line_opts *opts);
+    Search_settings* sett);
 
 void detectors_settings(
     Search_settings* sett, 
