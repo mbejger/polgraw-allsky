@@ -357,8 +357,8 @@ double get_rand() {
 
 	srand (seed);
 	//# value for testing 
-	return 0.476559 ; 
-	//return ((double)rand()/(double)(RAND_MAX));
+	//return 0.476559 ; 
+	return ((double)rand()/(double)(RAND_MAX));
 
 
 }	
