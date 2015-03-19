@@ -13,6 +13,10 @@
 #define NAV 4096
 #define round(x) floor((x)+0.5)
 
+#ifdef HAVE_SINCOS
+  void sincos (double, double *, double *);
+#endif
+
 void lin2ast (double be1, double be2, int pm, double sepsm, double cepsm,	\
          double *sinal, double *cosal, double *sindel, double *cosdel);
 
