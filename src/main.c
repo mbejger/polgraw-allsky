@@ -35,10 +35,9 @@ int main (int argc, char* argv[]) {
   Command_line_opts opts;
   Detector_settings sett;
   Search_range s_range;
-  Signals sig; 		// signals
+  Signals sig;            // signals
   Aux_arrays aux_arr;
-  double *F;		// F-statistic array
-
+  double *F;              // F-statistic array
 
 
   // Command line options 
@@ -86,7 +85,7 @@ int main (int argc, char* argv[]) {
   int Fnum; //candidate signal number
   read_checkpoints(&opts, &s_range, &Fnum);
 	
-  // main search job
+  // Main search job
   search(&sett, &opts, &s_range, &sig,
 	 &fftw_plans, &fftw_arr, &aux_arr, 
 	 &amod, &Fnum, F);
