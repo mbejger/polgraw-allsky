@@ -7,19 +7,23 @@
 #include "auxi.h"
 #include "struct.h"
 
-/* initializes settings struct
- * first creates local variables, initializes them 
- * and copies them to struct of which pointer is passed as the third argument
- */
-void settings (Detector_settings* sett, Command_line_opts *opts, Aux_arrays *aux)
-{
+	/* initializes settings struct
+	 * first creates local variables, initializes them 
+	 * and copies them to struct of which pointer is passed as the third argument
+	 */
+
+void settings(
+	Detector_settings* sett, 
+	Command_line_opts *opts, 
+	Aux_arrays *aux) {
+
   double fpo = sett->fpo;
   char* ifo_choice = opts->ifo_choice;
 
   int nod, N, nfft, s, nd, fftpad, interpftpad;
   double dt, B, oms;
   double  omr;
-  double ephi, elam, eheight, egam;//, epsi;
+  double ephi, elam, eheight, egam;
   double alfa, Smin, Smax;
 
   dt = 0.5;			 // data sampling time
@@ -142,18 +146,16 @@ void settings (Detector_settings* sett, Command_line_opts *opts, Aux_arrays *aux
 
 
 
-void rogcvir (Ampl_mod_coeff* amod, Detector_settings* sett) {
-
   /* Coefficients of the amplitude modulation functions
-     for VIRGO detector
   */
+
+void rogcvir (Ampl_mod_coeff* amod, Detector_settings* sett) {
 
   // In the notation of Phys. Rev. D 58, 063001 (1998):
   // ephi = lambda (geographical latitude phi in radians)
   // egam = gamma (orientation of the detector)
   //
-  // (see modvir function in JobNAllSky-common.c
-  // for full Eqs. 12 and 13)
+  // (see modvir function in jobcore.c for full Eqs. 12 and 13)
 
   amod->c1 = .25*sin(2.*sett->egam)*(1+sqr(sin(sett->ephi)));
   amod->c2 = -.5*cos(2.*sett->egam)*sin(sett->ephi);
@@ -165,4 +167,4 @@ void rogcvir (Ampl_mod_coeff* amod, Detector_settings* sett) {
   amod->c8 = cos(2.*sett->egam)*cos(sett->ephi);
   amod->c9 = .5*sin(2.*sett->egam)*sin(2.*sett->ephi);
 
-} /* rogcvir() */
+} // rogcvir()

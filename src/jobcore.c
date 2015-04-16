@@ -392,9 +392,11 @@ double* job_core(
 
       sgnl0 = het0 + het1;
 
+//      tstart = get_current_time();
+
       // phase modulation before fft
       for (i=0; i < sett->N; i++) {
-		phase = het1*i + sgnlt[1]*(aux->t2[i]+2.*i*aux->shft[i]);
+        phase = het1*i + sgnlt[1]*(aux->t2[i]+2.*i*aux->shft[i]);
 
 #ifdef HAVE_SINCOS
       	sincos(phase, &sp, &cp);
@@ -403,12 +405,14 @@ double* job_core(
       	sp = sin(phase);
 #endif
 
-		exph = cp - I*sp;
+		    exph = cp - I*sp;
 
-		fftw_arr->xa[i] = sig->xDatma[i]*exph;
-		fftw_arr->xb[i] = sig->xDatmb[i]*exph;
+		    fftw_arr->xa[i] = sig->xDatma[i]*exph;
+		    fftw_arr->xb[i] = sig->xDatmb[i]*exph;
+
       }
 
+//      tend = get_current_time();
 
       /*			switch (opts->fftinterp) {*/
       for (i = sett->N; i < sett->fftpad * sett->nfft; i++)

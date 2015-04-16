@@ -6,7 +6,6 @@
 #include <stdarg.h>
 #include <math.h>
 #include <complex.h>
-#include <float.h>
 
 #include "auxi.h"
 
