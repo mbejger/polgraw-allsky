@@ -9,7 +9,6 @@
 #include <complex.h>
 #include <fftw3.h>
 
-/* JobCore file */
 #include "jobcore.h"
 #include "auxi.h"
 #include "settings.h"
@@ -190,14 +189,15 @@ double* job_core(
 
   //sgnlt includes current parameters
 	
-  /* Matrix	M(.,.) (defined on page 22 of PolGrawCWAllSkyReview1.pdf file)
+  /* 
+     Matrix	M(.,.) (defined on page 22 of PolGrawCWAllSkyReview1.pdf file)
      defines the transformation form integers (bin, ss, nn, mm) determining
      a grid point to linear coordinates omega, omegadot, alpha_1, alpha_2),
      where bin is the frequency bin number and alpha_1 and alpha_2 are
      defined on p. 22 of PolGrawCWAllSkyReview1.pdf file.
 
      [omega]													 [bin]
-     [omegadot]				= M(.,.) \times [ss]
+     [omegadot] 				= M(.,.) \times [ss]
      [alpha_1/omega]									 [nn]
      [alpha_2/omega]									 [mm]
 
@@ -211,7 +211,6 @@ double* job_core(
      and
 
      M[1] = M[2] = M[3] = M[6] = M[7] = 0
-
   */
 
   // Grid positions
@@ -229,34 +228,18 @@ double* job_core(
   double shft1, phase, cp, sp;
   complex double exph;
 
-  //	fftw_arr->xDb = fftw_arr->xDa + sett->nfft; //position of 'b' array
-  //	fftw_arr->rDb = fftw_arr->rDa + sett->Ninterp; //same
-  //	fftw_arr->xb = fftw_arr->xbo =
-
-
-  //!
-  // Switch for different interpolation methods
-  // (set while calling JobCore() from JobNAllSky.c)
-  //	switch (opts->fftinterp) {
-  //	case INT:
-  //		fftw_arr->xb = fftw_arr->xa + sett->nfft;
-  //		fftw_arr->xbo = fftw_arr->xao + sett->nfft;
-  //		break;
-  //	case FFT:
-  fftw_arr->xb = fftw_arr->xa + fftw_arr->arr_len;// + sett->fftpad * sett->nfft;
-  //	} /* case fftinterp */
-
-  //change linear (grid) coordinates to real coordinates
+  // For FFT zero-padding 
+  fftw_arr->xb = fftw_arr->xa + fftw_arr->arr_len; //+ sett->fftpad * sett->nfft;
+ 
+  // Change linear (grid) coordinates to real coordinates
   lin2ast(al1/sett->oms, al2/sett->oms, 
 		pm, sett->sepsm, sett->cepsm,
 		&sinalt, &cosalt, &sindelt, &cosdelt);
-
 
   // calculate declination and right ascention
   // written in file as candidate signal sky positions
   sgnlt[2] = asin(sindelt);
   sgnlt[3] = fmod(atan2(sinalt, cosalt) + 2.*M_PI, 2.*M_PI);
-
 
   // Amplitude modulation functions 
   modvir (sinalt, cosalt, sindelt, cosdelt,
@@ -293,24 +276,24 @@ double* job_core(
     // Matched filter
     sig->xDatma[i] = sig->xDat[i]*aux->aa[i]*exph;
     sig->xDatmb[i] = sig->xDat[i]*aux->bb[i]*exph;
-  } /* for i */
+  } // for i
 
-  /* Resampling */
-  /*
-    This part is performed to double the sampling rate (get twice more samples)
-  */
+
+  // Resampling
+  // This part is performed to double the sampling rate (get twice more samples)
   for (i=0; i < sett->N; i++) { //rewrite data
     fftw_arr->xa[i] = sig->xDatma[i];
     fftw_arr->xb[i] = sig->xDatmb[i];
   }
 
-  for (i=sett->N; i<sett->nfft; i++) { //zero padding (filling) to size of nearest power of 2
+  // Zero-padding (filling) to size of nearest power of 2
+  for (i=sett->N; i<sett->nfft; i++) { 
     fftw_arr->xa[i] = 0.;
     fftw_arr->xb[i] = 0.;
   }
 	
-  //	save_array(fftw_arr->xa, sett->nfft, "xa0.dat");
-  //	save_array(fftw_arr->xb, sett->nfft, "xb0.dat");
+  save_array(fftw_arr->xa, sett->nfft, "xa0.dat");
+  save_array(fftw_arr->xb, sett->nfft, "xb0.dat");
 
   fftw_execute (plans->pl_int);  //forward fft (len nfft)
   fftw_execute (plans->pl_int2); //forward fft (len nfft)
@@ -318,7 +301,7 @@ double* job_core(
   //	save_array(fftw_arr->xa, sett->nfft, "xa1.dat");
   //	save_array(fftw_arr->xb, sett->nfft, "xb1.dat");
 
-  int nyqst = (sett->nfft+2)/2; // Nyquist frequency
+  int nyqst = sett->nfft/2 + 1; // Nyquist frequency
 	
   //move frequencies from second half of spectrum; loop length: nfft - nyqst =
   // = nfft - nfft/2 - 1 = nfft/2 - 1
@@ -336,10 +319,8 @@ double* job_core(
   //	save_array(fftw_arr->xa, sett->nfft, "xa2.dat");
   //	save_array(fftw_arr->xb, sett->nfft, "xb2.dat");
 
-
   fftw_execute (plans->pl_inv); //backward fft (len Ninterp = nfft  *interpftpad
   fftw_execute (plans->pl_inv2); //backward fft (len Ninterp = nfft  *interpftpad
-
 
   ft = (double)sett->interpftpad / sett->Ninterp; //scale FFT
   for (i=0; i < sett->Ninterp; i++) {
@@ -347,27 +328,25 @@ double* job_core(
     fftw_arr->xb[i] *= ft;
   }
 
-	
-
   //	struct timeval tstart = get_current_time(), tend;
 
-  splintpad (fftw_arr->xa, aux->shftf, sett->N, sett->interpftpad, sig->xDatma); //spline interpolation to xDatm(a/b) arrays
+  // Spline interpolation to xDatm(a/b) arrays
+  splintpad (fftw_arr->xa, aux->shftf, sett->N, sett->interpftpad, sig->xDatma);
   splintpad (fftw_arr->xb, aux->shftf, sett->N, sett->interpftpad, sig->xDatmb);
 
-  //	tend = get_current_time();
-	
+  //	tend = get_current_time();	
   //	double time_elapsed = get_time_difference(tstart, tend);
   //	printf("Time elapsed, 2 splines: %e s\n", time_elapsed);
-	
   //	save_array(sig->xDatma, sett->N, "xa.dat");
+
 
 
   /* Spindown loop 
    */
 
   struct timespec tstart, tend;
-  double spindown_timer=0;
-  int spindown_counter = 0;
+  double spindown_timer = 0;
+  int spindown_counter  = 0;
 
   printf ("\n>>%d\t%d\t%d\t[%d..%d]\n", *FNum, mm, nn, smin, smax);
 
@@ -380,7 +359,7 @@ double* job_core(
     // Spindown parameter
     sgnlt[1] = (opts->s0_flag ? 0. : ss*sett->M[5] + nn*sett->M[9] + mm*sett->M[13]);
 
-    if(sgnlt[1] >= -sett->Smax && sgnlt[1] <= 0.) { //look only for negative-valued spindowns
+    if(sgnlt[1] >= -sett->Smax && sgnlt[1] <= 0.) { // look only for negative-valued spindowns
       int ii;
       double Fc, het1;
 
@@ -414,65 +393,67 @@ double* job_core(
 
 //      tend = get_current_time();
 
-      /*			switch (opts->fftinterp) {*/
+      // pad with zeros 
       for (i = sett->N; i < sett->fftpad * sett->nfft; i++)
-	fftw_arr->xa[i] = fftw_arr->xb[i] = 0.; //pad zeros
+	      fftw_arr->xa[i] = fftw_arr->xb[i] = 0.;
 			
       //	save_array(fftw_arr->xa, sett->nfft, "xa-prefft.dat");
       //	save_array(fftw_arr->xb, sett->nfft, "xb-prefft.dat");
 
-      //			fftw_execute (plans->plan);
       fftw_execute (plans->plan);
       fftw_execute (plans->plan2);
 
       (*FNum)++;
 
-      /* Computing F-STATISTICS from Fa, Fb */
+      // Computing F-STATISTICS from Fa & Fb 
       for (i=sett->nmin; i<sett->nmax; i++) {
-	F[i] = (sqr(creal(fftw_arr->xa[i])) + sqr(cimag(fftw_arr->xa[i])) +
-		sqr(creal(fftw_arr->xb[i])) + sqr(cimag(fftw_arr->xb[i])))/sett->crf0;
+	      F[i] = (sqr(creal(fftw_arr->xa[i])) 
+             + sqr(cimag(fftw_arr->xa[i])) 
+             + sqr(creal(fftw_arr->xb[i])) 
+             + sqr(cimag(fftw_arr->xb[i])))/sett->crf0;
       }
 
       // Normalize F-statistics
       if ( sett->sig2 < 0.)	// if the noise is not white noise
-	FStat (F + sett->nmin, sett->nmax - sett->nmin, NAV, 0);
+	      FStat(F + sett->nmin, sett->nmax - sett->nmin, NAV, 0);
       else
-	for (i = sett->nmin; i < sett->nmax; i++)
-	  F[i] /= sett->sig2; //normalize by variance
+	      for (i = sett->nmin; i < sett->nmax; i++)
+	        F[i] /= sett->sig2; // normalize by variance
 
       for(i=sett->nmin; i<sett->nmax; i++) {
-	if ((Fc = F[i]) > opts->trl) { //if F-stat exceeds trl (critical value)
-	  // Find local maximum for neighboring signals
-	  ii = i;
-	  while (++i < sett->nmax && F[i] > opts->trl) {
-	    if(F[i] >= Fc) {
-	      ii = i;
-	      Fc = F[i];
-	    } // if F[i]
-	  } // while i
-	  // Candidate signal frequency
-					
-	  sgnlt[0] = 2.*M_PI*ii/((double) sett->fftpad*sett->nfft) + sgnl0;
-	  // Signal-to-noise ratio
-	  sgnlt[4] = sqrt(2.*(Fc-sett->nd));
+	      if ((Fc = F[i]) > opts->trl) { //if F-stat exceeds trl (critical value)
+	        // Find local maximum for neighboring signals
+	        ii = i;
 
-    //#mb
-    /* 
-	  printf("\n%lf %lf %lf %lf %lf\n", 
-      sgnlt[0], sgnlt[1], sgnlt[2], sgnlt[3], sgnlt[4]);
-    */ 
+	        while (++i < sett->nmax && F[i] > opts->trl) {
+	          if(F[i] >= Fc) {
+	            ii = i;
+	            Fc = F[i];
+	          } // if F[i]
+	        } // while i
+	  
+          // Candidate signal frequency
+	        sgnlt[0] = 2.*M_PI*ii/((double) sett->fftpad*sett->nfft) + sgnl0;
+	        // Signal-to-noise ratio
+	        sgnlt[4] = sqrt(2.*(Fc-sett->nd));
 
-	  (*sgnlc)++; // increase found number
+          //#mb
+          /* 
+	        printf("\n%lf %lf %lf %lf %lf\n", 
+          sgnlt[0], sgnlt[1], sgnlt[2], sgnlt[3], sgnlt[4]);
+          */ 
 
-	  // Add new parameters to output array 
-	  sgnlv = (double *)realloc(sgnlv, NPAR*(*sgnlc)*sizeof (double));
+	        (*sgnlc)++; // increase found number
 
-	  for (j=0; j<NPAR; j++) // save new parameters
-	    sgnlv[NPAR*(*sgnlc-1)+j] = sgnlt[j];
+	        // Add new parameters to output array 
+	        sgnlv = (double *)realloc(sgnlv, NPAR*(*sgnlc)*sizeof (double));
 
-	  printf ("\nSignal %d: %d %d %d %d %d \tsnr=%.2f\n", 
-		  *sgnlc, pm, mm, nn, ss, ii, sgnlt[4]);
-	} // if Fc > trl 
+	        for (j=0; j<NPAR; j++) // save new parameters
+	          sgnlv[NPAR*(*sgnlc-1)+j] = sgnlt[j];
+
+	        printf("\nSignal %d: %d %d %d %d %d \tsnr=%.2f\n", 
+		        *sgnlc, pm, mm, nn, ss, ii, sgnlt[4]);
+	      } // if Fc > trl 
       } // for i 
 
       tend = get_current_time();
@@ -496,10 +477,13 @@ double* job_core(
 
 
 
+  /* Amplitude modulation functions 
+   */
+
 void modvir (double sinal, double cosal, double sindel, double cosdel, 
 	     double sphir, double cphir, double *a, double *b, int Np, 
 	     Ampl_mod_coeff *amod, Aux_arrays *aux) {
-  /* Amplitude modulation functions */
+
   int t;
   double cosalfr, sinalfr, c2d, c2sd, c, s, c2s, cs, as, bs;
 
@@ -520,20 +504,22 @@ void modvir (double sinal, double cosal, double sindel, double cosdel,
   c2sd = sindel*cosdel;
 
   as = bs = 0.;
-  for (t=0; t<Np; t++) { //for every time step
+  for (t=0; t<Np; t++) { // for every time step
     c = cosalfr * aux->cosmodf[t] + sinalfr * aux->sinmodf[t];
     s = sinalfr * aux->cosmodf[t] - cosalfr * aux->sinmodf[t];
     c2s = 2.*sqr(c);
     cs = c*s;
-    /* modulation factors */ // compute values in time t
+
+    // modulation factors, compute values in time t
     a[t] = c1*(2.-c2d)*c2s + c2*(2.-c2d)*2.*cs +
            c3*c2sd*c + c4*c2sd*s - c1*(2.-c2d) + c5*c2d;
     b[t] = c6*sindel*c2s + c7*sindel*2.*cs + 
            c8*cosdel*c + c9*cosdel*s - c6*sindel;
     as += sqr(a[t]); // sum square of values
     bs += sqr(b[t]);
-  } /* for t */
-  as /= Np;       //scale sum of squares by length
+  } // for t
+ 
+  as /= Np;       // scale sum of squares by length
   bs /= Np;
   as = sqrt (as); // take square root of sum squares
   bs = sqrt (bs);
@@ -541,4 +527,5 @@ void modvir (double sinal, double cosal, double sindel, double cosdel,
     a[t] /= as;
     b[t] /= bs;
   }
-} /* modvir() */
+
+} // modvir()

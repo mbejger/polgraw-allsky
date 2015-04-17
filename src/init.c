@@ -80,8 +80,6 @@ void handle_opts(
       // change directory parameter
       {"cwd", required_argument, 0, 'c'},
       // interpolation method
-      {"int/fft", required_argument, 0, 'f'},
-      // interpolation method
       {"threshold", required_argument, 0, 't'},
       // hemisphere
       {"hemisphere", required_argument, 0, 'h'},
@@ -104,7 +102,6 @@ void handle_opts(
       printf("-l	Custom label for the input and output files\n");
       printf("-r	File with grid range or pulsar position\n");
       printf("-c	Change to directory <dir>\n");
-      printf("-f	Intepolation method (INT [default] or FFT)\n");
       printf("-t	Threshold for the F-statistic (default is 20)\n");
       printf("-h	Hemisphere (default is 0 - does both)\n");
       printf("-a	Detector (L1, H1 or V1); default is V1\n");
@@ -119,16 +116,13 @@ void handle_opts(
     }
 
     int option_index = 0;
-    int c = getopt_long (argc, argv, "i:b:o:d:l:r:c:t:f:h:a:p:", long_options, &option_index);
+    int c = getopt_long (argc, argv, "i:b:o:d:l:r:c:t:h:a:p:", long_options, &option_index);
     if (c == -1)
       break;
 
     switch (c) {
     case 'i':
       opts->ident = atoi (optarg);
-      break;
-    case 'f':
-      if(!strcmp(optarg, "FFT")) opts->fftinterp=FFT;
       break;
     case 't':
       opts->trl = atof(optarg);
@@ -179,11 +173,8 @@ void handle_opts(
   printf ("Band number is %d\n", opts->band);
 
   if (opts->white_flag)
-    printf ("Assuming white Gaussian noise\n");
-  if (opts->fftinterp==INT)
-    printf ("Using fftinterp=INT (FFT interpolation by interbinning)\n");
-  else
-    printf ("Using fftinterp=FFT (FFT interpolation by zero-padding)\n");
+    printf ("Assuming white Gaussian noise\n");    
+  printf ("Using fftinterp=FFT (FFT interpolation by zero-padding)\n");
   if(opts->trl!=20)
     printf ("Threshold for the F-statistic is %lf\n", opts->trl);
   if(opts->hemi)
@@ -497,9 +488,6 @@ void plan_fftw(
     fclose (wisdom);
   }
 
-  //int N = sett->N;
-
-
   //array length (xa, xb) is max{fftpad*nfft , Ninterp}
 
   sett->Ninterp = sett->interpftpad*sett->nfft;
@@ -510,60 +498,17 @@ void plan_fftw(
 
   sett->nfftf = sett->fftpad*sett->nfft;
 
-
-
-  /* this is main fft, used in evalutaing integral in F-statistics *
-  // Plans a multidimensional DFT, where the input variables are:
-  plans->plan = fftw_plan_many_dft
-  (1,		 // dimension of the transform (rank)
-  &sett->nfftf, // size of the transform
-  2,			// how many transforms (the k-th transform
-  // is of the array starting at xa + k*idist
-  // and xao + k*odist)
-  fftw_arr->xa,		 // input array
-  NULL,				 // inembed (defines auxilary array
-  // of size nfft)
-  1,			// input stride (the j-th element of
-  // the input array is located at j*istride)
-  fftw_arr->arr_len,			// idist (needed if many transforms)
-  fftw_arr->xa,		 // output array
-  NULL,			 // onembed (defines auxilary array
-  // of size nfft)
-  1,					// output stride (the j-th element of
-  // the output array is located at j*ostride)
-  fftw_arr->arr_len,		// odist (needed if many transforms)
-  FFTW_FORWARD,	 // sign of the transform
-  // (-1 in the exponent)
-  FFTW_MEASURE);	// to get the optimal plan
-  // (more info at http://www.fftw.org/fftw3_doc/Advanced-Complex-DFTs.html)
-
-  //	}
-
-
-  // These two plans below are used in the resampling
-  // procedure in JobCore()
-  // (resample two times more dense and interpolate with splines) 
-
-  //foward, size nfft
-  plans->pl_int = fftw_plan_many_dft (1, &sett->nfft, 2, fftw_arr->xa, NULL, 1, fftw_arr->arr_len, fftw_arr->xa,	\
-  NULL, 1, fftw_arr->arr_len, FFTW_FORWARD,		\
-  FFTW_MEASURE);
-
-  plans->pl_inv = fftw_plan_many_dft (1, &sett->Ninterp, 2, fftw_arr->xa, NULL, 1, fftw_arr->arr_len,	\
-  fftw_arr->xa, NULL, 1, fftw_arr->arr_len, FFTW_BACKWARD,	\
-  FFTW_MEASURE);
-	                             
-  */
+  // spindown loop FFT plan
   plans->plan = fftw_plan_dft_1d(sett->nfftf, fftw_arr->xa, fftw_arr->xa, FFTW_FORWARD, FFTW_MEASURE);
   plans->plan2 = fftw_plan_dft_1d(sett->nfftf, fftw_arr->xb, fftw_arr->xb, FFTW_FORWARD, FFTW_MEASURE);
-	                             
+
+  // FFT for resampling and interpolation	                             
   plans->pl_int = fftw_plan_dft_1d(sett->nfft, fftw_arr->xa, fftw_arr->xa, FFTW_FORWARD, FFTW_MEASURE);
   plans->pl_int2 = fftw_plan_dft_1d(sett->nfft, fftw_arr->xb, fftw_arr->xb, FFTW_FORWARD, FFTW_MEASURE);
 	                             
   plans->pl_inv = fftw_plan_dft_1d(sett->Ninterp, fftw_arr->xa, fftw_arr->xa, FFTW_BACKWARD, FFTW_MEASURE);
   plans->pl_inv2 = fftw_plan_dft_1d(sett->Ninterp, fftw_arr->xb, fftw_arr->xb, FFTW_BACKWARD, FFTW_MEASURE);
 	                             
-
   // Generates a 'wisdom' FFT file if there is none
   if ((wisdom = fopen (wfilename, "r")) == NULL) {
 
