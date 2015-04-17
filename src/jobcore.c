@@ -281,7 +281,7 @@ double* job_core(
 
   // Resampling
   // This part is performed to double the sampling rate (get twice more samples)
-  for (i=0; i < sett->N; i++) { //rewrite data
+  for (i=0; i < sett->N; i++) { // rewrite data
     fftw_arr->xa[i] = sig->xDatma[i];
     fftw_arr->xb[i] = sig->xDatmb[i];
   }
@@ -292,14 +292,14 @@ double* job_core(
     fftw_arr->xb[i] = 0.;
   }
 	
-  save_array(fftw_arr->xa, sett->nfft, "xa0.dat");
-  save_array(fftw_arr->xb, sett->nfft, "xb0.dat");
+  //save_array(fftw_arr->xa, sett->nfft, "xa0.dat");
+  //save_array(fftw_arr->xb, sett->nfft, "xb0.dat");
 
   fftw_execute (plans->pl_int);  //forward fft (len nfft)
   fftw_execute (plans->pl_int2); //forward fft (len nfft)
 
-  //	save_array(fftw_arr->xa, sett->nfft, "xa1.dat");
-  //	save_array(fftw_arr->xb, sett->nfft, "xb1.dat");
+  //save_array(fftw_arr->xa, sett->nfft, "xa1.dat");
+  //save_array(fftw_arr->xb, sett->nfft, "xb1.dat");
 
   int nyqst = sett->nfft/2 + 1; // Nyquist frequency
 	
