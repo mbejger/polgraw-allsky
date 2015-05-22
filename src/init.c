@@ -77,8 +77,6 @@ void handle_opts(
       // change directory parameter
       {"cwd", required_argument, 0, 'c'},
       // interpolation method
-      {"int/fft", required_argument, 0, 'f'},
-      // interpolation method
       {"threshold", required_argument, 0, 't'},
       // hemisphere
       {"hemisphere", required_argument, 0, 'h'},
@@ -101,7 +99,6 @@ void handle_opts(
       printf("-l	Custom label for the input and output files\n");
       printf("-r	File with grid range or pulsar position\n");
       printf("-c	Change to directory <dir>\n");
-      printf("-f	Intepolation method (INT [default] or FFT)\n");
       printf("-t	Threshold for the F-statistic (default is 20)\n");
       printf("-h	Hemisphere (default is 0 - does both)\n");
       printf("-p	fpo (starting frequency) value\n");
@@ -117,16 +114,13 @@ void handle_opts(
     }
 
     int option_index = 0;
-    int c = getopt_long (argc, argv, "i:b:o:d:l:r:c:t:f:h:p:x:", long_options, &option_index);
+    int c = getopt_long (argc, argv, "i:b:o:d:l:r:c:t:h:p:x:", long_options, &option_index);
     if (c == -1)
       break;
 
     switch (c) {
     case 'i':
       opts->ident = atoi (optarg);
-      break;
-    case 'f':
-      if(!strcmp(optarg, "FFT")) opts->fftinterp=FFT;
       break;
     case 't':
       opts->trl = atof(optarg);
@@ -178,10 +172,9 @@ void handle_opts(
 
   if (opts->white_flag)
     printf ("Assuming white Gaussian noise\n");
-  if (opts->fftinterp==INT)
-    printf ("Using fftinterp=INT (FFT interpolation by interbinning)\n");
-  else
-    printf ("Using fftinterp=FFT (FFT interpolation by zero-padding)\n");
+    
+  printf ("Using fftinterp=FFT (FFT interpolation by zero-padding)\n");
+
   if(opts->trl!=20)
     printf ("Threshold for the F-statistic is %lf\n", opts->trl);
   if(opts->hemi)
@@ -267,7 +260,7 @@ void init_arrays(
     ifo[i].sig.xDat = (double *) calloc(sett->N, sizeof(double));
 
     // Input time-domain data handling
-    sprintf (filename, "%s/%03d/%s/xdat_%03d_%03d%s.bin", 
+    sprintf (filename, "%s/%03d/%s/xdatc_%03d_%03d%s.bin", 
 	      opts->dtaprefix, opts->ident, ifo[i].name, 
 	      opts->ident, opts->band, opts->label);
  
@@ -291,12 +284,8 @@ void init_arrays(
     // factor N/(N - Nzeros) to account for null values in the data
     ifo[i].sig.crf0 = (double)sett->N/(sett->N - ifo[i].sig.Nzeros);
 
-    // In case of white noise assumption, 
-    // the variance is estimated... 
-//    if (opts->white_flag)
-      ifo[i].sig.sig2 = (ifo[i].sig.crf0)*var(ifo[i].sig.xDat, sett->N);
-//    else
-//      ifo[i].sig.sig2 = -1.;
+    // Estimation of the variance for each detector 
+    ifo[i].sig.sig2 = (ifo[i].sig.crf0)*var(ifo[i].sig.xDat, sett->N);
 
     ifo[i].sig.DetSSB = (double *) calloc(3*sett->N, sizeof(double));
 

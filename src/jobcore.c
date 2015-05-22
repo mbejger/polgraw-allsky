@@ -112,6 +112,7 @@ void search(
 				
 	//get back to regular spin-down range
 	s_range->sst = s_range->spndr[0];
+
 	/* Add trigger parameters to a file */
 
 	//if any signals found (Fstat>Fc)
@@ -224,22 +225,8 @@ double* job_core(
   double shft1, phase, cp, sp;
   complex double exph;
 
-  //	fftw_arr->xDb = fftw_arr->xDa + sett->nfft; //position of 'b' array
-  //	fftw_arr->rDb = fftw_arr->rDa + sett->Ninterp; //same
-  //	fftw_arr->xb = fftw_arr->xbo =
-
-
-  //!
-  // Switch for different interpolation methods
-  // (set while calling JobCore() from JobNAllSky.c)
-  //	switch (opts->fftinterp) {
-  //	case INT:
-  //		fftw_arr->xb = fftw_arr->xa + sett->nfft;
-  //		fftw_arr->xbo = fftw_arr->xao + sett->nfft;
-  //		break;
-  //	case FFT:
-  fftw_arr->xb = fftw_arr->xa + fftw_arr->arr_len;// + sett->fftpad * sett->nfft;
-  //	} /* case fftinterp */
+  // Interpolation by zero-padding (case FFT):
+  fftw_arr->xb = fftw_arr->xa + fftw_arr->arr_len; // + sett->fftpad * sett->nfft;
 
   //change linear (grid) coordinates to real coordinates
   lin2ast(al1/sett->oms, al2/sett->oms, 
@@ -444,9 +431,7 @@ double* job_core(
         }
       } 
 
-      //#mb currently only one option: FFT
-      //			switch (opts->fftinterp) { 
-      // Padding by fftpad times zeros
+      // Zero-padding 
       for(i = sett->N; i<sett->fftpad*sett->nfft; i++)
 	      fftw_arr->xa[i] = fftw_arr->xb[i] = 0.; 
 
@@ -463,12 +448,17 @@ double* job_core(
              + sqr(cimag(fftw_arr->xb[i])))/bb;
       }
 
+	  double mult_factor=1.; 
+
       // Normalize F-statistics 
-      if(!(opts->white_flag))	// if the noise is not white noise
+      if(!(opts->white_flag)) { // if the noise is not white noise
 	      FStat(F + sett->nmin, sett->nmax - sett->nmin, NAV, 0);
+		  mult_factor=2.; 
+	  } 		  
+		
 
       for(i=sett->nmin; i<sett->nmax; i++) {
-	      if ((Fc = F[i]) > opts->trl) { //if F-stat exceeds trl (critical value)
+	      if ((Fc = mult_factor*F[i]) > opts->trl) { //if F-stat exceeds trl (critical value)
 	        // Find local maximum for neighboring signals 
 	        ii = i;
 
