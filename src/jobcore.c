@@ -387,7 +387,7 @@ double* job_core(
     // Spindown parameter
     sgnlt[1] = (opts->s0_flag ? 0. : ss*sett->M[5] + nn*sett->M[9] + mm*sett->M[13]);
 
-    if(sgnlt[1] >= -sett->Smax && sgnlt[1] <= 0.) { //look only for negative-valued spindowns
+    if(sgnlt[1] >= -sett->Smax && sgnlt[1] <= sett->Smax) { // Spindown range 
       int ii;
       double Fc, het1;
 
