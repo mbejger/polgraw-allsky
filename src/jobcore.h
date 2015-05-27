@@ -16,8 +16,7 @@ void search(
 
 double* job_core(
   int pm,		        	      // hemisphere
-  int mm,			              // grid 'sky position'
-	int nn,			              // other grid 'sky position'
+  int spinpos,			          // no. of sky position in the spotlight range file
 	Search_settings *sett,    // search settings
 	Command_line_opts *opts,  // cmd opts
 	Search_range *s_range,	  // range for searching

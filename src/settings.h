@@ -11,6 +11,8 @@
 
 #define NAV 4096
 
+#define MAX_SPOTLIGHT 256  /* Max. number of spindowns per sky position in a spotlight search */   
+
 #define RAD_TO_DEG (180/M_PI) // = 180/pi
 
 //constants

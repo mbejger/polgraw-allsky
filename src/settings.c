@@ -20,27 +20,27 @@ void search_settings(
   int nod, N, nfft, s, nd, fftpad, interpftpad;
 
 
-  dt = 0.5;												// data sampling time
-  B = 0.5/dt;											// Bandwidth
-  oms = 2.*M_PI*(sett->fpo)*dt;		// Dimensionless angular frequency
+  dt = 0.5;                         // data sampling time
+  B = 0.5/dt;                       // Bandwidth
+  oms = 2.*M_PI*(sett->fpo)*dt;     // Dimensionless angular frequency
 
   omr = C_OMEGA_R*dt;
 
-  nod = 2;												// Observation time in days
-  N = round (nod*C_SIDDAY/dt);		// No. of data points
+  nod = 2;                          // Observation time in days
+  N = round (nod*C_SIDDAY/dt);      // No. of data points
 
   nfft = 1 << (int)ceil(log(N)/log(2.));	// length of FFT
-  s = 1;																	// No. of spindowns
+  s = 1;									// No. of spindowns
 
   Smin = 1000.*C_YEARSEC;					// Minimum spindown time 
-																	// [sec.]
+											// [sec.]
 
   // Maximum spindown (1000 years) [angular, dimensionless]
   Smax = 2.*M_PI*(sett->fpo + B)*dt*dt/(2.*Smin);   
 
   alfa = .01;			// False alarm probability
-  nd = 2;					// Degree of freedom, 
-									// (2*nd = deg. no ofrees of freedom for chi^2)
+  nd = 2;				// Degree of freedom, 
+						// (2*nd = deg. no ofrees of freedom for chi^2)
 
   fftpad = 1;			// Zero padding (original grid: 2, new grids: 1)
   interpftpad = 2;
@@ -100,18 +100,23 @@ void detectors_settings(
 		  	strncmp(&ep->d_name[0],".",1)) { 
 
 			  	detnames[i] = malloc(DETNAME_LENGTH); 
-			  	strncpy(detnames[i], ep->d_name, DETNAME_LENGTH);
+			  	strncpy(detnames[i], ep->d_name, sizeof(detnames[i]));
   			  i++; 
 			}
-    } 
+        } 
       
-		(void) closedir(dp);
+	    (void) closedir(dp);
 
   } else perror ("Couldn't open the input directory...");
 
-	sett->nifo=i;      // number of detectors  
-  printf("Settings - number of detectors: %d\n", sett->nifo); 
-
+  sett->nifo=i;      // number of detectors  
+  if(sett->nifo) { 
+    printf("Settings - number of detectors: %d\n", sett->nifo); 
+ 
+  } else { 
+    printf("No subdirectories with detector data found. Exiting...\n"); 
+    exit(EXIT_FAILURE);
+  }  
 
   for(i=0; i<sett->nifo; i++) { 
 

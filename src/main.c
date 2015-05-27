@@ -76,6 +76,8 @@ int main (int argc, char* argv[]) {
   for(i=0; i<sett.nifo; i++)   
     rogcvir(&ifo[i]); 
 
+//#mb not used right now 
+/*
   // Grid search range
   if(strlen(opts.addsig))
 
@@ -83,17 +85,10 @@ int main (int argc, char* argv[]) {
     // search around this position (+- gsize)
     add_signal(&sett, &opts, &aux_arr, &s_range); 
   else 
+*/
 
-    // Set search range from range file  
-    set_search_range(&sett, &opts, &s_range);
-
-  
-  //#mb Print grid ranges 
-  printf("Grid range:\n%d %d\n%d %d\n%d %d\n%d %d\n", 
-    s_range.spndr[0], s_range.spndr[1], 
-    s_range.nr[0], s_range.nr[1], 
-    s_range.mr[0], s_range.mr[1], 
-    s_range.pmr[0], s_range.pmr[1]); 
+  // Set search range from range file  
+  set_search_range(&sett, &opts, &s_range);
 
   // FFT plans 
   FFTW_plans fftw_plans;
@@ -102,7 +97,7 @@ int main (int argc, char* argv[]) {
 
   // Checkpointing
   int Fnum;			        // candidate signal number
-  read_checkpoints(&opts, &s_range, &Fnum);
+//  read_checkpoints(&opts, &s_range, &Fnum);
 
   // main search job
   search(&sett, &opts, &s_range, 
@@ -110,12 +105,13 @@ int main (int argc, char* argv[]) {
 	      &Fnum, F);
 
   // state file zeroed at the end of the run
-  FILE *state;
+/*  FILE *state;
   if(opts.checkp_flag) {
     state = fopen (opts.qname, "w");
     fclose (state);
   }
-	
+*/
+
   // Cleanup & memory free 
   cleanup(&sett, &opts, &s_range, 
           &fftw_plans, &fftw_arr, &aux_arr, F);

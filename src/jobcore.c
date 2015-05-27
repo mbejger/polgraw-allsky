@@ -9,7 +9,6 @@
 #include <complex.h>
 #include <fftw3.h>
 
-/* JobCore file */
 #include "jobcore.h"
 #include "auxi.h"
 #include "settings.h"
@@ -52,13 +51,22 @@ void search(
   //	clock_t cstart, cend; //clock
   //	double time_elapsed; //for measuring time
 
-  int pm, mm, nn;
-  int sgnlc; //number of canditates
-  double *sgnlv; //array with candidates data
+  int pm;        // hemisphere 
+  int sgnlc; 	 // number of canditates
+  double *sgnlv; // array with candidates data
 
-  char outname[64], qname[64];
+  char outname[512]; 
+  //#mb fixme (state file) 
+  //char qname[512];
+
   int fd;
 	
+  //struct timespec tstart = get_current_time(), tend;
+
+  pm = s_range->spotlight_pm; 
+
+  //#mb fixme 
+/*
   FILE *state;
   if(opts->checkp_flag) {
     if(opts->hemi)
@@ -69,39 +77,32 @@ void search(
     state = fopen (qname, "w");
 
   }
+*/ 
 	
-  //struct timespec tstart = get_current_time(), tend;
-		
  
   /* Loop over hemispheres
    */ 
 
-  for (pm=s_range->pst; pm<=s_range->pmr[1]; pm++) {	
+  sprintf(outname, "%s/triggers_%03d_%03d%s_%d.bin", 
+          opts->prefix, opts->ident, opts->band, opts->label, pm);
 
-    sprintf (outname, "%s/triggers_%03d_%03d%s_%d.bin", 
-        opts->prefix, opts->ident, opts->band, opts->label, pm);
+  int skypos=0; 
+  for(skypos=0; skypos<s_range->spotlight_skypos; skypos++) { 
 
-    /* Two main loops over sky positions 
-     */ 
-
-    for (mm=s_range->mst; mm<=s_range->mr[1]; mm++) {	
-      for (nn=s_range->nst; nn<=s_range->nr[1]; nn++) {	
-
-	      if(opts->checkp_flag) {
-	        fprintf(state, "%d %d %d %d %d\n", 
-              pm, mm, nn, s_range->sst, *FNum);
-	        fflush(state);
-	      }
+    //#mb fixme 
+//    if(opts->checkp_flag) {
+//	    fprintf (state, "%d %d %d %d %d\n", pm, mm, nn, s_range->sst, *FNum);
+//	    fflush (state);
+//	  }
 
 	/* Loop over Spindows here */
 	      sgnlv = job_core(
-			          pm,          // hemisphere
-			          mm,	      // grid 'sky position'
-			          nn,	      // other grid 'sky position'
-			          sett,        // search settings
-			          opts,        // cmd opts
-			          s_range,     // range for searching
-                plans, 
+			          pm,           // hemisphere
+        			  skypos,       // no. of sky position in the spotlight range file 
+			  	      sett,         // search and detector settings
+			          opts,         // cmd opts
+			          s_range,      // range for searching
+					  plans, 
 			          fftw_arr,   // arrays for fftw
 			          aux, 	      // auxiliary arrays
 			          F,	        // F-statistics array
@@ -110,9 +111,6 @@ void search(
 			                      // (used below to write to the file)
 			          FNum);	    // Candidate signal number
 				
-	//get back to regular spin-down range
-	s_range->sst = s_range->spndr[0];
-
 	/* Add trigger parameters to a file */
 
 	//if any signals found (Fstat>Fc)
@@ -122,6 +120,7 @@ void search(
 	    perror (outname);
 	    return;
 	  }
+
 	  lck.l_type = F_WRLCK;
 	  lck.l_whence = 0;
 	  lck.l_start = 0L;
@@ -145,20 +144,18 @@ void search(
 
 	} /* if sgnlc */
 	free (sgnlv);
-      } // for nn
-      s_range->nst = s_range->nr[0];
-    } // for mm
-    s_range->mst = s_range->mr[0];
-  } // for pm
+  } // for s_range->spotlight_skypos
 
+
+//#mb fixme 
+/*
   if(opts->checkp_flag) {
     fclose (state);
   }
+*/
 
-  //tend = get_current_time();
-	
+  //tend = get_current_time();	
   // printf("tstart = %d . %d\ntend = %d . %d\n", tstart.tv_sec, tstart.tv_usec, tend.tv_sec, tend.tv_usec);
-	
   //double time_elapsed = get_time_difference(tstart, tend);
   //printf("Time elapsed: %e s\n", time_elapsed);
 
@@ -169,21 +166,19 @@ void search(
    */ 
 
 double* job_core(
-  int pm,		                // Hemisphere
-  int mm,		                // Grid 'sky position'
-  int nn,		                // Second grid 'sky position'
-  Search_settings *sett,    // Search settings
-  Command_line_opts *opts,  // Search options 
-  Search_range *s_range,	  // Range for searching
-  FFTW_plans *plans,        // Plans for fftw
-  FFTW_arrays *fftw_arr,    // Arrays for fftw
-  Aux_arrays *aux, 	        // Auxiliary arrays
+  int pm,		                // hemisphere
+  int skypos,		            // no. of sky position in the spotlight range file
+  Search_settings *sett,        // Search settings
+  Command_line_opts *opts,      // Search options 
+  Search_range *s_range,	    // Range for searching
+  FFTW_plans *plans,            // Plans for fftw
+  FFTW_arrays *fftw_arr,        // Arrays for fftw
+  Aux_arrays *aux, 	            // Auxiliary arrays
   double *F,		            // F-statistics array
   int *sgnlc,		            // Candidate trigger parameters 
-  int *FNum) {	            // Candidate signal number
+  int *FNum) {	                // Candidate signal number
 
-  int i, j, n;
-  int smin = s_range->sst, smax = s_range->spndr[1];
+  int nn, mm, i, j, k, n;
   double al1, al2, sinalt, cosalt, sindelt, cosdelt, sgnlt[NPAR], 
     nSource[3], het0, sgnl0, *sgnlv, ft;
 
@@ -200,8 +195,8 @@ double* job_core(
 
      Array M[.] is related to matrix M(.,.) in the following way;
 
-                 [ M[0] M[4] M[8]	M[12] ]
-      M(.,.) =	 [ M[1] M[5] M[9]	M[13] ]
+                 [ M[0] M[4] M[8]  M[12] ]
+      M(.,.) =	 [ M[1] M[5] M[9]  M[13] ]
                  [ M[2] M[6] M[10] M[14] ]
                  [ M[3] M[7] M[11] M[15] ]
 
@@ -210,25 +205,24 @@ double* job_core(
      M[1] = M[2] = M[3] = M[6] = M[7] = 0
   */
 
-  // Grid positions
+  // Sky grid positions according to skypos from the spotlight range file 
+  mm = s_range->spotlight_mm[skypos];
+  nn = s_range->spotlight_nn[skypos];
+
   al1 = nn*sett->M[10] + mm*sett->M[14];
   al2 = nn*sett->M[11] + mm*sett->M[15];
 
   sgnlv = NULL;
   *sgnlc = 0;
 
-  // check if the search is in an appropriate region of the grid
-  // if not, returns NULL
-  if((sqr(al1)+sqr(al2))/sqr(sett->oms) > 1.) return NULL ;
-
   int ss;
   double shft1, phase, cp, sp;
   complex double exph;
 
-  // Interpolation by zero-padding (case FFT):
+  // For FFT zero-padding 
   fftw_arr->xb = fftw_arr->xa + fftw_arr->arr_len; // + sett->fftpad * sett->nfft;
 
-  //change linear (grid) coordinates to real coordinates
+  // Change linear (grid) coordinates to real coordinates
   lin2ast(al1/sett->oms, al2/sett->oms, 
       pm, sett->sepsm, sett->cepsm,
 	    &sinalt, &cosalt, &sindelt, &cosdelt);
@@ -250,7 +244,7 @@ double* job_core(
 
     modvir(sinalt, cosalt, sindelt, cosdelt,
 	         sett->N, &ifo[n], aux);
-	
+	    
     // Calculate detector positions with respect to baricenter
     nSource[0] = cosalt*cosdelt;
     nSource[1] = sinalt*cosdelt;
@@ -288,7 +282,6 @@ double* job_core(
   
     } 
 
-
     /* Resampling using spline interpolation:
      * This will double the sampling rate 
      */ 
@@ -308,8 +301,8 @@ double* job_core(
     fftw_execute(plans->pl_int);  //forward fft (len nfft)
     fftw_execute(plans->pl_int2); //forward fft (len nfft)
 
-    int nyqst = (sett->nfft+2)/2; // Nyquist frequency
-	
+  int nyqst = (sett->nfft)/2 + 1; // Nyquist frequency
+
     // move frequencies from second half of spectrum; 
     // loop length: nfft - nyqst = nfft - nfft/2 - 1 = nfft/2 - 1
     for(i=nyqst + sett->Ninterp - sett->nfft, j=nyqst; 
@@ -343,12 +336,10 @@ double* job_core(
       sett->interpftpad, ifo[n].sig.xDatmb);
 
   //	tend = get_current_time();
-	
   //	double time_elapsed = get_time_difference(tstart, tend);
   //	printf("Time elapsed, 2 splines: %e s\n", time_elapsed);
 
   } // end of detector loop 
-
 
   // square sums of modulation factors 
   double aa = 0.; 
@@ -368,47 +359,59 @@ double* job_core(
     bb += bbtemp/ifo[n].sig.sig2;   
   }
 
-
   /* Spindown loop 
    */
 
-  //struct timespec tstart, tend;
-  //double spindown_timer=0;
-  //int spindown_counter = 0;
+//#mb timer 
+/*
+  struct timespec tstart, tend;
+  double spindown_timer = 0;
+  int spindown_counter  = 0;
+*/
 
-  printf ("\n>>%d\t%d\t%d\t[%d..%d]\n", *FNum, mm, nn, smin, smax);
+  int noss = s_range->spotlight_noss[skypos]; 
 
-  // if no-spindown
+  printf ("\n>>%d\t%d\t%d\t[%d..%d]\n", 
+    *FNum, mm, nn, 
+    s_range->spotlight_ss[skypos*MAX_SPOTLIGHT], s_range->spotlight_ss[skypos*MAX_SPOTLIGHT+noss-1]);
+
+  //#mb fixme 
+  /* if no-spindown
   if(opts->s0_flag) smin = smax;
-  // if spindown parameter is taken into account,
-  // smin != smax
-  for(ss=smin; ss<=smax; ss++) {
+  */ 
+
+  // if spindown parameter is taken into account
+
+  for(k=0; k<noss; k++) { 
+  
+    ss = s_range->spotlight_ss[skypos*MAX_SPOTLIGHT + k]; 
+
+    //#mb timer
     //tstart = get_current_time();
+
     // Spindown parameter
     sgnlt[1] = (opts->s0_flag ? 0. : ss*sett->M[5] + nn*sett->M[9] + mm*sett->M[13]);
 
-    if(sgnlt[1] >= -sett->Smax && sgnlt[1] <= 0.) { //look only for negative-valued spindowns
-      int ii;
-      double Fc, het1;
+    int ii;
+    double Fc, het1;
 
-      //print a 'dot' every new spindown
-      printf ("."); fflush (stdout);
+    // print a 'dot' every new spindown
+    printf ("."); fflush (stdout);
 
-      het1 = fmod(ss*sett->M[4], sett->M[0]);
-      if(het1<0) het1 += sett->M[0];
+    het1 = fmod(ss*sett->M[4], sett->M[0]);
+    if(het1<0) het1 += sett->M[0];
 
-      sgnl0 = het0 + het1;
+    sgnl0 = het0 + het1;
 
-      // phase modulation before fft
-
-      for(i=0; i<sett->N; i++) {
-	      phase = het1*i + sgnlt[1]*(aux->t2[i] + 2.*i*ifo[0].sig.shft[i]);  
+    // phase modulation before fft
+    for(i=0; i<sett->N; i++) {
+	    phase = het1*i + sgnlt[1]*(aux->t2[i] + 2.*i*ifo[0].sig.shft[i]);  
 	
 #ifdef HAVE_SINCOS
-		  sincos(phase, &sp, &cp);
+        sincos(phase, &sp, &cp);
 #else
-      	  cp = cos(phase);
-      	  sp = sin(phase);
+        cp = cos(phase);
+        sp = sin(phase);
 #endif
 
 	    exph = cp - I*sp;
@@ -416,33 +419,34 @@ double* job_core(
         fftw_arr->xa[i] = ifo[0].sig.xDatma[i]*exph/(ifo[0].sig.sig2);
         fftw_arr->xb[i] = ifo[0].sig.xDatmb[i]*exph/(ifo[0].sig.sig2);    
         
-      }
+    }
 
-      for(n=1; n<sett->nifo; n++) {
+    for(n=1; n<sett->nifo; n++) {
 
         for(i=0; i<sett->N; i++) {
 	        phase = het1*i + sgnlt[1]*(aux->t2[i] + 2.*i*ifo[n].sig.shft[i]);  
-          cp = cos(phase);
+          
+            cp = cos(phase);
 	        sp = sin(phase);
 	        exph = cp - I*sp;
 
-          fftw_arr->xa[i] += ifo[n].sig.xDatma[i]*exph/(ifo[n].sig.sig2);
-          fftw_arr->xb[i] += ifo[n].sig.xDatmb[i]*exph/(ifo[n].sig.sig2);    
+            fftw_arr->xa[i] += ifo[n].sig.xDatma[i]*exph/(ifo[n].sig.sig2);
+            fftw_arr->xb[i] += ifo[n].sig.xDatmb[i]*exph/(ifo[n].sig.sig2);    
         }
-      } 
+    } 
 
-      // Zero-padding 
-      for(i = sett->N; i<sett->fftpad*sett->nfft; i++)
-	      fftw_arr->xa[i] = fftw_arr->xb[i] = 0.; 
+    // Zero-padding 
+    for(i = sett->N; i<sett->fftpad*sett->nfft; i++)
+	    fftw_arr->xa[i] = fftw_arr->xb[i] = 0.; 
 
-      fftw_execute (plans->plan);
-      fftw_execute (plans->plan2);
+    fftw_execute (plans->plan);
+    fftw_execute (plans->plan2);
 
-      (*FNum)++;
+    (*FNum)++;
 
-      // Computing F-statistic 
-      for (i=sett->nmin; i<sett->nmax; i++) {
-	      F[i] = (sqr(creal(fftw_arr->xa[i])) 
+    // Computing F-statistic 
+    for (i=sett->nmin; i<sett->nmax; i++) {
+	    F[i] = (sqr(creal(fftw_arr->xa[i])) 
              + sqr(cimag(fftw_arr->xa[i])))/aa  
              + (sqr(creal(fftw_arr->xb[i])) 
              + sqr(cimag(fftw_arr->xb[i])))/bb;
@@ -468,8 +472,8 @@ double* job_core(
 	            Fc = F[i];
 	          } // if F[i] 
 	        } // while i 
-	  // Candidate signal frequency
-					
+
+	  // Candidate signal frequency					
 	  sgnlt[0] = 2.*M_PI*ii/((double) sett->fftpad*sett->nfft) + sgnl0;
 	  // Signal-to-noise ratio
 	  sgnlt[4] = sqrt(2.*(Fc-sett->nd));
@@ -507,13 +511,14 @@ double* job_core(
 
       */ 
 
-    } // if sgnlt[1] 
   } // for ss 
 
-  //printf("\nTotal spindown loop time: %e s, mean spindown time: %e s (%d runs)\n",
-	// spindown_timer, spindown_timer/spindown_counter, spindown_counter);
-
-  printf("\n"); 
+  //#mb timer
+/* printf("\nTotal spindown loop time: %e s, mean spindown time: %e s (%d runs)\n",
+   spindown_timer, spindown_timer/spindown_counter, spindown_counter);
+*/
+  
+printf("\n"); 
 
   return sgnlv;
 

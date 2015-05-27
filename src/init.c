@@ -36,9 +36,8 @@ void handle_opts(
 	
   strcpy (opts->prefix, TOSTR(PREFIX));
   strcpy (opts->dtaprefix, TOSTR(DTAPREFIX));
-
   opts->label[0]  = '\0';
-  opts->range[0]  = '\0';
+//  opts->range[0]  = '\0';
   opts->addsig[0] = '\0';
 	
   // Initial value of starting frequency
@@ -72,7 +71,7 @@ void handle_opts(
       {"data", required_argument, 0, 'd'},
       // non-standard label for naming files
       {"label", required_argument, 0, 'l'},
-      // narrower grid range parameter file
+      // Spotlight grid range parameter file
       {"range", required_argument, 0, 'r'},
       // change directory parameter
       {"cwd", required_argument, 0, 'c'},
@@ -97,7 +96,7 @@ void handle_opts(
       printf("-i	Frame number\n");
       printf("-b	Band number\n");
       printf("-l	Custom label for the input and output files\n");
-      printf("-r	File with grid range or pulsar position\n");
+      printf("-r	Spotlight search file with sky and spindown grid points\n");
       printf("-c	Change to directory <dir>\n");
       printf("-t	Threshold for the F-statistic (default is 20)\n");
       printf("-h	Hemisphere (default is 0 - does both)\n");
@@ -142,7 +141,7 @@ void handle_opts(
       strcpy (1+opts->label, optarg);
       break;
     case 'r':
-      strcpy (opts->range, optarg);
+      strcpy (opts->spotlight, optarg);
       break;
     case 'c':
       opts->wd = (char *) malloc (1+strlen(optarg));
@@ -171,10 +170,8 @@ void handle_opts(
   printf ("Band number is %d\n", opts->band);
 
   if (opts->white_flag)
-    printf ("Assuming white Gaussian noise\n");
-    
-  printf ("Using fftinterp=FFT (FFT interpolation by zero-padding)\n");
-
+    printf ("Assuming white Gaussian noise\n");  
+  printf ("Using fftinterp=FFT (FFT interpolation by zero-padding)\n"); 
   if(opts->trl!=20)
     printf ("Threshold for the F-statistic is %lf\n", opts->trl);
   if(opts->hemi)
@@ -183,8 +180,14 @@ void handle_opts(
     printf ("Assuming s_1 = 0.\n");
   if (strlen(opts->label))
     printf ("Using '%s' as data label\n", opts->label);
-  if (strlen(opts->range))
-    printf ("Obtaining grid range from '%s'\n", opts->range);
+
+  if (strlen(opts->spotlight))
+    printf("Obtaining spotlight grid points from '%s'\n", opts->spotlight);
+  else { 
+    printf("No spotlight grid range file provided! Exiting...\n");   
+    abort(); 
+  }
+
   if (strlen(opts->addsig))
     printf ("Adding signal from '%s'\n", opts->addsig);
   if (opts->wd) {
@@ -217,12 +220,12 @@ void read_grid(
   sett->M = (double *) calloc (16, sizeof (double));
 
   FILE *data;
-  char filename[64];
+  char filename[512];
   sprintf (filename, "%s/%03d/grid.bin", opts->dtaprefix, opts->ident);
 	if ((data=fopen (filename, "r")) != NULL) {
   	// fftpad: used to zero padding to fftpad*nfft data points
-		// WARNING! This value is not used, overwritten by sett->fftpad
-		// from settings.c
+    // WARNING! This value is not used, overwritten by sett->fftpad
+    // from settings.c
     fread ((void *)&sett->fftpad, sizeof (int), 1, data);
 
 	printf("fftpad from grid file: %d\n", sett->fftpad); 
@@ -233,7 +236,7 @@ void read_grid(
     fclose (data);
   } else {
 	  perror (filename);
-    return;
+      exit(EXIT_FAILURE);
   }
 
 } // end of read grid 
@@ -271,7 +274,7 @@ void init_arrays(
 
     } else {
       perror (filename);
-      return;
+      exit(EXIT_FAILURE); 
     }
 
     int j, Nzeros=0;
@@ -372,6 +375,8 @@ void init_arrays(
   /* Add signal to data
    */ 
 
+//#mb not used right now 
+/*
 void add_signal(
   Search_settings *sett,
   Command_line_opts *opts,
@@ -503,7 +508,7 @@ void add_signal(
 
 
 } 
-
+*/
 
 	/* Search range 
 	 */ 
@@ -513,149 +518,69 @@ void set_search_range(
 	Command_line_opts *opts, 
 	Search_range *s_range) { 
 
-  // Hemispheres (with respect to the ecliptic)
-  if(opts->hemi) {
-    s_range->pmr[0] = opts->hemi;
-    s_range->pmr[1] = opts->hemi;
-
-  } else {
-    s_range->pmr[0] = 1;
-    s_range->pmr[1] = 2;
-  }
-
-  // If the parameter range is invoked, the search is performed
-  // within the range of grid parameters from an ascii file
-  // ("-r range_file" from the command line)
   FILE *data;
-  if (strlen (opts->range)) {
 
-    if ((data=fopen (opts->range, "r")) != NULL) {
+  if(strlen(opts->spotlight)) {
 
-      int aqq = fscanf (data, "%d %d %d %d %d %d %d %d",
-			s_range->spndr, 1+s_range->spndr, s_range->nr,
-			1+s_range->nr, s_range->mr, 1+s_range->mr,
-			s_range->pmr, 1+s_range->pmr);
+    if ((data=fopen (opts->spotlight, "r")) != NULL) {
 
-      if (aqq) {
-			
-      }
-      /*
-      //#mb commented-out for now - useful for tests 
+      int skypos, i; 
+      int aqq = fscanf(data, "%d %d", 
+                  &s_range->spotlight_pm, &s_range->spotlight_skypos); 
+  
+      if(aqq != 2) { 
+        printf("Problem with the spotlight range file %s. Exiting...\n", opts->spotlight); 
+        exit(EXIT_FAILURE);
+      }  
 
-      // the case when range file does not contain 8 integers
-      // describing the grid ranges, but other values:
-      // the pulsar position, frequency, and spindowns.
-      if(range_status!=8) {
+      s_range->spotlight_mm   = (int *)calloc(s_range->spotlight_skypos, sizeof(int));
+      s_range->spotlight_nn   = (int *)calloc(s_range->spotlight_skypos, sizeof(int));
+      s_range->spotlight_noss = (int *)calloc(s_range->spotlight_skypos, sizeof(int));
 
-      rewind(data);
-      range_status = fscanf (data, "%le %le %le %le %le %le %d",
-      &pepoch, &alpha, &delta, &f0, &f1, &f2, &gsize);
+      s_range->spotlight_ss   = (int *)calloc(s_range->spotlight_skypos*MAX_SPOTLIGHT, sizeof(int));
 
-      // GPS time of the first sample
-      double gps1;
-      sprintf (filename, "%s/%03d/starting_date", dtaprefix, ident);
-      if ((data2 = fopen (filename, "r")) != NULL) {
-      fscanf (data2, "%le", &gps1);
-      fclose(data2);
-      } else {
-      perror (filename);
-      return 1;
-      }
+      skypos=0;       
+      while(aqq != EOF) { 
 
-      // Conversion of mjd to gps time
-      double pepoch_gps = (pepoch - 44244)*86400 - 51.184;
-      //			 gps1 = (gps1 - 44244)*86400 - 51.184;
+        aqq = fscanf(data, "%d %d %d", 
+          s_range->spotlight_mm+skypos, s_range->spotlight_nn+skypos, s_range->spotlight_noss+skypos);  
+ 
+        for(i=0; i<s_range->spotlight_noss[skypos]; i++) 
+          aqq = fscanf(data, "%d", s_range->spotlight_ss+MAX_SPOTLIGHT*skypos+i); 
 
-      // Interpolation of ephemeris parameters to the starting time
-      double *sgnlo;
-      sgnlo = (double *) calloc (4, sizeof (double));
+        skypos++; 
 
-      double *be;
-      be = (double *) calloc (2, sizeof (double));
+      }  
 
-      // ast2lin (auxi.c) returns the hemisphere number
-      // and the vector be (used for sky position in linear coords.)
-      pmr[0] = ast2lin(alpha, delta, epsm, be);
+//#mb testing printout 
+/* 
+      printf("Hemisphere: %d\n", s_range->spotlight_pm); 
+      printf("No. of sky positions: %d\n", s_range->spotlight_skypos); 
 
-      sgnlo[0] = f0 + f1*(gps1 - pepoch_gps) + f2*pow(gps1 - pepoch_gps, 2)/2.;
-      sgnlo[0] = 2*M_PI*2*sgnlo[0]*dt - oms;
+      for(skypos=0; skypos<s_range->spotlight_skypos; skypos++) { 
 
-      sgnlo[1] = f1 + f2*(gps1 - pepoch_gps);
-      sgnlo[1] = M_PI*2*sgnlo[1]*dt*dt;
+        printf("%d %d %d\n", 
+          s_range->spotlight_mm[skypos], s_range->spotlight_nn[skypos], s_range->spotlight_noss[skypos]); 
 
-      sgnlo[2] = be[0]*(oms + sgnlo[0]);
-      sgnlo[3] = be[1]*(oms + sgnlo[0]);
+        for(i=0; i<s_range->spotlight_noss[skypos]; i++) 
+          printf("%d ", s_range->spotlight_ss[MAX_SPOTLIGHT*skypos+i]); 
 
-      // solving a linear system in order to translate
-      // sky position, frequency and spindown (sgnlo parameters)
-      // into the position in the grid
+        printf("\n"); 
 
-      gsl_vector *x = gsl_vector_alloc (4);
-      int s;
-
-      gsl_matrix_view m = gsl_matrix_view_array (M, 4, 4);
-      gsl_matrix_transpose (&m.matrix) ;
-      gsl_vector_view b = gsl_vector_view_array (sgnlo, 4);
-      gsl_permutation *p = gsl_permutation_alloc (4);
-
-      gsl_linalg_LU_decomp (&m.matrix, p, &s);
-      gsl_linalg_LU_solve (&m.matrix, p, &b.vector, x);
-
-      spndr[0] = round(gsl_vector_get(x, 1));
-      nr[0]		= round(gsl_vector_get(x, 2));
-      mr[0]		= round(gsl_vector_get(x, 3));
-
-      gsl_permutation_free (p);
-      gsl_vector_free (x);
-      free (be);
-      free (sgnlo);
-
-
-      // Warnings and infos
-      if(hemi)
-
-      printf("Warning: -h switch hemisphere choice (%d) may be altered\nby the choice of -r grid range...\n", hemi);
-
-      // Define the grid range in which the signal will be looked for
-      spndr[1] = spndr[0] + gsize ;
-      spndr[0] -= gsize;
-      nr[1] = nr[0] + gsize ;
-      nr[0] -= gsize;
-      mr[1] = mr[0] + gsize ;
-      mr[0] -= gsize;
-      pmr[1] = pmr[0];
-
-      }
-      */
+      }  
+*/
 
       fclose (data);
 
-    } else {
-      perror (opts->range);
-      return;
-    }
+    } else { 
+      perror (opts->spotlight);
+      exit(EXIT_FAILURE);
+    }  
 
-    // Grid range is established from above
-    printf("The following grid range is used\n");
-    printf("(spndr, nr, mr, pmr pairs): %d %d %d %d %d %d %d %d\n", \
-	   s_range->spndr[0], s_range->spndr[1], s_range->nr[0], s_range->nr[1],
-	   s_range->mr[0], s_range->mr[1], s_range->pmr[0], s_range->pmr[1]);
+  } 
 
-  } else {
+} // end of set search range
 
-    // Establish the grid range in which the search will be performed
-    // with the use of the M matrix from grid.bin
-    gridr(
-	    sett->M, 
-	    s_range->spndr,
-	    s_range->nr,
-	    s_range->mr,
-	    sett->oms,
-	    sett->Smax);
-
-  }
-
-} // end of set search range 
 
 
   /* FFT Plans 
@@ -668,7 +593,7 @@ void plan_fftw(
 	FFTW_arrays *fftw_arr, 
 	Aux_arrays *aux_arr) {
 
-  char hostname[256], wfilename[256];
+  char hostname[512], wfilename[512];
   FILE *wisdom;
 
   /* Imports a "wisdom file" containing information 
@@ -679,7 +604,7 @@ void plan_fftw(
    * (see http://www.fftw.org/fftw3_doc/Wisdom.html)
    */ 
 
-  gethostname(hostname, 256);
+  gethostname(hostname, 512);
   sprintf (wfilename, "wisdom-%s.dat", hostname);
   if((wisdom = fopen (wfilename, "r")) != NULL) {
     fftw_import_wisdom_from_file(wisdom);
@@ -720,6 +645,7 @@ void plan_fftw(
   /* Checkpointing
 	 */
 
+/*
 void read_checkpoints(
 	Command_line_opts *opts, 
   Search_range *s_range, 
@@ -769,7 +695,7 @@ void read_checkpoints(
   } // if checkp_flag
 
 } // end reading checkpoints
-
+*/
 
   /* Cleanup & memory free 
 	 */

@@ -7,7 +7,6 @@
 #define MAX_DETECTORS 8
 #define DETNAME_LENGTH 2 
 
-
 typedef struct __comm_line_opts {
 
 	int white_flag, 			// white noise flag
@@ -20,8 +19,8 @@ typedef struct __comm_line_opts {
 	double trl;
 	double fpo_val;
 	
-	char prefix[64], dtaprefix[64], label[64], 
-       range[64], qname[64], addsig[64], *wd;
+	char prefix[512], dtaprefix[512], label[512], 
+       spotlight[512], *qname[512], addsig[512], *wd;
 
 } Command_line_opts;
 
@@ -37,15 +36,14 @@ typedef struct _signals {
   double epsm, 
          phir, 
          sepsm,	  // sin(epsm)
-		     cepsm,	  // cos(epsm)
-			   sphir,	  // sin(phi_r)
-			   cphir,	  // cos(phi_r)
+		 cepsm,	  // cos(epsm)
+	     sphir,	  // sin(phi_r)
+		 cphir,	  // cos(phi_r)
          crf0,    // number of 0s as: N/(N-Nzeros)
          sig2; 	  // variance of signal
 
   int Nzeros; 
-
-	complex double *xDatma, *xDatmb;
+  complex double *xDatma, *xDatmb;
 
 } Signals;
 
@@ -62,8 +60,10 @@ typedef struct _fftw_arrays {
    */ 
 
 typedef struct _search_range {
-	int pmr[2], mr[2], nr[2], spndr[2];
-	int pst, mst, nst, sst;
+
+  int *spotlight_mm, *spotlight_nn, *spotlight_noss, *spotlight_ss; 
+  int spotlight_pm, spotlight_skypos;
+
 } Search_range;
 
 
