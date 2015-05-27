@@ -100,7 +100,7 @@ void detectors_settings(
 		  	strncmp(&ep->d_name[0],".",1)) { 
 
 			  	detnames[i] = malloc(DETNAME_LENGTH); 
-			  	strncpy(detnames[i], ep->d_name, DETNAME_LENGTH);
+			  	strncpy(detnames[i], ep->d_name, sizeof(detnames[i]));
   			  i++; 
 			}
     } 
@@ -110,8 +110,13 @@ void detectors_settings(
   } else perror ("Couldn't open the input directory...");
 
 	sett->nifo=i;      // number of detectors  
+  if(sett->nifo) { 
   printf("Settings - number of detectors: %d\n", sett->nifo); 
 
+  } else { 
+    printf("No subdirectories with detector data found. Exiting...\n"); 
+    exit(EXIT_FAILURE);
+  }  
 
   for(i=0; i<sett->nifo; i++) { 
 
