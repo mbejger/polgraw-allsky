@@ -452,17 +452,12 @@ double* job_core(
              + sqr(cimag(fftw_arr->xb[i])))/bb;
       }
 
-	  double mult_factor=1.; 
-
       // Normalize F-statistics 
-      if(!(opts->white_flag)) { // if the noise is not white noise
+      if(!(opts->white_flag))  // if the noise is not white noise
 	      FStat(F + sett->nmin, sett->nmax - sett->nmin, NAV, 0);
-		  mult_factor=2.; 
-	  } 		  
-		
 
       for(i=sett->nmin; i<sett->nmax; i++) {
-	      if ((Fc = mult_factor*F[i]) > opts->trl) { //if F-stat exceeds trl (critical value)
+	      if ((Fc = F[i]) > opts->trl) { //if F-stat exceeds trl (critical value)
 	        // Find local maximum for neighboring signals 
 	        ii = i;
 
