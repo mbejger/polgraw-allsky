@@ -118,7 +118,8 @@ void detectors_settings(
             printf("Directory %s exists, but no data input file (xdat) found...\n", ep->d_name);  
             //perror (filename);
           }
-			}
+			
+		}
         
     } 
       
