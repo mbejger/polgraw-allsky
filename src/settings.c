@@ -91,6 +91,7 @@ void detectors_settings(
   char **detnames = malloc(MAX_DETECTORS*sizeof(char*));   
 
   dp = opendir (dirname);
+
   if (dp != NULL) {
 		while ((ep = readdir (dp))) { 
 
@@ -98,14 +99,30 @@ void detectors_settings(
 			if((ep->d_type == DT_DIR) && 
 		  	(strlen(ep->d_name)==DETNAME_LENGTH) && 
 		  	strncmp(&ep->d_name[0],".",1)) { 
+  
+          char filename[512];
+          FILE *data;
 
-			  	detnames[i] = malloc(DETNAME_LENGTH); 
-			  	strncpy(detnames[i], ep->d_name, sizeof(detnames[i]));
-  			  i++; 
+          // Input time-domain data handling
+          sprintf(filename, "%s/%03d/%s/xdatc_%03d_%03d%s.bin",
+          opts->dtaprefix, opts->ident, ep->d_name,
+          opts->ident, opts->band, opts->label);
+
+          if((data = fopen(filename, "r")) != NULL) {
+
+  			  	detnames[i] = malloc(DETNAME_LENGTH); 
+	  		  	strncpy(detnames[i], ep->d_name, sizeof(detnames[i]));
+  	  		  i++;
+
+          } else { 
+            printf("Directory %s exists, but no data input file (xdat) found...\n", ep->d_name);  
+            //perror (filename);
+          }
 			}
-        } 
+        
+    } 
       
-	    (void) closedir(dp);
+	  (void) closedir(dp);
 
   } else perror ("Couldn't open the input directory...");
 
@@ -123,7 +140,7 @@ void detectors_settings(
     // Virgo detector
     if(!strcmp("V1", detnames[i])) {
 
-      strncpy(ifo[i].name, detnames[i], DETNAME_LENGTH);
+      strncpy(ifo[i].name, detnames[i], sizeof(detnames[i]));
       // Geographical latitude phi in radians
       ifo[i].ephi = (43.+37./60.+53.0880/3600.)/RAD_TO_DEG;
       // Geographical longitude in radians
@@ -138,7 +155,7 @@ void detectors_settings(
     // Hanford H1 detector
     } else if(!strcmp("H1", detnames[i])) {
 
-      strncpy(ifo[i].name, detnames[i], DETNAME_LENGTH);
+      strncpy(ifo[i].name, detnames[i], sizeof(detnames[i]));
       // Geographical latitude phi in radians
       ifo[i].ephi = (46+(27+18.528/60.)/60.)/RAD_TO_DEG;
       // Geographical longitude in radians
@@ -153,7 +170,7 @@ void detectors_settings(
     // Livingston L1 detector
     } else if(!strcmp("L1", detnames[i])) {
 
-      strncpy(ifo[i].name, detnames[i], DETNAME_LENGTH);
+      strncpy(ifo[i].name, detnames[i], sizeof(detnames[i]));
       // Geographical latitude phi in radians
       ifo[i].ephi = (30+(33+46.4196/60.)/60.)/RAD_TO_DEG;
       // Geographical longitude in radians
