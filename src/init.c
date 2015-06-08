@@ -535,7 +535,7 @@ void set_search_range(
 
       s_range->spotlight_mm   = (int *)calloc(s_range->spotlight_skypos, sizeof(int));
       s_range->spotlight_nn   = (int *)calloc(s_range->spotlight_skypos, sizeof(int));
-      s_range->spotlight_noss = (int *)calloc(s_range->spotlight_skypos, sizeof(int));
+      s_range->spotlight_noss = (int *)calloc(s_range->spotlight_skypos+1, sizeof(int));
 
       s_range->spotlight_ss   = (int *)calloc(s_range->spotlight_skypos*MAX_SPOTLIGHT, sizeof(int));
 
@@ -733,5 +733,11 @@ void cleanup(
   fftw_destroy_plan(plans->plan);
   fftw_destroy_plan(plans->pl_int);
   fftw_destroy_plan(plans->pl_inv);
+
+  //spotlight free 
+  free(s_range->spotlight_mm); 
+  free(s_range->spotlight_nn);
+  free(s_range->spotlight_noss); 
+  free(s_range->spotlight_ss); 
 
 } // end of cleanup & memory free 

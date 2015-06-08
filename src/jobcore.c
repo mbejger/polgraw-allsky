@@ -48,11 +48,11 @@ void search(
   // struct stat buffer;
   struct flock lck;
  
-  //	clock_t cstart, cend; //clock
-  //	double time_elapsed; //for measuring time
+  //  clock_t cstart, cend; //clock
+  //  double time_elapsed; //for measuring time
 
   int pm;        // hemisphere 
-  int sgnlc; 	 // number of canditates
+  int sgnlc;   // number of canditates
   double *sgnlv; // array with candidates data
 
   char outname[512]; 
@@ -60,7 +60,7 @@ void search(
   //char qname[512];
 
   int fd;
-	
+  
   //struct timespec tstart = get_current_time(), tend;
 
   pm = s_range->spotlight_pm; 
@@ -78,7 +78,7 @@ void search(
 
   }
 */ 
-	
+  
  
   /* Loop over hemispheres
    */ 
@@ -91,59 +91,59 @@ void search(
 
     //#mb fixme 
 //    if(opts->checkp_flag) {
-//	    fprintf (state, "%d %d %d %d %d\n", pm, mm, nn, s_range->sst, *FNum);
-//	    fflush (state);
-//	  }
+//      fprintf (state, "%d %d %d %d %d\n", pm, mm, nn, s_range->sst, *FNum);
+//      fflush (state);
+//    }
 
-	/* Loop over Spindows here */
-	      sgnlv = job_core(
-			          pm,           // hemisphere
-        			  skypos,       // no. of sky position in the spotlight range file 
-			  	      sett,         // search and detector settings
-			          opts,         // cmd opts
-			          s_range,      // range for searching
-					  plans, 
-			          fftw_arr,   // arrays for fftw
-			          aux, 	      // auxiliary arrays
-			          F,	        // F-statistics array
-			          &sgnlc,     // reference to array with the parameters
-			                      // of the candidate signal
-			                      // (used below to write to the file)
-			          FNum);	    // Candidate signal number
-				
-	/* Add trigger parameters to a file */
+  /* Loop over Spindows here */
+        sgnlv = job_core(
+                pm,         // hemisphere
+                skypos,     // no. of sky position in the spotlight range file 
+                sett,       // search and detector settings
+                opts,       // cmd opts
+                s_range,    // range for searching
+                plans, 
+                fftw_arr,   // arrays for fftw
+                aux,        // auxiliary arrays
+                F,          // F-statistics array
+                &sgnlc,     // reference to array with the parameters
+                            // of the candidate signal
+                            // (used below to write to the file)
+                FNum);      // Candidate signal number
+        
+  /* Add trigger parameters to a file */
 
-	//if any signals found (Fstat>Fc)
-	if (sgnlc) {
-	  if ((fd = open (outname, O_WRONLY|O_CREAT|O_APPEND,
-			  S_IRUSR|S_IWUSR|S_IRGRP|S_IROTH)) < 0) {
-	    perror (outname);
-	    return;
-	  }
+  //if any signals found (Fstat>Fc)
+  if (sgnlc) {
+    if ((fd = open (outname, O_WRONLY|O_CREAT|O_APPEND,
+        S_IRUSR|S_IWUSR|S_IRGRP|S_IROTH)) < 0) {
+      perror (outname);
+      return;
+    }
 
-	  lck.l_type = F_WRLCK;
-	  lck.l_whence = 0;
-	  lck.l_start = 0L;
-	  lck.l_len = 0L;
-	  if (fcntl (fd, F_SETLKW, &lck) < 0) perror ("fcntl()");
+    lck.l_type = F_WRLCK;
+    lck.l_whence = 0;
+    lck.l_start = 0L;
+    lck.l_len = 0L;
+    if (fcntl (fd, F_SETLKW, &lck) < 0) perror ("fcntl()");
 
     /* //#mb debugging  
-	  int jj, kk;
-	  printf("\nParameters to save:\n");
-	  for (jj=0; jj<sgnlc; jj++) {
-	    for(kk=0; kk<NPAR; kk++) {
-	      printf("%lf ", sgnlv[jj*NPAR+kk]);
-	    }
-	    printf("\n");
-	  }
-	  */
-										
-	  write (fd, (void *)(sgnlv), sgnlc*NPAR*sizeof (double));
+    int jj, kk;
+    printf("\nParameters to save:\n");
+    for (jj=0; jj<sgnlc; jj++) {
+      for(kk=0; kk<NPAR; kk++) {
+        printf("%lf ", sgnlv[jj*NPAR+kk]);
+      }
+      printf("\n");
+    }
+    */
+                    
+    write (fd, (void *)(sgnlv), sgnlc*NPAR*sizeof (double));
 
-	  if (close (fd) < 0) perror ("close()");
+    if (close (fd) < 0) perror ("close()");
 
-	} /* if sgnlc */
-	free (sgnlv);
+  } /* if sgnlc */
+  free (sgnlv);
   } // for s_range->spotlight_skypos
 
 
@@ -154,7 +154,7 @@ void search(
   }
 */
 
-  //tend = get_current_time();	
+  //tend = get_current_time();  
   // printf("tstart = %d . %d\ntend = %d . %d\n", tstart.tv_sec, tstart.tv_usec, tend.tv_sec, tend.tv_usec);
   //double time_elapsed = get_time_difference(tstart, tend);
   //printf("Time elapsed: %e s\n", time_elapsed);
@@ -166,37 +166,37 @@ void search(
    */ 
 
 double* job_core(
-  int pm,		                // hemisphere
-  int skypos,		            // no. of sky position in the spotlight range file
+  int pm,                       // hemisphere
+  int skypos,                   // no. of sky position in the spotlight range file
   Search_settings *sett,        // Search settings
   Command_line_opts *opts,      // Search options 
-  Search_range *s_range,	    // Range for searching
+  Search_range *s_range,        // Range for searching
   FFTW_plans *plans,            // Plans for fftw
   FFTW_arrays *fftw_arr,        // Arrays for fftw
-  Aux_arrays *aux, 	            // Auxiliary arrays
-  double *F,		            // F-statistics array
-  int *sgnlc,		            // Candidate trigger parameters 
-  int *FNum) {	                // Candidate signal number
+  Aux_arrays *aux,              // Auxiliary arrays
+  double *F,                    // F-statistics array
+  int *sgnlc,                   // Candidate trigger parameters 
+  int *FNum) {                  // Candidate signal number
 
   int nn, mm, i, j, k, n;
   double al1, al2, sinalt, cosalt, sindelt, cosdelt, sgnlt[NPAR], 
     nSource[3], het0, sgnl0, *sgnlv, ft;
 
-  /* Matrix	M(.,.) (defined on page 22 of PolGrawCWAllSkyReview1.pdf file)
+  /* Matrix M(.,.) (defined on page 22 of PolGrawCWAllSkyReview1.pdf file)
      defines the transformation form integers (bin, ss, nn, mm) determining
      a grid point to linear coordinates omega, omegadot, alpha_1, alpha_2),
      where bin is the frequency bin number and alpha_1 and alpha_2 are
      defined on p. 22 of PolGrawCWAllSkyReview1.pdf file.
 
-     [omega]													[bin]
-     [omegadot]	 			= M(.,.) \times [ss]
-     [alpha_1/omega]									[nn]
-     [alpha_2/omega]									[mm]
+     [omega]                          [bin]
+     [omegadot]       = M(.,.) \times [ss]
+     [alpha_1/omega]                  [nn]
+     [alpha_2/omega]                  [mm]
 
      Array M[.] is related to matrix M(.,.) in the following way;
 
                  [ M[0] M[4] M[8]  M[12] ]
-      M(.,.) =	 [ M[1] M[5] M[9]  M[13] ]
+      M(.,.) =   [ M[1] M[5] M[9]  M[13] ]
                  [ M[2] M[6] M[10] M[14] ]
                  [ M[3] M[7] M[11] M[15] ]
 
@@ -225,7 +225,7 @@ double* job_core(
   // Change linear (grid) coordinates to real coordinates
   lin2ast(al1/sett->oms, al2/sett->oms, 
       pm, sett->sepsm, sett->cepsm,
-	    &sinalt, &cosalt, &sindelt, &cosdelt);
+      &sinalt, &cosalt, &sindelt, &cosdelt);
 
   // calculate declination and right ascention
   // written in file as candidate signal sky positions
@@ -243,8 +243,8 @@ double* job_core(
      */
 
     modvir(sinalt, cosalt, sindelt, cosdelt,
-	         sett->N, &ifo[n], aux);
-	    
+           sett->N, &ifo[n], aux);
+      
     // Calculate detector positions with respect to baricenter
     nSource[0] = cosalt*cosdelt;
     nSource[1] = sinalt*cosdelt;
@@ -266,10 +266,10 @@ double* job_core(
       phase = het0*i + sett->oms*(ifo[n].sig.shft[i]);
 
 #ifdef HAVE_SINCOS
-      	sincos(phase, &sp, &cp);
+        sincos(phase, &sp, &cp);
 #else
-      	cp = cos(phase);
-      	sp = sin(phase);
+        cp = cos(phase);
+        sp = sin(phase);
 #endif
 
       exph = cp - I*sp;
@@ -310,7 +310,7 @@ double* job_core(
       fftw_arr->xa[i] = fftw_arr->xa[j];
       fftw_arr->xb[i] = fftw_arr->xb[j];
     }
-	
+  
     //  zero frequencies higher than nyquist
     for (i=nyqst; i<nyqst + sett->Ninterp - sett->nfft; i++) {
       fftw_arr->xa[i] = 0;
@@ -327,7 +327,7 @@ double* job_core(
       fftw_arr->xb[i] *= ft;
     }
 
-	  //	struct timeval tstart = get_current_time(), tend;
+    //  struct timeval tstart = get_current_time(), tend;
 
     // Spline interpolation to xDatma, xDatmb arrays
     splintpad(fftw_arr->xa, ifo[n].sig.shftf, sett->N, 
@@ -335,9 +335,9 @@ double* job_core(
     splintpad(fftw_arr->xb, ifo[n].sig.shftf, sett->N, 
       sett->interpftpad, ifo[n].sig.xDatmb);
 
-  //	tend = get_current_time();
-  //	double time_elapsed = get_time_difference(tstart, tend);
-  //	printf("Time elapsed, 2 splines: %e s\n", time_elapsed);
+  //  tend = get_current_time();
+  //  double time_elapsed = get_time_difference(tstart, tend);
+  //  printf("Time elapsed, 2 splines: %e s\n", time_elapsed);
 
   } // end of detector loop 
 
@@ -405,8 +405,8 @@ double* job_core(
 
     // phase modulation before fft
     for(i=0; i<sett->N; i++) {
-	    phase = het1*i + sgnlt[1]*(aux->t2[i] + 2.*i*ifo[0].sig.shft[i]);  
-	
+      phase = het1*i + sgnlt[1]*(aux->t2[i] + 2.*i*ifo[0].sig.shft[i]);  
+  
 #ifdef HAVE_SINCOS
         sincos(phase, &sp, &cp);
 #else
@@ -414,7 +414,7 @@ double* job_core(
         sp = sin(phase);
 #endif
 
-	    exph = cp - I*sp;
+      exph = cp - I*sp;
 
         fftw_arr->xa[i] = ifo[0].sig.xDatma[i]*exph/(ifo[0].sig.sig2);
         fftw_arr->xb[i] = ifo[0].sig.xDatmb[i]*exph/(ifo[0].sig.sig2);    
@@ -424,11 +424,11 @@ double* job_core(
     for(n=1; n<sett->nifo; n++) {
 
         for(i=0; i<sett->N; i++) {
-	        phase = het1*i + sgnlt[1]*(aux->t2[i] + 2.*i*ifo[n].sig.shft[i]);  
+          phase = het1*i + sgnlt[1]*(aux->t2[i] + 2.*i*ifo[n].sig.shft[i]);  
           
             cp = cos(phase);
-	        sp = sin(phase);
-	        exph = cp - I*sp;
+          sp = sin(phase);
+          exph = cp - I*sp;
 
             fftw_arr->xa[i] += ifo[n].sig.xDatma[i]*exph/(ifo[n].sig.sig2);
             fftw_arr->xb[i] += ifo[n].sig.xDatmb[i]*exph/(ifo[n].sig.sig2);    
@@ -437,7 +437,7 @@ double* job_core(
 
     // Zero-padding 
     for(i = sett->N; i<sett->fftpad*sett->nfft; i++)
-	    fftw_arr->xa[i] = fftw_arr->xb[i] = 0.; 
+      fftw_arr->xa[i] = fftw_arr->xb[i] = 0.; 
 
     fftw_execute (plans->plan);
     fftw_execute (plans->plan2);
@@ -446,7 +446,7 @@ double* job_core(
 
     // Computing F-statistic 
     for (i=sett->nmin; i<sett->nmax; i++) {
-	    F[i] = (sqr(creal(fftw_arr->xa[i])) 
+      F[i] = (sqr(creal(fftw_arr->xa[i])) 
              + sqr(cimag(fftw_arr->xa[i])))/aa  
              + (sqr(creal(fftw_arr->xb[i])) 
              + sqr(cimag(fftw_arr->xb[i])))/bb;
@@ -454,42 +454,42 @@ double* job_core(
 
       // Normalize F-statistics 
       if(!(opts->white_flag))  // if the noise is not white noise
-	      FStat(F + sett->nmin, sett->nmax - sett->nmin, NAV, 0);
+        FStat(F + sett->nmin, sett->nmax - sett->nmin, NAV, 0);
 
       for(i=sett->nmin; i<sett->nmax; i++) {
-	      if ((Fc = F[i]) > opts->trl) { //if F-stat exceeds trl (critical value)
-	        // Find local maximum for neighboring signals 
-	        ii = i;
+        if ((Fc = F[i]) > opts->trl) { //if F-stat exceeds trl (critical value)
+          // Find local maximum for neighboring signals 
+          ii = i;
 
-	        while (++i < sett->nmax && F[i] > opts->trl) {
-      	    if(F[i] >= Fc) {
-	            ii = i;
-	            Fc = F[i];
-	          } // if F[i] 
-	        } // while i 
+          while (++i < sett->nmax && F[i] > opts->trl) {
+            if(F[i] >= Fc) {
+              ii = i;
+              Fc = F[i];
+            } // if F[i] 
+          } // while i 
 
-	  // Candidate signal frequency					
-	  sgnlt[0] = 2.*M_PI*ii/((double) sett->fftpad*sett->nfft) + sgnl0;
-	  // Signal-to-noise ratio
-	  sgnlt[4] = sqrt(2.*(Fc-sett->nd));
+    // Candidate signal frequency         
+    sgnlt[0] = 2.*M_PI*ii/((double) sett->fftpad*sett->nfft) + sgnl0;
+    // Signal-to-noise ratio
+    sgnlt[4] = sqrt(2.*(Fc-sett->nd));
 
     //#mb
     /* 
-	  printf("\n%lf %lf %lf %lf %lf\n", 
+    printf("\n%lf %lf %lf %lf %lf\n", 
       sgnlt[0], sgnlt[1], sgnlt[2], sgnlt[3], sgnlt[4]);
     */ 
 
-	  (*sgnlc)++; // increase found number
+    (*sgnlc)++; // increase found number
 
-	  // Add new parameters to output array 
-	  sgnlv = (double *)realloc(sgnlv, NPAR*(*sgnlc)*sizeof (double));
+    // Add new parameters to output array 
+    sgnlv = (double *)realloc(sgnlv, NPAR*(*sgnlc)*sizeof (double));
 
-	  for (j=0; j<NPAR; j++) // save new parameters
-	    sgnlv[NPAR*(*sgnlc-1)+j] = sgnlt[j];
+    for (j=0; j<NPAR; j++) // save new parameters
+      sgnlv[NPAR*(*sgnlc-1)+j] = sgnlt[j];
 
-	  printf ("\nSignal %d: %d %d %d %d %d \tsnr=%.2f\n", 
-		  *sgnlc, pm, mm, nn, ss, ii, sgnlt[4]);
-	} // if Fc > trl 
+    printf ("\nSignal %d: %d %d %d %d %d \tsnr=%.2f\n", 
+      *sgnlc, pm, mm, nn, ss, ii, sgnlt[4]);
+  } // if Fc > trl 
       } // for i 
 
     
