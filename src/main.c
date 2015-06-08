@@ -101,7 +101,7 @@ int main (int argc, char* argv[]) {
   plan_fftw(&sett, &opts, &fftw_plans, &fftw_arr, &aux_arr);
 
   // Checkpointing
-  int Fnum;			        // candidate signal number
+  int Fnum=0;			        // candidate signal number
   read_checkpoints(&opts, &s_range, &Fnum);
 
   // main search job
