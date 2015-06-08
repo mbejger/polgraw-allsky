@@ -217,7 +217,7 @@ void read_grid(
   sett->M = (double *) calloc (16, sizeof (double));
 
   FILE *data;
-  char filename[64];
+  char filename[512];
   sprintf (filename, "%s/%03d/grid.bin", opts->dtaprefix, opts->ident);
 	if ((data=fopen (filename, "r")) != NULL) {
   	// fftpad: used to zero padding to fftpad*nfft data points
@@ -233,7 +233,7 @@ void read_grid(
     fclose (data);
   } else {
 	  perror (filename);
-    return;
+      exit(EXIT_FAILURE);
   }
 
 } // end of read grid 
@@ -271,7 +271,7 @@ void init_arrays(
 
     } else {
       perror (filename);
-      return;
+      exit(EXIT_FAILURE); 
     }
 
     int j, Nzeros=0;
@@ -632,7 +632,7 @@ void set_search_range(
 
     } else {
       perror (opts->range);
-      return;
+      exit(EXIT_FAILURE);
     }
 
     // Grid range is established from above
@@ -668,7 +668,7 @@ void plan_fftw(
 	FFTW_arrays *fftw_arr, 
 	Aux_arrays *aux_arr) {
 
-  char hostname[256], wfilename[256];
+  char hostname[512], wfilename[512];
   FILE *wisdom;
 
   /* Imports a "wisdom file" containing information 
@@ -679,7 +679,7 @@ void plan_fftw(
    * (see http://www.fftw.org/fftw3_doc/Wisdom.html)
    */ 
 
-  gethostname(hostname, 256);
+  gethostname(hostname, 512);
   sprintf (wfilename, "wisdom-%s.dat", hostname);
   if((wisdom = fopen (wfilename, "r")) != NULL) {
     fftw_import_wisdom_from_file(wisdom);
