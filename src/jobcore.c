@@ -1,3 +1,4 @@
+#define _GNU_SOURCE
 #include <math.h>
 #include <stdio.h>
 #include <sys/types.h>
@@ -270,14 +271,12 @@ double* job_core(
 
       // Phase modulation 
       phase = het0*i + sett->oms*(ifo[n].sig.shft[i]);
-
-#ifdef HAVE_SINCOS
-      	sincos(phase, &sp, &cp);
+#ifdef NOSINCOS
+      cp = cos(phase);
+      sp = sin(phase);
 #else
-      	cp = cos(phase);
-      	sp = sin(phase);
+      sincos(phase, &sp, &cp);
 #endif
-
       exph = cp - I*sp;
 
       // Matched filter 
@@ -402,16 +401,16 @@ double* job_core(
       // phase modulation before fft
 
       for(i=0; i<sett->N; i++) {
-	      phase = het1*i + sgnlt[1]*(aux->t2[i] + 2.*i*ifo[0].sig.shft[i]);  
+        phase = het1*i + sgnlt[1]*(aux->t2[i] + 2.*i*ifo[0].sig.shft[i]);  
 	
-#ifdef HAVE_SINCOS
-		  sincos(phase, &sp, &cp);
+#ifdef NOSINCOS
+	cp = cos(phase);
+      	sp = sin(phase);
 #else
-      	  cp = cos(phase);
-      	  sp = sin(phase);
+	sincos(phase, &sp, &cp);
 #endif
 
-	    exph = cp - I*sp;
+	exph = cp - I*sp;
 
         fftw_arr->xa[i] = ifo[0].sig.xDatma[i]*exph/(ifo[0].sig.sig2);
         fftw_arr->xb[i] = ifo[0].sig.xDatmb[i]*exph/(ifo[0].sig.sig2);    
