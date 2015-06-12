@@ -9,7 +9,7 @@ CFLAGS = -Wall -Wno-unused -O3 -DPREFIX="./candidates" -DTIMERS=1 \
 	-ffast-math -funroll-loops -funsafe-loop-optimizations \
         -I$(FFTW_DIR)/include -D$(SINCOS)
 LDFLAGS = -L$(FFTW_DIR)/lib
-LOADLIBES = -lm -lgsl -lgslcblas -lfftw3 -lc
+LOADLIBES = -lm -lgsl -lgslcblas -lfftw3 -lc -lrt
 
 ifeq ($(strip $(SINCOS)),SLEEF)
 SPATH = lib/sleef-2.80/simd
@@ -39,10 +39,12 @@ veclib:
 	echo "Using prebuild YEPPP library: $(VECLIB)"
 endif
 
-search: search.o JobNAllSky-common.o JobNAllSky.o \
-	settings.o auxi.o fstat.o gridr.o
+search: main.o jobcore.o timer.o settings.o \
+	auxi.o init.o
+	$(CC) $(LDFLAGS) -gnatv -o $@ $^ $(LOADLIBES)
 
-bench: bench.o settings.o
+sigen: sigen.o settings.o auxi.o
+	$(CC) $(LDFLAGS) -gnatv -o $@ $^ $(LOADLIBES)
 
 doc:
 	doxygen ../doc/Doxyfile
@@ -58,5 +60,4 @@ ifeq ($(strip $(SINCOS)),SLEEF)
 endif
 
 uninstall: clean
-	rm -f search bench 
-	rm -fr ../doc/html
+	rm -f search
