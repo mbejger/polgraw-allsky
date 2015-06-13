@@ -428,8 +428,12 @@ double* job_core(
         for(i=0; i<sett->N; i++) {
 	  phase = het1*i + sgnlt[1]*_tmp1[n][i];
 		  //(aux->t2[i] + 2.*i*ifo[n].sig.shft[i]);  
-          cp = cos(phase);
+#ifdef NOSINCOS
+	  cp = cos(phase);
 	  sp = sin(phase);
+#else
+	  sincos(phase, &sp, &cp);
+#endif
 	  exph = cp - I*sp;
 
           fftw_arr->xa[i] += ifo[n].sig.xDatma[i]*exph/(ifo[n].sig.sig2);
