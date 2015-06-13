@@ -405,7 +405,7 @@ double* job_core(
 
       // phase modulation before fft
 
-      for(i=0; i<sett->N; i++) {
+      for(i=sett->N-1; i!=-1; --i) {
         phase = het1*i + sgnlt[1]*_tmp1[0][i];
 	  //(aux->t2[i] + 2.*i*ifo[0].sig.shft[i]);  
 	
@@ -425,9 +425,10 @@ double* job_core(
 
       for(n=1; n<sett->nifo; n++) {
 
-        for(i=0; i<sett->N; i++) {
+	//        for(i=0; i<sett->N; i++) {
+	for(i=sett->N-1; i!=-1; --i) {
 	  phase = het1*i + sgnlt[1]*_tmp1[n][i];
-		  //(aux->t2[i] + 2.*i*ifo[n].sig.shft[i]);  
+	  //(aux->t2[i] + 2.*i*ifo[n].sig.shft[i]);  
 #ifdef NOSINCOS
 	  cp = cos(phase);
 	  sp = sin(phase);
@@ -442,8 +443,9 @@ double* job_core(
       } 
 
       // Zero-padding 
-      for(i = sett->N; i<sett->fftpad*sett->nfft; i++)
-	      fftw_arr->xa[i] = fftw_arr->xb[i] = 0.; 
+      //      for(i = sett->N; i<sett->fftpad*sett->nfft; i++)
+      for (i = sett->fftpad*sett->nfft-1; i != sett->N-1; --i)
+	fftw_arr->xa[i] = fftw_arr->xb[i] = 0.; 
 
       fftw_execute (plans->plan);
       fftw_execute (plans->plan2);
