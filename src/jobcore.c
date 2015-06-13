@@ -190,7 +190,8 @@ double* job_core(
   int smin = s_range->sst, smax = s_range->spndr[1];
   double al1, al2, sinalt, cosalt, sindelt, cosdelt, sgnlt[NPAR], 
     nSource[3], het0, sgnl0, *sgnlv, ft;
-
+  double _tmp1[sett->nifo][sett->N];
+  
   /* Matrix	M(.,.) (defined on page 22 of PolGrawCWAllSkyReview1.pdf file)
      defines the transformation form integers (bin, ss, nn, mm) determining
      a grid point to linear coordinates omega, omegadot, alpha_1, alpha_2),
@@ -245,7 +246,7 @@ double* job_core(
   het0 = fmod(nn*sett->M[8] + mm*sett->M[12], sett->M[0]);
 
   // Loop for each detector 
-  for(n=0; n<sett->nifo;n++) { 
+  for(n=0; n<sett->nifo; n++) { 
 
     /* Amplitude modulation functions aa and bb 
      * for each detector (in signal sub-struct 
@@ -271,6 +272,7 @@ double* job_core(
         ifo[n].sig.shft[i] += nSource[j]*(ifo[n].sig.DetSSB[i*3+j]);
     
       ifo[n].sig.shftf[i] = ifo[n].sig.shft[i] - shft1;
+      _tmp1[n][i] = aux->t2[i] + 2*i*ifo[n].sig.shft[i];
 
       // Phase modulation 
       phase = het0*i + sett->oms*(ifo[n].sig.shft[i]);
@@ -404,7 +406,8 @@ double* job_core(
       // phase modulation before fft
 
       for(i=0; i<sett->N; i++) {
-        phase = het1*i + sgnlt[1]*(aux->t2[i] + 2.*i*ifo[0].sig.shft[i]);  
+        phase = het1*i + sgnlt[1]*_tmp1[0][i];
+	  //(aux->t2[i] + 2.*i*ifo[0].sig.shft[i]);  
 	
 #ifdef NOSINCOS
 	cp = cos(phase);
@@ -423,10 +426,11 @@ double* job_core(
       for(n=1; n<sett->nifo; n++) {
 
         for(i=0; i<sett->N; i++) {
-	        phase = het1*i + sgnlt[1]*(aux->t2[i] + 2.*i*ifo[n].sig.shft[i]);  
+	  phase = het1*i + sgnlt[1]*_tmp1[n][i];
+		  //(aux->t2[i] + 2.*i*ifo[n].sig.shft[i]);  
           cp = cos(phase);
-	        sp = sin(phase);
-	        exph = cp - I*sp;
+	  sp = sin(phase);
+	  exph = cp - I*sp;
 
           fftw_arr->xa[i] += ifo[n].sig.xDatma[i]*exph/(ifo[n].sig.sig2);
           fftw_arr->xb[i] += ifo[n].sig.xDatmb[i]*exph/(ifo[n].sig.sig2);    
