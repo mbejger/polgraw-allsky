@@ -49,7 +49,7 @@ void search(
 
   // struct stat buffer;
   struct flock lck;
- 
+  
   //	clock_t cstart, cend; //clock
   //	double time_elapsed; //for measuring time
 
@@ -70,9 +70,10 @@ void search(
     state = fopen (qname, "w");
 
   }
-	
-  //struct timespec tstart = get_current_time(), tend;
-		
+
+#ifdef TIMERS
+  struct timespec tstart = get_current_time(), tend;
+#endif
  
   /* Loop over hemispheres
    */ 
@@ -156,12 +157,14 @@ void search(
     fclose (state);
   }
 
-  //tend = get_current_time();
+#ifdef TIMERS
+  tend = get_current_time();
 	
   // printf("tstart = %d . %d\ntend = %d . %d\n", tstart.tv_sec, tstart.tv_usec, tend.tv_sec, tend.tv_usec);
 	
-  //double time_elapsed = get_time_difference(tstart, tend);
-  //printf("Time elapsed: %e s\n", time_elapsed);
+  double time_elapsed = get_time_difference(tstart, tend);
+  printf("Time elapsed: %e s\n", time_elapsed);
+#endif
 
 }
 
