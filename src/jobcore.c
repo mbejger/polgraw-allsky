@@ -16,6 +16,16 @@
 #include "settings.h"
 #include "timer.h"
 
+#include <assert.h>
+#if defined(SLEEF)
+//#include "sleef-2.80/purec/sleef.h"
+#include <sleefsimd.h>
+#elif defined(YEPPP)
+#include <yepLibrary.h>
+#include <yepCore.h>
+#include <yepMath.h>
+#endif
+
 
 void save_array(complex double *arr, int N, const char* file) {
   int i;
@@ -78,40 +88,40 @@ void search(
   /* Loop over hemispheres
    */ 
 
-  for (pm=s_range->pst; pm<=s_range->pmr[1]; pm++) {	
+  for (pm=s_range->pst; pm<=s_range->pmr[1]; ++pm) {
 
     sprintf (outname, "%s/triggers_%03d_%03d%s_%d.bin", 
-        opts->prefix, opts->ident, opts->band, opts->label, pm);
-
+	     opts->prefix, opts->ident, opts->band, opts->label, pm);
+    
     /* Two main loops over sky positions 
      */ 
 
-    for (mm=s_range->mst; mm<=s_range->mr[1]; mm++) {	
-      for (nn=s_range->nst; nn<=s_range->nr[1]; nn++) {	
-
-	      if(opts->checkp_flag) {
-	        fprintf(state, "%d %d %d %d %d\n", 
-              pm, mm, nn, s_range->sst, *FNum);
-	        fflush(state);
-	      }
-
+    for (mm=s_range->mst; mm<=s_range->mr[1]; ++mm) {	
+      for (nn=s_range->nst; nn<=s_range->nr[1]; ++nn) {	
+	
+	if(opts->checkp_flag) {
+	  fprintf(state, "%d %d %d %d %d\n", 
+		  pm, mm, nn, s_range->sst, *FNum);
+	  fflush(state);
+	}
+	
 	/* Loop over Spindows here */
-	      sgnlv = job_core(
-			          pm,          // hemisphere
-			          mm,	      // grid 'sky position'
-			          nn,	      // other grid 'sky position'
-			          sett,        // search settings
-			          opts,        // cmd opts
-			          s_range,     // range for searching
-                plans, 
-			          fftw_arr,   // arrays for fftw
-			          aux, 	      // auxiliary arrays
-			          F,	        // F-statistics array
-			          &sgnlc,     // reference to array with the parameters
-			                      // of the candidate signal
-			                      // (used below to write to the file)
-			          FNum);	    // Candidate signal number
-				
+	sgnlv = job_core(
+			 pm,          // hemisphere
+			 mm,	      // grid 'sky position'
+			 nn,	      // other grid 'sky position'
+			 sett,        // search settings
+			 opts,        // cmd opts
+			 s_range,     // range for searching
+			 plans, 
+			 fftw_arr,   // arrays for fftw
+			 aux, 	      // auxiliary arrays
+			 F,	        // F-statistics array
+			 &sgnlc,     // reference to array with the parameters
+			 // of the candidate signal
+			 // (used below to write to the file)
+			 FNum);	    // Candidate signal number
+	
 	//get back to regular spin-down range
 	s_range->sst = s_range->spndr[0];
 
@@ -173,19 +183,19 @@ void search(
    */ 
 
 double* job_core(
-  int pm,		                // Hemisphere
-  int mm,		                // Grid 'sky position'
-  int nn,		                // Second grid 'sky position'
-  Search_settings *sett,    // Search settings
-  Command_line_opts *opts,  // Search options 
-  Search_range *s_range,	  // Range for searching
-  FFTW_plans *plans,        // Plans for fftw
-  FFTW_arrays *fftw_arr,    // Arrays for fftw
-  Aux_arrays *aux, 	        // Auxiliary arrays
-  double *F,		            // F-statistics array
-  int *sgnlc,		            // Candidate trigger parameters 
-  int *FNum) {	            // Candidate signal number
-
+		 int pm,		  // Hemisphere
+		 int mm,		  // Grid 'sky position'
+		 int nn,		  // Second grid 'sky position'
+		 Search_settings *sett,   // Search settings
+		 Command_line_opts *opts, // Search options 
+		 Search_range *s_range,	  // Range for searching
+		 FFTW_plans *plans,       // Plans for fftw
+		 FFTW_arrays *fftw_arr,   // Arrays for fftw
+		 Aux_arrays *aux, 	  // Auxiliary arrays
+		 double *F,		  // F-statistics array
+		 int *sgnlc,		  // Candidate trigger parameters 
+		 int *FNum)	          // Candidate signal number
+{
   int i, j, n;
   int smin = s_range->sst, smax = s_range->spndr[1];
   double al1, al2, sinalt, cosalt, sindelt, cosdelt, sgnlt[NPAR], 
@@ -218,25 +228,25 @@ double* job_core(
   // Grid positions
   al1 = nn*sett->M[10] + mm*sett->M[14];
   al2 = nn*sett->M[11] + mm*sett->M[15];
-
+  
   sgnlv = NULL;
   *sgnlc = 0;
 
   // check if the search is in an appropriate region of the grid
   // if not, returns NULL
-  if((sqr(al1)+sqr(al2))/sqr(sett->oms) > 1.) return NULL ;
+  if ((sqr(al1)+sqr(al2))/sqr(sett->oms) > 1.) return NULL ;
 
   int ss;
   double shft1, phase, cp, sp;
   complex double exph;
-
+  
   // Interpolation by zero-padding (case FFT):
   fftw_arr->xb = fftw_arr->xa + fftw_arr->arr_len; // + sett->fftpad * sett->nfft;
 
   //change linear (grid) coordinates to real coordinates
   lin2ast(al1/sett->oms, al2/sett->oms, 
-      pm, sett->sepsm, sett->cepsm,
-	    &sinalt, &cosalt, &sindelt, &cosdelt);
+	  pm, sett->sepsm, sett->cepsm,
+	  &sinalt, &cosalt, &sindelt, &cosdelt);
 
   // calculate declination and right ascention
   // written in file as candidate signal sky positions
@@ -246,7 +256,7 @@ double* job_core(
   het0 = fmod(nn*sett->M[8] + mm*sett->M[12], sett->M[0]);
 
   // Loop for each detector 
-  for(n=0; n<sett->nifo; n++) { 
+  for(n=0; n<sett->nifo; ++n) { 
 
     /* Amplitude modulation functions aa and bb 
      * for each detector (in signal sub-struct 
@@ -254,7 +264,7 @@ double* job_core(
      */
 
     modvir(sinalt, cosalt, sindelt, cosdelt,
-	         sett->N, &ifo[n], aux);
+	   sett->N, &ifo[n], aux);
 	
     // Calculate detector positions with respect to baricenter
     nSource[0] = cosalt*cosdelt;
@@ -265,10 +275,10 @@ double* job_core(
     for (j=0; j<3; j++)
       shft1 += nSource[j]*(ifo[n].sig.DetSSB[j]);
 
-    for(i=0; i<sett->N; i++) {
+    for(i=0; i<sett->N; ++i) {
       ifo[n].sig.shft[i] = 0.;
 
-      for(j=0; j<3; j++)
+      for(j=0; j<3; ++j)
         ifo[n].sig.shft[i] += nSource[j]*(ifo[n].sig.DetSSB[i*3+j]);
     
       ifo[n].sig.shftf[i] = ifo[n].sig.shft[i] - shft1;
@@ -290,21 +300,20 @@ double* job_core(
       ifo[n].sig.xDatmb[i] = 
         ifo[n].sig.xDat[i]*ifo[n].sig.bb[i]*exph;
   
-    } 
-
+    }
 
     /* Resampling using spline interpolation:
      * This will double the sampling rate 
      */ 
   
-    for(i=0; i < sett->N; i++) { 
+    for(i=0; i < sett->N; ++i) {
       fftw_arr->xa[i] = ifo[n].sig.xDatma[i];
       fftw_arr->xb[i] = ifo[n].sig.xDatmb[i];
     }
  
     // Zero-padding (filling with 0s up to sett->nfft, 
     // the nearest power of 2)
-    for (i=sett->N; i<sett->nfft; i++) { 
+    for (i=sett->N; i<sett->nfft; ++i) {
       fftw_arr->xa[i] = 0.;
       fftw_arr->xb[i] = 0.;
     }
@@ -317,15 +326,15 @@ double* job_core(
     // move frequencies from second half of spectrum; 
     // loop length: nfft - nyqst = nfft - nfft/2 - 1 = nfft/2 - 1
     for(i=nyqst + sett->Ninterp - sett->nfft, j=nyqst; 
-        i<sett->Ninterp; i++, j++) {
+        i<sett->Ninterp; ++i, ++j) {
       fftw_arr->xa[i] = fftw_arr->xa[j];
       fftw_arr->xb[i] = fftw_arr->xb[j];
     }
 	
     //  zero frequencies higher than nyquist
-    for (i=nyqst; i<nyqst + sett->Ninterp - sett->nfft; i++) {
-      fftw_arr->xa[i] = 0;
-      fftw_arr->xb[i] = 0;
+    for (i=nyqst; i<nyqst + sett->Ninterp - sett->nfft; ++i) {
+      fftw_arr->xa[i] = 0.;
+      fftw_arr->xb[i] = 0.;
     }
 
     // Backward fft (len Ninterp = nfft*interpftpad)
@@ -333,7 +342,7 @@ double* job_core(
     fftw_execute (plans->pl_inv2); 
 
     ft = (double)sett->interpftpad / sett->Ninterp; //scale FFT
-    for (i=0; i < sett->Ninterp; i++) {
+    for (i=0; i < sett->Ninterp; ++i) {
       fftw_arr->xa[i] *= ft;
       fftw_arr->xb[i] *= ft;
     }
@@ -354,16 +363,32 @@ double* job_core(
   } // end of detector loop 
 
 
+#ifdef YEPPP
+#define VLEN 2048
+    yepLibrary_Init();
+      //    printf("npoints=%d, size=%d\n", Npoints, Npoints*sizeof(Yep64f));
+    Yep64f *_p = (Yep64f*)malloc(VLEN*sizeof(Yep64f));
+    Yep64f *_s = (Yep64f*)malloc(VLEN*sizeof(Yep64f));
+    Yep64f *_c = (Yep64f*)malloc(VLEN*sizeof(Yep64f));
+    enum YepStatus status;
+    int bnd = (sett->N/VLEN)*VLEN;
+    printf("npoints=%d, bnd=%d\n", sett->N, bnd);
+#endif
+#ifdef SLEEF
+    double _p[VECTLENDP], _c[VECTLENDP];
+    vdouble2 v;
+    vdouble a;
+#endif
+
+
   // square sums of modulation factors 
-  double aa = 0.; 
-  double bb = 0.; 
+  double aa = 0., bb = 0.; 
 
-  for(n=0; n<sett->nifo;n++) {
+  for(n=0; n<sett->nifo; ++n) {
 
-    double aatemp = 0.; 
-    double bbtemp = 0.;
+    double aatemp = 0., bbtemp = 0.;
  
-    for(i=0; i<sett->N; i++) {
+    for(i=0; i<sett->N; ++i) {
       aatemp += sqr(ifo[n].sig.aa[i]);
       bbtemp += sqr(ifo[n].sig.bb[i]);
     }
@@ -386,15 +411,15 @@ double* job_core(
   if(opts->s0_flag) smin = smax;
   // if spindown parameter is taken into account,
   // smin != smax
-  for(ss=smin; ss<=smax; ss++) {
+  for(ss=smin; ss<=smax; ++ss) {
     //tstart = get_current_time();
     // Spindown parameter
     sgnlt[1] = (opts->s0_flag ? 0. : ss*sett->M[5] + nn*sett->M[9] + mm*sett->M[13]);
-
+    
     if(sgnlt[1] >= -sett->Smax && sgnlt[1] <= sett->Smax) { // Spindown range 
       int ii;
       double Fc, het1;
-
+      
       //print a 'dot' every new spindown
       printf ("."); fflush (stdout);
 
@@ -405,26 +430,181 @@ double* job_core(
 
       // phase modulation before fft
 
-      for(i=sett->N-1; i!=-1; --i) {
-        phase = het1*i + sgnlt[1]*_tmp1[0][i];
-	  //(aux->t2[i] + 2.*i*ifo[0].sig.shft[i]);  
+#if defined(SLEEF)
+      // use simd sincos from the SLEEF library;
+      // VECTLENDP is a simd vector length defined in the SLEEF library
+      // and it depends on selected instruction set e.g. -DENABLE_AVX
+      for (i=0; i<sett->N; i+=VECTLENDP) {
+	for(j=0; j<VECTLENDP; j++)
+	  _p[j] =  het1*(i+j) + sgnlt[1]*_tmp1[0][i+j];
 	
-#ifdef NOSINCOS
-	cp = cos(phase);
-      	sp = sin(phase);
-#else
-	sincos(phase, &sp, &cp);
-#endif
-
-	exph = cp - I*sp;
-
-        fftw_arr->xa[i] = ifo[0].sig.xDatma[i]*exph/(ifo[0].sig.sig2);
-        fftw_arr->xb[i] = ifo[0].sig.xDatmb[i]*exph/(ifo[0].sig.sig2);    
-        
+	a = vloadu(_p);
+	v = xsincos(a);
+	vstoreu(_p, v.x); // reuse _p for sin
+	vstoreu(_c, v.y);
+	
+	for(j=0; j<VECTLENDP; ++j){
+	  exph = _c[j] - I*_p[j];
+	  fftw_arr->xa[i+j] = ifo[0].sig.xDatma[i+j]*exph/ifo[0].sig.sig2;
+	  fftw_arr->xb[i+j] = ifo[0].sig.xDatmb[i+j]*exph/ifo[0].sig.sig2;
+	}
+      } 
+#elif defined(YEPPP)
+      // use yeppp! library;
+      // VLEN is length of vector to be processed
+      // for caches L1/L2 64/256kb optimal value is ~2048
+      for (j=0; j<bnd; j+=VLEN) {
+	for (i=0; i<VLEN; ++i)
+	  _p[i] =  het1*(i+j) + sgnlt[1]*_tmp1[0][i+j];
+	
+	status = yepMath_Sin_V64f_V64f(_p, _s, VLEN);
+	assert(status == YepStatusOk);
+	status = yepMath_Cos_V64f_V64f(_p, _c, VLEN);
+	assert(status == YepStatusOk);
+	
+	for (i=0; i<VLEN; ++i) {
+          exph = _c[i] - I*_s[i];
+	  fftw_arr->xa[i+j] = ifo[0].sig.xDatma[i+j]*exph/ifo[0].sig.sig2;
+	  fftw_arr->xb[i+j] = ifo[0].sig.xDatmb[i+j]*exph/ifo[0].sig.sig2;
+	  /*
+	    xa[i+j] = creal(xDatma[i+j])*_c[i] + cimag(xDatma[i+j])*_s[i] + 
+	    (cimag(xDatma[i+j])*_c[i] - creal(xDatma[i+j])*_s[i])*I;
+	    xb[i+j] = creal(xDatmb[i+j])*_c[i] + cimag(xDatmb[i+j])*_s[i] + 
+	    (cimag(xDatmb[i+j])*_c[i] - creal(xDatmb[i+j])*_s[i])*I;
+	  */
+	}
+      }
+      // remaining part is shorter than VLEN - no need to vectorize
+      for (i=0; i<sett->N-bnd; ++i){
+	j = bnd + i;
+	_p[i] =  het1*j + sgnlt[1]*_tmp1[0][j];
       }
 
-      for(n=1; n<sett->nifo; n++) {
+      status = yepMath_Sin_V64f_V64f(_p, _s, sett->N-bnd);
+      assert(status == YepStatusOk);
+      status = yepMath_Cos_V64f_V64f(_p, _c, sett->N-bnd);
+      assert(status == YepStatusOk);
 
+      for (i=0; i<sett->N-bnd; ++i) {
+	j = bnd + i;
+	exph = _c[i] - I*_s[i];
+	fftw_arr->xa[j] = ifo[0].sig.xDatma[j]*exph/ifo[0].sig.sig2;
+	fftw_arr->xb[j] = ifo[0].sig.xDatmb[j]*exph/ifo[0].sig.sig2;
+	/*
+	  xa[j] = creal(xDatma[j])*_c[i] + cimag(xDatma[j])*_s[i] + 
+	  (cimag(xDatma[j])*_c[i] - creal(xDatma[j])*_s[i])*I;
+	  xb[j] = creal(xDatmb[j])*_c[i] + cimag(xDatmb[j])*_s[i] + 
+	  (cimag(xDatmb[j])*_c[i] - creal(xDatmb[j])*_s[i])*I;
+	*/
+      }
+#elif defined(GNUSINCOS)
+      for(i=sett->N-1; i!=-1; --i) {
+        phase = het1*i + sgnlt[1]*_tmp1[0][i];
+	sincos(phase, &sp, &cp);
+	exph = cp - I*sp;
+        fftw_arr->xa[i] = ifo[0].sig.xDatma[i]*exph/ifo[0].sig.sig2;
+        fftw_arr->xb[i] = ifo[0].sig.xDatmb[i]*exph/ifo[0].sig.sig2;
+      }
+#else
+      for(i=sett->N-1; i!=-1; --i) {
+        phase = het1*i + sgnlt[1]*_tmp1[0][i];
+	cp = cos(phase);
+      	sp = sin(phase);
+	exph = cp - I*sp;
+        fftw_arr->xa[i] = ifo[0].sig.xDatma[i]*exph/ifo[0].sig.sig2;
+        fftw_arr->xb[i] = ifo[0].sig.xDatmb[i]*exph/ifo[0].sig.sig2;
+      }
+#endif
+
+      for(n=1; n<sett->nifo; ++n) {
+
+#if defined(SLEEF)
+      // use simd sincos from the SLEEF library;
+      // VECTLENDP is a simd vector length defined in the SLEEF library
+      // and it depends on selected instruction set e.g. -DENABLE_AVX
+	for (i=0; i<sett->N; i+=VECTLENDP) {
+	  for(j=0; j<VECTLENDP; j++)
+	    _p[j] =  het1*(i+j) + sgnlt[1]*_tmp1[n][i+j];
+	
+	  a = vloadu(_p);
+	  v = xsincos(a);
+	  vstoreu(_p, v.x); // reuse _p for sin
+	  vstoreu(_c, v.y);
+	
+	  for(j=0; j<VECTLENDP; ++j){
+	    exph = _c[j] - I*_p[j];
+	    fftw_arr->xa[i+j] = ifo[n].sig.xDatma[i+j]*exph/ifo[n].sig.sig2;
+	    fftw_arr->xb[i+j] = ifo[n].sig.xDatmb[i+j]*exph/ifo[n].sig.sig2;
+	  }
+	} 
+#elif defined(YEPPP)
+	// use yeppp! library;
+	// VLEN is length of vector to be processed
+	// for caches L1/L2 64/256kb optimal value is ~2048
+	for (j=0; j<bnd; j+=VLEN) {
+	  for (i=0; i<VLEN; ++i)
+	    _p[i] =  het1*(i+j) + sgnlt[1]*_tmp1[n][i+j];
+	
+	  status = yepMath_Sin_V64f_V64f(_p, _s, VLEN);
+	  assert(status == YepStatusOk);
+	  status = yepMath_Cos_V64f_V64f(_p, _c, VLEN);
+	  assert(status == YepStatusOk);
+	
+	  for (i=0; i<VLEN; ++i) {
+	    exph = _c[i] - I*_s[i];
+	    fftw_arr->xa[i+j] += ifo[n].sig.xDatma[i+j]*exph/ifo[n].sig.sig2;
+	    fftw_arr->xb[i+j] += ifo[n].sig.xDatmb[i+j]*exph/ifo[n].sig.sig2;
+	    /*
+	      xa[i+j] = creal(xDatma[i+j])*_c[i] + cimag(xDatma[i+j])*_s[i] + 
+	      (cimag(xDatma[i+j])*_c[i] - creal(xDatma[i+j])*_s[i])*I;
+	      xb[i+j] = creal(xDatmb[i+j])*_c[i] + cimag(xDatmb[i+j])*_s[i] + 
+	      (cimag(xDatmb[i+j])*_c[i] - creal(xDatmb[i+j])*_s[i])*I;
+	    */
+	  }
+	}
+	// remaining part is shorter than VLEN - no need to vectorize
+	for (i=0; i<sett->N-bnd; ++i){
+	  j = bnd + i;
+	  _p[i] =  het1*j + sgnlt[1]*_tmp1[n][j];
+	}
+
+	status = yepMath_Sin_V64f_V64f(_p, _s, sett->N-bnd);
+	assert(status == YepStatusOk);
+	status = yepMath_Cos_V64f_V64f(_p, _c, sett->N-bnd);
+	assert(status == YepStatusOk);
+
+	for (i=0; i<sett->N-bnd; ++i) {
+	  j = bnd + i;
+	  exph = _c[i] - I*_s[i];
+	  fftw_arr->xa[j] += ifo[n].sig.xDatma[j]*exph/ifo[n].sig.sig2;
+	  fftw_arr->xb[j] += ifo[n].sig.xDatmb[j]*exph/ifo[n].sig.sig2;
+	  /*
+	    xa[j] = creal(xDatma[j])*_c[i] + cimag(xDatma[j])*_s[i] + 
+	    (cimag(xDatma[j])*_c[i] - creal(xDatma[j])*_s[i])*I;
+	    xb[j] = creal(xDatmb[j])*_c[i] + cimag(xDatmb[j])*_s[i] + 
+	    (cimag(xDatmb[j])*_c[i] - creal(xDatmb[j])*_s[i])*I;
+	  */
+	}
+#elif defined(GNUSINCOS)
+	for(i=sett->N-1; i!=-1; --i) {
+	  phase = het1*i + sgnlt[1]*_tmp1[n][i];
+	  sincos(phase, &sp, &cp);
+	  exph = cp - I*sp;
+	  fftw_arr->xa[i] += ifo[n].sig.xDatma[i]*exph/ifo[n].sig.sig2;
+	  fftw_arr->xb[i] += ifo[n].sig.xDatmb[i]*exph/ifo[n].sig.sig2;
+	}
+#else
+	for(i=sett->N-1; i!=-1; --i) {
+	  phase = het1*i + sgnlt[1]*_tmp1[n][i];
+	  cp = cos(phase);
+	  sp = sin(phase);
+	  exph = cp - I*sp;
+	  fftw_arr->xa[i] += ifo[n].sig.xDatma[i]*exph/ifo[n].sig.sig2;
+	  fftw_arr->xb[i] += ifo[n].sig.xDatmb[i]*exph/ifo[n].sig.sig2;
+	}
+#endif
+
+	/*
 	//        for(i=0; i<sett->N; i++) {
 	for(i=sett->N-1; i!=-1; --i) {
 	  phase = het1*i + sgnlt[1]*_tmp1[n][i];
@@ -440,6 +620,7 @@ double* job_core(
           fftw_arr->xa[i] += ifo[n].sig.xDatma[i]*exph/(ifo[n].sig.sig2);
           fftw_arr->xb[i] += ifo[n].sig.xDatmb[i]*exph/(ifo[n].sig.sig2);    
         }
+	*/
       } 
 
       // Zero-padding 
@@ -453,35 +634,35 @@ double* job_core(
       (*FNum)++;
 
       // Computing F-statistic 
-      for (i=sett->nmin; i<sett->nmax; i++) {
-	      F[i] = (sqr(creal(fftw_arr->xa[i])) 
-             + sqr(cimag(fftw_arr->xa[i])))/aa  
-             + (sqr(creal(fftw_arr->xb[i])) 
-             + sqr(cimag(fftw_arr->xb[i])))/bb;
+      for (i=sett->nmin; i<sett->nmax; ++i) {
+	F[i] = (sqr(creal(fftw_arr->xa[i])) 
+	     +  sqr(cimag(fftw_arr->xa[i])))/aa  
+	     + (sqr(creal(fftw_arr->xb[i])) 
+             +  sqr(cimag(fftw_arr->xb[i])))/bb;
       }
 
       // Normalize F-statistics 
       if(!(opts->white_flag))  // if the noise is not white noise
-	      FStat(F + sett->nmin, sett->nmax - sett->nmin, NAV, 0);
+	FStat(F + sett->nmin, sett->nmax - sett->nmin, NAV, 0);
 
-      for(i=sett->nmin; i<sett->nmax; i++) {
-	      if ((Fc = F[i]) > opts->trl) { //if F-stat exceeds trl (critical value)
-	        // Find local maximum for neighboring signals 
-	        ii = i;
+      for(i=sett->nmin; i<sett->nmax; ++i) {
+	if ((Fc = F[i]) > opts->trl) { //if F-stat exceeds trl (critical value)
+	  // Find local maximum for neighboring signals 
+	  ii = i;
 
-	        while (++i < sett->nmax && F[i] > opts->trl) {
+	  while (++i < sett->nmax && F[i] > opts->trl) {
       	    if(F[i] >= Fc) {
-	            ii = i;
-	            Fc = F[i];
-	          } // if F[i] 
-	        } // while i 
+	      ii = i;
+	      Fc = F[i];
+	    } // if F[i] 
+	  } // while i 
 	  // Candidate signal frequency
-					
+	  
 	  sgnlt[0] = 2.*M_PI*ii/((double) sett->fftpad*sett->nfft) + sgnl0;
 	  // Signal-to-noise ratio
 	  sgnlt[4] = sqrt(2.*(Fc-sett->nd));
-
-    //#mb
+	  
+	  //#mb
     /* 
 	  printf("\n%lf %lf %lf %lf %lf\n", 
       sgnlt[0], sgnlt[1], sgnlt[2], sgnlt[3], sgnlt[4]);
@@ -492,14 +673,14 @@ double* job_core(
 	  // Add new parameters to output array 
 	  sgnlv = (double *)realloc(sgnlv, NPAR*(*sgnlc)*sizeof (double));
 
-	  for (j=0; j<NPAR; j++) // save new parameters
+	  for (j=0; j<NPAR; ++j) // save new parameters
 	    sgnlv[NPAR*(*sgnlc-1)+j] = sgnlt[j];
 
 	  printf ("\nSignal %d: %d %d %d %d %d \tsnr=%.2f\n", 
 		  *sgnlc, pm, mm, nn, ss, ii, sgnlt[4]);
 	} // if Fc > trl 
       } // for i 
-
+      
     
       /* //#mb for debugging 
 
@@ -525,5 +706,4 @@ double* job_core(
   return sgnlv;
 
 } // jobcore
-
 

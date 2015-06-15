@@ -1,7 +1,7 @@
 .PHONY: all veclib
 # adjust FFTW_DIR and SINCOS
 FFTW_DIR = /opt/fftw/3.3.4/gnu
-SINCOS =  YEPPP #YEPPP or SLEEF or GNUSINCOS or NOSINCOS
+SINCOS =  SLEEF #YEPPP or SLEEF or GNUSINCOS or NOSINCOS
 
 CC = gcc -g -fno-omit-frame-pointer
 CFLAGS = -Wall -Wno-unused -O3 -DPREFIX="./candidates" -DTIMERS \
