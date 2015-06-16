@@ -271,18 +271,25 @@ double* job_core(
     nSource[1] = sinalt*cosdelt;
     nSource[2] = sindelt;
 
-    shft1 = 0.;
+    shft1 = nSource[0]*ifo[n].sig.DetSSB[0]
+          + nSource[1]*ifo[n].sig.DetSSB[1]
+          + nSource[2]*ifo[n].sig.DetSSB[2];
+      /*    shft1 = 0.;
     for (j=0; j<3; j++)
-      shft1 += nSource[j]*ifo[n].sig.DetSSB[j];
+      shft1 += nSource[j]*ifo[n].sig.DetSSB[j];*/
 
     for(i=0; i<sett->N; ++i) {
-      ifo[n].sig.shft[i] = 0.;
 
-      for(j=0; j<3; ++j)
-        ifo[n].sig.shft[i] += nSource[j]*ifo[n].sig.DetSSB[i*3+j];
+      //      ifo[n].sig.shft[i] = 0.;
+      ifo[n].sig.shft[i] = nSource[0]*ifo[n].sig.DetSSB[i*3+0]
+	                 + nSource[1]*ifo[n].sig.DetSSB[i*3+1]
+	                 + nSource[2]*ifo[n].sig.DetSSB[i*3+2];
+
+      //      for(j=0; j<3; ++j)
+      //  ifo[n].sig.shft[i] += nSource[j]*ifo[n].sig.DetSSB[i*3+j];
     
       ifo[n].sig.shftf[i] = ifo[n].sig.shft[i] - shft1;
-      _tmp1[n][i] = aux->t2[i] + 2*i*ifo[n].sig.shft[i];
+      _tmp1[n][i] = aux->t2[i] + (double)(2*i)*ifo[n].sig.shft[i];
 
       // Phase modulation 
       phase = het0*i + sett->oms*ifo[n].sig.shft[i];
@@ -363,6 +370,28 @@ double* job_core(
   } // end of detector loop 
 
 
+  // square sums of modulation factors 
+  double aa = 0., bb = 0.; 
+
+  for(n=0; n<sett->nifo; ++n) {
+
+    double aatemp = 0., bbtemp = 0.;
+ 
+    for(i=0; i<sett->N; ++i) {
+      aatemp += sqr(ifo[n].sig.aa[i]);
+      bbtemp += sqr(ifo[n].sig.bb[i]);
+      //      ifo[n].sig.xDatma[i] /= ifo[n].sig.sig2;
+      //ifo[n].sig.xDatmb[i] /= ifo[n].sig.sig2;
+    }
+    for(i=0; i<sett->N; ++i) {
+      ifo[n].sig.xDatma[i] /= ifo[n].sig.sig2;
+      ifo[n].sig.xDatmb[i] /= ifo[n].sig.sig2;
+    }
+
+    aa += aatemp/ifo[n].sig.sig2; 
+    bb += bbtemp/ifo[n].sig.sig2;   
+  }
+
 #ifdef YEPPP
 #define VLEN 2048
     yepLibrary_Init();
@@ -379,23 +408,6 @@ double* job_core(
     vdouble2 v;
     vdouble a;
 #endif
-
-
-  // square sums of modulation factors 
-  double aa = 0., bb = 0.; 
-
-  for(n=0; n<sett->nifo; ++n) {
-
-    double aatemp = 0., bbtemp = 0.;
- 
-    for(i=0; i<sett->N; ++i) {
-      aatemp += sqr(ifo[n].sig.aa[i]);
-      bbtemp += sqr(ifo[n].sig.bb[i]);
-    }
-
-    aa += aatemp/ifo[n].sig.sig2; 
-    bb += bbtemp/ifo[n].sig.sig2;   
-  }
 
 
   /* Spindown loop 
@@ -445,8 +457,8 @@ double* job_core(
 	
 	for(j=0; j<VECTLENDP; ++j){
 	  exph = _c[j] - I*_p[j];
-	  fftw_arr->xa[i+j] = ifo[0].sig.xDatma[i+j]*exph/ifo[0].sig.sig2;
-	  fftw_arr->xb[i+j] = ifo[0].sig.xDatmb[i+j]*exph/ifo[0].sig.sig2;
+	  fftw_arr->xa[i+j] = ifo[0].sig.xDatma[i+j]*exph; ///ifo[0].sig.sig2;
+	  fftw_arr->xb[i+j] = ifo[0].sig.xDatmb[i+j]*exph; ///ifo[0].sig.sig2;
 	}
       } 
 #elif defined(YEPPP)
@@ -464,8 +476,8 @@ double* job_core(
 	
 	for (i=0; i<VLEN; ++i) {
           exph = _c[i] - I*_s[i];
-	  fftw_arr->xa[i+j] = ifo[0].sig.xDatma[i+j]*exph/ifo[0].sig.sig2;
-	  fftw_arr->xb[i+j] = ifo[0].sig.xDatmb[i+j]*exph/ifo[0].sig.sig2;
+	  fftw_arr->xa[i+j] = ifo[0].sig.xDatma[i+j]*exph; ///ifo[0].sig.sig2;
+	  fftw_arr->xb[i+j] = ifo[0].sig.xDatmb[i+j]*exph; ///ifo[0].sig.sig2;
 	  /*
 	    xa[i+j] = creal(xDatma[i+j])*_c[i] + cimag(xDatma[i+j])*_s[i] + 
 	    (cimag(xDatma[i+j])*_c[i] - creal(xDatma[i+j])*_s[i])*I;
@@ -488,8 +500,8 @@ double* job_core(
       for (i=0; i<sett->N-bnd; ++i) {
 	j = bnd + i;
 	exph = _c[i] - I*_s[i];
-	fftw_arr->xa[j] = ifo[0].sig.xDatma[j]*exph/ifo[0].sig.sig2;
-	fftw_arr->xb[j] = ifo[0].sig.xDatmb[j]*exph/ifo[0].sig.sig2;
+	fftw_arr->xa[j] = ifo[0].sig.xDatma[j]*exph; ///ifo[0].sig.sig2;
+	fftw_arr->xb[j] = ifo[0].sig.xDatmb[j]*exph; ///ifo[0].sig.sig2;
 	/*
 	  xa[j] = creal(xDatma[j])*_c[i] + cimag(xDatma[j])*_s[i] + 
 	  (cimag(xDatma[j])*_c[i] - creal(xDatma[j])*_s[i])*I;
@@ -502,8 +514,8 @@ double* job_core(
         phase = het1*i + sgnlt[1]*_tmp1[0][i];
 	sincos(phase, &sp, &cp);
 	exph = cp - I*sp;
-        fftw_arr->xa[i] = ifo[0].sig.xDatma[i]*exph/ifo[0].sig.sig2;
-        fftw_arr->xb[i] = ifo[0].sig.xDatmb[i]*exph/ifo[0].sig.sig2;
+        fftw_arr->xa[i] = ifo[0].sig.xDatma[i]*exph; ///ifo[0].sig.sig2;
+        fftw_arr->xb[i] = ifo[0].sig.xDatmb[i]*exph; ///ifo[0].sig.sig2;
       }
 #else
       for(i=sett->N-1; i!=-1; --i) {
@@ -511,13 +523,13 @@ double* job_core(
 	cp = cos(phase);
       	sp = sin(phase);
 	exph = cp - I*sp;
-        fftw_arr->xa[i] = ifo[0].sig.xDatma[i]*exph/ifo[0].sig.sig2;
-        fftw_arr->xb[i] = ifo[0].sig.xDatmb[i]*exph/ifo[0].sig.sig2;
+        fftw_arr->xa[i] = ifo[0].sig.xDatma[i]*exph; ///ifo[0].sig.sig2;
+        fftw_arr->xb[i] = ifo[0].sig.xDatmb[i]*exph; ///ifo[0].sig.sig2;
       }
 #endif
 
       for(n=1; n<sett->nifo; ++n) {
-
+	//	double sig2inv = 1./ifo[n].sig.sig2;
 #if defined(SLEEF)
       // use simd sincos from the SLEEF library;
       // VECTLENDP is a simd vector length defined in the SLEEF library
@@ -533,8 +545,8 @@ double* job_core(
 	
 	  for(j=0; j<VECTLENDP; ++j){
 	    exph = _c[j] - I*_p[j];
-	    fftw_arr->xa[i+j] = ifo[n].sig.xDatma[i+j]*exph/ifo[n].sig.sig2;
-	    fftw_arr->xb[i+j] = ifo[n].sig.xDatmb[i+j]*exph/ifo[n].sig.sig2;
+	    fftw_arr->xa[i+j] = ifo[n].sig.xDatma[i+j]*exph; //*sig2inv;
+	    fftw_arr->xb[i+j] = ifo[n].sig.xDatmb[i+j]*exph; //*sig2inv;
 	  }
 	} 
 #elif defined(YEPPP)
@@ -552,8 +564,8 @@ double* job_core(
 	
 	  for (i=0; i<VLEN; ++i) {
 	    exph = _c[i] - I*_s[i];
-	    fftw_arr->xa[i+j] += ifo[n].sig.xDatma[i+j]*exph/ifo[n].sig.sig2;
-	    fftw_arr->xb[i+j] += ifo[n].sig.xDatmb[i+j]*exph/ifo[n].sig.sig2;
+	    fftw_arr->xa[i+j] += ifo[n].sig.xDatma[i+j]*exph; //*sig2inv;
+	    fftw_arr->xb[i+j] += ifo[n].sig.xDatmb[i+j]*exph; //*sig2inv;
 	    /*
 	      xa[i+j] = creal(xDatma[i+j])*_c[i] + cimag(xDatma[i+j])*_s[i] + 
 	      (cimag(xDatma[i+j])*_c[i] - creal(xDatma[i+j])*_s[i])*I;
@@ -576,8 +588,8 @@ double* job_core(
 	for (i=0; i<sett->N-bnd; ++i) {
 	  j = bnd + i;
 	  exph = _c[i] - I*_s[i];
-	  fftw_arr->xa[j] += ifo[n].sig.xDatma[j]*exph/ifo[n].sig.sig2;
-	  fftw_arr->xb[j] += ifo[n].sig.xDatmb[j]*exph/ifo[n].sig.sig2;
+	  fftw_arr->xa[j] += ifo[n].sig.xDatma[j]*exph; //*sig2inv;
+	  fftw_arr->xb[j] += ifo[n].sig.xDatmb[j]*exph; //*sig2inv;
 	  /*
 	    xa[j] = creal(xDatma[j])*_c[i] + cimag(xDatma[j])*_s[i] + 
 	    (cimag(xDatma[j])*_c[i] - creal(xDatma[j])*_s[i])*I;
@@ -590,8 +602,8 @@ double* job_core(
 	  phase = het1*i + sgnlt[1]*_tmp1[n][i];
 	  sincos(phase, &sp, &cp);
 	  exph = cp - I*sp;
-	  fftw_arr->xa[i] += ifo[n].sig.xDatma[i]*exph/ifo[n].sig.sig2;
-	  fftw_arr->xb[i] += ifo[n].sig.xDatmb[i]*exph/ifo[n].sig.sig2;
+	  fftw_arr->xa[i] += ifo[n].sig.xDatma[i]*exph; //*sig2inv;
+	  fftw_arr->xb[i] += ifo[n].sig.xDatmb[i]*exph; //*sig2inv;
 	}
 #else
 	for(i=sett->N-1; i!=-1; --i) {
@@ -599,8 +611,8 @@ double* job_core(
 	  cp = cos(phase);
 	  sp = sin(phase);
 	  exph = cp - I*sp;
-	  fftw_arr->xa[i] += ifo[n].sig.xDatma[i]*exph/ifo[n].sig.sig2;
-	  fftw_arr->xb[i] += ifo[n].sig.xDatmb[i]*exph/ifo[n].sig.sig2;
+	  fftw_arr->xa[i] += ifo[n].sig.xDatma[i]*exph; //*sig2inv;
+	  fftw_arr->xb[i] += ifo[n].sig.xDatmb[i]*exph; //*sig2inv;
 	}
 #endif
 
