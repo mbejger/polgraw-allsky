@@ -273,19 +273,19 @@ double* job_core(
 
     shft1 = 0.;
     for (j=0; j<3; j++)
-      shft1 += nSource[j]*(ifo[n].sig.DetSSB[j]);
+      shft1 += nSource[j]*ifo[n].sig.DetSSB[j];
 
     for(i=0; i<sett->N; ++i) {
       ifo[n].sig.shft[i] = 0.;
 
       for(j=0; j<3; ++j)
-        ifo[n].sig.shft[i] += nSource[j]*(ifo[n].sig.DetSSB[i*3+j]);
+        ifo[n].sig.shft[i] += nSource[j]*ifo[n].sig.DetSSB[i*3+j];
     
       ifo[n].sig.shftf[i] = ifo[n].sig.shft[i] - shft1;
       _tmp1[n][i] = aux->t2[i] + 2*i*ifo[n].sig.shft[i];
 
       // Phase modulation 
-      phase = het0*i + sett->oms*(ifo[n].sig.shft[i]);
+      phase = het0*i + sett->oms*ifo[n].sig.shft[i];
 #ifdef NOSINCOS
       cp = cos(phase);
       sp = sin(phase);
