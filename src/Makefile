@@ -11,8 +11,12 @@ sigen: sigen.o\
 	settings.o auxi.o
 	$(CC) -gnatv -o $@ $^ $(LIBS)
 
+gridopt: gridopt.o\
+	auxi.o lineph.o settings.o
+	$(CC) -gnatv -o $@ $^ $(LIBS)
+
 clean:
 	rm -f *.o
 
 uninstall: clean
-	rm -f search
+	rm -f search sigen gridopt

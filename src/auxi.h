@@ -31,4 +31,8 @@ double FStat (double *, int, int, int);
 int ludcmp (double *, int, int *, double *);
 int lubksb (double *, int, int *, double *);
 
+// gridopt 
+int invm (const double *, int, double *);
+double det (const double *, int);
+
 #endif

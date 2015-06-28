@@ -179,10 +179,6 @@ gridr (double *M, int *spndr, int *nr, int *mr, double oms, double Smax) {
   }
 } /* gridr() */
 
-
-
-
-
 double FStat (double *F, int nfft, int nav, int indx) {
   /* FStat Smoothed F-statistic */
 
@@ -210,18 +206,6 @@ double FStat (double *F, int nfft, int nav, int indx) {
   } /* for j */
   return pxout;
 } /* FStat() */
-
-
-
-
-
-
-
-
-
-
-
-
 
 int
 ludcmp (double *a, int n, int *indx, double *d)
@@ -328,6 +312,57 @@ lubksb (double *a, int n, int *indx, double *b)
   return 0;
 } /* lubksb() */
 
+int
+invm (const double *a, int N, double *y)
+     /* Inverse of a real matrix a[0..N-1][0..N-1].
+	Input:
+		a[0..N-1][0..N-1] - given matrix (saved on exit)
+		N	      - number of rows and columns of a
+        Output:
+		y[0..N-1][0..N-1] - inverse of a
+     */
+{
+  double d, *col, *al;
+  int i, j, *indx;
 
+  al = (double *) calloc (sqr(N), sizeof (double));
+  indx = (int *) calloc (N, sizeof (int));
+  col = (double *) calloc (N, sizeof (double));
+  for (i=0; i<sqr(N); i++)
+    al[i] = a[i];
+  if (ludcmp (al, N, indx, &d))
+    return 1;
+  for (j=0; j<N; j++) {
+    for (i=0; i<N; i++)
+      col[i] = 0.0;
+    col[j] = 1.0;
+    lubksb (al, N, indx, col);
+    for (i=0; i<N; i++)
+      y[N*i+j] = col[i];
+  }
+  free (col);
+  free (indx);
+  free (al);
+  return 0;
+} /* invm() */
+
+double
+det (const double *a, int N)
+     /* determinant of a real matrix a[0..N-1][0..N-1] */
+{
+  double d, *al;;
+  int j, *indx;
+
+  al = (double *) calloc (sqr(N), sizeof (double));
+  indx = (int *) calloc (N, sizeof (int));
+  for (j=0; j<sqr(N); j++)
+    al[j] = a[j];
+  ludcmp (al, N, indx, &d);
+  for (j=0; j<N; j++)
+    d *= al[N*j+j];
+  free (indx);
+  free (al);
+  return d;
+} /* det() */
 
 #endif
