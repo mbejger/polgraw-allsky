@@ -56,4 +56,6 @@ void modvir(
     Detector_settings *ifo, 
     Aux_arrays *aux);
 
+int lineph (double, double *, double *, char *, char *, int);
+
 #endif
