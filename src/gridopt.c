@@ -484,7 +484,7 @@ int main (int argc, char *argv[]) {
   double gamrnf[16], delp0, Mopt[16], M[16], Mn[16], MM, thickness, \
     epsm, Tn[16], Tin[16], gamrn[16], covr[16], covrnf[16], Tf[16], \
     T[16], gamr[16], minimal_match;
-  char dtaprefix[64], ident[16];
+  char dtaprefix[512], ident[16];
 
   Search_settings sett;
 
@@ -531,7 +531,7 @@ int main (int argc, char *argv[]) {
   {
     FILE *data;
     double x;
-    char filename[64];
+    char filename[512];
     sprintf (filename, "%s/DetSSB%s.bin", dtaprefix, ident);
     if ((data = fopen (filename, "r")) != NULL) {
       for (i=0; i<3*(sett.N)+1; i++)
@@ -603,7 +603,7 @@ int main (int argc, char *argv[]) {
 
   {
     FILE *data;
-    char filename[64];
+    char filename[512];
     sprintf (filename, "%s/grid%s.bin", dtaprefix, ident);
     data = fopen (filename, "w");
     fwrite ((void *)&sett.fftpad, sizeof (int), 1, data);
