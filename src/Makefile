@@ -1,15 +1,25 @@
 .PHONY: all veclib
-# adjust FFTW_DIR and SINCOS
+# FFTW_DIR - fftw location, remember to compile it with optimizations (e.g. avx)
+# SINCOS = {YEPPP or SLEEF or GNUSINCOS or NOSINCOS}
 FFTW_DIR = /opt/fftw/3.3.4/gnu
 SINCOS =  YEPPP #YEPPP or SLEEF or GNUSINCOS or NOSINCOS
 
-CC = gcc -g -fno-omit-frame-pointer
+CC = gcc -g -fno-omit-frame-pointer 
 CFLAGS = -Wall -Wno-unused -O3 -DPREFIX="./candidates" -DTIMERS \
-	-march=native -mtune=native \
 	-ffast-math -funroll-loops -funsafe-loop-optimizations \
-        -I$(FFTW_DIR)/include -D$(SINCOS)
+        -I$(FFTW_DIR)/include -D$(SINCOS) \
+	-march=corei7-avx -mtune=corei7-avx -mavx
+#cpu specific optimizations e.g.:
+#sandy-bridge (psk)
+	#-march=corei7-avx -mtune=corei7-avx -mavx
+#westmere (plgrid)
+	#-march=corei7 -mtune=corei7
+
 LDFLAGS = -L$(FFTW_DIR)/lib
-LOADLIBES = -lm -lgsl -lgslcblas -lfftw3 -lc -lrt
+
+LOADLIBES = -Wl,--dynamic-linker=/lib64/ld-linux-x86-64.so.2 \
+	    -static -lfftw3 -lgsl -lgslcblas \
+	    -Wl,-Bdynamic -lc -lrt -lm
 
 ifeq ($(strip $(SINCOS)),SLEEF)
 SPATH = lib/sleef-2.80/simd
@@ -20,9 +30,9 @@ VECLIB = $(SPATH)/libsleef-avx.so
 #sleef-2.80/purec/sleefdp.o
 endif
 ifeq ($(strip $(SINCOS)),YEPPP)
-CFLAGS  += -mavx -Ilib/yeppp-1.0.0/library/headers
+CFLAGS  += -Ilib/yeppp-1.0.0/library/headers
 LDFLAGS += -Llib/yeppp-1.0.0/binaries/linux/x86_64
-LOADLIBES +=  -lyeppp
+LOADLIBES += -lyeppp
 VECLIB = lib/yeppp-1.0.0/binaries/linux/x86_64/libyeppp.so
 endif
 
@@ -39,8 +49,7 @@ veclib:
 	echo "Using prebuild YEPPP library: $(VECLIB)"
 endif
 
-search: main.o jobcore.o timer.o settings.o \
-	auxi.o init.o
+search: main.o jobcore.o timer.o settings.o auxi.o init.o
 	$(CC) $(LDFLAGS) -gnatv -o $@ $^ $(LOADLIBES)
 
 sigen: sigen.o settings.o auxi.o
