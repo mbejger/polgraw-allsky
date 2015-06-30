@@ -15,9 +15,9 @@ typedef struct __comm_line_opts {
 	double trl;
 	double fpo_val;
 	
-	char prefix[64], dtaprefix[64], label[64], range[64], *wd,
+	char prefix[512], dtaprefix[512], label[512], range[512], *wd,
 			ifo_choice[3];
-	char qname[64];
+	char qname[512];
 
 } Command_line_opts;
 

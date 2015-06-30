@@ -57,7 +57,7 @@ void search(
   int sgnlc; //number of canditates
   double *sgnlv; //array with candidates data
 
-  char outname[64], qname[64];
+  char outname[512], qname[512];
   int fd;
 	
   FILE *state;

@@ -217,7 +217,7 @@ void read_grid(
   sett->M = (double *)calloc(16, sizeof (double));
 
   FILE *data;
-  char filename[64];
+  char filename[512];
   sprintf (filename, "%s/%03d/grid.bin", opts->dtaprefix, opts->ident);
   if ((data=fopen (filename, "r")) != NULL) {
     // fftpad: used to zero padding to fftpad*nfft data points
@@ -260,10 +260,10 @@ void init_arrays(
 
 
 
-  char filename[64];
+  char filename[512];
   FILE *data;
   // Input time-domain data handling
-  sprintf (filename, "%s/%03d/xdat_%03d_%03d%s.bin", opts->dtaprefix, opts->ident, \
+  sprintf (filename, "%s/%03d/xdatc_%03d_%03d%s.bin", opts->dtaprefix, opts->ident, \
 	   opts->ident, opts->band, opts->label);
   if ((data = fopen (filename, "r")) != NULL) {
     fread ((void *)(sig->xDat), sizeof (double), sett->N, data); 
@@ -473,7 +473,7 @@ void plan_fftw(
   Signals *sig, 
   Aux_arrays *aux_arr) { 
 
-  char hostname[32], wfilename[64];
+  char hostname[512], wfilename[512];
   FILE *wisdom;
 
   // Imports a "wisdom file" containing information about how to optimally
