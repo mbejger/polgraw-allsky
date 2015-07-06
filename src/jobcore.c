@@ -694,8 +694,8 @@ double* job_core(
       } // for i 
       
     
-      /* //#mb for debugging 
-
+      //#mb for debugging 
+/*
       tend = get_current_time();
       spindown_timer += get_time_difference(tstart, tend);
       spindown_counter++;
@@ -705,7 +705,7 @@ double* job_core(
 
       }
 
-      */ 
+   */ 
 
     } // if sgnlt[1] 
   } // for ss 

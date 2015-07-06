@@ -3,7 +3,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <dirent.h>
-					
+
 #include "settings.h"
 #include "auxi.h"
 #include "struct.h"
@@ -14,49 +14,49 @@
  */
 
 void search_settings(
-	Search_settings* sett) {
+  Search_settings* sett) {
 
   double dt, B, oms, omr, alfa, Smin, Smax;
   int nod, N, nfft, s, nd, fftpad, interpftpad;
 
 
-  dt = 0.5;												// data sampling time
-  B = 0.5/dt;											// Bandwidth
-  oms = 2.*M_PI*(sett->fpo)*dt;		// Dimensionless angular frequency
+  dt = 0.5;                       // data sampling time
+  B = 0.5/dt;
+  oms = 2.*M_PI*(sett->fpo)*dt;   // Dimensionless angular frequency
 
   omr = C_OMEGA_R*dt;
 
-  nod = 2;												// Observation time in days
-  N = round (nod*C_SIDDAY/dt);		// No. of data points
+  nod = 2;                        // Observation time in days
+  N = round (nod*C_SIDDAY/dt);    // No. of data points
 
-  nfft = 1 << (int)ceil(log(N)/log(2.));	// length of FFT
-  s = 1;																	// No. of spindowns
+  nfft = 1 << (int)ceil(log(N)/log(2.));  // length of FFT
+  s = 1;                                  // No. of spindowns
 
-  Smin = 1000.*C_YEARSEC;					// Minimum spindown time 
-																	// [sec.]
+  Smin = 1000.*C_YEARSEC;                 // Minimum spindown time 
+                                          // [sec.]
 
   // Maximum spindown (1000 years) [angular, dimensionless]
   Smax = 2.*M_PI*(sett->fpo + B)*dt*dt/(2.*Smin);   
 
-  alfa = .01;			// False alarm probability
-  nd = 2;					// Degree of freedom, 
-									// (2*nd = deg. no ofrees of freedom for chi^2)
+  alfa = .01;       // False alarm probability
+  nd = 2;           // Degree of freedom, 
+                    // (2*nd = deg. no ofrees of freedom for chi^2)
 
-  fftpad = 1;			// Zero padding (original grid: 2, new grids: 1)
+  fftpad = 1;       // Zero padding (original grid: 2, new grids: 1)
   interpftpad = 2;
 
-  sett->dt=dt;        	// sampling time
-  sett->B=B;          	// bandwidth
-  sett->oms=oms;      	// dimensionless angular frequency
-  sett->omr=omr;      	// C_OMEGA_R * dt
-  sett->nod=nod;      	// number of days of observation
-  sett->N=N;          	// number of data points
-  sett->nfft=nfft;    	// length of fft
-  sett->s=s;          	// number of spindowns
-  sett->Smin=Smin;    	// minimum spindown
-  sett->Smax=Smax;    	// maximum spindown
-  sett->alfa=alfa;    	// false alarm probability
-  sett->nd=nd;        	// degrees of freedom
+  sett->dt=dt;          // sampling time
+  sett->B=B;            // bandwidth
+  sett->oms=oms;        // dimensionless angular frequency
+  sett->omr=omr;        // C_OMEGA_R * dt
+  sett->nod=nod;        // number of days of observation
+  sett->N=N;            // number of data points
+  sett->nfft=nfft;      // length of fft
+  sett->s=s;            // number of spindowns
+  sett->Smin=Smin;      // minimum spindown
+  sett->Smax=Smax;      // maximum spindown
+  sett->alfa=alfa;      // false alarm probability
+  sett->nd=nd;          // degrees of freedom
   sett->fftpad=fftpad;  // zero padding
   sett->interpftpad=interpftpad;
 
@@ -77,8 +77,8 @@ void search_settings(
  */ 
 
 void detectors_settings(
-	Search_settings* sett, 
-	Command_line_opts *opts) {
+  Search_settings* sett, 
+  Command_line_opts *opts) {
 
   int i=0; 
 
@@ -92,12 +92,12 @@ void detectors_settings(
 
   dp = opendir (dirname);
   if (dp != NULL) {
-		while ((ep = readdir (dp))) { 
+    while ((ep = readdir (dp))) { 
 
-			// Subdirectory names: 2 char long
-			if((ep->d_type == DT_DIR) && 
-		  	(strlen(ep->d_name)==DETNAME_LENGTH) && 
-		  	strncmp(&ep->d_name[0],".",1)) { 
+      // Subdirectory names: 2 char long
+      if((ep->d_type == DT_DIR) && 
+        (strlen(ep->d_name)==DETNAME_LENGTH) && 
+        strncmp(&ep->d_name[0],".",1)) { 
 
           char filename[512];
           FILE *data;
@@ -108,21 +108,21 @@ void detectors_settings(
           opts->ident, opts->band, opts->label);
 
           if((data = fopen(filename, "r")) != NULL) {
-  			  	detnames[i] = calloc(DETNAME_LENGTH+1, sizeof(char)); 
-	  		  	strncpy(detnames[i], ep->d_name, DETNAME_LENGTH);
-  			  i++; 
+            detnames[i] = calloc(DETNAME_LENGTH+1, sizeof(char)); 
+            strncpy(detnames[i], ep->d_name, DETNAME_LENGTH);
+            i++; 
           } else { 
             printf("Directory %s exists, but no data input file (xdat) found...\n", ep->d_name);  
             //perror (filename);
-			}
-		}
+          }
+      }
     } 
       
-		(void) closedir(dp);
+    (void) closedir(dp);
 
   } else perror ("Couldn't open the input directory...");
 
-	sett->nifo=i;      // number of detectors  
+  sett->nifo=i;      // number of detectors  
   if(sett->nifo) { 
   printf("Settings - number of detectors: %d\n", sett->nifo); 
 
@@ -159,7 +159,7 @@ void detectors_settings(
       // Height h above the Earth ellipsoid in meters
       ifo[i].eheight = 142.554;
       // Orientation of the detector gamma
-      ifo[i].egam	= 170.9994/RAD_TO_DEG;
+      ifo[i].egam = 170.9994/RAD_TO_DEG;
 
       printf("Using %s IFO as detector #%d...\n", ifo[i].name, i);
   
@@ -246,7 +246,6 @@ void modvir(
          c7 = ifo->amod.c7,
          c8 = ifo->amod.c8,
          c9 = ifo->amod.c9;
-			 	
 
   cosalfr = cosal*(ifo->sig.cphir) + sinal*(ifo->sig.sphir);
   sinalfr = sinal*(ifo->sig.cphir) - cosal*(ifo->sig.sphir);

@@ -1,7 +1,3 @@
-// This source file is a part of a code for narrow-banded all-sky coarse
-// search for periodic GW signals. Copyright: Virgo/POLGRAW group (2010).
-//  *** Unofficial version/awaiting revision ***
-
 #define _GNU_SOURCE
 #include <stdlib.h>
 #include <math.h>
@@ -30,7 +26,6 @@ void optpar (double *, double *, double, double, double, double, \
        double *, double *, double *, double *);
 double optpar1 (double *, double *, double, double, double, \
     double *, double *, double *, double *, double *);
-
 
 double
 gridopt (double MM, double *gamrnf, double delp0, double *Mopt, \

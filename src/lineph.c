@@ -1,7 +1,3 @@
-// This source file is a part of a code for narrow-banded all-sky coarse
-// search for periodic GW signals. Copyright: Virgo/POLGRAW group (2010).
-//  *** Unofficial version/awaiting revision ***
-
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>

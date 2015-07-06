@@ -5,11 +5,10 @@ FFTW_DIR = /opt/fftw/3.3.4/gnu
 SINCOS =  YEPPP #YEPPP or SLEEF or GNUSINCOS or NOSINCOS
 
 CC = gcc -g -fno-omit-frame-pointer 
-CFLAGS = -Wall -Wno-unused -O3 -DPREFIX="./candidates" -DTIMERS \
-	-ffast-math -funroll-loops -funsafe-loop-optimizations \
-        -I$(FFTW_DIR)/include -D$(SINCOS) \
-	-march=corei7-avx -mtune=corei7-avx -mavx
-#cpu specific optimizations e.g.:
+CFLAGS = -Wall -Wno-unused -DPREFIX="./candidates" -DTIMERS=1 \
+	-O3 -ffast-math -funsafe-loop-optimizations -funroll-loops \
+        -I$(FFTW_DIR)/include -D$(SINCOS) -march=corei7-avx -mtune=corei7-avx -mavx
+#cpu specific optimizations e.g.: 
 #sandy-bridge (psk)
 	#-march=corei7-avx -mtune=corei7-avx -mavx
 #westmere (plgrid)
@@ -58,9 +57,17 @@ sigen: sigen.o settings.o auxi.o
 doc:
 	doxygen ../doc/Doxyfile
 
-gridopt: gridopt.o\
-	auxi.o lineph.o settings.o
-	$(CC) -gnatv -o $@ $^ $(LIBS)
+gridopt.o: gridopt.c 
+	$(CC) -c -o $@ $< -O3 -Wall
+
+lineph.o: lineph.c 
+	$(CC) -c -o $@ $< -O3 -Wall
+
+auxi.o: auxi.c 
+	$(CC) -c -o $@ $< -O3 -Wall
+
+gridopt: gridopt.o auxi.o lineph.o settings.o
+	$(CC) $(LDFLAGS) -gnatv -o $@ $^ -Wl,-Bdynamic -lc -lrt -lgsl -lgslcblas -lm 
 
 clean:
 	rm -f *.o

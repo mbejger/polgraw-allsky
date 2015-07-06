@@ -96,8 +96,6 @@ typedef struct _aux_arrays {
 
 typedef struct _search_settings {
 
-	double *M;      // Grid-generating matrix
-
 	double fpo,     // Band frequency
 					dt,     // Sampling time
 					B,      // Bandwidth
@@ -123,6 +121,8 @@ typedef struct _search_settings {
 		  fftpad,     // zero padding
 		  Ninterp, 	  // for resampling (set in plan_fftw() init.c)
       nifo;       // number of detectors 			 
+
+	double *M;      // Grid-generating matrix
 
 } Search_settings;
 
