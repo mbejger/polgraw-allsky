@@ -34,7 +34,7 @@ spline(complex double *y, int n, complex double *y2)
   static complex double *u = NULL;
   if (!u) u = (complex double *)malloc((n-1)*sizeof(complex double));
   //  u = (complex double *) calloc (n-1, sizeof (complex double));
-  y2[0]=u[0]=.0;
+  y2[0] = u[0] = 0.;
 
   for (i=1; i<n-1; ++i) {
     //p = .5*y2[i-1]+2.;
@@ -46,7 +46,7 @@ spline(complex double *y, int n, complex double *y2)
     u[i] = y[i-1]-2.*y[i]+y[i+1];
     u[i] = (-.5*u[i-1]+3.*u[i])*invp;
   } /* for i */
-  qn = un = .0;
+  qn = un = 0.;
   y2[n-1] = (un-qn*u[n-2])/(qn*y2[n-2]+1.);
   for (k=n-2; k>=0; --k)
     y2[k] = y2[k]*y2[k+1]+u[k];
@@ -92,7 +92,7 @@ splintpad (complex double *ya, double *shftf, int N, int interpftpad,	\
     out[i] = splint (ya, y2, interpftpad*N, x);
   } /* for i */
   free (y2);
-} /* splintab */
+} /* splintpad */
 
  
 void
@@ -124,7 +124,7 @@ splintpad2 (complex double *ya, complex double *yb,
   } /* for i */
   free (ya2);
   free (yb2);
-} /* splintab */
+} /* splintpad2 */
 
 double
 var (double *x, int n) {
