@@ -396,12 +396,12 @@ double* job_core(
 #define VLEN 2048
     yepLibrary_Init();
       //    printf("npoints=%d, size=%d\n", Npoints, Npoints*sizeof(Yep64f));
-    Yep64f *_p = (Yep64f*)malloc(VLEN*sizeof(Yep64f));
-    Yep64f *_s = (Yep64f*)malloc(VLEN*sizeof(Yep64f));
-    Yep64f *_c = (Yep64f*)malloc(VLEN*sizeof(Yep64f));
+    Yep64f _p[VLEN];
+    Yep64f _s[VLEN];
+    Yep64f _c[VLEN];
     enum YepStatus status;
     int bnd = (sett->N/VLEN)*VLEN;
-    printf("npoints=%d, bnd=%d\n", sett->N, bnd);
+    //printf("npoints=%d, bnd=%d\n", sett->N, bnd);
 #endif
 #ifdef SLEEF
     double _p[VECTLENDP], _c[VECTLENDP];
