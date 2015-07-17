@@ -26,16 +26,18 @@ lin2ast (double be1, double be2, int pm, double sepsm, double cepsm,
 
 
 
-void
+inline void
 spline(complex double *y, int n, complex double *y2)
 {
   int i, k;
-  complex double p, qn, un, *u;
+  complex double p, qn, un;
 
-  u = (complex double *) calloc (n-1, sizeof (complex double));
+  static complex double *u = NULL;
+  if (!u) u = (complex double *)malloc((n-1)*sizeof(complex double));
+  //  u = (complex double *) calloc (n-1, sizeof (complex double));
   y2[0]=u[0]=.0;
 
-  for (i=1; i<n-1; i++) {
+  for (i=1; i<n-1; ++i) {
     p = .5*y2[i-1]+2.;
     y2[i] = -.5/p;
     u[i] = y[i+1]-2.*y[i]+y[i-1];
@@ -43,12 +45,12 @@ spline(complex double *y, int n, complex double *y2)
   } /* for i */
   qn = un = .0;
   y2[n-1] = (un-qn*u[n-2])/(qn*y2[n-2]+1.);
-  for (k=n-2; k>=0; k--)
+  for (k=n-2; k>=0; --k)
     y2[k] = y2[k]*y2[k+1]+u[k];
-  free (u);
+  //free (u);
 } /* spline() */
 
-complex double
+inline complex double
 splint (complex double *ya, complex double *y2a, int n, double x)
 {
   int klo, khi;
@@ -87,6 +89,38 @@ splintpad (complex double *ya, double *shftf, int N, int interpftpad,	\
     out[i] = splint (ya, y2, interpftpad*N, x);
   } /* for i */
   free (y2);
+} /* splintab */
+
+ 
+void
+splintpad2 (complex double *ya, complex double *yb, 
+	    double *shftf, int N, int interpftpad,
+	    complex double *out) {
+  /* Cubic spline with "natural" boundary conditions.
+     Input:
+     ya[i] - value of the function being interpolated in x_i = i,
+     for i = 0 .. (interpftpad*N-1)	(changed on exit);
+     Interpolating spline will be calculated at the points
+     interpftpad*(i-shftf[i]), for i = 0 .. (N-1);
+     N - number of output data points.
+     Output:
+     out[i] - value of the interpolating function
+     at interpftpad*(i-shftf[i]).
+  */
+  complex double *ya2, *yb2;
+  double x;
+  int i;
+  ya2 = (complex double *) calloc (interpftpad*N, sizeof (complex double)); //vector twice-size of N
+  yb2 = (complex double *) calloc (interpftpad*N, sizeof (complex double)); //vector twice-size of N
+  spline (ya, interpftpad*N, ya2);
+  spline (yb, interpftpad*N, yb2);
+  for (i=0; i<N; i++) {
+    x = interpftpad*(i-shftf[i]);
+    out[2*i] = splint (ya, ya2, interpftpad*N, x);
+    out[2*i+1] = splint (yb, yb2, interpftpad*N, x);
+  } /* for i */
+  free (ya2);
+  free (yb2);
 } /* splintab */
 
 double
