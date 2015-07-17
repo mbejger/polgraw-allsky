@@ -454,7 +454,7 @@ double* job_core(
 
       // Normalize F-statistics 
       if(!(opts->white_flag))  // if the noise is not white noise
-        FStat(F + sett->nmin, sett->nmax - sett->nmin, NAV, 0);
+        FStat(F + sett->nmin, sett->nmax - sett->nmin, NAVFSTAT, 0);
 
       for(i=sett->nmin; i<sett->nmax; i++) {
         if ((Fc = F[i]) > opts->trl) { //if F-stat exceeds trl (critical value)

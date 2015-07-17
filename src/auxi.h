@@ -10,7 +10,7 @@
 #define TINY 1.0e-20
 #define NINTERP 3			 /* degree of the interpolation polynomial */
 							 /* Do not change this value!!! */
-#define NAV 4096
+#define NAVFSTAT 4096
 #define round(x) floor((x)+0.5)
 
 #ifdef HAVE_SINCOS

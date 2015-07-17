@@ -16,8 +16,8 @@
 void search_settings(
 	Search_settings* sett) {
 
-  double dt, B, oms, omr, alfa, Smin, Smax;
-  int nod, N, nfft, s, nd, fftpad, interpftpad;
+  double dt, B, oms, omr, Smin, Smax;
+  int nod, N, nfft, s, nd, interpftpad;
 
 
   dt = 0.5;                         // data sampling time
@@ -38,11 +38,9 @@ void search_settings(
   // Maximum spindown (1000 years) [angular, dimensionless]
   Smax = 2.*M_PI*(sett->fpo + B)*dt*dt/(2.*Smin);   
 
-  alfa = .01;			// False alarm probability
   nd = 2;				// Degree of freedom, 
 						// (2*nd = deg. no ofrees of freedom for chi^2)
 
-  fftpad = 1;			// Zero padding (original grid: 2, new grids: 1)
   interpftpad = 2;
 
   sett->dt=dt;        	// sampling time
@@ -55,15 +53,17 @@ void search_settings(
   sett->s=s;          	// number of spindowns
   sett->Smin=Smin;    	// minimum spindown
   sett->Smax=Smax;    	// maximum spindown
-  sett->alfa=alfa;    	// false alarm probability
   sett->nd=nd;        	// degrees of freedom
-  sett->fftpad=fftpad;  // zero padding
   sett->interpftpad=interpftpad;
 
   // Because of frequency-domain filters, we search
   // F-statistic in range (nmin+1, nmax) of data points
-  sett->nmin = sett->fftpad*NAV;
-  sett->nmax = (sett->nfft/2 - NAV)*sett->fftpad;
+  // 
+  // The value of sett->fftpad (zero padding - original grids: 2, new grids: 1) 
+  // is read from the grid.bin file in read_grid() (see init.c) 
+
+  sett->nmin = sett->fftpad*NAV*sett->B;
+  sett->nmax = (sett->nfft/2 - NAV*sett->B)*sett->fftpad;
 
 } // search settings  
 

@@ -9,9 +9,9 @@
 #define INT 1		/* simplest interpolation */
 #define FFT 2		/* refined (fft) interpolation */
 
-#define NAV 4096
+#define NAV 4096    /* to define nmin and nmax on the edges; multiplied by B=0.5/dt */
 
-#define MAX_SPOTLIGHT 256  /* Max. number of spindowns per sky position in a spotlight search */   
+#define MAX_SPOTLIGHT 1024  /* Max. number of spindowns per sky position in a spotlight search */   
 
 #define RAD_TO_DEG (180/M_PI) // = 180/pi
 

@@ -37,7 +37,6 @@ void handle_opts(
   strcpy (opts->prefix, TOSTR(PREFIX));
   strcpy (opts->dtaprefix, TOSTR(DTAPREFIX));
   opts->label[0]  = '\0';
-//  opts->range[0]  = '\0';
   opts->addsig[0] = '\0';
 	
   // Initial value of starting frequency
@@ -223,12 +222,9 @@ void read_grid(
   char filename[512];
   sprintf (filename, "%s/%03d/grid.bin", opts->dtaprefix, opts->ident);
 	if ((data=fopen (filename, "r")) != NULL) {
-  	// fftpad: used to zero padding to fftpad*nfft data points
-    // WARNING! This value is not used, overwritten by sett->fftpad
-    // from settings.c
     fread ((void *)&sett->fftpad, sizeof (int), 1, data);
 
-	printf("fftpad from grid file: %d\n", sett->fftpad); 
+	printf("Using fftpad from the grid file: %d\n", sett->fftpad); 
 	
     // M: vector of 16 components consisting of 4 rows
     // of 4x4 grid-generating matrix
@@ -622,14 +618,14 @@ void plan_fftw(
 
   sett->nfftf = sett->fftpad*sett->nfft;
 
-  plans->plan = fftw_plan_dft_1d(sett->nfftf, fftw_arr->xa, fftw_arr->xa, FFTW_FORWARD, FFTW_MEASURE);
-  plans->plan2 = fftw_plan_dft_1d(sett->nfftf, fftw_arr->xb, fftw_arr->xb, FFTW_FORWARD, FFTW_MEASURE);
+  plans->plan = fftw_plan_dft_1d(sett->nfftf, fftw_arr->xa, fftw_arr->xa, FFTW_FORWARD, FFTW_PATIENT);
+  plans->plan2 = fftw_plan_dft_1d(sett->nfftf, fftw_arr->xb, fftw_arr->xb, FFTW_FORWARD, FFTW_PATIENT);
 	                             
-  plans->pl_int = fftw_plan_dft_1d(sett->nfft, fftw_arr->xa, fftw_arr->xa, FFTW_FORWARD, FFTW_MEASURE);
-  plans->pl_int2 = fftw_plan_dft_1d(sett->nfft, fftw_arr->xb, fftw_arr->xb, FFTW_FORWARD, FFTW_MEASURE);
+  plans->pl_int = fftw_plan_dft_1d(sett->nfft, fftw_arr->xa, fftw_arr->xa, FFTW_FORWARD, FFTW_PATIENT);
+  plans->pl_int2 = fftw_plan_dft_1d(sett->nfft, fftw_arr->xb, fftw_arr->xb, FFTW_FORWARD, FFTW_PATIENT);
 	                             
-  plans->pl_inv = fftw_plan_dft_1d(sett->Ninterp, fftw_arr->xa, fftw_arr->xa, FFTW_BACKWARD, FFTW_MEASURE);
-  plans->pl_inv2 = fftw_plan_dft_1d(sett->Ninterp, fftw_arr->xb, fftw_arr->xb, FFTW_BACKWARD, FFTW_MEASURE);
+  plans->pl_inv = fftw_plan_dft_1d(sett->Ninterp, fftw_arr->xa, fftw_arr->xa, FFTW_BACKWARD, FFTW_PATIENT);
+  plans->pl_inv2 = fftw_plan_dft_1d(sett->Ninterp, fftw_arr->xb, fftw_arr->xb, FFTW_BACKWARD, FFTW_PATIENT);
 	                             
   // Generates a wisdom FFT file if there is none
   if((wisdom = fopen(wfilename, "r")) == NULL) {

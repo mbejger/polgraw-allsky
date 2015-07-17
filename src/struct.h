@@ -20,7 +20,7 @@ typedef struct __comm_line_opts {
 	double fpo_val;
 	
 	char prefix[512], dtaprefix[512], label[512], 
-       spotlight[512], *qname[512], addsig[512], *wd;
+       spotlight[512], qname[512], addsig[512], *wd;
 
 } Command_line_opts;
 
@@ -96,33 +96,31 @@ typedef struct _aux_arrays {
 
 typedef struct _search_settings {
 
-	double *M;      // Grid-generating matrix
-
-	double fpo,     // Band frequency
-					dt,     // Sampling time
-					B,      // Bandwidth
-					oms,    // Dimensionless angular frequency (fpo)
-					omr,    // C_OMEGA_R * dt 
-                  // (dimensionless Earth's angular frequency)
-
-          Smin,   // Minimum spindown
-			    Smax,   // Maximum spindown
-			    alfa,   // False alarm probability
-    			sepsm,	// sin(epsm)
-		    	cepsm;	// cos(epsm)
-
+  double fpo,    // Band frequency
+         dt,     // Sampling time
+         B,      // Bandwidth
+         oms,    // Dimensionless angular frequency (fpo)
+         omr,    // C_OMEGA_R * dt 
+                 // (dimensionless Earth's angular frequency)
+         Smin,   // Minimum spindown
+         Smax,   // Maximum spindown
+         sepsm,	 // sin(epsm)
+         cepsm;	 // cos(epsm)
+  
   int nfft,       // length of fft
-		  nod,        // number of days of observation
-		  N,          // number of data points
-		  nfftf,      // nfft * fftpad
-		  nmax,	 	    // first and last point
-		  nmin, 		  // of Fstat
-		  s,          // number of spindowns
-		  nd,         // degrees of freedom
-		  interpftpad,
-		  fftpad,     // zero padding
-		  Ninterp, 	  // for resampling (set in plan_fftw() init.c)
-      nifo;       // number of detectors 			 
+      nod,        // number of days of observation
+      N,          // number of data points
+      nfftf,      // nfft * fftpad
+      nmax,	  // first and last point
+      nmin, 	  // of Fstat
+      s,          // number of spindowns
+      nd,         // degrees of freedom
+      interpftpad,
+      fftpad,     // zero padding
+      Ninterp, 	  // for resampling (set in plan_fftw() init.c)
+      nifo;       // number of detectors 
+
+  double *M;      // Grid-generating matrix
 
 } Search_settings;
 
