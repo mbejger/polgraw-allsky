@@ -9,52 +9,53 @@
 
 
 typedef struct __comm_line_opts {
-
-	int white_flag, 			// white noise flag
-	    s0_flag,					// no spin-down flag
-	    checkp_flag,			// checkpointing flag
-	    help_flag;
-	
-	int fftinterp;
-	int ident, band, hemi;
-	double trl;
-	double fpo_val;
-	
-	char prefix[512], dtaprefix[512], label[512], 
+  
+  int white_flag, 		// white noise flag
+      s0_flag,			// no spin-down flag
+      checkp_flag,		// checkpointing flag
+      help_flag;
+  
+  int fftinterp;
+  int ident, band, hemi;
+  double trl;
+  double fpo_val;
+  
+  char prefix[512], dtaprefix[512], label[512], 
        range[512], qname[512], addsig[512], *wd;
-
+  
 } Command_line_opts;
 
 
 // input signal arrays
 typedef struct _signals {
 	
-	double *xDat;
-	double *DetSSB;       // Ephemeris of the detector
-	double *aa, *bb;      // Amplitude modulation functions
-	double *shftf, *shft; // Resampling and time-shifting
-
+  double *xDat;
+  double *DetSSB;       // Ephemeris of the detector
+  double *aa, *bb;      // Amplitude modulation functions
+  double *shftf, *shft; // Resampling and time-shifting
+  
   double epsm, 
          phir, 
          sepsm,	  // sin(epsm)
-		     cepsm,	  // cos(epsm)
-			   sphir,	  // sin(phi_r)
-			   cphir,	  // cos(phi_r)
+         cepsm,	  // cos(epsm)
+         sphir,	  // sin(phi_r)
+         cphir,	  // cos(phi_r)
          crf0,    // number of 0s as: N/(N-Nzeros)
          sig2; 	  // variance of signal
-
+  
   int Nzeros; 
-
-	complex double *xDatma, *xDatmb;
+  
+  complex double *xDatma, *xDatmb;
 
 } Signals;
 
 
 //fftw arrays
 typedef struct _fftw_arrays {
-	fftw_complex *xa, *xb;
-	int arr_len;
-	
+
+  fftw_complex *xa, *xb;
+  int arr_len;
+  
 } FFTW_arrays;
 
 
@@ -62,68 +63,64 @@ typedef struct _fftw_arrays {
    */ 
 
 typedef struct _search_range {
-	int pmr[2], mr[2], nr[2], spndr[2];
-	int pst, mst, nst, sst;
+  int pmr[2], mr[2], nr[2], spndr[2];
+  int pst, mst, nst, sst;
 } Search_range;
 
 
-  /* FFTW plans
-   */ 
+  /* FFTW plans */ 
 
 typedef struct _fftw_plans {
-	fftw_plan plan,  // main plan
-				  pl_int,  // interpolation forward
-				  pl_inv;  // interpolation backward
-	fftw_plan plan2, // main plan
-				  pl_int2, // interpolation forward
-				  pl_inv2; // interpolation backward
+  fftw_plan plan,    // main plan
+            pl_int,  // interpolation forward
+            pl_inv;  // interpolation backward
+  fftw_plan plan2,   // main plan
+            pl_int2, // interpolation forward
+            pl_inv2; // interpolation backward
 } FFTW_plans;
 
 
-  /* Auxiluary arrays
-   */ 
+  /* Auxiluary arrays */ 
 
 typedef struct _aux_arrays {
 
-	double *sinmodf, *cosmodf; // Earth position
-	double *t2;                // time^2
+  double *sinmodf, *cosmodf; // Earth position
+  double *t2;                // time^2
 
 } Aux_arrays;
 
 
-  /* Search settings 
-   */ 
+  /* Search settings  */ 
 
 typedef struct _search_settings {
 
-	double fpo,     // Band frequency
-					dt,     // Sampling time
-					B,      // Bandwidth
-					oms,    // Dimensionless angular frequency (fpo)
-					omr,    // C_OMEGA_R * dt 
-                  // (dimensionless Earth's angular frequency)
-
-          Smin,   // Minimum spindown
-			    Smax,   // Maximum spindown
-			    alfa,   // False alarm probability
-    			sepsm,	// sin(epsm)
-		    	cepsm;	// cos(epsm)
-
+  double fpo,    // Band frequency
+         dt,     // Sampling time
+         B,      // Bandwidth
+         oms,    // Dimensionless angular frequency (fpo)
+         omr,    // C_OMEGA_R * dt 
+                 // (dimensionless Earth's angular frequency)
+         Smin,   // Minimum spindown
+         Smax,   // Maximum spindown
+         alfa,   // False alarm probability
+         sepsm,	 // sin(epsm)
+         cepsm;	 // cos(epsm)
+  
   int nfft,       // length of fft
-		  nod,        // number of days of observation
-		  N,          // number of data points
-		  nfftf,      // nfft * fftpad
-		  nmax,	 	    // first and last point
-		  nmin, 		  // of Fstat
-		  s,          // number of spindowns
-		  nd,         // degrees of freedom
-		  interpftpad,
-		  fftpad,     // zero padding
-		  Ninterp, 	  // for resampling (set in plan_fftw() init.c)
+      nod,        // number of days of observation
+      N,          // number of data points
+      nfftf,      // nfft * fftpad
+      nmax,	  // first and last point
+      nmin, 	  // of Fstat
+      s,          // number of spindowns
+      nd,         // degrees of freedom
+      interpftpad,
+      fftpad,     // zero padding
+      Ninterp, 	  // for resampling (set in plan_fftw() init.c)
       nifo;       // number of detectors 			 
-
-	double *M;      // Grid-generating matrix
-
+  
+  double *M;      // Grid-generating matrix
+  
 } Search_settings;
 
 
@@ -142,9 +139,9 @@ typedef struct _detector {
 
   char name[DETNAME_LENGTH]; 
   double ephi, 		// Geographical latitude phi in radians
-			   elam, 		// Geographical longitude in radians 
-			   eheight, // Height h above the Earth ellipsoid in meters
-			   egam; 		// Orientation of the detector gamma  
+         elam, 		// Geographical longitude in radians 
+         eheight,       // Height h above the Earth ellipsoid in meters
+         egam; 		// Orientation of the detector gamma  
 
   Ampl_mod_coeff amod; 
   Signals sig;  
