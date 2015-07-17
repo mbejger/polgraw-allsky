@@ -241,7 +241,7 @@ double* job_core(
   complex double exph;
   
   // Interpolation by zero-padding (case FFT):
-  fftw_arr->xb = fftw_arr->xa + fftw_arr->arr_len; // + sett->fftpad * sett->nfft;
+  //fftw_arr->xb = fftw_arr->xa + fftw_arr->arr_len; // + sett->fftpad * sett->nfft;
 
   //change linear (grid) coordinates to real coordinates
   lin2ast(al1/sett->oms, al2/sett->oms, 
