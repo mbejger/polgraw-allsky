@@ -9,7 +9,7 @@
 #define INT 1		/* simplest interpolation */
 #define FFT 2		/* refined (fft) interpolation */
 
-#define NAV 4096
+#define NAV 4096    /* to define nmin and nmax on the edges; multiplied by B=0.5/dt */   
 
 #define RAD_TO_DEG (180/M_PI) // = 180/pi
 

@@ -220,12 +220,9 @@ void read_grid(
   char filename[512];
   sprintf (filename, "%s/%03d/grid.bin", opts->dtaprefix, opts->ident);
 	if ((data=fopen (filename, "r")) != NULL) {
-  	// fftpad: used to zero padding to fftpad*nfft data points
-		// WARNING! This value is not used, overwritten by sett->fftpad
-		// from settings.c
     fread ((void *)&sett->fftpad, sizeof (int), 1, data);
 
-	printf("fftpad from grid file: %d\n", sett->fftpad); 
+	printf("Using fftpad from the grid file: %d\n", sett->fftpad); 
 	
     // M: vector of 16 components consisting of 4 rows
     // of 4x4 grid-generating matrix

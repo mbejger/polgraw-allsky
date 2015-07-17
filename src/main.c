@@ -87,14 +87,6 @@ int main (int argc, char* argv[]) {
     // Set search range from range file  
     set_search_range(&sett, &opts, &s_range);
 
-  
-  //#mb Print grid ranges 
-  printf("Grid range:\n%d %d\n%d %d\n%d %d\n%d %d\n", 
-    s_range.spndr[0], s_range.spndr[1], 
-    s_range.nr[0], s_range.nr[1], 
-    s_range.mr[0], s_range.mr[1], 
-    s_range.pmr[0], s_range.pmr[1]); 
-
   // FFT plans 
   FFTW_plans fftw_plans;
   FFTW_arrays fftw_arr;

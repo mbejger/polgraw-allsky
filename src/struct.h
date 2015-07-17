@@ -68,7 +68,8 @@ typedef struct _search_range {
 } Search_range;
 
 
-  /* FFTW plans */ 
+  /* FFTW plans
+   */ 
 
 typedef struct _fftw_plans {
   fftw_plan plan,    // main plan
@@ -80,7 +81,8 @@ typedef struct _fftw_plans {
 } FFTW_plans;
 
 
-  /* Auxiluary arrays */ 
+  /* Auxiluary arrays
+   */ 
 
 typedef struct _aux_arrays {
 
@@ -90,7 +92,8 @@ typedef struct _aux_arrays {
 } Aux_arrays;
 
 
-  /* Search settings  */ 
+  /* Search settings 
+   */ 
 
 typedef struct _search_settings {
 
@@ -102,7 +105,6 @@ typedef struct _search_settings {
                  // (dimensionless Earth's angular frequency)
          Smin,   // Minimum spindown
          Smax,   // Maximum spindown
-         alfa,   // False alarm probability
          sepsm,	 // sin(epsm)
          cepsm;	 // cos(epsm)
   

@@ -64,8 +64,8 @@ void search(
   //	double time_elapsed; //for measuring time
 
   int pm, mm, nn;
-  int sgnlc; //number of canditates
-  double *sgnlv; //array with candidates data
+  int sgnlc;         // number of candidates
+  double *sgnlv;     // array with candidates data
 
   char outname[64], qname[64];
   int fd;
@@ -100,8 +100,7 @@ void search(
       for (nn=s_range->nst; nn<=s_range->nr[1]; ++nn) {	
 	
 	if(opts->checkp_flag) {
-	  fprintf(state, "%d %d %d %d %d\n", 
-		  pm, mm, nn, s_range->sst, *FNum);
+	  fprintf(state, "%d %d %d %d %d\n", pm, mm, nn, s_range->sst, *FNum);
 	  fflush(state);
 	}
 	
@@ -163,9 +162,8 @@ void search(
     s_range->mst = s_range->mr[0];
   } // for pm
 
-  if(opts->checkp_flag) {
+  if(opts->checkp_flag) 
     fclose (state);
-  }
 
 #ifdef TIMERS
   tend = get_current_time();
@@ -656,7 +654,7 @@ double* job_core(
 
       // Normalize F-statistics 
       if(!(opts->white_flag))  // if the noise is not white noise
-	FStat(F + sett->nmin, sett->nmax - sett->nmin, NAV, 0);
+        FStat(F + sett->nmin, sett->nmax - sett->nmin, NAVFSTAT, 0);
 
       for(i=sett->nmin; i<sett->nmax; ++i) {
 	if ((Fc = F[i]) > opts->trl) { //if F-stat exceeds trl (critical value)

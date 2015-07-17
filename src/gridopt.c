@@ -487,7 +487,9 @@ int main (int argc, char *argv[]) {
   strcpy (ident, "");
 
   // default value of the minimal match 
-  minimal_match = sqrt(.75) ; 
+  minimal_match = sqrt(.75); 
+  // default value of fftpad 
+  sett.fftpad = 1; 
 
   while (1) {
     static struct option long_options[] = {
@@ -495,11 +497,12 @@ int main (int argc, char *argv[]) {
       {"data", required_argument, 0, 'd'},
       // minimal match 
       {"minimal match", required_argument, 0, 'm'},
+      {"fftpad", required_argument, 0, 'f'},
       {0, 0, 0, 0}
     };
 
     int option_index = 0;
-    c = getopt_long (argc, argv, "i:d:m:", long_options,  \
+    c = getopt_long (argc, argv, "i:d:m:f:", long_options,  \
          &option_index);
     if (c == -1)
       break;
@@ -512,6 +515,9 @@ int main (int argc, char *argv[]) {
       break;
     case 'm':
       minimal_match = atof(optarg);
+      break;
+    case 'f':
+      sett.fftpad = atof(optarg);
       break;
     case '?':
       break;
@@ -595,6 +601,7 @@ int main (int argc, char *argv[]) {
 
   printf ("MM verified to be = %g\n",sqrt(MM));
   printf ("thickness = %g\n", thickness);
+  printf ("fftpad used = %d\n", sett.fftpad); 
 
   {
     FILE *data;
