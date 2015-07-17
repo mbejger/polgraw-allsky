@@ -45,7 +45,7 @@ spline(complex double *y, int n, complex double *y2)
     y2[i] = -.5*invp;
     u[i] = y[i-1]-2.*y[i]+y[i+1];
     u[i] = (-.5*u[i-1]+3.*u[i])*invp;
-  } /* for i */
+  }
   qn = un = 0.;
   y2[n-1] = (un-qn*u[n-2])/(qn*y2[n-2]+1.);
   for (k=n-2; k>=0; --k)
@@ -94,37 +94,7 @@ splintpad (complex double *ya, double *shftf, int N, int interpftpad,	\
   free (y2);
 } /* splintpad */
 
- 
-void
-splintpad2 (complex double *ya, complex double *yb, 
-	    double *shftf, int N, int interpftpad,
-	    complex double *out) {
-  /* Cubic spline with "natural" boundary conditions.
-     Input:
-     ya[i] - value of the function being interpolated in x_i = i,
-     for i = 0 .. (interpftpad*N-1)	(changed on exit);
-     Interpolating spline will be calculated at the points
-     interpftpad*(i-shftf[i]), for i = 0 .. (N-1);
-     N - number of output data points.
-     Output:
-     out[i] - value of the interpolating function
-     at interpftpad*(i-shftf[i]).
-  */
-  complex double *ya2, *yb2;
-  double x;
-  int i;
-  ya2 = (complex double *) calloc (interpftpad*N, sizeof (complex double)); //vector twice-size of N
-  yb2 = (complex double *) calloc (interpftpad*N, sizeof (complex double)); //vector twice-size of N
-  spline (ya, interpftpad*N, ya2);
-  spline (yb, interpftpad*N, yb2);
-  for (i=0; i<N; i++) {
-    x = interpftpad*(i-shftf[i]);
-    out[2*i] = splint (ya, ya2, interpftpad*N, x);
-    out[2*i+1] = splint (yb, yb2, interpftpad*N, x);
-  } /* for i */
-  free (ya2);
-  free (yb2);
-} /* splintpad2 */
+
 
 double
 var (double *x, int n) {

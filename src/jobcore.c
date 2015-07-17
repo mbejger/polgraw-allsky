@@ -357,6 +357,7 @@ double* job_core(
 	  //	struct timeval tstart = get_current_time(), tend;
 
     // Spline interpolation to xDatma, xDatmb arrays
+
     splintpad(fftw_arr->xa, ifo[n].sig.shftf, sett->N, 
       sett->interpftpad, ifo[n].sig.xDatma);   
     splintpad(fftw_arr->xb, ifo[n].sig.shftf, sett->N, 
@@ -380,7 +381,7 @@ double* job_core(
     for(i=0; i<sett->N; ++i) {
       aatemp += sqr(ifo[n].sig.aa[i]);
       bbtemp += sqr(ifo[n].sig.bb[i]);
-      //      ifo[n].sig.xDatma[i] /= ifo[n].sig.sig2;
+      //ifo[n].sig.xDatma[i] /= ifo[n].sig.sig2;
       //ifo[n].sig.xDatmb[i] /= ifo[n].sig.sig2;
     }
     for(i=0; i<sett->N; ++i) {
@@ -395,7 +396,7 @@ double* job_core(
 #ifdef YEPPP
 #define VLEN 2048
     yepLibrary_Init();
-      //    printf("npoints=%d, size=%d\n", Npoints, Npoints*sizeof(Yep64f));
+    //printf("npoints=%d, size=%d\n", Npoints, Npoints*sizeof(Yep64f));
     Yep64f _p[VLEN];
     Yep64f _s[VLEN];
     Yep64f _c[VLEN];
