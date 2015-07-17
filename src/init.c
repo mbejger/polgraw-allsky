@@ -788,6 +788,7 @@ void cleanup(
   for(i=0; i<sett->nifo; i++) {
     free(ifo[i].sig.xDat);
     free(ifo[i].sig.xDatma);
+    free(ifo[i].sig.xDatmb);
     free(ifo[i].sig.DetSSB);
     free(ifo[i].sig.aa);
     free(ifo[i].sig.bb);
