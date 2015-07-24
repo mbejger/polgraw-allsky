@@ -75,6 +75,10 @@ void search(
   /* Loop over hemispheres
    */ 
 
+  state=NULL;
+  if(opts->checkp_flag) 
+    state = fopen (opts->qname, "w");
+
   for (pm=s_range->pst; pm<=s_range->pmr[1]; ++pm) {
 
     sprintf (outname, "%s/triggers_%03d_%03d%s_%d.bin", 
@@ -87,27 +91,27 @@ void search(
       for (nn=s_range->nst; nn<=s_range->nr[1]; ++nn) {	
 	
         if(opts->checkp_flag) {
-		  state = fopen (opts->qname, "w");
-	      fprintf(state, "%d %d %d %d %d\n", pm, mm, nn, s_range->sst, *FNum);
-	      fclose(state);
+          ftruncate(fileno(state), 0);  
+  	      fprintf(state, "%d %d %d %d %d\n", pm, mm, nn, s_range->sst, *FNum);
+		      fseek(state, 0, SEEK_SET);
 	    }
 	
-	    /* Loop over Spindows here */
+	    /* Loop over spindowns here */
 	    sgnlv = job_core(
-			 pm,          // hemisphere
-			 mm,	      // grid 'sky position'
-			 nn,	      // other grid 'sky position'
-			 sett,        // search settings
-			 opts,        // cmd opts
-			 s_range,     // range for searching
-			 plans, 
-			 fftw_arr,   // arrays for fftw
-			 aux, 	      // auxiliary arrays
-			 F,	        // F-statistics array
-			 &sgnlc,     // reference to array with the parameters
-			 // of the candidate signal
-			 // (used below to write to the file)
-			 FNum);	    // Candidate signal number
+			 pm,           // hemisphere
+			 mm,           // grid 'sky position'
+			 nn,           // other grid 'sky position'
+			 sett,         // search settings
+			 opts,         // cmd opts
+			 s_range,      // range for searching
+			 plans,        // fftw plans 
+			 fftw_arr,     // arrays for fftw
+			 aux,          // auxiliary arrays
+			 F,            // F-statistics array
+			 &sgnlc,       // reference to array with the parameters
+                     // of the candidate signal
+                     // (used below to write to the file)
+			 FNum);        // Candidate signal number
 	
 	    // Get back to regular spin-down range
 	    s_range->sst = s_range->spndr[0];
@@ -139,6 +143,9 @@ void search(
     s_range->mst = s_range->mr[0]; 
   } // for pm
 
+  if(opts->checkp_flag) 
+    fclose(state); 
+
 #ifdef TIMERS
   tend = get_current_time();
   // printf("tstart = %d . %d\ntend = %d . %d\n", tstart.tv_sec, tstart.tv_usec, tend.tv_sec, tend.tv_usec);
@@ -155,7 +162,7 @@ void search(
 double* job_core(
   int pm,                    // Hemisphere
   int mm,                    // Grid 'sky position'
-  int nn,		             // Second grid 'sky position'
+  int nn,                    // Second grid 'sky position'
   Search_settings *sett,     // Search settings
   Command_line_opts *opts,   // Search options 
   Search_range *s_range,     // Range for searching
