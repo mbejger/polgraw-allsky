@@ -73,23 +73,23 @@ void search(
   struct timespec tstart = get_current_time(), tend;
 #endif
  
-  /* Loop over hemispheres
-   */ 
-
   sprintf(outname, "%s/triggers_%03d_%03d%s_%d.bin", 
           opts->prefix, opts->ident, opts->band, opts->label, pm);
+
+  /* Loop over sky positions from the spotlight set 
+   */
 
   int skypos=0; 
   for(skypos=0; skypos<s_range->spotlight_skypos; skypos++) { 
 
-    /* Loop over Spindows here */
-        sgnlv = job_core(
+    /* Loop over spindowns is inside job_core() */
+    sgnlv = job_core(
                 pm,         // hemisphere
                 skypos,     // no. of sky position in the spotlight range file 
                 sett,       // search and detector settings
                 opts,       // cmd opts
                 s_range,    // range for searching
-                plans, 
+			    plans,      // fftw plans 
                 fftw_arr,   // arrays for fftw
                 aux,        // auxiliary arrays
                 F,          // F-statistics array
@@ -303,10 +303,6 @@ double* job_core(
     splintpad(fftw_arr->xb, ifo[n].sig.shftf, sett->N, 
       sett->interpftpad, ifo[n].sig.xDatmb);
 
-  //  tend = get_current_time();
-  //  double time_elapsed = get_time_difference(tstart, tend);
-  //  printf("Time elapsed, 2 splines: %e s\n", time_elapsed);
-
   } // end of detector loop 
 
   // square sums of modulation factors 
@@ -361,11 +357,6 @@ double* job_core(
 
   printf ("\n>>%d\t%d\t%d\t[%d..%d]\n", *FNum, mm, nn, 
     s_range->spotlight_ss[skypos*MAX_SPOTLIGHT], s_range->spotlight_ss[skypos*MAX_SPOTLIGHT+noss-1]);
-
-  //#mb fixme 
-  /* if no-spindown
-  if(opts->s0_flag) smin = smax;
-  */ 
 
   // if spindown parameter is taken into account
 
