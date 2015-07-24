@@ -171,8 +171,7 @@ void handle_opts(
   printf ("Band number is %d\n", opts->band);
 
   if (opts->white_flag)
-    printf ("Assuming white Gaussian noise\n");
-    
+    printf ("Assuming white Gaussian noise\n");  
   printf ("Using fftinterp=FFT (FFT interpolation by zero-padding)\n");
 
   if(opts->trl!=20)
@@ -722,6 +721,7 @@ void read_checkpoints(
   Search_range *s_range, 
 	int *FNum) {
 
+  
   if(opts->checkp_flag) {
 		
     // filename of checkpoint state file, depending on the hemisphere

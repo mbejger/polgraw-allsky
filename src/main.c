@@ -84,8 +84,8 @@ int main (int argc, char* argv[]) {
     add_signal(&sett, &opts, &aux_arr, &s_range); 
   else 
 
-    // Set search range from range file  
-    set_search_range(&sett, &opts, &s_range);
+  // Set search range from range file  
+  set_search_range(&sett, &opts, &s_range);
 
   // FFT plans 
   FFTW_plans fftw_plans;

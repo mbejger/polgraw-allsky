@@ -42,9 +42,8 @@ typedef struct _signals {
          cphir,	  // cos(phi_r)
          crf0,    // number of 0s as: N/(N-Nzeros)
          sig2; 	  // variance of signal
-  
-  int Nzeros; 
-  
+
+  int Nzeros;
   complex double *xDatma, *xDatmb;
 
 } Signals;
@@ -119,10 +118,10 @@ typedef struct _search_settings {
       interpftpad,
       fftpad,     // zero padding
       Ninterp, 	  // for resampling (set in plan_fftw() init.c)
-      nifo;       // number of detectors 			 
-  
+      nifo;       // number of detectors
+
   double *M;      // Grid-generating matrix
-  
+
 } Search_settings;
 
 
@@ -142,7 +141,7 @@ typedef struct _detector {
   char name[DETNAME_LENGTH]; 
   double ephi, 		// Geographical latitude phi in radians
          elam, 		// Geographical longitude in radians 
-         eheight,       // Height h above the Earth ellipsoid in meters
+         eheight,   // Height h above the Earth ellipsoid in meters
          egam; 		// Orientation of the detector gamma  
 
   Ampl_mod_coeff amod; 
