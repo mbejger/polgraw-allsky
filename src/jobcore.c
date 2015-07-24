@@ -139,9 +139,6 @@ void search(
     s_range->mst = s_range->mr[0]; 
   } // for pm
 
-//  if(opts->checkp_flag) 
-//    fclose (state);
-
 #ifdef TIMERS
   tend = get_current_time();
   // printf("tstart = %d . %d\ntend = %d . %d\n", tstart.tv_sec, tstart.tv_usec, tend.tv_sec, tend.tv_usec);
