@@ -5,7 +5,8 @@ FFTW_DIR = /usr/lib64
 SINCOS =  YEPPP #YEPPP or SLEEF or GNUSINCOS or NOSINCOS
 
 CC = gcc -g -fno-omit-frame-pointer 
-CFLAGS = -Wall -Wno-unused -DPREFIX="./candidates" -DTIMERS=1 \
+# pre-processor flags: TIMERS, VERBOSE (rich stdout output)
+CFLAGS = -Wall -Wno-unused -DPREFIX="./candidates" -DTIMERS \
 	-O3 -ffast-math -funsafe-loop-optimizations -funroll-loops \
         -I/usr/include -D$(SINCOS) -march=native -mtune=native #-march=corei7-avx -mtune=corei7-avx -mavx
 #cpu specific optimizations e.g.: 
