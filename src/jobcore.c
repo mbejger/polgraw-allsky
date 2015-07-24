@@ -60,7 +60,7 @@ void search(
   // struct stat buffer;
   struct flock lck;
 
-  int pm, mm, nn;
+  int pm, mm, nn;    // hemisphere, sky positions 
   int sgnlc;         // number of candidates
   double *sgnlv;     // array with candidates data
 
@@ -72,12 +72,12 @@ void search(
   struct timespec tstart = get_current_time(), tend;
 #endif
 
-  /* Loop over hemispheres
-   */ 
-
   state=NULL;
   if(opts->checkp_flag) 
     state = fopen (opts->qname, "w");
+
+  /* Loop over hemispheres
+   */ 
 
   for (pm=s_range->pst; pm<=s_range->pmr[1]; ++pm) {
 
@@ -96,7 +96,7 @@ void search(
 		      fseek(state, 0, SEEK_SET);
 	    }
 	
-	    /* Loop over spindowns here */
+	    /* Loop over spindowns is inside job_core() */
 	    sgnlv = job_core(
 			 pm,           // hemisphere
 			 mm,           // grid 'sky position'
@@ -331,10 +331,6 @@ double* job_core(
     splintpad(fftw_arr->xb, ifo[n].sig.shftf, sett->N, 
       sett->interpftpad, ifo[n].sig.xDatmb);
 
-  //  tend = get_current_time();
-  //  double time_elapsed = get_time_difference(tstart, tend);
-  //  printf("Time elapsed, 2 splines: %e s\n", time_elapsed);
-
   } // end of detector loop 
 
   // square sums of modulation factors 
@@ -387,7 +383,7 @@ double* job_core(
 
   printf ("\n>>%d\t%d\t%d\t[%d..%d]\n", *FNum, mm, nn, smin, smax);
 
-  // if no-spindown
+  // No-spindown calculations
   if(opts->s0_flag) smin = smax;
   // if spindown parameter is taken into account, smin != smax
   for(ss=smin; ss<=smax; ++ss) {
@@ -399,7 +395,8 @@ double* job_core(
     // Spindown parameter
     sgnlt[1] = (opts->s0_flag ? 0. : ss*sett->M[5] + nn*sett->M[9] + mm*sett->M[13]);
     
-    if(sgnlt[1] >= -sett->Smax && sgnlt[1] <= sett->Smax) { // Spindown range
+    // Spindown range
+    if(sgnlt[1] >= -sett->Smax && sgnlt[1] <= sett->Smax) { 
 
       int ii;
       double Fc, het1;
