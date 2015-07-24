@@ -3,7 +3,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <dirent.h>
-					
+
 #include "settings.h"
 #include "auxi.h"
 #include "struct.h"
@@ -14,7 +14,7 @@
  */
 
 void search_settings(
-	Search_settings* sett) {
+  Search_settings* sett) {
 
   double dt, B, oms, omr, Smin, Smax;
   int nod, N, nfft, s, nd, interpftpad;
@@ -77,8 +77,8 @@ void search_settings(
  */ 
 
 void detectors_settings(
-	Search_settings* sett, 
-	Command_line_opts *opts) {
+  Search_settings* sett, 
+  Command_line_opts *opts) {
 
   int i=0; 
 
@@ -91,15 +91,14 @@ void detectors_settings(
   char **detnames = malloc(MAX_DETECTORS*sizeof(char*));   
 
   dp = opendir (dirname);
-
   if (dp != NULL) {
-		while ((ep = readdir (dp))) { 
+    while ((ep = readdir (dp))) { 
 
-			// Subdirectory names: 2 char long
-			if((ep->d_type == DT_DIR) && 
-		  	(strlen(ep->d_name)==DETNAME_LENGTH) && 
-		  	strncmp(&ep->d_name[0],".",1)) { 
- 
+      // Subdirectory names: 2 char long
+      if((ep->d_type == DT_DIR) && 
+        (strlen(ep->d_name)==DETNAME_LENGTH) && 
+        strncmp(&ep->d_name[0],".",1)) { 
+
           char filename[512];
           FILE *data;
 
@@ -109,28 +108,24 @@ void detectors_settings(
           opts->ident, opts->band, opts->label);
 
           if((data = fopen(filename, "r")) != NULL) {
-
-  			  	detnames[i] = calloc(DETNAME_LENGTH+1, sizeof(char)); 
-	  		  	strncpy(detnames[i], ep->d_name, DETNAME_LENGTH);
-  	  		  i++;
-
+            detnames[i] = calloc(DETNAME_LENGTH+1, sizeof(char)); 
+            strncpy(detnames[i], ep->d_name, DETNAME_LENGTH);
+            i++;
           } else { 
             printf("Directory %s exists, but no data input file (xdat) found...\n", ep->d_name);  
             //perror (filename);
           }
-			
-		}
-        
+      }
     } 
       
-	  (void) closedir(dp);
+    (void) closedir(dp);
 
   } else perror ("Couldn't open the input directory...");
 
   sett->nifo=i;      // number of detectors  
   if(sett->nifo) { 
     printf("Settings - number of detectors: %d\n", sett->nifo); 
- 
+
   } else { 
     printf("No subdirectories with detector data found. Exiting...\n"); 
     exit(EXIT_FAILURE);
@@ -164,7 +159,7 @@ void detectors_settings(
       // Height h above the Earth ellipsoid in meters
       ifo[i].eheight = 142.554;
       // Orientation of the detector gamma
-      ifo[i].egam	= 170.9994/RAD_TO_DEG;
+      ifo[i].egam = 170.9994/RAD_TO_DEG;
 
       printf("Using %s IFO as detector #%d...\n", ifo[i].name, i);
   
@@ -251,7 +246,6 @@ void modvir(
          c7 = ifo->amod.c7,
          c8 = ifo->amod.c8,
          c9 = ifo->amod.c9;
-			 	
 
   cosalfr = cosal*(ifo->sig.cphir) + sinal*(ifo->sig.sphir);
   sinalfr = sinal*(ifo->sig.cphir) - cosal*(ifo->sig.sphir);

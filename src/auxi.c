@@ -25,7 +25,6 @@ lin2ast (double be1, double be2, int pm, double sepsm, double cepsm,
 
 
 
-
 inline void
 spline(complex double *y, int n, complex double *y2)
 {
@@ -185,10 +184,6 @@ gridr (double *M, int *spndr, int *nr, int *mr, double oms, double Smax) {
   }
 } /* gridr() */
 
-
-
-
-
 double FStat (double *F, int nfft, int nav, int indx) {
   /* FStat Smoothed F-statistic */
 
@@ -216,18 +211,6 @@ double FStat (double *F, int nfft, int nav, int indx) {
   } /* for j */
   return pxout;
 } /* FStat() */
-
-
-
-
-
-
-
-
-
-
-
-
 
 int
 ludcmp (double *a, int n, int *indx, double *d)
