@@ -21,25 +21,27 @@ search - narrow band all-sky search for periodic signals of GW
    discussion). The following  command should  work with a testfile
    provided (for example, from a directory containing the data):
 
-   ./search -d . -o ./candidates -i 42 -b 271 -a L1 --whitenoise
+   ./search -d ./data -o ./candidates -i 42 -b 271 -r spotlight.dat --whitenoise
  
-   The program will proceed assuming white noise and use 
-   Livingston L1 detector location parameters (defined in settings.c) 
+   The program will proceed assuming that data directory ./data/042 
+   contain subdirectories (H1, L1, and/or V1) with input time series 
+   (xdat_271_042.bin in each subdirectory, corresponding to each 
+   detector, as well as corresponding ephemerids DetSSB.bin. 
+   The grid.bin file should be located in ./data/042/grid.bin 
 
    Additional switches:
 
-	-d	Data directory (default is .)
-	-o	Output directory (default is ./candidates)
-	-i	Frame number
-	-b	Band number
-	-l	Custom label for the input and output files
-	-r	File with grid range or pulsar position
-	-c	Change to directory <dir>
-	-f	Intepolation method (INT [default] or FFT)
-	-t	Threshold for the F-statistic (default is 20)
-	-h	Hemisphere (default is 0 - does both)
-	-a	Detector (L1, H1 or V1); default is V1
-	-p	fpo (starting frequency) value
+   -d	Data directory (default is .)
+   -o	Output directory (default is ./candidates)
+   -i	Frame number
+   -b	Band number
+   -l	Custom label for the input and output files
+   -r	Spotlight search file with sky and spindown grid points
+   -c	Change to directory <dir>
+   -t	Threshold for the F-statistic (default is 20)
+   -h	Hemisphere (default is 0 - does both)
+   -p	fpo (starting frequency) value
+   -x	Add signal with parameters from <file>
 
 	Also:
 
@@ -122,7 +124,7 @@ search - narrow band all-sky search for periodic signals of GW
 
    record no.   meaning
    -----------------------------------------------------
-   1		frequency [Hz] above f_{po}
+   1		frequency [radians, between 0 and \pi] above f_{po}
    2		spindown [Hz s^-1]
    3		declination [radians]
    4		right ascension [radians]
