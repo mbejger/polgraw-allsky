@@ -1,0 +1,111 @@
+# Gen2day
+# Generate 2-day time-domain sequences from sft files
+# config file
+
+[ General ]
+
+# Whether to generate detector ephemeris
+# Detector site is defined in the [ Data ] section below
+ephemeris = yes
+# ephemeris = no
+
+# Ephemeris files
+# The following are for DE405
+efile = earth00-19-DE405.dat
+sfile = sun00-19-DE405.dat
+# The following are for DE200
+#efile = earth09-11.dat
+#sfile = sun09-11.dat
+
+# Path to ephemeris files
+EphDir = .
+
+# Significance level for determination of outliers
+alpha = 0.1
+
+# static outlier threshold
+# everything above this value will be removed before passing the data on
+# to the outlier detection routine
+othresh = 750
+
+# sampling period
+dt = 0.5000
+
+# length of fft
+lfft = 2048
+
+# samples per time frame
+# 2 sideral days * 2 samples per second = 2 * 86164 * 2
+N = 344656
+
+[ Data ]
+
+# Pulsar name, as in the input filename
+plsr = J0322+0441
+
+# Detector site codename
+# See the file EphemerisDetector.h for the list of recognized sites
+site = L1
+
+# SFT directory (input files)
+SftDir = /scratch1/J0322+0441_l1
+#SftDir = /scratch2/J0322+0441
+#SftDir = ../sft
+
+# list of sft files
+# The files are assumed to be in the SftDir path
+# Actual filenames have to include the pulsar name and be of the form
+# $(plsr)_$(flsum).out
+# for example J0322+0441_2009-07-27.out
+flsum = 2009-07-07 \
+      	2009-07-17 \
+	2009-07-27 \
+	2009-08-06 \
+	2009-08-16 \
+	2009-08-26 \
+	2009-09-05 \
+	2009-09-15 \
+	2009-09-25 \
+	2009-10-05 \
+	2009-10-15 \
+	2009-10-25 \
+	2009-11-04 \
+	2009-11-14 \
+	2009-11-24 \
+	2009-12-04 \
+	2009-12-14 \
+	2009-12-24 \
+	2010-01-03 \
+	2010-01-13 \
+	2010-01-23 \
+	2010-02-02 \
+	2010-02-12 \
+	2010-02-22 \
+	2010-03-04 \
+	2010-03-14 \
+	2010-03-24 \
+	2010-04-03 \
+	2010-04-13 \
+	2010-04-23 \
+	2010-05-03 \
+	2010-05-13 \
+	2010-05-23 \
+	2010-06-02 \
+	2010-06-12 \
+	2010-06-22 \
+	2010-07-02 \
+	2010-07-12 \
+	2010-07-22 \
+	2010-08-01 \
+	2010-08-11 \
+	2010-08-21 \
+	2010-08-31 \
+	2010-09-10 \
+	2010-09-20 \
+	2010-09-30 \
+	2010-10-10
+
+# Output data directory
+# DataDir = /scratch2/extract_band/S6
+DataDir = ./testdata_c
+
