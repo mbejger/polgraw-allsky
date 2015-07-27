@@ -5,7 +5,9 @@ All-sky CGW search code (Polgraw group)
 
 This code searches for continuous gravitational waves  
 in time-domain data using the F-statistic on data 
-from a network of detectors (not ready yet!)  
+from a network of detectors. Currently the available 
+detectors are H1 (Hanford), L1 (Livingston) of LIGO 
+and V1 (Cascina) of Virgo.   
 
-See doc/readme_search.txt for more details.
-
+See doc/readme_search.txt for some details (documentation 
+may not be complete).
