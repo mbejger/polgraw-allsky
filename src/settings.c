@@ -114,7 +114,8 @@ void detectors_settings(
             strncpy(detnames[i], ep->d_name, DETNAME_LENGTH);
             i++;
           } else { 
-            printf("Directory %s exists, but no data input file (xdat) found...\n", ep->d_name);  
+            printf("Directory %s exists, but no input file found:\n%s missing...\n", 
+              ep->d_name, opts->xdatname);  
             //perror (opts->xdatname);
           }
       }
