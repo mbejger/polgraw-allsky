@@ -251,7 +251,6 @@ void init_arrays(
   // Allocates and initializes to zero the data, detector ephemeris
   // and the F-statistic arrays
 
-  char filename[512];
   FILE *data;
 
   for(i=0; i<sett->nifo; i++) { 
@@ -259,17 +258,17 @@ void init_arrays(
     ifo[i].sig.xDat = (double *) calloc(sett->N, sizeof(double));
 
     // Input time-domain data handling
-    sprintf (filename, "%s/%03d/%s/xdatc_%03d_%03d%s.bin", 
-	      opts->dtaprefix, opts->ident, ifo[i].name, 
-	      opts->ident, opts->band, opts->label);
- 
-    if((data = fopen(filename, "r")) != NULL) {
+    // 
+    // (name of the file opts->xdatname is constructed 
+    // in settings.c, while looking for the detector 
+    // subdirectories)
+    if((data = fopen(opts->xdatname, "r")) != NULL) {
       status = fread((void *)(ifo[i].sig.xDat), 
                sizeof(double), sett->N, data);
       fclose (data);
 
     } else {
-      perror (filename);
+      perror (opts->xdatname);
       exit(EXIT_FAILURE); 
     }
 
@@ -289,6 +288,7 @@ void init_arrays(
     ifo[i].sig.DetSSB = (double *) calloc(3*sett->N, sizeof(double));
 
     // Ephemeris file handling
+    char filename[512];
     sprintf (filename, "%s/%03d/%s/DetSSB.bin", 
         opts->dtaprefix, opts->ident, ifo[i].name);
 

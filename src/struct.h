@@ -20,7 +20,7 @@ typedef struct __comm_line_opts {
 	double fpo_val;
 	
 	char prefix[512], dtaprefix[512], label[512], 
-       spotlight[512], qname[512], addsig[512], *wd;
+       spotlight[512], qname[512], addsig[512], xdatname[512], *wd;
 
 } Command_line_opts;
 
