@@ -618,6 +618,8 @@ void plan_fftw(
 
   sett->nfftf = sett->fftpad*sett->nfft;
 
+  // Change FFTW_MEASURE to FFTW_PATIENT for more optimized plan
+  // (takes more time to generate the wisdom file)
   plans->plan = fftw_plan_dft_1d(sett->nfftf, fftw_arr->xa, fftw_arr->xa, FFTW_FORWARD, FFTW_MEASURE);
   plans->plan2 = fftw_plan_dft_1d(sett->nfftf, fftw_arr->xb, fftw_arr->xb, FFTW_FORWARD, FFTW_MEASURE);
 	                             
@@ -710,6 +712,7 @@ void cleanup(
   for(i=0; i<sett->nifo; i++) {
     free(ifo[i].sig.xDat);
     free(ifo[i].sig.xDatma);
+    free(ifo[i].sig.xDatmb);
     free(ifo[i].sig.DetSSB);
     free(ifo[i].sig.aa);
     free(ifo[i].sig.bb);
