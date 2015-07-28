@@ -99,21 +99,24 @@ void detectors_settings(
         (strlen(ep->d_name)==DETNAME_LENGTH) && 
         strncmp(&ep->d_name[0],".",1)) { 
 
-          char filename[512];
           FILE *data;
 
           // Input time-domain data handling
-          sprintf(filename, "%s/%03d/%s/xdatc_%03d_%03d%s.bin",
+          // 
+          // We assume that in each subdirectory corresponding 
+          // to the detector the input data will look as following: 
+          sprintf(opts->xdatname, "%s/%03d/%s/xdatc_%03d_%03d%s.bin",
           opts->dtaprefix, opts->ident, ep->d_name,
           opts->ident, opts->band, opts->label);
 
-          if((data = fopen(filename, "r")) != NULL) {
+          if((data = fopen(opts->xdatname, "r")) != NULL) {
             detnames[i] = calloc(DETNAME_LENGTH+1, sizeof(char)); 
             strncpy(detnames[i], ep->d_name, DETNAME_LENGTH);
             i++;
           } else { 
-            printf("Directory %s exists, but no data input file (xdat) found...\n", ep->d_name);  
-            //perror (filename);
+            printf("Directory %s exists, but no input file found:\n%s missing...\n", 
+              ep->d_name, opts->xdatname);  
+            //perror (opts->xdatname);
           }
       }
     } 

@@ -248,7 +248,6 @@ void init_arrays(
   // Allocates and initializes to zero the data, detector ephemeris
   // and the F-statistic arrays
 
-  char filename[512];
   FILE *data;
 
   for(i=0; i<sett->nifo; i++) { 
@@ -256,17 +255,17 @@ void init_arrays(
     ifo[i].sig.xDat = (double *) calloc(sett->N, sizeof(double));
 
     // Input time-domain data handling
-    sprintf (filename, "%s/%03d/%s/xdatc_%03d_%03d%s.bin", 
-	      opts->dtaprefix, opts->ident, ifo[i].name, 
-	      opts->ident, opts->band, opts->label);
- 
-    if((data = fopen(filename, "r")) != NULL) {
+    // 
+    // (name of the file opts->xdatname is constructed 
+    // in settings.c, while looking for the detector 
+    // subdirectories)
+    if((data = fopen(opts->xdatname, "r")) != NULL) {
       status = fread((void *)(ifo[i].sig.xDat), 
                sizeof(double), sett->N, data);
       fclose (data);
 
     } else {
-      perror (filename);
+      perror (opts->xdatname);
       exit(EXIT_FAILURE); 
     }
 
@@ -286,6 +285,7 @@ void init_arrays(
     ifo[i].sig.DetSSB = (double *) calloc(3*sett->N, sizeof(double));
 
     // Ephemeris file handling
+    char filename[512];
     sprintf (filename, "%s/%03d/%s/DetSSB.bin", 
         opts->dtaprefix, opts->ident, ifo[i].name);
 
@@ -693,14 +693,16 @@ void plan_fftw(
 
   sett->nfftf = sett->fftpad*sett->nfft;
 
-  plans->plan = fftw_plan_dft_1d(sett->nfftf, fftw_arr->xa, fftw_arr->xa, FFTW_FORWARD, FFTW_PATIENT);
-  plans->plan2 = fftw_plan_dft_1d(sett->nfftf, fftw_arr->xb, fftw_arr->xb, FFTW_FORWARD, FFTW_PATIENT);
+  // Change FFTW_MEASURE to FFTW_PATIENT for more optimized plan
+  // (takes more time to generate the wisdom file)
+  plans->plan = fftw_plan_dft_1d(sett->nfftf, fftw_arr->xa, fftw_arr->xa, FFTW_FORWARD, FFTW_MEASURE);
+  plans->plan2 = fftw_plan_dft_1d(sett->nfftf, fftw_arr->xb, fftw_arr->xb, FFTW_FORWARD, FFTW_MEASURE);
 	                             
-  plans->pl_int = fftw_plan_dft_1d(sett->nfft, fftw_arr->xa, fftw_arr->xa, FFTW_FORWARD, FFTW_PATIENT);
-  plans->pl_int2 = fftw_plan_dft_1d(sett->nfft, fftw_arr->xb, fftw_arr->xb, FFTW_FORWARD, FFTW_PATIENT);
+  plans->pl_int = fftw_plan_dft_1d(sett->nfft, fftw_arr->xa, fftw_arr->xa, FFTW_FORWARD, FFTW_MEASURE);
+  plans->pl_int2 = fftw_plan_dft_1d(sett->nfft, fftw_arr->xb, fftw_arr->xb, FFTW_FORWARD, FFTW_MEASURE);
 	                             
-  plans->pl_inv = fftw_plan_dft_1d(sett->Ninterp, fftw_arr->xa, fftw_arr->xa, FFTW_BACKWARD, FFTW_PATIENT);
-  plans->pl_inv2 = fftw_plan_dft_1d(sett->Ninterp, fftw_arr->xb, fftw_arr->xb, FFTW_BACKWARD, FFTW_PATIENT);
+  plans->pl_inv = fftw_plan_dft_1d(sett->Ninterp, fftw_arr->xa, fftw_arr->xa, FFTW_BACKWARD, FFTW_MEASURE);
+  plans->pl_inv2 = fftw_plan_dft_1d(sett->Ninterp, fftw_arr->xb, fftw_arr->xb, FFTW_BACKWARD, FFTW_MEASURE);
 	                             
   // Generates a wisdom FFT file if there is none
   if((wisdom = fopen(wfilename, "r")) == NULL) {
