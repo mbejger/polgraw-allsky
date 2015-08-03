@@ -42,7 +42,7 @@ void settings (Detector_settings* sett, Command_line_opts *opts, Arrays *arr)
 
   alfa = .01;		// False alarm probability
   nd = 2;		// Degree of freedom, 2*nd = deg. no ofrees of freedom for Chi^2
-  fftpad = 2;	        // Zero padding (original grid: 2, new grids: 1)
+  fftpad = 1;	        // Zero padding (original grid: 2, new grids: 1)
   interpftpad = 2;
 
   if(!strcmp("V1", ifo_choice)) {

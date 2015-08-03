@@ -267,7 +267,7 @@ void init_arrays(Arrays *arr, FLOAT_TYPE** cu_F,
   char filename[CHAR_BUFFER_SIZE];
   FILE *data;
   // Input time-domain data handling
-  sprintf (filename, "%s/%03d/xdat_%03d_%03d%s.bin", opts->dtaprefix, opts->ident, \
+  sprintf (filename, "%s/%03d/xdatc_%03d_%03d%s.bin", opts->dtaprefix, opts->ident, \
 	   opts->ident, opts->band, opts->label);
   if ((data = fopen (filename, "r")) != NULL) {
     fread ((void *)(arr->xDat), sizeof (double), sett->N, data); // !!! wczytanie danych
