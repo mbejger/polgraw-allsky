@@ -27,7 +27,8 @@ void handle_opts(int argc, char* argv[], Command_line_opts *opts, Detector_setti
   opts->hemi=0;
   opts->wd=NULL;
   opts->trl=20;
-  opts->fftinterp=INT;
+  // The default option for FFT interpolation is zero-padding 
+  opts->fftinterp=FFT;
 	
   strcpy (opts->prefix, TOSTR(PREFIX));
   strcpy (opts->dtaprefix, TOSTR(DTAPREFIX));
@@ -101,7 +102,7 @@ void handle_opts(int argc, char* argv[], Command_line_opts *opts, Detector_setti
       printf("-l	Custom label for the input and output files\n");
       printf("-r	File with grid range or pulsar position\n");
       printf("-c	Change to directory <dir>\n");
-      printf("-f	Intepolation method (INT [default] or FFT)\n");
+      printf("-f	Intepolation method (FFT [default] or INT)\n");
       printf("-t	Threshold for the F-statistic (default is 20)\n");
       printf("-h	Hemisphere (default is 0 - does both)\n");
       printf("-a	Detector (L1, H1 or V1); default is V1\n");
@@ -125,7 +126,7 @@ void handle_opts(int argc, char* argv[], Command_line_opts *opts, Detector_setti
       opts->ident = atoi (optarg);
       break;
     case 'f':
-      if(!strcmp(optarg, "FFT")) opts->fftinterp=FFT;
+      if(!strcmp(optarg, "INT")) opts->fftinterp=INT;
       break;
     case 't':
       opts->trl = atof(optarg);

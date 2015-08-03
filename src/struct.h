@@ -21,10 +21,11 @@ typedef struct __comm_line_opts {
 	int ident, band, hemi;
 	double trl;									// critical F-stat value
 	double fpo_val;							// frequency
-	
-	char prefix[CHAR_BUFFER_SIZE], dtaprefix[CHAR_BUFFER_SIZE], label[CHAR_BUFFER_SIZE], range[CHAR_BUFFER_SIZE], *wd,
-			ifo_choice[3];
-	char qname[CHAR_BUFFER_SIZE];
+
+  char prefix[CHAR_BUFFER_SIZE], dtaprefix[CHAR_BUFFER_SIZE], label[CHAR_BUFFER_SIZE], range[CHAR_BUFFER_SIZE], *wd,
+      ifo_choice[3];
+   char qname[CHAR_BUFFER_SIZE];
+
 } Command_line_opts;
 
 
