@@ -114,9 +114,13 @@ void init_spline_matrices(cufftDoubleComplex **cu_d, cufftDoubleComplex** cu_dl,
 	N-=1; //N is number of intervals here
 
 	cufftDoubleComplex *d, *du, *dl;
-	d = (cufftDoubleComplex*) malloc(sizeof(cufftDoubleComplex)*(N-1));
-	du = (cufftDoubleComplex*) malloc(sizeof(cufftDoubleComplex)*(N-1));
-	dl = (cufftDoubleComplex*) malloc(sizeof(cufftDoubleComplex)*(N-1));
+//	d = (cufftDoubleComplex*) malloc(sizeof(cufftDoubleComplex)*(N-1));
+//	du = (cufftDoubleComplex*) malloc(sizeof(cufftDoubleComplex)*(N-1));
+//	dl = (cufftDoubleComplex*) malloc(sizeof(cufftDoubleComplex)*(N-1));
+	CudaSafeCall( cudaMallocHost((void**)&d, sizeof(cufftDoubleComplex)*(N-1)) );
+	CudaSafeCall( cudaMallocHost((void**)&du, sizeof(cufftDoubleComplex)*(N-1)) );
+	CudaSafeCall( cudaMallocHost((void**)&dl, sizeof(cufftDoubleComplex)*(N-1)) );
+
 
 	//dl[0] is 0 and du[N-2]=0
 
@@ -151,9 +155,12 @@ void init_spline_matrices(cufftDoubleComplex **cu_d, cufftDoubleComplex** cu_dl,
 	CudaSafeCall( cudaMalloc((void**)cu_B, sizeof(cufftDoubleComplex)*(N+1)));
 	
 	//clean up
-	free(d);
-	free(du);
-	free(dl);
+	//free(d);
+	//free(du);
+	//free(dl);
+	CudaSafeCall( cudaFreeHost(d) );
+	CudaSafeCall( cudaFreeHost(du) );
+	CudaSafeCall( cudaFreeHost(dl) );
 }
 
 

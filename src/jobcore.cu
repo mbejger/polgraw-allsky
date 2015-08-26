@@ -1,4 +1,3 @@
-
 #include <math.h>
 #include <stdio.h>
 #include <sys/types.h>
@@ -404,7 +403,7 @@ double* job_core(
 	( cu_xa_final + sett->nmin,
 	  cu_xb_final + sett->nmin,
 	  cu_F + sett->nmin,
-	  sett->crf0,
+	  1/(sett->crf0),
 	  sett->nmax - sett->nmin );
       CudaCheckError();
 
@@ -414,7 +413,7 @@ double* job_core(
       } else { // when noise is white-noise
 	kernel_norm_Fstat_wn<<<(sett->nmax - sett->nmin + BLOCK_SIZE - 1)/BLOCK_SIZE, BLOCK_SIZE>>>
 	  ( cu_F + sett->nmin,
-	    sett->sig2,
+	    1/(sett->sig2),
 	    sett->nmax - sett->nmin );
       }
       
@@ -429,17 +428,20 @@ double* job_core(
 	  opts->trl,			// threshold value
 	  sett->nmin,			// minimum F-statistic array index
 	  sett->nmax,			// maximum -||-
-	  sett->fftpad,			// FFT padding for calculation of freq.
-	  sett->nfft,			// FFT length
+	  1/((double)sett->fftpad),			// FFT padding for calculation of freq.
+	  1/((double)sett->nfft),			// FFT length
 	  sgnl0,			// base frequency parameter
 	  sett->nd,			// number of degrees of freedom
 	  sgnlt[1],			// spindown
 	  sgnlt[2],			// sky 
 	  sgnlt[3] );			// positions
-      
+
+
+/////////////////////////
+
+
       int cand_count;
-      cudaMemcpy(&cand_count, arr->cu_cand_count, sizeof(int), cudaMemcpyDeviceToHost);
-			
+      cudaMemcpy(&cand_count, arr->cu_cand_count, sizeof(int), cudaMemcpyDeviceToHost);		
       if (cand_count>0) { //if something was found
 	printf ("\nSome signals found in %d %d %d %d\n", pm, mm, nn, ss);
 	cudaMemcpy(arr->cu_cand_buffer + *cand_buffer_count * NPAR,
@@ -585,11 +587,12 @@ void modvir_gpu (double sinal, double cosal, double sindel, double cosdel,
   bool turn = false;
   //normalization
   //first, compute sum of squares and sum in every block
-  reduction_sumsq<<<blocks, BLOCK_SIZE_RED, sizeof(double)*2*BLOCK_SIZE_RED>>>
-    (cu_a, arr->cu_o_aa, n);
-  reduction_sumsq<<<blocks, BLOCK_SIZE_RED, sizeof(double)*2*BLOCK_SIZE_RED>>>
-    (cu_b, arr->cu_o_bb, n);
-  CudaCheckError();	
+  
+
+	reduction_sumsq<BLOCK_SIZE_RED><<<blocks, BLOCK_SIZE_RED, sizeof(double)*2*BLOCK_SIZE_RED>>>(cu_a, arr->cu_o_aa, n);
+	reduction_sumsq<BLOCK_SIZE_RED><<<blocks, BLOCK_SIZE_RED, sizeof(double)*2*BLOCK_SIZE_RED>>>(cu_b, arr->cu_o_bb, n);
+
+	CudaCheckError();	
 
   double *ina, *inb, *outa, *outb;
   while(blocks > 1) {
@@ -608,10 +611,9 @@ void modvir_gpu (double sinal, double cosal, double sindel, double cosdel,
       outb = arr->cu_o_bb;
     }
 
-    reduction_sum<<<blocks, BLOCK_SIZE_RED, sizeof(double)*2*BLOCK_SIZE_RED>>>
-      (ina, outa, n);
-    reduction_sum<<<blocks, BLOCK_SIZE_RED, sizeof(double)*2*BLOCK_SIZE_RED>>>
-      (inb, outb, n);
+		reduction_sum<BLOCK_SIZE_RED><<<blocks, BLOCK_SIZE_RED, sizeof(double)*2*BLOCK_SIZE_RED>>>(ina, outa, n);
+		reduction_sum<BLOCK_SIZE_RED><<<blocks, BLOCK_SIZE_RED, sizeof(double)*2*BLOCK_SIZE_RED>>>(inb, outb, n);
+
     CudaCheckError();
 
     turn=!turn;
@@ -628,7 +630,7 @@ void modvir_gpu (double sinal, double cosal, double sindel, double cosdel,
   //	printf("Sa, Sb: %e %e (GPU)\n", s_a, s_b);
 	
   //normalize
-  modvir_normalize<<<BLOCK_DIM(N, BLOCK_SIZE), BLOCK_SIZE>>>(cu_a, cu_b, s_a, s_b, N);
+  modvir_normalize<<<BLOCK_DIM(N, BLOCK_SIZE), BLOCK_SIZE>>>(cu_a, cu_b, 1/(s_a), 1/(s_b), N);
   CudaCheckError();
 	
 }
@@ -646,19 +648,20 @@ void FStat_gpu(FLOAT_TYPE *cu_F, int N, int nav, float *cu_mu, float *cu_mu_t) {
 	
   int nav_blocks = N/nav;           //number of blocks
   int nav_threads = nav/BLOCK_SIZE; //number of blocks computing one nav-block
-  int blocks = N/BLOCK_SIZE;
+ 	int blocks = N/BLOCK_SIZE;
 	
   //	CudaSafeCall ( cudaMalloc((void**)&cu_mu_t, sizeof(float)*blocks) );
   //	CudaSafeCall ( cudaMalloc((void**)&cu_mu, sizeof(float)*nav_blocks) );
 	
   //sum fstat in blocks
-  reduction_sum<<<blocks, BLOCK_SIZE, BLOCK_SIZE*sizeof(float)>>>
-    (cu_F, cu_mu_t, N);
+
+	reduction_sum<BLOCK_SIZE><<<blocks, BLOCK_SIZE, BLOCK_SIZE*sizeof(float)>>>(cu_F, cu_mu_t, N);
+
   CudaCheckError();
 		
   //sum blocks computed above
-  reduction_sum<<<nav_blocks, nav_threads, nav_threads*sizeof(float)>>>
-    (cu_mu_t, cu_mu, blocks);
+
+	reduction_sum<NAV_THREADS><<<nav_blocks, nav_threads, nav_threads*sizeof(float)>>>(cu_mu_t, cu_mu, blocks);
   CudaCheckError();
 	
   //divide by mu/(2*NAV)

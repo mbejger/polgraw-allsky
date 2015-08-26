@@ -256,10 +256,13 @@ void init_arrays(Arrays *arr, FLOAT_TYPE** cu_F,
 
   // Allocates and initializes to zero the data, detector ephemeris
   // and the F-statistic arrays
-  arr->xDat = (double *) calloc (sett->N, sizeof (double));
+
+	CudaSafeCall( cudaMallocHost((void**)&arr->xDat, sizeof(double)*sett->N) );	
+//  arr->xDat = (double *) calloc (sett->N, sizeof (double));
   CudaSafeCall ( cudaMalloc((void**)&arr->cu_xDat, sizeof(double)*sett->N));
 
-  arr->DetSSB = (double *) calloc (3*sett->N, sizeof (double));
+	CudaSafeCall( cudaMallocHost((void**)&arr->DetSSB, sizeof(double)*3*sett->N) );
+//  arr->DetSSB = (double *) calloc (3*sett->N, sizeof (double));
   CudaSafeCall ( cudaMalloc((void**)&arr->cu_DetSSB, sizeof(double)*3*sett->N));
 
   CudaSafeCall ( cudaMalloc((void**)cu_F, sizeof(FLOAT_TYPE)*sett->fftpad*sett->nfft));
@@ -268,7 +271,7 @@ void init_arrays(Arrays *arr, FLOAT_TYPE** cu_F,
   char filename[CHAR_BUFFER_SIZE];
   FILE *data;
   // Input time-domain data handling
-  sprintf (filename, "%s/%03d/xdatc_%03d_%03d%s.bin", opts->dtaprefix, opts->ident, \
+  sprintf (filename, "%s/%03d/xdat_%03d_%03d%s.bin", opts->dtaprefix, opts->ident, \
 	   opts->ident, opts->band, opts->label);
   if ((data = fopen (filename, "r")) != NULL) {
     fread ((void *)(arr->xDat), sizeof (double), sett->N, data); // !!! wczytanie danych
@@ -337,8 +340,10 @@ void init_arrays(Arrays *arr, FLOAT_TYPE** cu_F,
   sett->cepsm = cos (epsm);
 
   //misc. arrays
-  arr->aa = (double*) malloc(sizeof(double)*sett->N);
-  arr->bb = (double*) malloc(sizeof(double)*sett->N);
+  //arr->aa = (double*) malloc(sizeof(double)*sett->N);
+  //arr->bb = (double*) malloc(sizeof(double)*sett->N);
+  CudaSafeCall( cudaMallocHost((void**)&arr->aa, sizeof(double)*sett->N) );
+  CudaSafeCall( cudaMallocHost((void**)&arr->bb, sizeof(double)*sett->N) );
   CudaSafeCall ( cudaMalloc((void**)&arr->cu_aa, sizeof(double)*sett->nfft));
   CudaSafeCall ( cudaMalloc((void**)&arr->cu_bb, sizeof(double)*sett->nfft));
 
@@ -362,8 +367,8 @@ void init_arrays(Arrays *arr, FLOAT_TYPE** cu_F,
   CudaSafeCall (cudaMalloc((void**)&arr->cu_cand_buffer, sizeof(FLOAT_TYPE)*arr->cand_buffer_size));
   CudaSafeCall (cudaMalloc((void**)&arr->cu_cand_count, sizeof(int)));
 	
-  arr->cand_buffer = (FLOAT_TYPE*)malloc(sizeof(FLOAT_TYPE)*arr->cand_buffer_size);
-
+  //arr->cand_buffer = (FLOAT_TYPE*)malloc(sizeof(FLOAT_TYPE)*arr->cand_buffer_size);
+	  CudaSafeCall( cudaMallocHost((void**)&arr->cand_buffer, sizeof(FLOAT_TYPE)*arr->cand_buffer_size) );	
 }
 
 
@@ -642,16 +647,20 @@ void cleanup(Detector_settings *sett,
 	     FLOAT_TYPE *cu_F) 
 {
 
-  free(arr->xDat);
-	
+  //free(arr->xDat);
+	CudaSafeCall( cudaFreeHost(arr->xDat) );
+  CudaSafeCall( cudaFreeHost(arr->DetSSB) );
   free(arr->sinmodf);
   free(arr->cosmodf);
-  free(arr->aa);
-  free(arr->bb);
-  free(arr->DetSSB);
+  //free(arr->aa);
+  //free(arr->bb);
+  //free(arr->DetSSB);
 	
-  free(arr->cand_buffer);
-	
+  //free(arr->cand_buffer);
+	CudaSafeCall( cudaFreeHost(arr->aa) );
+  CudaSafeCall( cudaFreeHost(arr->bb) );
+  CudaSafeCall( cudaFreeHost(arr->cand_buffer) );
+
   cudaFree(arr->cu_xa);
   cudaFree(arr->cu_xb);
   cudaFree(arr->cu_xar);

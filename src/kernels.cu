@@ -2,6 +2,7 @@
 #include "settings.h"
 #include <stdio.h>
 
+
 //extern __constant__ Detector_settings *c_sett;
 __constant__ double cu_c[9];
 //extern double *cu_c;
@@ -193,14 +194,27 @@ __global__ void compute_Fstat(COMPLEX_TYPE *xa, COMPLEX_TYPE *xb,
 			      FLOAT_TYPE *F, FLOAT_TYPE crf0, int N) { // N = nmax - nmin
   int i = blockIdx.x * blockDim.x + threadIdx.x;
   if (i < N) {
-    F[i] = ( xa[i].x*xa[i].x + xa[i].y*xa[i].y + xb[i].x*xb[i].x + xb[i].y*xb[i].y) / (crf0);
+    F[i] = ( xa[i].x*xa[i].x + xa[i].y*xa[i].y + xb[i].x*xb[i].x + xb[i].y*xb[i].y) * (crf0);
   }
 }
+/*
+__global__ void compute_Fstat(COMPLEX_TYPE *xa, COMPLEX_TYPE *xb,
+			      FLOAT_TYPE *F, FLOAT_TYPE crf0, int N) { // N = nmax - nmin
+  int i = blockIdx.x * blockDim.x + threadIdx.x;
+  for (; i<N; i += blockDim.x * gridDim.x) {
+	COMPLEX_TYPE aval = xa[i];
+	COMPLEX_TYPE bval = xb[i];
+	FLOAT_TYPE Fval = ( aval.x*aval.x + aval.y*aval.y + bval.x*bval.x + bval.y*bval.y) * (crf0);
+	F[i] = Fval ;
+  }
+}
+*/
+
 
 __global__ void kernel_norm_Fstat_wn(FLOAT_TYPE *F, FLOAT_TYPE sig2, int N) {
   int idx = blockIdx.x * blockDim.x + threadIdx.x;
   if (idx < N) {
-    F[idx] /= sig2;
+    F[idx] *= sig2;
   }	
 }
 
@@ -213,7 +227,7 @@ __global__ void kernel_norm_Fstat_wn(FLOAT_TYPE *F, FLOAT_TYPE sig2, int N) {
 // [frequency, spindown, position1, position2, snr]
 #define ADD_PARAMS_MACRO \
   int p = atomicAdd(found, 1);						\
-  params[p*NPAR + 0] = 2.0*M_PI*(idx)/((double)fftpad*nfft)+sgnl0;	\
+  params[p*NPAR + 0] = 2.0*M_PI*(idx)*fftpad*nfft+sgnl0;	\
   params[p*NPAR + 1] = sgnl1;	\
   params[p*NPAR + 2] = sgnl2;	\
   params[p*NPAR + 3] = sgnl3;	\
@@ -221,7 +235,7 @@ __global__ void kernel_norm_Fstat_wn(FLOAT_TYPE *F, FLOAT_TYPE sig2, int N) {
 
 
 __global__ void find_candidates(FLOAT_TYPE *F, FLOAT_TYPE *params, int *found, FLOAT_TYPE val,
-				int nmin, int nmax, int fftpad, int nfft, FLOAT_TYPE sgnl0, int ndf,
+				int nmin, int nmax, double fftpad, double nfft, FLOAT_TYPE sgnl0, int ndf,
 				FLOAT_TYPE sgnl1, FLOAT_TYPE sgnl2, FLOAT_TYPE sgnl3) {
   
   int idx = blockIdx.x * blockDim.x + threadIdx.x + nmin;
@@ -245,69 +259,40 @@ __global__ void copy_candidates(FLOAT_TYPE *params, FLOAT_TYPE *buffer, int N) {
   }
 }
 
-
-__global__ void reduction_sumsq(double *in, double *out, int N) {
-  extern __shared__ double sdata[];
-  
-  int tid = threadIdx.x;
-  int i = blockIdx.x * blockDim.x + threadIdx.x;
-  
-  sdata[tid] = (i<N) ? in[i]*in[i] : 0;
-  
-  __syncthreads();
-	
-  for (int s = blockDim.x/2; s>0; s>>=1) {
-    if (tid < s) {
-      sdata[tid] += sdata[tid + s];
-    }
-    __syncthreads();
-  }
-  
-  if (tid==0) out[blockIdx.x] = sdata[0];
-}
-
-
-
-__global__ void reduction_sum(float *in, float *out, int N) {
+__global__ void reduction_sum(float *in, float *out, int N, int blockSize)
+{
   extern __shared__ float sf_data[];
-  
+
   int tid = threadIdx.x;
-  int i = blockIdx.x * blockDim.x + threadIdx.x;
-  
-  sf_data[tid] = (i<N) ? in[i] : 0;
-  
-  __syncthreads();
-  
-  for (int s = blockDim.x/2; s>0; s>>=1) {
-    if (tid < s) {
-      sf_data[tid] += sf_data[tid + s];
-    }
-    __syncthreads();
+  int i = blockIdx.x * (blockDim.x*2) + threadIdx.x;
+	int gridSize = blockSize*2*gridDim.x;
+
+  sf_data[tid] = 0;
+
+  while (i < N)
+  {
+		sf_data[tid] += in[i] + in[i+blockSize];
+		i += gridSize;
+	}
+	__syncthreads();
+
+	if (blockSize >=512) { if (tid<256)	{ sf_data[tid] += sf_data[tid+256];}__syncthreads();}
+	if (blockSize >=256) { if (tid<128)	{ sf_data[tid] += sf_data[tid+128];}__syncthreads();}
+	if (blockSize >=128) { if (tid< 64)	{ sf_data[tid] += sf_data[tid+ 64];}__syncthreads();}
+
+  if (tid < 32)
+  {
+		if (blockSize>=64)sf_data[tid] += sf_data[tid + 32];
+		if (blockSize>=32)sf_data[tid] += sf_data[tid + 16];
+    if (blockSize>=16)sf_data[tid] += sf_data[tid + 8];
+    if (blockSize>=8) sf_data[tid] += sf_data[tid + 4];
+    if (blockSize>=4) sf_data[tid] += sf_data[tid + 2];
+    if (blockSize>=2) sf_data[tid] += sf_data[tid + 1];
   }
-  
+
+
   if (tid==0) out[blockIdx.x] = sf_data[0];
-}
 
-
-__global__ void reduction_sum(double *in, double *out, int N) {
-  extern __shared__ double sd_data[];
-  
-  int tid = threadIdx.x;
-  int i = blockIdx.x * blockDim.x + threadIdx.x;
-  
-  sd_data[tid] = (i<N) ? in[i] : 0;
-  
-  __syncthreads();
-  
-  for (int s = blockDim.x/2; s>0; s>>=1) {
-    if (tid < s) {
-      sd_data[tid] += sd_data[tid + s];
-    }
-    __syncthreads();
-  }
-  
-  if (tid==0) out[blockIdx.x] = sd_data[0];
-  
 }
 
 
@@ -341,7 +326,7 @@ __global__ void compute_modvir(double *aa, double *bb, double cosalfr, double si
 __global__ void modvir_normalize(double *aa, double *bb, double s_a, double s_b, int N) {
   int idx = threadIdx.x + blockIdx.x * blockDim.x;
   if ( idx < N ) { 
-    aa[idx] /= s_a;
-    bb[idx] /= s_b;
+    aa[idx] *= s_a;
+    bb[idx] *= s_b;
   }
 }
