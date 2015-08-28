@@ -157,128 +157,19 @@ o_bb[blockIdx.x] = sdata_b[0];
 __global__ void modvir_normalize(double *aa, double *bb, double s_a, double s_b, int N);
 
 
+//__global__ void reduction_sumsq(double *aa, double *o_aa, int n);	
+//__global__ void reduction_sum(double *aa, double *o_aa, int n);
+
+
 __global__ void fstat_sum(float *F, float *out, int N);
 __global__ void fstat_norm(float *F, float *mu, int N, int nav);
 
 
+__global__ void reduction_sumsq(double *in, double *out, int N);
 
-__global__ void reduction_sum(float *in, float *out, int N, int blockSize);
+__global__ void reduction_sum(float *in, float *out, int N);
 
-
-
-template <int blockSize>
-__global__ void reduction_sum(double *in, double *out, int N)
-{
-  extern __shared__ float sd_data[];
-
-  int tid = threadIdx.x;
-  int i = blockIdx.x * (blockDim.x*2) + threadIdx.x;
-	int gridSize = blockSize*2*gridDim.x;
-
-  sd_data[tid] = 0;
-
-  while (i < N)
-  {
-		sd_data[tid] += in[i] + in[i+blockSize];
-		i += gridSize;
-	}
-	__syncthreads();
-
-	if (blockSize >=512) { if (tid<256)	{ sd_data[tid] += sd_data[tid+256];}__syncthreads();}
-	if (blockSize >=256) { if (tid<128)	{ sd_data[tid] += sd_data[tid+128];}__syncthreads();}
-	if (blockSize >=128) { if (tid< 64)	{ sd_data[tid] += sd_data[tid+ 64];}__syncthreads();}
-
-  if (tid < 32)
-  {
-		if (blockSize>=64) sd_data[tid] += sd_data[tid + 32];
-		if (blockSize>=32)sd_data[tid] += sd_data[tid + 16];
-    if (blockSize>=16)sd_data[tid] += sd_data[tid + 8];
-    if (blockSize>=8) sd_data[tid] += sd_data[tid + 4];
-    if (blockSize>=4) sd_data[tid] += sd_data[tid + 2];
-    if (blockSize>=2) sd_data[tid] += sd_data[tid + 1];
-  }
-
-
-  if (tid==0) out[blockIdx.x] = sd_data[0];
-
-}
-
-
-template <int blockSize>
-__global__ void reduction_sum(float *in, float *out, int N)
-{
-  extern __shared__ float sf_data[];
-
-  int tid = threadIdx.x;
-  int i = blockIdx.x * (blockDim.x*2) + threadIdx.x;
-	int gridSize = blockSize*2*gridDim.x;
-
-  sf_data[tid] = 0;
-
-  while (i < N)
-  {
-		sf_data[tid] += in[i] + in[i+blockSize];
-		i += gridSize;
-	}
-	__syncthreads();
-
-	if (blockSize >=512) { if (tid<256)	{ sf_data[tid] += sf_data[tid+256];}__syncthreads();}
-	if (blockSize >=256) { if (tid<128)	{ sf_data[tid] += sf_data[tid+128];}__syncthreads();}
-	if (blockSize >=128) { if (tid< 64)	{ sf_data[tid] += sf_data[tid+ 64];}__syncthreads();}
-
-  if (tid < 32)
-  {
-		if (blockSize>=64)sf_data[tid] += sf_data[tid + 32];
-		if (blockSize>=32)sf_data[tid] += sf_data[tid + 16];
-    if (blockSize>=16)sf_data[tid] += sf_data[tid + 8];
-    if (blockSize>=8) sf_data[tid] += sf_data[tid + 4];
-    if (blockSize>=4) sf_data[tid] += sf_data[tid + 2];
-    if (blockSize>=2) sf_data[tid] += sf_data[tid + 1];
-  }
-
-
-  if (tid==0) out[blockIdx.x] = sf_data[0];
-
-}
-
-
-template <int blockSize>
-__global__ void reduction_sumsq(double *in, double *out, int N)
-{
-  extern __shared__ float sdata[];
-
-  int tid = threadIdx.x;
-  int i = blockIdx.x * (blockDim.x*2) + threadIdx.x;
-	int gridSize = blockSize*2*gridDim.x;
-
-  sdata[tid] = 0;
-
-  while (i < N)
-  {
-		sdata[tid] += in[i] + in[i+blockSize];
-		i += gridSize;
-	}
-	__syncthreads();
-
-	if (blockSize >=512) { if (tid<256)	{ sdata[tid] += sdata[tid+256];}__syncthreads();}
-	if (blockSize >=256) { if (tid<128)	{ sdata[tid] += sdata[tid+128];}__syncthreads();}
-	if (blockSize >=128) { if (tid< 64)	{ sdata[tid] += sdata[tid+ 64];}__syncthreads();}
-
-  if (tid < 32)
-  {
-		if (blockSize>=64) sdata[tid] += sdata[tid + 32];
-		if (blockSize>=32)sdata[tid] += sdata[tid + 16];
-    if (blockSize>=16)sdata[tid] += sdata[tid + 8];
-    if (blockSize>=8) sdata[tid] += sdata[tid + 4];
-    if (blockSize>=4) sdata[tid] += sdata[tid + 2];
-    if (blockSize>=2) sdata[tid] += sdata[tid + 1];
-  }
-
-
-  if (tid==0) out[blockIdx.x] = sdata[0];
-
-}
-
+__global__ void reduction_sum(double *in, double *out, int N);
 
 __global__ void interbinning_gap(COMPLEX_TYPE *xa, COMPLEX_TYPE *xb,
 				 COMPLEX_TYPE *xa_t, COMPLEX_TYPE *xb_t,

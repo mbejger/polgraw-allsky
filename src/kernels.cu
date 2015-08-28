@@ -2,7 +2,6 @@
 #include "settings.h"
 #include <stdio.h>
 
-
 //extern __constant__ Detector_settings *c_sett;
 __constant__ double cu_c[9];
 //extern double *cu_c;
@@ -197,19 +196,6 @@ __global__ void compute_Fstat(COMPLEX_TYPE *xa, COMPLEX_TYPE *xb,
     F[i] = ( xa[i].x*xa[i].x + xa[i].y*xa[i].y + xb[i].x*xb[i].x + xb[i].y*xb[i].y) * (crf0);
   }
 }
-/*
-__global__ void compute_Fstat(COMPLEX_TYPE *xa, COMPLEX_TYPE *xb,
-			      FLOAT_TYPE *F, FLOAT_TYPE crf0, int N) { // N = nmax - nmin
-  int i = blockIdx.x * blockDim.x + threadIdx.x;
-  for (; i<N; i += blockDim.x * gridDim.x) {
-	COMPLEX_TYPE aval = xa[i];
-	COMPLEX_TYPE bval = xb[i];
-	FLOAT_TYPE Fval = ( aval.x*aval.x + aval.y*aval.y + bval.x*bval.x + bval.y*bval.y) * (crf0);
-	F[i] = Fval ;
-  }
-}
-*/
-
 
 __global__ void kernel_norm_Fstat_wn(FLOAT_TYPE *F, FLOAT_TYPE sig2, int N) {
   int idx = blockIdx.x * blockDim.x + threadIdx.x;
@@ -259,40 +245,69 @@ __global__ void copy_candidates(FLOAT_TYPE *params, FLOAT_TYPE *buffer, int N) {
   }
 }
 
-__global__ void reduction_sum(float *in, float *out, int N, int blockSize)
-{
-  extern __shared__ float sf_data[];
 
+__global__ void reduction_sumsq(double *in, double *out, int N) {
+  extern __shared__ double sdata[];
+  
   int tid = threadIdx.x;
-  int i = blockIdx.x * (blockDim.x*2) + threadIdx.x;
-	int gridSize = blockSize*2*gridDim.x;
-
-  sf_data[tid] = 0;
-
-  while (i < N)
-  {
-		sf_data[tid] += in[i] + in[i+blockSize];
-		i += gridSize;
-	}
-	__syncthreads();
-
-	if (blockSize >=512) { if (tid<256)	{ sf_data[tid] += sf_data[tid+256];}__syncthreads();}
-	if (blockSize >=256) { if (tid<128)	{ sf_data[tid] += sf_data[tid+128];}__syncthreads();}
-	if (blockSize >=128) { if (tid< 64)	{ sf_data[tid] += sf_data[tid+ 64];}__syncthreads();}
-
-  if (tid < 32)
-  {
-		if (blockSize>=64)sf_data[tid] += sf_data[tid + 32];
-		if (blockSize>=32)sf_data[tid] += sf_data[tid + 16];
-    if (blockSize>=16)sf_data[tid] += sf_data[tid + 8];
-    if (blockSize>=8) sf_data[tid] += sf_data[tid + 4];
-    if (blockSize>=4) sf_data[tid] += sf_data[tid + 2];
-    if (blockSize>=2) sf_data[tid] += sf_data[tid + 1];
+  int i = blockIdx.x * blockDim.x + threadIdx.x;
+  
+  sdata[tid] = (i<N) ? in[i]*in[i] : 0;
+  
+  __syncthreads();
+	
+  for (int s = blockDim.x/2; s>0; s>>=1) {
+    if (tid < s) {
+      sdata[tid] += sdata[tid + s];
+    }
+    __syncthreads();
   }
+  
+  if (tid==0) out[blockIdx.x] = sdata[0];
+}
 
 
+
+__global__ void reduction_sum(float *in, float *out, int N) {
+  extern __shared__ float sf_data[];
+  
+  int tid = threadIdx.x;
+  int i = blockIdx.x * blockDim.x + threadIdx.x;
+  
+  sf_data[tid] = (i<N) ? in[i] : 0;
+  
+  __syncthreads();
+  
+  for (int s = blockDim.x/2; s>0; s>>=1) {
+    if (tid < s) {
+      sf_data[tid] += sf_data[tid + s];
+    }
+    __syncthreads();
+  }
+  
   if (tid==0) out[blockIdx.x] = sf_data[0];
+}
 
+
+__global__ void reduction_sum(double *in, double *out, int N) {
+  extern __shared__ double sd_data[];
+  
+  int tid = threadIdx.x;
+  int i = blockIdx.x * blockDim.x + threadIdx.x;
+  
+  sd_data[tid] = (i<N) ? in[i] : 0;
+  
+  __syncthreads();
+  
+  for (int s = blockDim.x/2; s>0; s>>=1) {
+    if (tid < s) {
+      sd_data[tid] += sd_data[tid + s];
+    }
+    __syncthreads();
+  }
+  
+  if (tid==0) out[blockIdx.x] = sd_data[0];
+  
 }
 
 
