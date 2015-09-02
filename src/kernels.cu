@@ -247,20 +247,39 @@ __global__ void copy_candidates(FLOAT_TYPE *params, FLOAT_TYPE *buffer, int N) {
   }
 }
 
-__global__ void reduction(float * __restrict__ indata, float * __restrict__ outdata, int N) {
+__global__ void reduction256(float * __restrict__ indata, float * __restrict__ outdata, int N) {
 
     unsigned int tid = blockIdx.x * blockDim.x + threadIdx.x;
 
-    // --- Specialize BlockReduce for type float.
+    //Specialize BlockReduce for type float.
     typedef cub::BlockReduce<float, BLOCK_SIZE> BlockReduceT;
 
-    // --- Allocate temporary storage in shared memory
+    //Allocate temporary storage in shared memory
     __shared__ typename BlockReduceT::TempStorage temp_storage;
 
     float result;
     if(tid < N) result = BlockReduceT(temp_storage).Sum(indata[tid]);
 
-    // --- Update block reduction value
+    //Update block reduction value
+    if(threadIdx.x == 0) outdata[blockIdx.x] = result;
+
+    return;
+}
+
+__global__ void reduction16(float * __restrict__ indata, float * __restrict__ outdata, int N) {
+
+    unsigned int tid = blockIdx.x * blockDim.x + threadIdx.x;
+
+    //Specialize BlockReduce for type float.
+    typedef cub::BlockReduce<float, NAV_THREADS> BlockReduceT;
+
+    //Allocate temporary storage in shared memory
+    __shared__ typename BlockReduceT::TempStorage temp_storage;
+
+    float result;
+    if(tid < N) result = BlockReduceT(temp_storage).Sum(indata[tid]);
+
+    //Update block reduction value
     if(threadIdx.x == 0) outdata[blockIdx.x] = result;
 
     return;

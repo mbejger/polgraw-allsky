@@ -641,11 +641,11 @@ void FStat_gpu(FLOAT_TYPE *cu_F, int N, int nav, float *cu_mu, float *cu_mu_t) {
   //	CudaSafeCall ( cudaMalloc((void**)&cu_mu, sizeof(float)*nav_blocks) );
 
   //sum fstat in blocks
-	reduction<<<blocks, BLOCK_SIZE>>>(cu_F, cu_mu_t, N);
+	reduction256<<<blocks, BLOCK_SIZE>>>(cu_F, cu_mu_t, N);
   CudaCheckError();
 
   //sum blocks computed above
-  reduction<<<nav_blocks, nav_threads>>>(cu_mu_t, cu_mu, blocks);
+  reduction16<<<nav_blocks, nav_threads>>>(cu_mu_t, cu_mu, blocks);
   CudaCheckError();
 
   //divide by mu/(2*NAV)

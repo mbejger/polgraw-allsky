@@ -8,7 +8,7 @@
 #define BLOCK_SIZE 256
 #define BLOCK_SIZE_RED 128
 #define BLOCK_DIM(n, b) ((n)/b + ((n)%b==0 ? 0 : 1))
-
+#define NAV_THREADS 16
 
 void search(
 				Detector_settings *sett,
