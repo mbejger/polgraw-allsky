@@ -160,7 +160,8 @@ __global__ void modvir_normalize(double *aa, double *bb, double s_a, double s_b,
 __global__ void fstat_sum(float *F, float *out, int N);
 __global__ void fstat_norm(float *F, float *mu, int N, int nav);
 
-__global__ void reduction_sum(float *in, float *out, int N);
+__global__ void reduction(float * __restrict__ indata, float * __restrict__ outdata, int N);
+//__global__ void reduction_sum(float *in, float *out, int N);
 
 __global__ void interbinning_gap(COMPLEX_TYPE *xa, COMPLEX_TYPE *xb,
 				 COMPLEX_TYPE *xa_t, COMPLEX_TYPE *xb_t,
