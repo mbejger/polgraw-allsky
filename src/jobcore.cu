@@ -19,6 +19,8 @@
 #include "kernels.h"
 #include "spline_z.h"
 
+/* CUB library */
+#include "lib/cub-1.4.1/cub/cub.cuh"
 
 //__constant__ Detector_settings *cu_sett;
 //__constant__ Command_line_opts *cu_opts;
@@ -43,8 +45,8 @@ void search(
   double time_elapsed;
 
   //copy ampl. mod. coef. to constant memory
-  copy_amod_coeff(amod);	
-	
+  copy_amod_coeff(amod);
+
   int cand_buffer_count = 0;
 
   //allocate vector for FStat_gpu
@@ -64,7 +66,7 @@ void search(
   int pm, mm, nn;
 
   char outname[64], qname[64];
-  
+
   FILE *state;
   if(opts->checkp_flag) {
     if(opts->hemi)
@@ -74,11 +76,11 @@ void search(
 
     state = fopen (qname, "w");
   }
-  
+
   for (pm=s_range->pst; pm<=s_range->pmr[1]; pm++) {	// loop over hemispheres
     sprintf (outname, "%s/triggers_%03d_%03d%s_%d.bin", opts->prefix, opts->ident,
 	     opts->band, opts->label, pm);
-    
+
     for (mm=s_range->mst; mm<=s_range->mr[1]; mm++) {	 // 2 loops over
       for (nn=s_range->nst; nn<=s_range->nr[1]; nn++) {	 // sky positions
 
@@ -108,14 +110,14 @@ void search(
 
 	//get back to regular spin-down range
 	s_range->sst = s_range->spndr[0];
-				
+
       } // for nn
-			
+
       //if there's non-saved data
       if (cand_buffer_count > 0) {
 	save_candidates(arr->cu_cand_buffer, arr->cand_buffer, &cand_buffer_count, outname);
       }
-      
+
       s_range->nst = s_range->nr[0];
     } // for mm
     s_range->mst = s_range->mr[0];
@@ -301,7 +303,7 @@ double* job_core(
   double_to_float<<<(sett->N + BLOCK_SIZE - 1) / BLOCK_SIZE, BLOCK_SIZE>>>
     (arr->cu_xar, arr->cu_xbr,
      arr->cu_xar_f, arr->cu_xbr_f, sett->N);
-  
+
   double spindown_timer = 0;
   int spindown_counter  = 0;
 
@@ -316,7 +318,7 @@ double* job_core(
   // if spindown parameter is taken into account,
   // smin != smax
   for (ss=smin; ss<=smax; ss++) {
-		
+
     // Spindown parameter
     sgnlt[1] = (opts->s0_flag ? 0. : ss * sett->M[5] + nn * sett->M[9] + mm * sett->M[13]);
 
@@ -342,17 +344,17 @@ double* job_core(
 	  arr->cu_xar_f, arr->cu_xbr_f,
 	  het1, sgnlt[1], arr->cu_shft,
 	  sett->N );
-      
+
       // arrays used in different interpolation methods aren't the same
       COMPLEX_TYPE *cu_xa_final, *cu_xb_final;
-			
+
       if (opts->fftinterp == INT) { //interpolation by interbinning
 	//pad zeros from N to nfft
 		pad_zeros<<<(sett->nfft - sett->N + BLOCK_SIZE - 1)/BLOCK_SIZE, BLOCK_SIZE>>>
 	  ( arr->cu_xa_f+sett->N, arr->cu_xb_f+sett->N, sett->nfft - sett->N );
 
 	CudaCheckError();
-				
+
 	// FFT length nfft
 	CUFFT_EXEC_FFT(plans->plan, arr->cu_xa_f, arr->cu_xa_f, CUFFT_FORWARD);
 	CUFFT_EXEC_FFT(plans->plan, arr->cu_xb_f, arr->cu_xb_f, CUFFT_FORWARD);
@@ -361,15 +363,15 @@ double* job_core(
 	interbinning_gap<<<(sett->nfft/2 + BLOCK_SIZE - 1)/BLOCK_SIZE, BLOCK_SIZE>>>
 	  ( arr->cu_xa_f, arr->cu_xb_f, arr->cu_xa2_f, arr->cu_xb2_f, sett->nfft );
 	CudaCheckError();
-				
+
 	//interpolate values between every bin
 	interbinning_interp<<<( (sett->nfft-2)/2 + BLOCK_SIZE - 1)/BLOCK_SIZE, BLOCK_SIZE>>>
 	  ( arr->cu_xa2_f, arr->cu_xb2_f, sett->nfft );
 	CudaCheckError();
-				
+
 	cu_xa_final = arr->cu_xa2_f;
 	cu_xb_final = arr->cu_xb2_f;
-				
+
       } else { //interpolation by FFT (fftpad-times-longer FFT)
 	//pad zeros from N to nfft*fftpad
 	//pad_zeros<<<(sett->nfft*sett->fftpad - sett->N + BLOCK_SIZE - 1)/BLOCK_SIZE, BLOCK_SIZE>>>
@@ -381,21 +383,21 @@ double* job_core(
 	  ( arr->cu_xb_f+sett->N, sett->nfft*sett->fftpad - sett->N );
 	*/
 
-	cuMemsetD32Async((CUdeviceptr) (arr->cu_xa_f+sett->N), 0, 
+	cuMemsetD32Async((CUdeviceptr) (arr->cu_xa_f+sett->N), 0,
 			 (sett->nfft*sett->fftpad - sett->N)*2, NULL);
-	cuMemsetD32Async((CUdeviceptr) (arr->cu_xb_f+sett->N), 0, 
+	cuMemsetD32Async((CUdeviceptr) (arr->cu_xb_f+sett->N), 0,
 			 (sett->nfft*sett->fftpad - sett->N)*2, NULL);
 
 	CudaCheckError();
-				
+
 	//fft length fftpad*nfft
 	CUFFT_EXEC_FFT(plans->plan, arr->cu_xa_f, arr->cu_xa_f, CUFFT_FORWARD);
 	CUFFT_EXEC_FFT(plans->plan, arr->cu_xb_f, arr->cu_xb_f, CUFFT_FORWARD);
-				
+
 	cu_xa_final = arr->cu_xa_f;
 	cu_xb_final = arr->cu_xb_f;
       }
-			
+
       (*FNum)++;
 
       //compute F-stat
@@ -408,7 +410,7 @@ double* job_core(
       CudaCheckError();
 
       // normalize F-statistics
-      if (sett->sig2 < 0.0) { // when noise is not white-noise 
+      if (sett->sig2 < 0.0) { // when noise is not white-noise
 	FStat_gpu(cu_F+sett->nmin, sett->nmax - sett->nmin, NAV, arr->cu_mu, arr->cu_mu_t);
       } else { // when noise is white-noise
 	kernel_norm_Fstat_wn<<<(sett->nmax - sett->nmin + BLOCK_SIZE - 1)/BLOCK_SIZE, BLOCK_SIZE>>>
@@ -416,7 +418,7 @@ double* job_core(
 	    1/(sett->sig2),
 	    sett->nmax - sett->nmin );
       }
-      
+
       //zero candidates count
       cudaMemset(arr->cu_cand_count, 0, sizeof(int));
 
@@ -433,15 +435,15 @@ double* job_core(
 	  sgnl0,			// base frequency parameter
 	  sett->nd,			// number of degrees of freedom
 	  sgnlt[1],			// spindown
-	  sgnlt[2],			// sky 
+	  sgnlt[2],			// sky
 	  sgnlt[3] );			// positions
 
 
 /////////////////////////
-      
+
       int cand_count;
       cudaMemcpy(&cand_count, arr->cu_cand_count, sizeof(int), cudaMemcpyDeviceToHost);
-			
+
       if (cand_count>0) { //if something was found
 	printf ("\nSome signals found in %d %d %d %d\n", pm, mm, nn, ss);
 	cudaMemcpy(arr->cu_cand_buffer + *cand_buffer_count * NPAR,
@@ -449,10 +451,10 @@ double* job_core(
 		   sizeof(FLOAT_TYPE) * cand_count*NPAR,
 		   cudaMemcpyDeviceToDevice);
 	*cand_buffer_count += cand_count;
-				
+
 	// check if it's time to save results
 	// (place left in buffer is less than one-spindown buffer length)
-	if (*cand_buffer_count >= arr->cand_buffer_size - arr->cand_params_size) { 
+	if (*cand_buffer_count >= arr->cand_buffer_size - arr->cand_params_size) {
 	  save_candidates(arr->cu_cand_buffer, arr->cand_buffer, cand_buffer_count, outname);
 	}
       }
@@ -472,11 +474,11 @@ double* job_core(
 
 
 
-void save_candidates(FLOAT_TYPE* cu_cand_buffer, FLOAT_TYPE* cand_buffer, 
-		     int *cand_buffer_count, const char* outname) 
+void save_candidates(FLOAT_TYPE* cu_cand_buffer, FLOAT_TYPE* cand_buffer,
+		     int *cand_buffer_count, const char* outname)
 {
   CudaSafeCall
-    ( cudaMemcpy(cand_buffer, cu_cand_buffer, sizeof(FLOAT_TYPE)*NPAR * (*cand_buffer_count), 
+    ( cudaMemcpy(cand_buffer, cu_cand_buffer, sizeof(FLOAT_TYPE)*NPAR * (*cand_buffer_count),
 		 cudaMemcpyDeviceToHost)
       );
 
@@ -494,7 +496,7 @@ void save_candidates(FLOAT_TYPE* cu_cand_buffer, FLOAT_TYPE* cand_buffer,
   lck.l_len = 0L;
   if (fcntl (fd, F_SETLKW, &lck) < 0) perror ("fcntl()");
 
-  //#mb 
+  //#mb
   // For debbuging
   /*
   int jj, kk;
@@ -505,7 +507,7 @@ void save_candidates(FLOAT_TYPE* cu_cand_buffer, FLOAT_TYPE* cand_buffer,
     }
     printf("\n");
   }
-  */ 
+  */
 
   write (fd, (void *)(cand_buffer), *cand_buffer_count*NPAR*sizeof(FLOAT_TYPE));
 
@@ -518,7 +520,7 @@ void save_candidates(FLOAT_TYPE* cu_cand_buffer, FLOAT_TYPE* cand_buffer,
 //not used
 //left for reference
 void
-modvir (double sinal, double cosal, double sindel, double cosdel, double sphir, double cphir, 
+modvir (double sinal, double cosal, double sindel, double cosdel, double sphir, double cphir,
 	double *a, double *b, int Np, Ampl_mod_coeff *amod, Arrays *arr)
 {
   /* Amplitude modulation functions */
@@ -561,78 +563,64 @@ modvir (double sinal, double cosal, double sindel, double cosdel, double sphir, 
     a[t] /= as;
     b[t] /= bs;
   }
-	
+
 } /* modvir() */
 
 
 
-void modvir_gpu (double sinal, double cosal, double sindel, double cosdel,	
-		 double sphir, double cphir, double *cu_a, double *cu_b, int N, Arrays *arr) 
+void modvir_gpu (double sinal, double cosal, double sindel, double cosdel,
+		 double sphir, double cphir, double *cu_a, double *cu_b, int N, Arrays *arr)
 {
 
   double cosalfr = cosal*cphir+sinal*sphir;
   double sinalfr = sinal*cphir-cosal*sphir;
   double c2d = sqr(cosdel);
   double c2sd = sindel*cosdel;
-	
+
   //compute aa, bb
   compute_modvir<<<BLOCK_DIM(N, BLOCK_SIZE), BLOCK_SIZE>>>
     ( cu_a, cu_b, cosalfr, sinalfr, c2d, c2sd, arr->cu_sinmodf,
       arr->cu_cosmodf, sindel, cosdel, N );
-	
 
-  int n = N;
-  int blocks = BLOCK_DIM(n,BLOCK_SIZE_RED);
-
-  bool turn = false;
   //normalization
-  //first, compute sum of squares and sum in every block
-  reduction_sumsq<<<blocks, BLOCK_SIZE_RED, sizeof(double)*2*BLOCK_SIZE_RED>>>
-    (cu_a, arr->cu_o_aa, n);
-  reduction_sumsq<<<blocks, BLOCK_SIZE_RED, sizeof(double)*2*BLOCK_SIZE_RED>>>
-    (cu_b, arr->cu_o_bb, n);
-  CudaCheckError();	
+  //compute sum of squares and sum
 
-  double *ina, *inb, *outa, *outb;
-  while(blocks > 1) {
-    n = blocks;
-    blocks = BLOCK_DIM(blocks,BLOCK_SIZE_RED);
-    //reduce partial sums
-    if (turn == false) {
-      ina = arr->cu_o_aa;
-      inb = arr->cu_o_bb;
-      outa = arr->cu_o_aa2;
-      outb = arr->cu_o_bb2;
-    } else { 
-      ina = arr->cu_o_aa2;
-      inb = arr->cu_o_bb2;
-      outa = arr->cu_o_aa;
-      outb = arr->cu_o_bb;
-    }
+	double 	*ina, *inb, *outa, *outb;
+	void    *d_temp_storage = NULL;
+	size_t   temp_storage_bytes = 0;
 
-    reduction_sum<<<blocks, BLOCK_SIZE_RED, sizeof(double)*2*BLOCK_SIZE_RED>>>
-      (ina, outa, n);
-    reduction_sum<<<blocks, BLOCK_SIZE_RED, sizeof(double)*2*BLOCK_SIZE_RED>>>
-      (inb, outb, n);
-    CudaCheckError();
+	ina = cu_a;
+	inb = cu_b;
+	outa = arr->cu_o_aa;
+	outb = arr->cu_o_bb;
 
-    turn=!turn;
-  } 
-	
+	cub::TransformInputIterator<double, Square<double>, double*> input_itera(ina, Square<double>());
+	cub::DeviceReduce::Sum(d_temp_storage, temp_storage_bytes, input_itera, outa, N);
+	cudaMalloc((void**)&d_temp_storage, temp_storage_bytes);
+	cub::DeviceReduce::Sum(d_temp_storage, temp_storage_bytes, input_itera, outa, N);
+
+	cub::TransformInputIterator<double, Square<double>, double*> input_iterb(inb, Square<double>());
+	cub::DeviceReduce::Sum(d_temp_storage, temp_storage_bytes, input_iterb, outb, N);
+	cudaMalloc((void**)&d_temp_storage, temp_storage_bytes);
+	cub::DeviceReduce::Sum(d_temp_storage, temp_storage_bytes, input_iterb, outb, N);
+
+
   double s_a, s_b;
   //copy reduction results
   CudaSafeCall ( cudaMemcpy(&s_a, outa, sizeof(double), cudaMemcpyDeviceToHost));
   CudaSafeCall ( cudaMemcpy(&s_b, outb, sizeof(double), cudaMemcpyDeviceToHost));
-	
+
+//	printf("Sa, Sb: %e %e (GPU)\n", s_a, s_b);
+
   s_a = sqrt(s_a/N);
   s_b = sqrt(s_b/N);
 
   //	printf("Sa, Sb: %e %e (GPU)\n", s_a, s_b);
-	
+
   //normalize
   modvir_normalize<<<BLOCK_DIM(N, BLOCK_SIZE), BLOCK_SIZE>>>(cu_a, cu_b, 1/(s_a), 1/(s_b), N);
   CudaCheckError();
-	
+
 }
 
 
@@ -645,26 +633,26 @@ void modvir_gpu (double sinal, double cosal, double sindel, double cosdel,
    reduction kernel calls.
 */
 void FStat_gpu(FLOAT_TYPE *cu_F, int N, int nav, float *cu_mu, float *cu_mu_t) {
-	
+
   int nav_blocks = N/nav;           //number of blocks
   int nav_threads = nav/BLOCK_SIZE; //number of blocks computing one nav-block
   int blocks = N/BLOCK_SIZE;
-	
+
   //	CudaSafeCall ( cudaMalloc((void**)&cu_mu_t, sizeof(float)*blocks) );
   //	CudaSafeCall ( cudaMalloc((void**)&cu_mu, sizeof(float)*nav_blocks) );
-	
+
   //sum fstat in blocks
   reduction_sum<<<blocks, BLOCK_SIZE, BLOCK_SIZE*sizeof(float)>>>
     (cu_F, cu_mu_t, N);
   CudaCheckError();
-		
+
   //sum blocks computed above
   reduction_sum<<<nav_blocks, nav_threads, nav_threads*sizeof(float)>>>
     (cu_mu_t, cu_mu, blocks);
   CudaCheckError();
-	
+
   //divide by mu/(2*NAV)
   fstat_norm<<<blocks, BLOCK_SIZE>>>(cu_F, cu_mu, N, nav);
   CudaCheckError();
-	
+
 }

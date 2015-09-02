@@ -31,7 +31,7 @@ double* job_core(
 			Search_range *s_range,	 // range for searching
 			Arrays *arr,				//arrays
 			FFT_plans *plans,       // plans for fftw
-			Ampl_mod_coeff *amod,	//amplitude modulation functions coefficients 
+			Ampl_mod_coeff *amod,	//amplitude modulation functions coefficients
 			FLOAT_TYPE *cu_F,			// F-stat on GPU
 			int *FNum,					// Candidate signal number
 			int *cand_buffer_count,
@@ -51,11 +51,19 @@ void save_candidates(FLOAT_TYPE* cu_cand_buffer, FLOAT_TYPE* cand_buffer, int *c
 
 void norm_Fstat_nwn(FLOAT_TYPE *cu_F, FLOAT_TYPE *mu, int N, int nav);
 
-void modvir_gpu (double sinal, double cosal, double sindel, double cosdel,	
+void modvir_gpu (double sinal, double cosal, double sindel, double cosdel,
 		double sphir, double cphir, double *cu_a, double *cu_b, int N, Arrays *arr);
 
 
 void FStat_gpu(FLOAT_TYPE *cu_F, int N, int nav, FLOAT_TYPE *cu_mu, FLOAT_TYPE *cu_mu_t);
 
+template<typename T>
+struct Square
+{
+ __host__ __device__ __forceinline__
+  T operator()(const T& a) const {
+    return a*a;
+  }
+};
 
 #endif

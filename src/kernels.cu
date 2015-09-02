@@ -39,7 +39,7 @@ __global__ void compute_sincosmodf(double *s, double *c, double omr, int N) {
 
 
 __global__ void shift_time_mod(double shft1, double het0, double ns0, double ns1,
-			       double ns2,  double *xDat, cufftDoubleComplex *xa, 
+			       double ns2,  double *xDat, cufftDoubleComplex *xa,
 			       cufftDoubleComplex *xb, FLOAT_TYPE* shft,
 			       double* shftf, double* tshift, double* aa, double* bb,
 			       double* DetSSB, double oms, int N, int nfft, int interpftpad) {
@@ -48,7 +48,7 @@ __global__ void shift_time_mod(double shft1, double het0, double ns0, double ns1
     double S = ns0 * DetSSB[i*3+0] + ns1 * DetSSB[i*3+1] + ns2 * DetSSB[i*3+2];
     shft[i] = S;
     shftf[i]= S - shft1;
-    
+
     /* phase mod */
     double phase = -het0*i - oms * S;
     double c = cos(phase), s = sin(phase);
@@ -56,7 +56,7 @@ __global__ void shift_time_mod(double shft1, double het0, double ns0, double ns1
     xa[i].y = xDat[i] * aa[i] * s;
     xb[i].x = xDat[i] * bb[i] * c;
     xb[i].y = xDat[i] * bb[i] * s;
-    
+
     //calculate time positions for spline interpolation
     tshift[i] = interpftpad * ( i - shftf[i] );
   } else if (i < nfft) {
@@ -68,7 +68,7 @@ __global__ void shift_time_mod(double shft1, double het0, double ns0, double ns1
 __global__ void scale_fft(cufftDoubleComplex *xa, cufftDoubleComplex *xb,
 			  double ft, int Ninterp) {
   int idx = blockIdx.x * blockDim.x + threadIdx.x;
-  
+
   if (idx < Ninterp) {
     xa[idx].x*=ft;
     xa[idx].y*=ft;
@@ -81,7 +81,7 @@ __global__ void scale_fft(cufftDoubleComplex *xa, cufftDoubleComplex *xb,
 __global__ void resample_postfft(cufftDoubleComplex *xa, cufftDoubleComplex *xb,
 				 int nfft, int Ninterp, int nyqst) {
   int idx = blockIdx.x * blockDim.x + threadIdx.x;
-  
+
   //move frequencies from second half of spectrum; loop length: nfft - nyqst =
   // = nfft - nfft/2 - 1 = nfft/2 - 1
   if (idx < nfft/2 - 1) {
@@ -92,7 +92,7 @@ __global__ void resample_postfft(cufftDoubleComplex *xa, cufftDoubleComplex *xb,
     xb[i].x=xb[j].x;
     xb[i].y=xb[j].y;
   }
-  
+
   //zero frequencies higher than nyquist, length: Ninterp - nfft
   //loop length: Ninterp - nfft ~ nfft
   if (idx < Ninterp - nfft) {
@@ -117,16 +117,16 @@ __global__ void double_to_float(cufftDoubleComplex *xa, cufftDoubleComplex *xb,
 
 __global__ void phase_mod_2(COMPLEX_TYPE *xa, COMPLEX_TYPE *xb,
 			    COMPLEX_TYPE *xar, COMPLEX_TYPE *xbr,
-			    FLOAT_TYPE het1, FLOAT_TYPE sgnlt1, FLOAT_TYPE *shft, 
+			    FLOAT_TYPE het1, FLOAT_TYPE sgnlt1, FLOAT_TYPE *shft,
 			    int N)
 {
   int idx = blockIdx.x * blockDim.x + threadIdx.x;
   if (idx < N) {
     //		FLOAT_TYPE phase = - ( het1*idx + sgnlt1 * ( (double)idx*idx + 2 * idx * shft[idx] ) );
     FLOAT_TYPE phase = - idx * ( het1 + sgnlt1 * ( idx + 2 * shft[idx] ) );
-    FLOAT_TYPE s, c;    
+    FLOAT_TYPE s, c;
 #ifdef COMP_FLOAT
-    //c = __cosf(phase); 
+    //c = __cosf(phase);
     //s = __sinf(phase);
     sincosf(phase, &s, &c);
 #else
@@ -134,13 +134,13 @@ __global__ void phase_mod_2(COMPLEX_TYPE *xa, COMPLEX_TYPE *xb,
     //s = sin(phase);
     sincos(phase, &s, &c);
 #endif
-    
+
     //complex multiplication:
-    // ( xar[idx].x + i* xar[idx].y ) * ( c + i * s ) = 
+    // ( xar[idx].x + i* xar[idx].y ) * ( c + i * s ) =
     // = ( xar[idx].x * c - xar[idx].y * s ) + i * ( s * xar[idx].x + c * xar[idx].y )
     xa[idx].x = xar[idx].x*c - xar[idx].y*s;
     xa[idx].y = xar[idx].x*s + xar[idx].y*c;
-    
+
     xb[idx].x = xbr[idx].x*c - xbr[idx].y*s;
     xb[idx].y = xbr[idx].x*s + xbr[idx].y*c;
   }
@@ -201,7 +201,7 @@ __global__ void kernel_norm_Fstat_wn(FLOAT_TYPE *F, FLOAT_TYPE sig2, int N) {
   int idx = blockIdx.x * blockDim.x + threadIdx.x;
   if (idx < N) {
     F[idx] *= sig2;
-  }	
+  }
 }
 
 
@@ -223,16 +223,16 @@ __global__ void kernel_norm_Fstat_wn(FLOAT_TYPE *F, FLOAT_TYPE sig2, int N) {
 __global__ void find_candidates(FLOAT_TYPE *F, FLOAT_TYPE *params, int *found, FLOAT_TYPE val,
 				int nmin, int nmax, double fftpad, double nfft, FLOAT_TYPE sgnl0, int ndf,
 				FLOAT_TYPE sgnl1, FLOAT_TYPE sgnl2, FLOAT_TYPE sgnl3) {
-  
+
   int idx = blockIdx.x * blockDim.x + threadIdx.x + nmin;
-  
+
   if (idx > nmin && idx < nmax && F[idx] >= val && F[idx] > F[idx+1] && F[idx] > F[idx-1]) {
     ADD_PARAMS_MACRO
       } else if (idx == nmin && F[idx] >= val && F[idx] > F[idx+1]) {
     ADD_PARAMS_MACRO
       } else if (idx == nmax-1 && F[idx] >= val && F[idx] > F[idx-1]) {
     ADD_PARAMS_MACRO
-      } 
+      }
 }
 
 
@@ -246,69 +246,26 @@ __global__ void copy_candidates(FLOAT_TYPE *params, FLOAT_TYPE *buffer, int N) {
 }
 
 
-__global__ void reduction_sumsq(double *in, double *out, int N) {
-  extern __shared__ double sdata[];
-  
-  int tid = threadIdx.x;
-  int i = blockIdx.x * blockDim.x + threadIdx.x;
-  
-  sdata[tid] = (i<N) ? in[i]*in[i] : 0;
-  
-  __syncthreads();
-	
-  for (int s = blockDim.x/2; s>0; s>>=1) {
-    if (tid < s) {
-      sdata[tid] += sdata[tid + s];
-    }
-    __syncthreads();
-  }
-  
-  if (tid==0) out[blockIdx.x] = sdata[0];
-}
-
-
-
 __global__ void reduction_sum(float *in, float *out, int N) {
   extern __shared__ float sf_data[];
-  
+
   int tid = threadIdx.x;
   int i = blockIdx.x * blockDim.x + threadIdx.x;
-  
+
   sf_data[tid] = (i<N) ? in[i] : 0;
-  
+
   __syncthreads();
-  
+
   for (int s = blockDim.x/2; s>0; s>>=1) {
     if (tid < s) {
       sf_data[tid] += sf_data[tid + s];
     }
     __syncthreads();
   }
-  
+
   if (tid==0) out[blockIdx.x] = sf_data[0];
 }
 
-
-__global__ void reduction_sum(double *in, double *out, int N) {
-  extern __shared__ double sd_data[];
-  
-  int tid = threadIdx.x;
-  int i = blockIdx.x * blockDim.x + threadIdx.x;
-  
-  sd_data[tid] = (i<N) ? in[i] : 0;
-  
-  __syncthreads();
-  
-  for (int s = blockDim.x/2; s>0; s>>=1) {
-    if (tid < s) {
-      sd_data[tid] += sd_data[tid + s];
-    }
-    __syncthreads();
-  }
-  
-  if (tid==0) out[blockIdx.x] = sd_data[0];
-  
-}
 
 
 __global__ void fstat_norm(float *F, float *mu, int N, int nav) {
@@ -340,7 +297,7 @@ __global__ void compute_modvir(double *aa, double *bb, double cosalfr, double si
 
 __global__ void modvir_normalize(double *aa, double *bb, double s_a, double s_b, int N) {
   int idx = threadIdx.x + blockIdx.x * blockDim.x;
-  if ( idx < N ) { 
+  if ( idx < N ) {
     aa[idx] *= s_a;
     bb[idx] *= s_b;
   }
