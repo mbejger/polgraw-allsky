@@ -2,8 +2,8 @@
 #include "settings.h"
 #include "jobcore.h"
 #include <stdio.h>
-#include "lib/cub-1.4.1/cub/cub.cuh"
-//using namespace cub;
+
+
 //extern __constant__ Detector_settings *c_sett;
 __constant__ double cu_c[9];
 //extern double *cu_c;
@@ -247,43 +247,67 @@ __global__ void copy_candidates(FLOAT_TYPE *params, FLOAT_TYPE *buffer, int N) {
   }
 }
 
-__global__ void reduction256(float * __restrict__ indata, float * __restrict__ outdata, int N) {
+__global__ void reduction_sumsq(double *in, double *out, int N) {
+  extern __shared__ double sdata[];
 
-    unsigned int tid = blockIdx.x * blockDim.x + threadIdx.x;
+  int tid = threadIdx.x;
+  int i = blockIdx.x * blockDim.x + threadIdx.x;
 
-    //Specialize BlockReduce for type float.
-    typedef cub::BlockReduce<float, BLOCK_SIZE> BlockReduceT;
+  sdata[tid] = (i<N) ? in[i]*in[i] : 0;
 
-    //Allocate temporary storage in shared memory
-    __shared__ typename BlockReduceT::TempStorage temp_storage;
+  __syncthreads();
 
-    float result;
-    if(tid < N) result = BlockReduceT(temp_storage).Sum(indata[tid]);
+  for (int s = blockDim.x/2; s>0; s>>=1) {
+    if (tid < s) {
+      sdata[tid] += sdata[tid + s];
+    }
+    __syncthreads();
+  }
 
-    //Update block reduction value
-    if(threadIdx.x == 0) outdata[blockIdx.x] = result;
-
-    return;
+  if (tid==0) out[blockIdx.x] = sdata[0];
 }
 
-__global__ void reduction16(float * __restrict__ indata, float * __restrict__ outdata, int N) {
+__global__ void reduction_sum(float *in, float *out, int N) {
+  extern __shared__ float sf_data[];
 
-    unsigned int tid = blockIdx.x * blockDim.x + threadIdx.x;
+  int tid = threadIdx.x;
+  int i = blockIdx.x * blockDim.x + threadIdx.x;
 
-    //Specialize BlockReduce for type float.
-    typedef cub::BlockReduce<float, NAV_THREADS> BlockReduceT;
+  sf_data[tid] = (i<N) ? in[i] : 0;
 
-    //Allocate temporary storage in shared memory
-    __shared__ typename BlockReduceT::TempStorage temp_storage;
+  __syncthreads();
 
-    float result;
-    if(tid < N) result = BlockReduceT(temp_storage).Sum(indata[tid]);
+  for (int s = blockDim.x/2; s>0; s>>=1) {
+    if (tid < s) {
+      sf_data[tid] += sf_data[tid + s];
+    }
+    __syncthreads();
+  }
 
-    //Update block reduction value
-    if(threadIdx.x == 0) outdata[blockIdx.x] = result;
-
-    return;
+  if (tid==0) out[blockIdx.x] = sf_data[0];
 }
+
+__global__ void reduction_sum(double *in, double *out, int N) {
+  extern __shared__ double sd_data[];
+
+  int tid = threadIdx.x;
+  int i = blockIdx.x * blockDim.x + threadIdx.x;
+
+  sd_data[tid] = (i<N) ? in[i] : 0;
+
+  __syncthreads();
+
+  for (int s = blockDim.x/2; s>0; s>>=1) {
+    if (tid < s) {
+      sd_data[tid] += sd_data[tid + s];
+    }
+    __syncthreads();
+  }
+
+  if (tid==0) out[blockIdx.x] = sd_data[0];
+
+}
+
 
 
 __global__ void fstat_norm(float *F, float *mu, int N, int nav) {

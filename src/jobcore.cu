@@ -19,9 +19,6 @@
 #include "kernels.h"
 #include "spline_z.h"
 
-/* CUB library */
-#include "lib/cub-1.4.1/cub/cub.cuh"
-
 //__constant__ Detector_settings *cu_sett;
 //__constant__ Command_line_opts *cu_opts;
 //__constant__ Ampl_mod_coeff *cu_amod;
@@ -582,37 +579,52 @@ void modvir_gpu (double sinal, double cosal, double sindel, double cosdel,
     ( cu_a, cu_b, cosalfr, sinalfr, c2d, c2sd, arr->cu_sinmodf,
       arr->cu_cosmodf, sindel, cosdel, N );
 
-  //normalization
-  //compute sum of squares and sum
+		int n = N;
+		int blocks = BLOCK_DIM(n,BLOCK_SIZE_RED);
 
-	double 	*ina, *inb, *outa, *outb;
-	void    *d_temp_storage = NULL;
-	size_t   temp_storage_bytes = 0;
+		bool turn = false;
+		  //normalization
+		  //first, compute sum of squares and sum in every block
+		reduction_sumsq<<<blocks, BLOCK_SIZE_RED, sizeof(double)*2*BLOCK_SIZE_RED>>>
+		    (cu_a, arr->cu_o_aa, n);
+		reduction_sumsq<<<blocks, BLOCK_SIZE_RED, sizeof(double)*2*BLOCK_SIZE_RED>>>
+		    (cu_b, arr->cu_o_bb, n);
+		CudaCheckError();
 
-	ina = cu_a;
-	inb = cu_b;
-	outa = arr->cu_o_aa;
-	outb = arr->cu_o_bb;
+		double *ina, *inb, *outa, *outb;
+		while(blocks > 1) {
+		  n = blocks;
+		  blocks = BLOCK_DIM(blocks,BLOCK_SIZE_RED);
+		    //reduce partial sums
+		  if (turn == false) {
+		    ina = arr->cu_o_aa;
+		    inb = arr->cu_o_bb;
+		    outa = arr->cu_o_aa2;
+		    outb = arr->cu_o_bb2;
+		  } else {
+		    ina = arr->cu_o_aa2;
+		    inb = arr->cu_o_bb2;
+		    outa = arr->cu_o_aa;
+		    outb = arr->cu_o_bb;
+		  }
 
-	cub::TransformInputIterator<double, Square<double>, double*> input_itera(ina, Square<double>());
-	cub::DeviceReduce::Sum(d_temp_storage, temp_storage_bytes, input_itera, outa, N);
-	cudaMalloc((void**)&d_temp_storage, temp_storage_bytes);
-	cub::DeviceReduce::Sum(d_temp_storage, temp_storage_bytes, input_itera, outa, N);
-  CudaCheckError();
+		  reduction_sum<<<blocks, BLOCK_SIZE_RED, sizeof(double)*2*BLOCK_SIZE_RED>>>
+		      (ina, outa, n);
+		  reduction_sum<<<blocks, BLOCK_SIZE_RED, sizeof(double)*2*BLOCK_SIZE_RED>>>
+		      (inb, outb, n);
+		  CudaCheckError();
 
-	cub::TransformInputIterator<double, Square<double>, double*> input_iterb(inb, Square<double>());
-	cub::DeviceReduce::Sum(d_temp_storage, temp_storage_bytes, input_iterb, outb, N);
-	cudaMalloc((void**)&d_temp_storage, temp_storage_bytes);
-	cub::DeviceReduce::Sum(d_temp_storage, temp_storage_bytes, input_iterb, outb, N);
-  CudaCheckError();
+		  turn=!turn;
+		  }
 
-  double s_a, s_b;
-  //copy reduction results
-  CudaSafeCall ( cudaMemcpy(&s_a, outa, sizeof(double), cudaMemcpyDeviceToHost));
-  CudaSafeCall ( cudaMemcpy(&s_b, outb, sizeof(double), cudaMemcpyDeviceToHost));
+			double s_a, s_b;
+		  //copy reduction results
+			CudaSafeCall ( cudaMemcpy(&s_a, outa, sizeof(double), cudaMemcpyDeviceToHost));
+			CudaSafeCall ( cudaMemcpy(&s_b, outb, sizeof(double), cudaMemcpyDeviceToHost));
 
-  s_a = sqrt(s_a/N);
-  s_b = sqrt(s_b/N);
+		  s_a = sqrt(s_a/N);
+		  s_b = sqrt(s_b/N);
+
 
   //	printf("Sa, Sb: %e %e (GPU)\n", s_a, s_b);
 
@@ -641,11 +653,12 @@ void FStat_gpu(FLOAT_TYPE *cu_F, int N, int nav, float *cu_mu, float *cu_mu_t) {
   //	CudaSafeCall ( cudaMalloc((void**)&cu_mu, sizeof(float)*nav_blocks) );
 
   //sum fstat in blocks
-	reduction256<<<blocks, BLOCK_SIZE>>>(cu_F, cu_mu_t, N);
+	reduction<BLOCK_SIZE_RED><<<blocks, BLOCK_SIZE_RED, BLOCK_SIZE_RED*sizeof(float)>>>(cu_F, cu_mu_t, N);
   CudaCheckError();
 
   //sum blocks computed above
-  reduction16<<<nav_blocks, nav_threads>>>(cu_mu_t, cu_mu, blocks);
+	//sum blocks computed above
+  reduction_sum<<<nav_blocks, nav_threads, nav_threads*sizeof(float)>>>(cu_mu_t, cu_mu, blocks);
   CudaCheckError();
 
   //divide by mu/(2*NAV)
