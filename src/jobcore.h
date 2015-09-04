@@ -57,13 +57,4 @@ void modvir_gpu (double sinal, double cosal, double sindel, double cosdel,
 
 void FStat_gpu(FLOAT_TYPE *cu_F, int N, int nav, FLOAT_TYPE *cu_mu, FLOAT_TYPE *cu_mu_t);
 
-template<typename T>
-struct Square
-{
- __host__ __device__ __forceinline__
-  T operator()(const T& a) const {
-    return a*a;
-  }
-};
-
 #endif
