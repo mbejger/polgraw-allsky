@@ -13,8 +13,11 @@ void search(
 	int *Fnum,
 	double *F);
 
+/* Main job function
+ * The output is stored in single-precision (floats) 
+ */ 
 
-double* job_core(
+float* job_core(
   int pm,                   // hemisphere
   int mm,                   // grid 'sky position'
   int nn,                   // other grid 'sky position'
