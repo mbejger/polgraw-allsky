@@ -62,7 +62,7 @@ void search(
 
   int pm;          // hemisphere 
   int sgnlc;       // number of candidates
-  double *sgnlv;   // array with candidates data
+  float *sgnlv;    // array with candidates data
 
   char outname[512];
   int fd;
@@ -89,7 +89,7 @@ void search(
                 sett,       // search and detector settings
                 opts,       // cmd opts
                 s_range,    // range for searching
-			    plans,      // fftw plans 
+			          plans,      // fftw plans 
                 fftw_arr,   // arrays for fftw
                 aux,        // auxiliary arrays
                 F,          // F-statistics array
@@ -114,7 +114,7 @@ void search(
       lck.l_len = 0L;
 
       if (fcntl (fd, F_SETLKW, &lck) < 0) perror ("fcntl()");
-      write (fd, (void *)(sgnlv), sgnlc*NPAR*sizeof (double));
+      write (fd, (void *)(sgnlv), sgnlc*NPAR*sizeof(float));
       if (close (fd) < 0) perror ("close()");
 
     } /* if sgnlc */
@@ -135,7 +135,7 @@ void search(
   /* Main job 
    */ 
 
-double* job_core(
+float* job_core(
   int pm,                       // hemisphere
   int skypos,                   // no. of sky position in the spotlight range file
   Search_settings *sett,        // Search settings
@@ -150,8 +150,9 @@ double* job_core(
 
   int nn, mm, i, j, k, n;
   double al1, al2, sinalt, cosalt, sindelt, cosdelt, sgnlt[NPAR], 
-    nSource[3], het0, sgnl0, *sgnlv, ft;
+    nSource[3], het0, sgnl0, ft;
   double _tmp1[sett->nifo][sett->N];
+  float *sgnlv; 
   
   /* Matrix	M(.,.) (defined on page 22 of PolGrawCWAllSkyReview1.pdf file)
      defines the transformation form integers (bin, ss, nn, mm) determining
@@ -579,10 +580,10 @@ double* job_core(
     (*sgnlc)++; // increase found number
 
     // Add new parameters to output array 
-    sgnlv = (double *)realloc(sgnlv, NPAR*(*sgnlc)*sizeof (double));
+    sgnlv = (float *)realloc(sgnlv, NPAR*(*sgnlc)*sizeof(float));
 
 	for (j=0; j<NPAR; ++j) // save new parameters
-	  sgnlv[NPAR*(*sgnlc-1)+j] = sgnlt[j];
+	  sgnlv[NPAR*(*sgnlc-1)+j] = (float)sgnlt[j];
 
 #ifdef VERBOSE
 	  printf ("\nSignal %d: %d %d %d %d %d \tsnr=%.2f\n", 

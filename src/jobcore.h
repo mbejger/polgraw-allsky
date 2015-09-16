@@ -13,8 +13,11 @@ void search(
 	int *Fnum,
 	double *F);
 
-
-double* job_core(
+/* Main job function
+ * The output is stored in single-precision (floats) 
+ */ 
+ 
+float* job_core(
   int pm,                     // hemisphere
   int spinpos,                // no. of sky position in the spotlight range file
   Search_settings *sett,      // search settings
