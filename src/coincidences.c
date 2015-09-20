@@ -70,7 +70,7 @@ int main (int argc, char* argv[]) {
   // Search settings
   search_settings(&sett); 
 
-  printf("dt, oms from settings.h %f %f\n", sett.dt, sett.oms); 
+  printf("dt, oms from settings: %f %f\n", sett.dt, sett.oms); 
 
   
 

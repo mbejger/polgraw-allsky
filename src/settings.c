@@ -32,17 +32,17 @@ void search_settings(
   nod = 2;                          // Observation time in days
   N = round (nod*C_SIDDAY/dt);      // No. of data points
 
-  nfft = 1 << (int)ceil(log(N)/log(2.));	// length of FFT
-  s = 1;									// No. of spindowns
+  nfft = 1 << (int)ceil(log(N)/log(2.));    // length of FFT
+  s = 1;                                    // No. of spindowns
 
-  Smin = 1000.*C_YEARSEC;					// Minimum spindown time 
-											// [sec.]
+  Smin = 1000.*C_YEARSEC;                   // Minimum spindown time 
+                                            // [sec.]
 
   // Maximum spindown (1000 years) [angular, dimensionless]
   Smax = 2.*M_PI*(sett->fpo + B)*dt*dt/(2.*Smin);   
 
-  nd = 2;				// Degree of freedom, 
-						// (2*nd = deg. no ofrees of freedom for chi^2)
+  nd = 2;     // Degree of freedom, 
+              // (2*nd = deg. no ofrees of freedom for chi^2)
 
   interpftpad = 2;
 
