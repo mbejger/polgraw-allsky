@@ -836,6 +836,9 @@ void handle_opts_coinc(
   strcpy (opts->prefix, TOSTR(PREFIX));
   strcpy (opts->dtaprefix, TOSTR(DTAPREFIX));
 
+  // Default initial value of the data sampling time 
+  sett->dt = 0.5;
+
   opts->help_flag=0;
   static int help_flag=0;
 
@@ -862,6 +865,10 @@ void handle_opts_coinc(
       {"data", required_argument, 0, 'd'},
       // fpo value
       {"fpo", required_argument, 0, 'p'},
+      // data sampling time 
+      {"dt", required_argument, 0, 't'},
+      // triggers' name prefactor 
+      {"trigname", required_argument, 0, 'e'},
       {0, 0, 0, 0}
     };
 
@@ -870,13 +877,17 @@ void handle_opts_coinc(
       printf("polgraw-allsky CGW code for concidences among candidates\n");
       printf("Usage: ./search -[switch1] <value1> -[switch2] <value2> ...\n") ;
       printf("Switches are:\n\n");
-      printf("-shift    Shift of cells\n");
-      printf("-scale_f  Cell scalling in frequency\n");
-      printf("-scale_s  Cell scalling in spindown\n");
-      printf("-scale_a  Cell scalling in right ascenscion\n");
-      printf("-scale_d  Cell scalling in declination\n");
-      printf("-refr     Reference frame number\n");
-      printf("-fpo      fpo (starting frequency) value\n");
+      printf("-data         Data directory (default is ./candidates)\n");
+      printf("-output       Output directory (default is ./coinc-results)\n");
+      printf("-shift        Shift of cells\n");
+      printf("-scale_f      Cell scalling in frequency\n");
+      printf("-scale_s      Cell scalling in spindown\n");
+      printf("-scale_a      Cell scalling in right ascenscion\n");
+      printf("-scale_d      Cell scalling in declination\n");
+      printf("-refr         Reference frame number\n");
+      printf("-fpo          Reference band frequency fpo value\n");
+      printf("-dt           Data sampling time dt (default value: 0.5)\n");
+      printf("-trigname     Triggers' name prefactor\n\n");
 
       printf("Also:\n\n");
       printf("--help		This help\n");
@@ -885,7 +896,7 @@ void handle_opts_coinc(
     }
 
     int option_index = 0;
-    int c = getopt_long_only (argc, argv, "f:p:o:d:b:s:a:z:r:", long_options, &option_index);
+    int c = getopt_long_only (argc, argv, "f:p:o:d:b:s:a:z:r:t:e", long_options, &option_index);
     if (c == -1)
       break;
 
@@ -912,10 +923,16 @@ void handle_opts_coinc(
       opts->refr = atoi(optarg);
       break;
     case 'o':
-      strcpy (opts->prefix, optarg);
+      strcpy(opts->prefix, optarg);
       break;
     case 'd':
-      strcpy (opts->dtaprefix, optarg);
+      strcpy(opts->dtaprefix, optarg);
+      break;
+    case 't':
+      sett->dt = atof(optarg);
+      break;
+    case 'e':
+      strcpy(opts->trigname, optarg);
       break;
     case '?':
       break;
@@ -923,6 +940,8 @@ void handle_opts_coinc(
       break ;
     } /* switch c */
   } /* while 1 */
+
+  printf("#mb add info at the beginning...\n"); 
 
 } // end of command line options handling: coincidences  
 
@@ -966,11 +985,8 @@ void manage_grid_matrix(
   gsl_eigen_symmv (&m.matrix, eval, evec, w);
   gsl_eigen_symmv_free (w);
   
-  int i, j; 
-
   // Saving he results to settings' vectors 
-  { 
-    int i, j;
+  { int i, j;
     for(i=0; i<4; i++) {
         sett->eigval[i] = gsl_vector_get(eval, i);
 

@@ -38,10 +38,10 @@
 
 
 void search_settings(
-    Search_settings* sett);
+    Search_settings *sett);
 
 void detectors_settings(
-    Search_settings* sett, 
+    Search_settings *sett, 
     Command_line_opts *opts);
 
 void rogcvir(
@@ -57,5 +57,11 @@ void modvir(
     Aux_arrays *aux);
 
 int lineph (double, double *, double *, char *, char *, int);
+
+// Coincidences 
+int read_trigger_files(
+    Search_settings *sett,
+    Command_line_opts_coinc *opts, 
+    Candidate_triggers *trig);
 
 #endif

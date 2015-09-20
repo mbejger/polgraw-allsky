@@ -282,27 +282,73 @@ void modvir(
      * and reading their content 
      */ 
 
-void read_trigger_files(
-  Search_settings* sett, 
-  Command_line_opts_coinc *opts) {
+int read_trigger_files(
+  Search_settings *sett, 
+  Command_line_opts_coinc *opts, 
+  Candidate_triggers *trig) {
 
-  int i=0; 
+  int i=0, trig_size=4; 
 
-  char dirname[512];
+  char dirname[512], filename[512]; 
   // Trigger files directory name 
   sprintf (dirname, "%s", opts->dtaprefix); 
 
   DIR *dp;
   struct dirent *ep;
+  FILE *data; 
+
+  double c[5], *t; 
+
+  trig->f   = (double *)calloc(trig_size, sizeof(double));
+  trig->s   = (double *)calloc(trig_size, sizeof(double));
+  trig->a   = (double *)calloc(trig_size, sizeof(double));
+  trig->d   = (double *)calloc(trig_size, sizeof(double));
+  trig->snr = (double *)calloc(trig_size, sizeof(double));
+
 
   dp = opendir (dirname);
   if (dp != NULL) {
     while ((ep = readdir (dp))) { 
 
       if((ep->d_type == DT_REG) &&
-        (strstr(ep->d_name, "pvc") != NULL)) { 
+        (strstr(ep->d_name, opts->trigname) != NULL)) { 
         
-        printf("%s\n", ep->d_name); 
+          printf("Reading %s...\n", ep->d_name);
+          sprintf(filename, "%s/%s", opts->dtaprefix, ep->d_name); 
+          if((data = fopen(filename, "r")) != NULL) {
+
+            while(fread((void *)c, sizeof(double), 5, data)==5) {  
+              printf("%f %f %f %f %f\n", c[0], c[1], c[2], c[3], c[4]); 
+              trig->f[i] = c[0]; trig->s[i] = c[1]; 
+              trig->a[i] = c[2]; trig->d[i] = c[3]; trig->snr[i] = c[4]; 
+              i++; 
+
+              if(i==trig_size) {
+
+                trig_size *= 2; 
+                printf("doubling trig_size %d\n", trig_size); 
+                t = (double*)realloc(trig->f, trig_size*sizeof(double));
+                if(t!=NULL) trig->f = t;
+                t = (double*)realloc(trig->s, trig_size*sizeof(double));
+                if(t!=NULL) trig->s = t;
+                t = (double*)realloc(trig->a, trig_size*sizeof(double));
+                if(t!=NULL) trig->a = t;
+                t = (double*)realloc(trig->d, trig_size*sizeof(double));
+                if(t!=NULL) trig->d = t;
+                t = (double*)realloc(trig->snr, trig_size*sizeof(double));
+                if(t!=NULL) trig->snr = t;
+
+              }
+
+            }
+
+          } else { 
+            printf("Problem with %s...\n", filename);  
+            perror (filename);
+          }
+
+          memset(filename, 0, sizeof(filename));
+          fclose(data); 
 
       } 
    
@@ -310,40 +356,12 @@ void read_trigger_files(
 
   } 
 
+//  int j=0; 
+//  for(j=0; j<i; j++) printf("%f %f %f %f %f\n", f[j], s[j], a[j], d[j], snr[j]); 
+
   (void) closedir(dp);
 
+  return i; 
 
-//   
-//        
-//        
-//        strncmp(ep->d_name, 
-//
-//
-//        FILE *data;
-//
-//          // Input time-domain data handling
-//          // 
-//          // We assume that in each subdirectory corresponding 
-//          // to the detector the input data will look as following: 
-//          sprintf(opts->xdatname, "%s/%03d/%s/xdatc_%03d_%03d%s.bin",
-//          opts->dtaprefix, opts->ident, ep->d_name,
-//          opts->ident, opts->band, opts->label);
-//
-//          if((data = fopen(opts->xdatname, "r")) != NULL) {
-//            detnames[i] = calloc(DETNAME_LENGTH+1, sizeof(char)); 
-//            strncpy(detnames[i], ep->d_name, DETNAME_LENGTH);
-//            i++;
-//          } else { 
-//            printf("Directory %s exists, but no input file found:\n%s missing...\n", 
-//              ep->d_name, opts->xdatname);  
-//            //perror (opts->xdatname);
-//          }
-//      }
-//    } 
-      
-//    (void) closedir(dp);
-//
-//  } else perror ("Couldn't open the input directory...");
-//
+}
 
-} 

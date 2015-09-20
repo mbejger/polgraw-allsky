@@ -8,7 +8,7 @@
 #define DETNAME_LENGTH 2 
 
 // Command line option struct for search 
-typedef struct __comm_line_opts {
+typedef struct _comm_line_opts {
   
   int white_flag, 		// white noise flag
       s0_flag,			// no spin-down flag
@@ -160,15 +160,22 @@ typedef struct _detector {
 struct _detector ifo[MAX_DETECTORS]; 
 
 // Command line option struct for coincidences 
-typedef struct __comm_line_opts_coinc {
+typedef struct _comm_line_opts_coinc {
   
   int help_flag;
   
   int shift, scale_f, scale_s, scale_a, scale_d, refr; 
   double fpo; 
   
-  char prefix[512], dtaprefix[512], *wd;
+  char prefix[512], dtaprefix[512], trigname[512], *wd;
   
 } Command_line_opts_coinc;
+
+typedef struct _triggers { 
+
+  double *f, *s, *a, *d, *snr; 
+  int *fi, *si, *ai, *di; 
+
+} Candidate_triggers; 
 
 #endif 
