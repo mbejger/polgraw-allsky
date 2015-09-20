@@ -7,6 +7,7 @@
 #define MAX_DETECTORS 8
 #define DETNAME_LENGTH 2 
 
+// Command line option struct for search 
 typedef struct __comm_line_opts {
 
 	int white_flag, 			// white noise flag

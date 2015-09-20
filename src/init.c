@@ -20,7 +20,7 @@
 
 
 
-	/*	Command line options handling 
+	/*  Command line options handling: search 
 	 */ 
 	
 void handle_opts(
@@ -39,11 +39,13 @@ void handle_opts(
   opts->label[0]  = '\0';
   opts->addsig[0] = '\0';
 	
-  // Initial value of starting frequency
-  // set to a negative quantity. If this is not
-  // changed by the command line value
-  // fpo is calculated from the band number b.
+  // Initial value of starting frequency set to a negative quantity. 
+  // If this is not changed by the command line value, fpo is calculated 
+  // from the band number b (fpo = fpo = 100. + 0.96875*b)
   sett->fpo = -1;
+
+  // Default initial value of the data sampling time 
+  sett->dt = 0.5; 
 
   opts->help_flag=0;
   opts->white_flag=0;
@@ -71,7 +73,7 @@ void handle_opts(
       // non-standard label for naming files
       {"label", required_argument, 0, 'l'},
       // Spotlight grid range parameter file
-      {"range", required_argument, 0, 'r'},
+      {"spotlight", required_argument, 0, 'r'},
       // change directory parameter
       {"cwd", required_argument, 0, 'c'},
       // interpolation method
@@ -79,46 +81,49 @@ void handle_opts(
       // hemisphere
       {"hemisphere", required_argument, 0, 'h'},
       // fpo value
-      {"fpo value", required_argument, 0, 'p'},
+      {"fpo", required_argument, 0, 'p'},
       // add signal parameters
       {"addsig", required_argument, 0, 'x'},
+      // data sampling time 
+      {"dt", required_argument, 0, 's'},
       {0, 0, 0, 0}
     };
 
     if (help_flag) {
 
-      printf("*** Continuous GW search code using the F-statistic ***\n");
+      printf("polgraw-allsky CGW search code using the F-statistic\n");
       printf("Usage: ./search -[switch1] <value1> -[switch2] <value2> ...\n") ;
       printf("Switches are:\n\n");
-      printf("-d	Data directory (default is .)\n");
-      printf("-o	Output directory (default is ./candidates)\n");
-      printf("-i	Frame number\n");
-      printf("-b	Band number\n");
-      printf("-l	Custom label for the input and output files\n");
-      printf("-r	Spotlight search file with sky and spindown grid points\n");
-      printf("-c	Change to directory <dir>\n");
-      printf("-t	Threshold for the F-statistic (default is 20)\n");
-      printf("-h	Hemisphere (default is 0 - does both)\n");
-      printf("-p	fpo (starting frequency) value\n");
-      printf("-x	Add signal with parameters from <file>\n\n");
+      printf("-d, -data         Data directory (default is .)\n");
+      printf("-o, -output       Output directory (default is ./candidates)\n");
+      printf("-i, -ident        Frame number\n");
+      printf("-b, -band         Band number\n");
+      printf("-l, -label        Custom label for the input and output files\n");
+      printf("-r, -spotlight    Spotlight search file with sky and spindown grid points\n");
+      printf("-c, -cwd          Change to directory <dir>\n");
+      printf("-t, -threshold    Threshold for the F-statistic (default is 20)\n");
+      printf("-h, -hemisphere   Hemisphere (default is 0 - does both)\n");
+      printf("-p, -fpo          Reference band frequency fpo value\n");
+      printf("-s, -dt           Data sampling time dt (default value: 0.5)\n");
+      printf("-x, -addsig       Add signal with parameters from <file>\n\n");
 
       printf("Also:\n\n");
-      printf("--whitenoise	white Gaussian noise assumed\n");
-      printf("--nospindown	spindowns neglected\n");
-      printf("--nocheckpoint	state file won't be created (no checkpointing)\n");
+      printf("--whitenoise      White Gaussian noise assumed\n");
+      printf("--nospindown      Spindowns neglected\n");
+      printf("--nocheckpoint    State file won't be created (no checkpointing)\n");
       printf("--help		This help\n");
 
       exit (0);
     }
 
     int option_index = 0;
-    int c = getopt_long (argc, argv, "i:b:o:d:l:r:c:t:h:p:x:", long_options, &option_index);
+    int c = getopt_long_only (argc, argv, "i:b:o:d:l:r:c:t:h:p:x:s:", long_options, &option_index);
     if (c == -1)
       break;
 
     switch (c) {
     case 'i':
-      opts->ident = atoi (optarg);
+      opts->ident = atoi(optarg);
       break;
     case 't':
       opts->trl = atof(optarg);
@@ -127,30 +132,33 @@ void handle_opts(
       opts->hemi = atof(optarg);
       break;
     case 'b':
-      opts->band = atoi (optarg);
+      opts->band = atoi(optarg);
       break;
     case 'o':
-      strcpy (opts->prefix, optarg);
+      strcpy(opts->prefix, optarg);
       break;
     case 'd':
-      strcpy (opts->dtaprefix, optarg);
+      strcpy(opts->dtaprefix, optarg);
       break;
     case 'l':
       opts->label[0] = '_';
-      strcpy (1+opts->label, optarg);
+      strcpy(1+opts->label, optarg);
       break;
     case 'r':
-      strcpy (opts->spotlight, optarg);
+      strcpy(opts->spotlight, optarg);
       break;
     case 'c':
       opts->wd = (char *) malloc (1+strlen(optarg));
-      strcpy (opts->wd, optarg);
+      strcpy(opts->wd, optarg);
       break;
     case 'p':
       sett->fpo = atof(optarg);
       break;
     case 'x':
-      strcpy (opts->addsig, optarg);
+      strcpy(opts->addsig, optarg);
+      break;
+    case 's':
+      sett->dt = atof(optarg);
       break;
     case '?':
       break;
@@ -163,14 +171,26 @@ void handle_opts(
   opts->s0_flag = s0_flag;
   opts->checkp_flag = checkp_flag;	
 	
-  printf ("Data directory is %s\n", opts->dtaprefix);
-  printf ("Output directory is %s\n", opts->prefix);
-  printf ("Frame number is %d\n", opts->ident);
-  printf ("Band number is %d\n", opts->band);
+  printf("Input data directory is %s\n", opts->dtaprefix);
+  printf("Output directory is %s\n", opts->prefix);
+  printf("Frame and band numbers are %d and %d\n", opts->ident, opts->band);
+
+  // Starting band frequency:
+  // fpo_val is optionally read from the command line
+  // Its initial value is set to -1
+  if(!(sett->fpo >= 0))
+    // The usual definition:
+    sett->fpo = 100. + 0.96875 * opts->band;
+
+  printf("The reference frequency fpo is %f\n", sett->fpo);
+  printf("The data sampling time dt is  %f\n", sett->dt); 
 
   if (opts->white_flag)
-    printf ("Assuming white Gaussian noise\n");  
+    printf ("Assuming white Gaussian noise\n");
+
+  // For legacy: FFT is now the only option 
   printf ("Using fftinterp=FFT (FFT interpolation by zero-padding)\n");
+
   if(opts->trl!=20)
     printf ("Threshold for the F-statistic is %lf\n", opts->trl);
   if(opts->hemi)
@@ -191,20 +211,8 @@ void handle_opts(
     printf ("Adding signal from '%s'\n", opts->addsig);
   if (opts->wd) {
     printf ("Changing working directory to %s\n", opts->wd);
-    if (chdir(opts->wd)) {
-      perror (opts->wd);
-      abort ();
-    }
+    if (chdir(opts->wd)) { perror (opts->wd); abort (); }
   }
-
-  // Starting band frequency:
-  // fpo_val is optionally read from the command line
-  // Its initial value is set to -1
-  if(!(sett->fpo >= 0))
-    // The usual definition:
-    sett->fpo = 100. + 0.96875 * opts->band;
-
-  printf("The reference frequency (fpo) is %f\n", sett->fpo);
 
 } // end of command line options handling 
 

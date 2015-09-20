@@ -20,7 +20,10 @@ void search_settings(
   int nod, N, nfft, s, nd, interpftpad;
 
 
-  dt = 0.5;                         // data sampling time
+  dt = sett->dt;                    // data sampling time:  
+                                    // set in handle_opts() from the command line
+                                    // (the default value is dt=0.5)
+
   B = 0.5/dt;                       // Bandwidth
   oms = 2.*M_PI*(sett->fpo)*dt;     // Dimensionless angular frequency
 
@@ -43,7 +46,6 @@ void search_settings(
 
   interpftpad = 2;
 
-  sett->dt=dt;        	// sampling time
   sett->B=B;          	// bandwidth
   sett->oms=oms;      	// dimensionless angular frequency
   sett->omr=omr;      	// C_OMEGA_R * dt
