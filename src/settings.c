@@ -20,7 +20,10 @@ void search_settings(
   int nod, N, nfft, s, nd, interpftpad;
 
 
-  dt = 0.5;                         // data sampling time
+  dt = sett->dt;                    // data sampling time:  
+                                    // set in handle_opts() from the command line
+                                    // (the default value is dt=0.5)
+
   B = 0.5/dt;                       // Bandwidth
   oms = 2.*M_PI*(sett->fpo)*dt;     // Dimensionless angular frequency
 
@@ -43,7 +46,6 @@ void search_settings(
 
   interpftpad = 2;
 
-  sett->dt=dt;        	// sampling time
   sett->B=B;          	// bandwidth
   sett->oms=oms;      	// dimensionless angular frequency
   sett->omr=omr;      	// C_OMEGA_R * dt
@@ -274,3 +276,74 @@ void modvir(
 
 } // modvir
 
+
+
+    /* Obtaining the trigger files list from a given directory
+     * and reading their content 
+     */ 
+
+void read_trigger_files(
+  Search_settings* sett, 
+  Command_line_opts_coinc *opts) {
+
+  int i=0; 
+
+  char dirname[512];
+  // Trigger files directory name 
+  sprintf (dirname, "%s", opts->dtaprefix); 
+
+  DIR *dp;
+  struct dirent *ep;
+
+  dp = opendir (dirname);
+  if (dp != NULL) {
+    while ((ep = readdir (dp))) { 
+
+      if((ep->d_type == DT_REG) &&
+        (strstr(ep->d_name, "pvc") != NULL)) { 
+        
+        printf("%s\n", ep->d_name); 
+
+      } 
+   
+    } 
+
+  } 
+
+  (void) closedir(dp);
+
+
+//   
+//        
+//        
+//        strncmp(ep->d_name, 
+//
+//
+//        FILE *data;
+//
+//          // Input time-domain data handling
+//          // 
+//          // We assume that in each subdirectory corresponding 
+//          // to the detector the input data will look as following: 
+//          sprintf(opts->xdatname, "%s/%03d/%s/xdatc_%03d_%03d%s.bin",
+//          opts->dtaprefix, opts->ident, ep->d_name,
+//          opts->ident, opts->band, opts->label);
+//
+//          if((data = fopen(opts->xdatname, "r")) != NULL) {
+//            detnames[i] = calloc(DETNAME_LENGTH+1, sizeof(char)); 
+//            strncpy(detnames[i], ep->d_name, DETNAME_LENGTH);
+//            i++;
+//          } else { 
+//            printf("Directory %s exists, but no input file found:\n%s missing...\n", 
+//              ep->d_name, opts->xdatname);  
+//            //perror (opts->xdatname);
+//          }
+//      }
+//    } 
+      
+//    (void) closedir(dp);
+//
+//  } else perror ("Couldn't open the input directory...");
+//
+
+} 

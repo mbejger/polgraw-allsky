@@ -55,6 +55,9 @@ search: main.o jobcore.o timer.o settings.o auxi.o init.o
 sigen: sigen.o settings.o auxi.o
 	$(CC) $(LDFLAGS) -gnatv -o $@ $^ $(LOADLIBES)
 
+coincidences: coincidences.o settings.o auxi.o init.o
+	$(CC) $(LDFLAGS) -gnatv -o $@ $^ $(LOADLIBES)
+
 doc:
 	doxygen ../doc/Doxyfile
 

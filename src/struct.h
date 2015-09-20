@@ -7,7 +7,7 @@
 #define MAX_DETECTORS 8
 #define DETNAME_LENGTH 2 
 
-
+// Command line option struct for search 
 typedef struct __comm_line_opts {
   
   int white_flag, 		// white noise flag
@@ -120,7 +120,11 @@ typedef struct _search_settings {
       Ninterp, 	  // for resampling (set in plan_fftw() init.c)
       nifo;       // number of detectors
 
-  double *M;      // Grid-generating matrix
+  double *M;      // Grid-generating matrix (or Fisher matrix, 
+                  // in case of coincidences) 
+
+  double eigvec[4][4], eigval[4]; // eigenvectors and eigenvalues 
+                                  // for the Fisher matrix (coincidences)
 
 } Search_settings;
 
@@ -154,5 +158,17 @@ typedef struct _detector {
    */ 
 
 struct _detector ifo[MAX_DETECTORS]; 
+
+// Command line option struct for coincidences 
+typedef struct __comm_line_opts_coinc {
+  
+  int help_flag;
+  
+  int shift, scale_f, scale_s, scale_a, scale_d, refr; 
+  double fpo; 
+  
+  char prefix[512], dtaprefix[512], *wd;
+  
+} Command_line_opts_coinc;
 
 #endif 

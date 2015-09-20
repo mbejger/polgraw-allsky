@@ -6,7 +6,7 @@
 void handle_opts(
 	Search_settings *sett,
 	Command_line_opts *opts,
-  int argc,  
+    int argc,  
 	char* argv[]);  
 
 void init_arrays(
@@ -50,5 +50,17 @@ void cleanup(
 	FFTW_arrays *fftw_arr,
 	Aux_arrays *aux,
 	double *F);
+
+// Coincidences specific functions 
+void handle_opts_coinc(
+	Search_settings *sett,
+	Command_line_opts_coinc *opts,
+    int argc,  
+	char* argv[]);  
+
+void manage_grid_matrix(
+    Search_settings *sett,
+    Command_line_opts_coinc *opts);
+
 
 #endif

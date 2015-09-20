@@ -11,6 +11,8 @@
 #include <fcntl.h>
 #include <getopt.h>
 #include <gsl/gsl_linalg.h>
+#include <gsl/gsl_math.h>
+#include <gsl/gsl_eigen.h>
 #include <time.h>
 
 #include "init.h"
@@ -20,12 +22,12 @@
 
 
 
-	/*	Command line options handling 
+	/*  Command line options handling: search 
 	 */ 
 	
 void handle_opts(
-  Search_settings *sett, 
-  Command_line_opts *opts,
+    Search_settings *sett, 
+    Command_line_opts *opts,
 	int argc, 
 	char* argv[]) {
 	
@@ -41,11 +43,13 @@ void handle_opts(
   opts->range[0]  = '\0';
   opts->addsig[0] = '\0';
 	
-  // Initial value of starting frequency
-  // set to a negative quantity. If this is not
-  // changed by the command line value
-  // fpo is calculated from the band number b.
+  // Initial value of starting frequency set to a negative quantity. 
+  // If this is not changed by the command line value, fpo is calculated 
+  // from the band number b (fpo = fpo = 100. + 0.96875*b)
   sett->fpo = -1;
+
+  // Default initial value of the data sampling time 
+  sett->dt = 0.5; 
 
   opts->help_flag=0;
   opts->white_flag=0;
@@ -58,9 +62,9 @@ void handle_opts(
 
   while (1) {
     static struct option long_options[] = {
-      {"help", no_argument, 			&help_flag, 1},
-      {"whitenoise", no_argument, 	&white_flag, 1},
-      {"nospindown", no_argument, 	&s0_flag, 1},
+      {"help", no_argument, &help_flag, 1},
+      {"whitenoise", no_argument, &white_flag, 1},
+      {"nospindown", no_argument, &s0_flag, 1},
       {"nocheckpoint", no_argument, &checkp_flag, 0},
       // frame number
       {"ident", required_argument, 0, 'i'},
@@ -81,40 +85,43 @@ void handle_opts(
       // hemisphere
       {"hemisphere", required_argument, 0, 'h'},
       // fpo value
-      {"fpo value", required_argument, 0, 'p'},
+      {"fpo", required_argument, 0, 'p'},
       // add signal parameters
       {"addsig", required_argument, 0, 'x'},
+      // data sampling time 
+      {"dt", required_argument, 0, 's'},
       {0, 0, 0, 0}
     };
 
     if (help_flag) {
 
-      printf("*** Continuous GW search code using the F-statistic ***\n");
+      printf("polgraw-allsky CGW search code using the F-statistic\n");
       printf("Usage: ./search -[switch1] <value1> -[switch2] <value2> ...\n") ;
       printf("Switches are:\n\n");
-      printf("-d	Data directory (default is .)\n");
-      printf("-o	Output directory (default is ./candidates)\n");
-      printf("-i	Frame number\n");
-      printf("-b	Band number\n");
-      printf("-l	Custom label for the input and output files\n");
-      printf("-r	File with grid range or pulsar position\n");
-      printf("-c	Change to directory <dir>\n");
-      printf("-t	Threshold for the F-statistic (default is 20)\n");
-      printf("-h	Hemisphere (default is 0 - does both)\n");
-      printf("-p	fpo (starting frequency) value\n");
-      printf("-x	Add signal with parameters from <file>\n\n");
+      printf("-d, -data         Data directory (default is .)\n");
+      printf("-o, -output       Output directory (default is ./candidates)\n");
+      printf("-i, -ident        Frame number\n");
+      printf("-b, -band         Band number\n");
+      printf("-l, -label        Custom label for the input and output files\n");
+      printf("-r, -range        File with grid range or pulsar position\n");
+      printf("-c, -cwd          Change to directory <dir>\n");
+      printf("-t, -threshold    Threshold for the F-statistic (default is 20)\n");
+      printf("-h, -hemisphere   Hemisphere (default is 0 - does both)\n");
+      printf("-p, -fpo          Reference band frequency fpo value\n");
+      printf("-s, -dt           Data sampling time dt (default value: 0.5)\n");
+      printf("-x, -addsig       Add signal with parameters from <file>\n\n");
 
       printf("Also:\n\n");
-      printf("--whitenoise	white Gaussian noise assumed\n");
-      printf("--nospindown	spindowns neglected\n");
-      printf("--nocheckpoint	state file won't be created (no checkpointing)\n");
-      printf("--help		This help\n");
+      printf("--whitenoise      White Gaussian noise assumed\n");
+      printf("--nospindown      Spindowns neglected\n");
+      printf("--nocheckpoint    State file won't be created (no checkpointing)\n");
+      printf("--help            This help\n");
 
       exit (0);
     }
 
     int option_index = 0;
-    int c = getopt_long (argc, argv, "i:b:o:d:l:r:c:t:h:p:x:", long_options, &option_index);
+    int c = getopt_long_only (argc, argv, "i:b:o:d:l:r:c:t:h:p:x:s:", long_options, &option_index);
     if (c == -1)
       break;
 
@@ -129,30 +136,33 @@ void handle_opts(
       opts->hemi = atof(optarg);
       break;
     case 'b':
-      opts->band = atoi (optarg);
+      opts->band = atoi(optarg);
       break;
     case 'o':
-      strcpy (opts->prefix, optarg);
+      strcpy(opts->prefix, optarg);
       break;
     case 'd':
-      strcpy (opts->dtaprefix, optarg);
+      strcpy(opts->dtaprefix, optarg);
       break;
     case 'l':
       opts->label[0] = '_';
-      strcpy (1+opts->label, optarg);
+      strcpy(1+opts->label, optarg);
       break;
     case 'r':
-      strcpy (opts->range, optarg);
+      strcpy(opts->range, optarg);
       break;
     case 'c':
       opts->wd = (char *) malloc (1+strlen(optarg));
-      strcpy (opts->wd, optarg);
+      strcpy(opts->wd, optarg);
       break;
     case 'p':
       sett->fpo = atof(optarg);
       break;
     case 'x':
-      strcpy (opts->addsig, optarg);
+      strcpy(opts->addsig, optarg);
+      break;
+    case 's':
+      sett->dt = atof(optarg);
       break;
     case '?':
       break;
@@ -165,13 +175,24 @@ void handle_opts(
   opts->s0_flag = s0_flag;
   opts->checkp_flag = checkp_flag;	
 	
-  printf ("Data directory is %s\n", opts->dtaprefix);
-  printf ("Output directory is %s\n", opts->prefix);
-  printf ("Frame number is %d\n", opts->ident);
-  printf ("Band number is %d\n", opts->band);
+  printf("Input data directory is %s\n", opts->dtaprefix);
+  printf("Output directory is %s\n", opts->prefix);
+  printf("Frame and band numbers are %d and %d\n", opts->ident, opts->band);
+
+  // Starting band frequency:
+  // fpo_val is optionally read from the command line
+  // Its initial value is set to -1
+  if(!(sett->fpo >= 0))
+    // The usual definition:
+    sett->fpo = 100. + 0.96875 * opts->band;
+
+  printf("The reference frequency fpo is %f\n", sett->fpo);
+  printf("The data sampling time dt is  %f\n", sett->dt); 
 
   if (opts->white_flag)
-    printf ("Assuming white Gaussian noise\n");  
+    printf ("Assuming white Gaussian noise\n");
+
+  // For legacy: FFT is now the only option 
   printf ("Using fftinterp=FFT (FFT interpolation by zero-padding)\n");
 
   if(opts->trl!=20)
@@ -182,26 +203,16 @@ void handle_opts(
     printf ("Assuming s_1 = 0.\n");
   if (strlen(opts->label))
     printf ("Using '%s' as data label\n", opts->label);
+
   if (strlen(opts->range))
     printf ("Obtaining grid range from '%s'\n", opts->range);
+
   if (strlen(opts->addsig))
     printf ("Adding signal from '%s'\n", opts->addsig);
   if (opts->wd) {
     printf ("Changing working directory to %s\n", opts->wd);
-    if (chdir(opts->wd)) {
-      perror (opts->wd);
-      abort ();
-    }
+    if (chdir(opts->wd)) { perror (opts->wd); abort (); }
   }
-
-  // Starting band frequency:
-  // fpo_val is optionally read from the command line
-  // Its initial value is set to -1
-  if(!(sett->fpo >= 0))
-    // The usual definition:
-    sett->fpo = 100. + 0.96875 * opts->band;
-
-  printf("The reference frequency (fpo) is %f\n", sett->fpo);
 
 } // end of command line options handling 
 
@@ -809,3 +820,170 @@ void cleanup(
   fftw_destroy_plan(plans->pl_inv);
 
 } // end of cleanup & memory free 
+
+
+	/*	Command line options handling: coincidences  
+	 */ 
+	
+void handle_opts_coinc(
+    Search_settings *sett, 
+    Command_line_opts_coinc *opts,
+	int argc, 
+	char* argv[]) {
+	
+  opts->wd=NULL;
+	
+  strcpy (opts->prefix, TOSTR(PREFIX));
+  strcpy (opts->dtaprefix, TOSTR(DTAPREFIX));
+
+  opts->help_flag=0;
+  static int help_flag=0;
+
+  // Reading arguments 
+
+  while (1) {
+    static struct option long_options[] = {
+      {"help", no_argument, &help_flag, 1},
+      // shift of cells 
+      {"shift", required_argument, 0, 's'},
+      // Cell scalling in frequency
+      {"scale_f", required_argument, 0, 'f'},
+      // Cell scalling in spindown 
+      {"scale_s", required_argument, 0, 'z'},
+      // Cell scalling in right ascension
+      {"scale_a", required_argument, 0, 'a'},
+      // Cell scalling in declination
+      {"scale_d", required_argument, 0, 'b'},
+      // Reference frame number 
+      {"refr", required_argument, 0, 'r'},
+      // output directory
+      {"output", required_argument, 0, 'o'},
+      // input data directory
+      {"data", required_argument, 0, 'd'},
+      // fpo value
+      {"fpo", required_argument, 0, 'p'},
+      {0, 0, 0, 0}
+    };
+
+    if (help_flag) {
+
+      printf("polgraw-allsky CGW code for concidences among candidates\n");
+      printf("Usage: ./search -[switch1] <value1> -[switch2] <value2> ...\n") ;
+      printf("Switches are:\n\n");
+      printf("-shift    Shift of cells\n");
+      printf("-scale_f  Cell scalling in frequency\n");
+      printf("-scale_s  Cell scalling in spindown\n");
+      printf("-scale_a  Cell scalling in right ascenscion\n");
+      printf("-scale_d  Cell scalling in declination\n");
+      printf("-refr     Reference frame number\n");
+      printf("-fpo      fpo (starting frequency) value\n");
+
+      printf("Also:\n\n");
+      printf("--help		This help\n");
+
+      exit (0);
+    }
+
+    int option_index = 0;
+    int c = getopt_long_only (argc, argv, "f:p:o:d:b:s:a:z:r:", long_options, &option_index);
+    if (c == -1)
+      break;
+
+    switch (c) {
+    case 'p':
+      sett->fpo = atof(optarg);
+      break;
+    case 's':
+      opts->shift = atof(optarg);
+      break;
+    case 'f':
+      opts->scale_f = atoi(optarg);
+      break;
+    case 'z':
+      opts->scale_s = atoi(optarg);
+      break;
+    case 'a':
+      opts->scale_a = atoi(optarg);
+      break;
+    case 'b':
+      opts->scale_d = atoi(optarg);
+      break;
+    case 'r':
+      opts->refr = atoi(optarg);
+      break;
+    case 'o':
+      strcpy (opts->prefix, optarg);
+      break;
+    case 'd':
+      strcpy (opts->dtaprefix, optarg);
+      break;
+    case '?':
+      break;
+    default:
+      break ;
+    } /* switch c */
+  } /* while 1 */
+
+} // end of command line options handling: coincidences  
+
+
+	/* Manage grid matrix (read from grid.bin, find eigenvalues 
+	 * and eigenvectors)  
+	 */ 
+
+void manage_grid_matrix(
+	Search_settings *sett, 
+	Command_line_opts_coinc *opts) {
+
+  sett->M = (double *) calloc (16, sizeof (double));
+
+  FILE *data;
+  char filename[512];
+  sprintf (filename, "grid.bin");
+
+  if ((data=fopen (filename, "r")) != NULL) {
+    fread ((void *)&sett->fftpad, sizeof (int), 1, data);
+
+	printf("Using fftpad from the grid file: %d\n", sett->fftpad); 
+	
+    fread ((void *)sett->M, sizeof (double), 16, data);
+    // We actually need the second (Fisher) matrix from grid.bin, 
+    // hence the second fread: 
+    fread ((void *)sett->M, sizeof (double), 16, data);
+    fclose (data);
+  } else {
+	  perror (filename);
+      exit(EXIT_FAILURE);
+  }
+
+  // Calculating the eigenvectors and eigenvalues 
+  gsl_matrix_view m = gsl_matrix_view_array (sett->M, 4, 4);
+
+  gsl_vector *eval = gsl_vector_alloc (4);
+  gsl_matrix *evec = gsl_matrix_alloc (4, 4);
+
+  gsl_eigen_symmv_workspace *w = gsl_eigen_symmv_alloc (4); 
+  gsl_eigen_symmv (&m.matrix, eval, evec, w);
+  gsl_eigen_symmv_free (w);
+  
+  int i, j; 
+
+  // Saving he results to settings' vectors 
+  { 
+    int i, j;
+    for(i=0; i<4; i++) {
+        sett->eigval[i] = gsl_vector_get(eval, i);
+
+        gsl_vector_view evec_i = gsl_matrix_column(evec, i);
+        for(j=0; j<4; j++)  
+            sett->eigvec[i][j] = gsl_vector_get(&evec_i.vector, j);
+
+    } 
+  } 
+
+  gsl_vector_free (eval);
+  gsl_matrix_free (evec);
+
+
+} // end of manage grid matrix  
+
