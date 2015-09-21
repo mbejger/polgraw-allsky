@@ -869,6 +869,8 @@ void handle_opts_coinc(
       {"dt", required_argument, 0, 't'},
       // triggers' name prefactor 
       {"trigname", required_argument, 0, 'e'},
+      // Location of the reference grid.bin and starting_date files  
+      {"refloc", required_argument, 0, 'g'},
       {0, 0, 0, 0}
     };
 
@@ -887,7 +889,8 @@ void handle_opts_coinc(
       printf("-refr         Reference frame number\n");
       printf("-fpo          Reference band frequency fpo value\n");
       printf("-dt           Data sampling time dt (default value: 0.5)\n");
-      printf("-trigname     Triggers' name prefactor\n\n");
+      printf("-trigname     Triggers' name prefactor\n");
+      printf("-refloc       Location of the reference grid.bin and starting_date files\n\n");
 
       printf("Also:\n\n");
       printf("--help		This help\n");
@@ -896,7 +899,7 @@ void handle_opts_coinc(
     }
 
     int option_index = 0;
-    int c = getopt_long_only (argc, argv, "f:p:o:d:b:s:a:z:r:t:e", long_options, &option_index);
+    int c = getopt_long_only (argc, argv, "f:p:o:d:b:s:a:z:r:t:e:g:", long_options, &option_index);
     if (c == -1)
       break;
 
@@ -934,6 +937,9 @@ void handle_opts_coinc(
     case 'e':
       strcpy(opts->trigname, optarg);
       break;
+    case 'g':
+      strcpy(opts->refloc, optarg);
+      break;
     case '?':
       break;
     default:
@@ -946,60 +952,166 @@ void handle_opts_coinc(
 } // end of command line options handling: coincidences  
 
 
+
 	/* Manage grid matrix (read from grid.bin, find eigenvalues 
-	 * and eigenvectors)  
+	 * and eigenvectors) and reference GPS time from starting_time
+     * (expected to be in the same directory)    
 	 */ 
 
 void manage_grid_matrix(
 	Search_settings *sett, 
 	Command_line_opts_coinc *opts) {
 
-  sett->M = (double *) calloc (16, sizeof (double));
+  sett->M = (double *)calloc(16, sizeof (double));
 
   FILE *data;
   char filename[512];
-  sprintf (filename, "grid.bin");
+  sprintf (filename, "%s/grid.bin", opts->refloc);
 
   if ((data=fopen (filename, "r")) != NULL) {
+
+    printf("Reading the reference grid.bin at %s\n", opts->refloc);
+
     fread ((void *)&sett->fftpad, sizeof (int), 1, data);
 
-	printf("Using fftpad from the grid file: %d\n", sett->fftpad); 
+	printf("fftpad from the grid file: %d\n", sett->fftpad); 
 	
-    fread ((void *)sett->M, sizeof (double), 16, data);
+    fread ((void *)sett->M, sizeof(double), 16, data);
     // We actually need the second (Fisher) matrix from grid.bin, 
     // hence the second fread: 
-    fread ((void *)sett->M, sizeof (double), 16, data);
+    fread ((void *)sett->M, sizeof(double), 16, data);
     fclose (data);
   } else {
 	  perror (filename);
       exit(EXIT_FAILURE);
   }
 
-  // Calculating the eigenvectors and eigenvalues 
-  gsl_matrix_view m = gsl_matrix_view_array (sett->M, 4, 4);
-
-  gsl_vector *eval = gsl_vector_alloc (4);
-  gsl_matrix *evec = gsl_matrix_alloc (4, 4);
-
-  gsl_eigen_symmv_workspace *w = gsl_eigen_symmv_alloc (4); 
-  gsl_eigen_symmv (&m.matrix, eval, evec, w);
-  gsl_eigen_symmv_free (w);
+/* //#mb seems not needed at the moment 
+  sprintf (filename, "%s/starting_date", opts->refloc);
   
-  // Saving he results to settings' vectors 
+  if ((data=fopen (filename, "r")) != NULL) {
+    fscanf(data, "%le", &opts->refgps);
+
+    printf("Reading the reference starting_date file at %s The GPS time is %12f\n", opts->refloc, opts->refgps);
+    fclose (data);
+  } else {
+      perror (filename);
+      exit(EXIT_FAILURE);
+  }
+*/ 
+
+  // Calculating the eigenvectors and eigenvalues 
+  gsl_matrix_view m = gsl_matrix_view_array(sett->M, 4, 4);
+
+  gsl_vector *eval = gsl_vector_alloc(4);
+  gsl_matrix *evec = gsl_matrix_alloc(4, 4);
+
+  gsl_eigen_symmv_workspace *w = gsl_eigen_symmv_alloc(4); 
+  gsl_eigen_symmv(&m.matrix, eval, evec, w);
+  gsl_eigen_symmv_free(w);
+  
+  // Saving the results to the settings struct 
   { int i, j;
-    for(i=0; i<4; i++) {
-        sett->eigval[i] = gsl_vector_get(eval, i);
+    for(i=0; i<4; i++) { 
+      sett->eigval[i] = gsl_vector_get(eval, i); 
+      gsl_vector_view evec_i = gsl_matrix_column(evec, i);
 
-        gsl_vector_view evec_i = gsl_matrix_column(evec, i);
-        for(j=0; j<4; j++)  
-            sett->eigvec[i][j] = gsl_vector_get(&evec_i.vector, j);
-
+      for(j=0; j<4; j++)   
+        sett->eigvec[j][i] = gsl_vector_get(&evec_i.vector, j);               
     } 
+
+    // This is the matrix composed from eigenvector columns
+    // multiplied by a matrix with sqrt(eigenvalues) on diagonal  
+    for(i=0; i<4; i++)
+      for(j=0; j<4; j++)
+        sett->vedva[j][i]  = sett->eigvec[j][i]*sqrt(sett->eigval[j]);  
+
   } 
 
   gsl_vector_free (eval);
   gsl_matrix_free (evec);
 
-
 } // end of manage grid matrix  
 
+
+  /* Convert triggers to linear integer coordinates 
+   * with the use of eigenvectors and eigenvalues 
+   * obtained in manage_grid_matrix()
+   */ 
+
+void convert_to_linear(
+  Search_settings *sett,
+  Command_line_opts_coinc *opts,
+  Candidate_triggers *trig) {
+
+  int i, j, k, sqrN, numtr, shift[4];
+  double be[2]; 
+
+  sqrN = sett->N*sett->N;
+
+  // Memory allocation for integer values of triggers 
+  numtr = trig->num_of_trig; 
+  trig->fi = (int *)calloc(numtr, sizeof(int));
+  trig->si = (int *)calloc(numtr, sizeof(int));
+  trig->ai = (int *)calloc(numtr, sizeof(int));
+  trig->di = (int *)calloc(numtr, sizeof(int));
+
+  // Calculating the shifts from opts->shift 
+  int val = opts->shift;
+  for(i=0; i<4; i++) shift[i] = 0; 
+  i=3; 
+  while (val > 0) { 
+    if(val%10) shift[i] = val%10; 
+    i--; val /= 10;
+  }
+
+  // Loop over all candidates 
+  for(i=0; i<numtr; i++) { 
+ 
+    // Shifting the frequency to the reference time frame refr
+    trig->f[i] += 2.*trig->s[i]*sett->N*(opts->refr - trig->fr[i]); 
+
+    //#mb account for a possibility  
+    //#mb that the trigger may exit the band   
+
+    // Conversion to linear parameters 
+    trig->f[i] *= sett->N; 
+    trig->s[i] *= sqrN; 
+
+    // Transformation of astronomical to linear coordinates 
+    // C_EPSMA, an average value of epsm, is defined in settings.h  
+    ast2lin(trig->a[i], trig->d[i], C_EPSMA, be);
+
+    trig->a[i] = sett->oms*sett->N*be[0]; 
+    trig->d[i] = sett->oms*sett->N*be[1]; 
+
+    trig->fi[i] = (int)round((trig->f[i]*sett->vedva[0][0] 
+                + trig->s[i]*sett->vedva[1][0] 
+                + trig->a[i]*sett->vedva[2][0] 
+                + trig->d[i]*sett->vedva[3][0] 
+                + 0.5*shift[0]*opts->scale_f)/opts->scale_f);  
+
+    trig->si[i] = (int)round((trig->f[i]*sett->vedva[0][1] 
+                + trig->s[i]*sett->vedva[1][1] 
+                + trig->a[i]*sett->vedva[2][1] 
+                + trig->d[i]*sett->vedva[3][1] 
+                + 0.5*shift[1]*opts->scale_s)/opts->scale_s);  
+
+    trig->ai[i] = (int)round((trig->f[i]*sett->vedva[0][2] 
+                + trig->s[i]*sett->vedva[1][2] 
+                + trig->a[i]*sett->vedva[2][2] 
+                + trig->d[i]*sett->vedva[3][2] 
+                + 0.5*shift[2]*opts->scale_a)/opts->scale_a);  
+
+    trig->di[i] = (int)round((trig->f[i]*sett->vedva[0][3] 
+                + trig->s[i]*sett->vedva[1][3] 
+                + trig->a[i]*sett->vedva[2][3] 
+                + trig->d[i]*sett->vedva[3][3] 
+                + 0.5*shift[3]*opts->scale_d)/opts->scale_d);  
+
+//    printf("%d %d %d %d\n", trig->fi[i], trig->si[i], trig->ai[i], trig->di[i]); 
+
+  }
+
+  
+}

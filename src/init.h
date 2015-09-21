@@ -62,5 +62,9 @@ void manage_grid_matrix(
     Search_settings *sett,
     Command_line_opts_coinc *opts);
 
+void convert_to_linear(
+    Search_settings *sett,
+    Command_line_opts_coinc *opts, 
+    Candidate_triggers *trig);
 
 #endif

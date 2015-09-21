@@ -14,9 +14,11 @@
 #define round(x) floor((x)+0.5)
 
 
-void lin2ast (double be1, double be2, int pm, double sepsm, double cepsm,	\
+void lin2ast(double be1, double be2, int pm, double sepsm, double cepsm,	\
          double *sinal, double *cosal, double *sindel, double *cosdel);
 
+void ast2lin(double alfa, double delta, double epsm, double *be); 
+ 
 void spline(complex double *, int, complex double *);
 complex double splint (complex double *, complex double *, int, double);
 void splintpad (complex double *, double *, int, int, complex double*);

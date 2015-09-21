@@ -126,6 +126,9 @@ typedef struct _search_settings {
   double eigvec[4][4], eigval[4]; // eigenvectors and eigenvalues 
                                   // for the Fisher matrix (coincidences)
 
+  double vedva[4][4];              // transformation matrix
+                                  // V \times (matrix with eigval on diagonal) 
+
 } Search_settings;
 
 
@@ -165,16 +168,21 @@ typedef struct _comm_line_opts_coinc {
   int help_flag;
   
   int shift, scale_f, scale_s, scale_a, scale_d, refr; 
-  double fpo; 
+  double fpo, refgps; 
   
-  char prefix[512], dtaprefix[512], trigname[512], *wd;
+  char prefix[512], dtaprefix[512], trigname[512], refloc[512], *wd;
   
 } Command_line_opts_coinc;
 
 typedef struct _triggers { 
 
+  // pointers to trigger values: 
+  // frequency, spindown, right ascension, declination and SNR
   double *f, *s, *a, *d, *snr; 
-  int *fi, *si, *ai, *di; 
+  // trigger values transformed to integers, frame number
+  int *fi, *si, *ai, *di, *fr; 
+  // number of triggers read 
+  int num_of_trig; 
 
 } Candidate_triggers; 
 

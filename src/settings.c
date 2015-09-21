@@ -282,12 +282,12 @@ void modvir(
      * and reading their content 
      */ 
 
-int read_trigger_files(
+void read_trigger_files(
   Search_settings *sett, 
   Command_line_opts_coinc *opts, 
   Candidate_triggers *trig) {
 
-  int i=0, trig_size=4; 
+  int i=0, trig_size=4, current_frame=0;  
 
   char dirname[512], filename[512]; 
   // Trigger files directory name 
@@ -297,14 +297,16 @@ int read_trigger_files(
   struct dirent *ep;
   FILE *data; 
 
-  double c[5], *t; 
+  double c[5]; 
+
+  double *t; int *ti; // testing for realloc  
 
   trig->f   = (double *)calloc(trig_size, sizeof(double));
   trig->s   = (double *)calloc(trig_size, sizeof(double));
   trig->a   = (double *)calloc(trig_size, sizeof(double));
   trig->d   = (double *)calloc(trig_size, sizeof(double));
   trig->snr = (double *)calloc(trig_size, sizeof(double));
-
+  trig->fr  = (int *)calloc(trig_size, sizeof(int));
 
   dp = opendir (dirname);
   if (dp != NULL) {
@@ -312,21 +314,34 @@ int read_trigger_files(
 
       if((ep->d_type == DT_REG) &&
         (strstr(ep->d_name, opts->trigname) != NULL)) { 
-        
-          printf("Reading %s...\n", ep->d_name);
+
+          printf("Reading %s... \n", ep->d_name);
           sprintf(filename, "%s/%s", opts->dtaprefix, ep->d_name); 
+
+          // This part looks for the first number in the trigger file name, 
+          // under the assumption that this is the frame number
+          char *tmp, *epdname;
+          epdname = strdup(ep->d_name);  
+          while((tmp = strsep(&epdname, "_"))!=NULL) {
+            if(tmp[0] >= '0' && tmp[0] <= '9') {
+                current_frame = atoi(tmp);   
+                break; 
+            }  
+          } 
+
           if((data = fopen(filename, "r")) != NULL) {
 
             while(fread((void *)c, sizeof(double), 5, data)==5) {  
-              printf("%f %f %f %f %f\n", c[0], c[1], c[2], c[3], c[4]); 
-              trig->f[i] = c[0]; trig->s[i] = c[1]; 
-              trig->a[i] = c[2]; trig->d[i] = c[3]; trig->snr[i] = c[4]; 
+              trig->f[i]   = c[0]; trig->s[i]  = c[1]; 
+              trig->a[i]   = c[2]; trig->d[i]  = c[3]; 
+              trig->snr[i] = c[4]; trig->fr[i] = current_frame;  
               i++; 
 
               if(i==trig_size) {
 
-                trig_size *= 2; 
-                printf("doubling trig_size %d\n", trig_size); 
+                // Doubling the triggers' array size 
+                trig_size *= 2;
+ 
                 t = (double*)realloc(trig->f, trig_size*sizeof(double));
                 if(t!=NULL) trig->f = t;
                 t = (double*)realloc(trig->s, trig_size*sizeof(double));
@@ -337,6 +352,8 @@ int read_trigger_files(
                 if(t!=NULL) trig->d = t;
                 t = (double*)realloc(trig->snr, trig_size*sizeof(double));
                 if(t!=NULL) trig->snr = t;
+                ti = (int*)realloc(trig->fr, trig_size*sizeof(int));
+                if(t!=NULL) trig->fr = ti;
 
               }
 
@@ -356,12 +373,8 @@ int read_trigger_files(
 
   } 
 
-//  int j=0; 
-//  for(j=0; j<i; j++) printf("%f %f %f %f %f\n", f[j], s[j], a[j], d[j], snr[j]); 
-
   (void) closedir(dp);
 
-  return i; 
+  trig->num_of_trig = i; 
 
 }
-

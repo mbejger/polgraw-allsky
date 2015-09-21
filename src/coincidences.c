@@ -2,8 +2,6 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <math.h>
-#include <complex.h>
-#include <fftw3.h>
 #include <string.h>
 #include <errno.h>
 #include <sys/types.h>
@@ -15,7 +13,7 @@
 #include <dirent.h>
 
 #include "auxi.h"
-#include  "init.h" 
+#include "init.h" 
 #include "settings.h"
 #include "struct.h"
 
@@ -60,26 +58,44 @@ int main (int argc, char* argv[]) {
   // Manage grid matrix  
   manage_grid_matrix(&sett, &opts);	
 
+  for(i=0; i<16; i++) {
+    printf("%d %le\n", i, sett.M[i]);
+  }
+
   printf("These are the eigenvectors:\n"); 
   for(i=0; i<4; i++) {  
     for(j=0; j<4; j++) 
-        printf("%g ", sett.eigvec[i][j]); 
-    printf("\n");     
+        printf("%.15le ", sett.eigvec[j][i]); 
+    printf("\n");
   } 
 
-  // Search settings
+  printf("These are the eigenvalues:\n");
+  for(i=0; i<4; i++) printf("%.15le\n", sett.eigval[i]);
+
+  // Search settings 
   search_settings(&sett); 
 
   printf("dt, oms from settings: %f %f\n", sett.dt, sett.oms); 
 
-  
+  read_trigger_files(&sett, &opts, &trig); 
 
-  int num_of_trig; 
-  num_of_trig = read_trigger_files(&sett, &opts, &trig); 
+/*
+  printf("Triggers read, in total %d\n", trig.num_of_trig); 
+  for(i=0; i<trig.num_of_trig; i++) 
+    printf("%le %le %le %le %f %d\n", 
+    trig.f[i], trig.s[i], trig.a[i], trig.d[i], trig.snr[i], trig.fr[i]); 
+*/ 
 
-  printf("The triggers read, in total %d\n", num_of_trig); 
-  for(i=0; i<num_of_trig; i++) 
-    printf("%f %f %f %f %f\n", trig.f[i], trig.s[i], trig.a[i], trig.d[i], trig.snr[i]); 
+  convert_to_linear(&sett, &opts, &trig); 
+
+  // Cleanup: free arrays at the end
+   
+  free(trig.f);
+  free(trig.s);
+  free(trig.a);
+  free(trig.d);
+  free(trig.snr);
+  free(trig.fr);
 
   return 0; 
 	
