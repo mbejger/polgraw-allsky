@@ -84,13 +84,15 @@ void detectors_settings(
 
   int i=0; 
 
-  char dirname[512];
+  char dirname[512], x[512];
   // Main input directory name 
   sprintf (dirname, "%s/%03d", opts->dtaprefix, opts->ident); 
 
   DIR *dp;
   struct dirent *ep;
-  char **detnames = malloc(MAX_DETECTORS*sizeof(char*));   
+
+  char **detnames  = malloc(MAX_DETECTORS*sizeof(char*));   
+  char **xnames = malloc(MAX_DETECTORS*sizeof(char*));
 
   dp = opendir (dirname);
   if (dp != NULL) {
@@ -107,19 +109,26 @@ void detectors_settings(
           // 
           // We assume that in each subdirectory corresponding 
           // to the detector the input data will look as following: 
-          sprintf(opts->xdatname, "%s/%03d/%s/xdatc_%03d_%03d%s.bin",
+          sprintf(x, "%s/%03d/%s/xdatc_%03d_%03d%s.bin",
           opts->dtaprefix, opts->ident, ep->d_name,
           opts->ident, opts->band, opts->label);
 
-          if((data = fopen(opts->xdatname, "r")) != NULL) {
-            detnames[i] = calloc(DETNAME_LENGTH+1, sizeof(char)); 
+          if((data = fopen(x, "r")) != NULL) {
+
+            xnames[i]   = calloc(strlen(x)+1, sizeof(char));
+            detnames[i] = calloc(DETNAME_LENGTH+1, sizeof(char));
+
+            strncpy(xnames[i], x, strlen(x));
             strncpy(detnames[i], ep->d_name, DETNAME_LENGTH);
             i++;
+
           } else { 
             printf("Directory %s exists, but no input file found:\n%s missing...\n", 
-              ep->d_name, opts->xdatname);  
-            //perror (opts->xdatname);
+              ep->d_name, x);  
+            //perror (x);
           }
+
+          memset(x, 0, sizeof(x));
       }
     } 
       
@@ -141,7 +150,9 @@ void detectors_settings(
     // Virgo detector
     if(!strcmp("V1", detnames[i])) {
 
+      strncpy(ifo[i].xdatname, xnames[i], strlen(xnames[i]));
       strncpy(ifo[i].name, detnames[i], DETNAME_LENGTH);
+
       // Geographical latitude phi in radians
       ifo[i].ephi = (43.+37./60.+53.0880/3600.)/RAD_TO_DEG;
       // Geographical longitude in radians
@@ -151,12 +162,15 @@ void detectors_settings(
       // Orientation of the detector gamma
       ifo[i].egam = (135. - (19.0+25./60.0+57.96/3600.))/RAD_TO_DEG;
 
-      printf("Using %s IFO as detector #%d...\n", ifo[i].name, i);
+      printf("Using %s IFO as detector #%d... %s as input time series data\n", 
+        ifo[i].name, i, ifo[i].xdatname);
 
     // Hanford H1 detector
     } else if(!strcmp("H1", detnames[i])) {
 
+      strncpy(ifo[i].xdatname, xnames[i], strlen(xnames[i]));
       strncpy(ifo[i].name, detnames[i], DETNAME_LENGTH);
+
       // Geographical latitude phi in radians
       ifo[i].ephi = (46+(27+18.528/60.)/60.)/RAD_TO_DEG;
       // Geographical longitude in radians
@@ -166,12 +180,15 @@ void detectors_settings(
       // Orientation of the detector gamma
       ifo[i].egam = 170.9994/RAD_TO_DEG;
 
-      printf("Using %s IFO as detector #%d...\n", ifo[i].name, i);
-  
+      printf("Using %s IFO as detector #%d... %s as input time series data\n", 
+        ifo[i].name, i, ifo[i].xdatname);
+ 
     // Livingston L1 detector
     } else if(!strcmp("L1", detnames[i])) {
 
+      strncpy(ifo[i].xdatname, xnames[i], strlen(xnames[i]));
       strncpy(ifo[i].name, detnames[i], DETNAME_LENGTH);
+
       // Geographical latitude phi in radians
       ifo[i].ephi = (30+(33+46.4196/60.)/60.)/RAD_TO_DEG;
       // Geographical longitude in radians
@@ -181,7 +198,8 @@ void detectors_settings(
       // Orientation of the detector gamma
       ifo[i].egam = 242.7165/RAD_TO_DEG;
 
-      printf("Using %s IFO as detector #%d...\n", ifo[i].name, i);
+      printf("Using %s IFO as detector #%d... %s as input time series data\n", 
+        ifo[i].name, i, ifo[i].xdatname);
 
     } else {
 
@@ -192,11 +210,15 @@ void detectors_settings(
 
   } 
 
-  // memory free for detnames
-  for(i=0; i<sett->nifo; i++)
+  // memory free for detnames and xdatnames
+  for(i=0; i<sett->nifo; i++) { 
     free(detnames[i]);
+    free(xnames[i]); 
+  } 
+   
 
   free(detnames); 
+  free(xnames); 
 
 } // detectors settings
 

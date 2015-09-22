@@ -6,6 +6,7 @@
 
 #define MAX_DETECTORS 8
 #define DETNAME_LENGTH 2 
+#define XDATNAME_LENGTH 512
 
 // Command line option struct for search 
 typedef struct _comm_line_opts {
@@ -21,7 +22,7 @@ typedef struct _comm_line_opts {
   double fpo_val;
   
   char prefix[512], dtaprefix[512], label[512], 
-       range[512], qname[512], addsig[512], xdatname[512], *wd;
+       range[512], qname[512], addsig[512], *wd;
   
 } Command_line_opts;
 
@@ -145,7 +146,9 @@ typedef struct _ampl_mod_coeff {
 
 typedef struct _detector { 
 
+  char xdatname[XDATNAME_LENGTH]; 
   char name[DETNAME_LENGTH]; 
+ 
   double ephi, 		// Geographical latitude phi in radians
          elam, 		// Geographical longitude in radians 
          eheight,   // Height h above the Earth ellipsoid in meters

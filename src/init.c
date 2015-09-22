@@ -267,16 +267,17 @@ void init_arrays(
 
     // Input time-domain data handling
     // 
-    // (name of the file opts->xdatname is constructed 
+    // The file name ifo[i].xdatname is constructed 
     // in settings.c, while looking for the detector 
-    // subdirectories)
-    if((data = fopen(opts->xdatname, "r")) != NULL) {
+    // subdirectories
+
+    if((data = fopen(ifo[i].xdatname, "r")) != NULL) {
       status = fread((void *)(ifo[i].sig.xDat), 
                sizeof(double), sett->N, data);
       fclose (data);
 
     } else {
-      perror (opts->xdatname);
+      perror (ifo[i].xdatname);
       exit(EXIT_FAILURE); 
     }
 
@@ -315,6 +316,8 @@ void init_arrays(
       status = fread((void *)(&ifo[i].sig.epsm), 
                sizeof(double), 1, data);
       fclose (data);
+
+      printf("Using %s as detector %s ephemerids...\n", filename, ifo[i].name);
 
     } else {
       perror (filename);

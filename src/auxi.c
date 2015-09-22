@@ -124,8 +124,6 @@ splintpad (complex double *ya, double *shftf, int N, int interpftpad,	\
   free (y2);
 } /* splintpad */
 
-
-
 double
 var (double *x, int n) {
   /* var(x, n) returns the variance (square of the standard deviation)
