@@ -11,9 +11,9 @@
 // Command line option struct for search 
 typedef struct _comm_line_opts {
 
-	int white_flag, 			// white noise flag
-	    s0_flag,					// no spin-down flag
-	    checkp_flag,			// checkpointing flag
+	int white_flag, 		// white noise flag
+	    s0_flag,			// no spin-down flag
+	    checkp_flag,		// checkpointing flag
 	    help_flag;
 	
 	int fftinterp;

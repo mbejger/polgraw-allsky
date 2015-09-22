@@ -113,13 +113,14 @@ void detectors_settings(
           opts->dtaprefix, opts->ident, ep->d_name, opts->ident, opts->label);
 
           if((data = fopen(x, "r")) != NULL) {
-            detnames[i]  = calloc(DETNAME_LENGTH+1, sizeof(char)); 
-            xnames[i] = calloc(strlen(x)+1, sizeof(char));
+
+            xnames[i]   = calloc(strlen(x)+1, sizeof(char));
+            detnames[i] = calloc(DETNAME_LENGTH+1, sizeof(char));
 
             strncpy(xnames[i], x, strlen(x));
             strncpy(detnames[i], ep->d_name, DETNAME_LENGTH);
-
             i++;
+
           } else { 
             printf("Directory %s exists, but no input file found:\n%s missing...\n", 
               ep->d_name, x);  
