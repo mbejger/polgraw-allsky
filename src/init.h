@@ -6,7 +6,7 @@
 void handle_opts(
 	Search_settings *sett,
 	Command_line_opts *opts,
-  int argc,  
+    int argc,  
 	char* argv[]);  
 
 void init_arrays(

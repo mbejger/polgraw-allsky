@@ -296,8 +296,8 @@ void init_arrays(
 
     ifo[i].sig.DetSSB = (double *) calloc(3*sett->N, sizeof(double));
 
-    char filename[512]; 
     // Ephemeris file handling
+    char filename[512];
     sprintf (filename, "%s/%03d/%s/DetSSB.bin", 
         opts->dtaprefix, opts->ident, ifo[i].name);
 
