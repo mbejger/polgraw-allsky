@@ -79,9 +79,9 @@ int main (int argc, char* argv[]) {
 
   read_trigger_files(&sett, &opts, &trig); 
 
-/*
   printf("Triggers read, in total %d\n", trig.num_of_trig); 
-  for(i=0; i<trig.num_of_trig; i++) 
+
+/* for(i=0; i<trig.num_of_trig; i++) 
     printf("%le %le %le %le %f %d\n", 
     trig.f[i], trig.s[i], trig.a[i], trig.d[i], trig.snr[i], trig.fr[i]); 
 */ 
@@ -96,6 +96,12 @@ int main (int argc, char* argv[]) {
   free(trig.d);
   free(trig.snr);
   free(trig.fr);
+
+  free(trig.fi);
+  free(trig.si);
+  free(trig.ai);
+  free(trig.di);
+
 
   return 0; 
 	

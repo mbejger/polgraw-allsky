@@ -309,7 +309,7 @@ void read_trigger_files(
   Command_line_opts_coinc *opts, 
   Candidate_triggers *trig) {
 
-  int i=0, trig_size=4, current_frame=0;  
+  int i=0, trig_size=4096, current_frame=0;  
 
   char dirname[512], filename[512]; 
   // Trigger files directory name 
@@ -325,8 +325,8 @@ void read_trigger_files(
 
   trig->f   = (double *)calloc(trig_size, sizeof(double));
   trig->s   = (double *)calloc(trig_size, sizeof(double));
-  trig->a   = (double *)calloc(trig_size, sizeof(double));
   trig->d   = (double *)calloc(trig_size, sizeof(double));
+  trig->a   = (double *)calloc(trig_size, sizeof(double));
   trig->snr = (double *)calloc(trig_size, sizeof(double));
   trig->fr  = (int *)calloc(trig_size, sizeof(int));
 
@@ -353,11 +353,22 @@ void read_trigger_files(
 
           if((data = fopen(filename, "r")) != NULL) {
 
+            double finband; 
+
             while(fread((void *)c, sizeof(double), 5, data)==5) {  
-              trig->f[i]   = c[0]; trig->s[i]  = c[1]; 
-              trig->a[i]   = c[2]; trig->d[i]  = c[3]; 
-              trig->snr[i] = c[4]; trig->fr[i] = current_frame;  
+
+              //#mb
+              finband = c[0] + 2.*c[1]*sett->N*(opts->refr - current_frame); 
+
+              if((finband>0) && (finband<M_PI)) { 
+
+                trig->f[i]   = finband; trig->s[i]  = c[1]; 
+                trig->d[i]   = c[2];    trig->a[i]  = c[3]; 
+                trig->snr[i] = c[4];    trig->fr[i] = current_frame;  
+
               i++; 
+
+              } 
 
               if(i==trig_size) {
 
@@ -368,10 +379,10 @@ void read_trigger_files(
                 if(t!=NULL) trig->f = t;
                 t = (double*)realloc(trig->s, trig_size*sizeof(double));
                 if(t!=NULL) trig->s = t;
-                t = (double*)realloc(trig->a, trig_size*sizeof(double));
-                if(t!=NULL) trig->a = t;
                 t = (double*)realloc(trig->d, trig_size*sizeof(double));
                 if(t!=NULL) trig->d = t;
+                t = (double*)realloc(trig->a, trig_size*sizeof(double));
+                if(t!=NULL) trig->a = t;
                 t = (double*)realloc(trig->snr, trig_size*sizeof(double));
                 if(t!=NULL) trig->snr = t;
                 ti = (int*)realloc(trig->fr, trig_size*sizeof(int));
