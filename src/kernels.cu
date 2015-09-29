@@ -66,20 +66,6 @@ __global__ void shift_time_mod(double shft1, double het0, double ns0, double ns1
   }
 }
 
-
-__global__ void scale_fft(cufftDoubleComplex *xa, cufftDoubleComplex *xb,
-			  double ft, int Ninterp) {
-  int idx = blockIdx.x * blockDim.x + threadIdx.x;
-
-  if (idx < Ninterp) {
-    xa[idx].x*=ft;
-    xa[idx].y*=ft;
-    xb[idx].x*=ft;
-    xb[idx].y*=ft;
-  }
-}
-
-
 __global__ void resample_postfft(cufftDoubleComplex *xa, cufftDoubleComplex *xb,
 				 int nfft, int Ninterp, int nyqst) {
   int idx = blockIdx.x * blockDim.x + threadIdx.x;
@@ -247,6 +233,7 @@ __global__ void copy_candidates(FLOAT_TYPE *params, FLOAT_TYPE *buffer, int N) {
   }
 }
 
+//reductions used for normalization
 __global__ void reduction_sumsq(double *in, double *out, int N) {
   extern __shared__ double sdata[];
 
@@ -265,26 +252,6 @@ __global__ void reduction_sumsq(double *in, double *out, int N) {
   }
 
   if (tid==0) out[blockIdx.x] = sdata[0];
-}
-
-__global__ void reduction_sum(float *in, float *out, int N) {
-  extern __shared__ float sf_data[];
-
-  int tid = threadIdx.x;
-  int i = blockIdx.x * blockDim.x + threadIdx.x;
-
-  sf_data[tid] = (i<N) ? in[i] : 0;
-
-  __syncthreads();
-
-  for (int s = blockDim.x/2; s>0; s>>=1) {
-    if (tid < s) {
-      sf_data[tid] += sf_data[tid + s];
-    }
-    __syncthreads();
-  }
-
-  if (tid==0) out[blockIdx.x] = sf_data[0];
 }
 
 __global__ void reduction_sum(double *in, double *out, int N) {
@@ -307,14 +274,35 @@ __global__ void reduction_sum(double *in, double *out, int N) {
   if (tid==0) out[blockIdx.x] = sd_data[0];
 
 }
+//---------------------------------------------------------------
 
+//second reduction used in fstat
+__global__ void reduction_sum(float *in, float *out, int N) {
+  extern __shared__ float sf_data[];
+
+  int tid = threadIdx.x;
+  int i = blockIdx.x * blockDim.x + threadIdx.x;
+
+  sf_data[tid] = (i<N) ? in[i] : 0;
+
+  __syncthreads();
+
+  for (int s = blockDim.x/2; s>0; s>>=1) {
+    if (tid < s) {
+      sf_data[tid] += sf_data[tid + s];
+    }
+    __syncthreads();
+  }
+
+  if (tid==0) out[blockIdx.x] = 1.0f/sf_data[0];
+}
 
 
 __global__ void fstat_norm(float *F, float *mu, int N, int nav) {
   int i = blockIdx.x * blockDim.x + threadIdx.x;
   if (i < N) {
     int block = i/nav; //block index
-    F[i] *= 2*nav / mu[block];
+    F[i] *= 2*nav * mu[block];
   }
 }
 

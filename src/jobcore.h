@@ -2,7 +2,7 @@
 #define __JOBCORE_H__
 
 #include "struct.h"
-
+#include "cublas_v2.h"
 #include "floats.h"
 
 #define BLOCK_SIZE 256
@@ -35,7 +35,8 @@ double* job_core(
 			FLOAT_TYPE *cu_F,			// F-stat on GPU
 			int *FNum,					// Candidate signal number
 			int *cand_buffer_count,
-			const char* outname
+			const char* outname,
+			cublasHandle_t scale  //handle for scaling
        );
 
 

@@ -19,7 +19,7 @@ void gpu_interp(cufftDoubleComplex *cu_y, int N, double *cu_new_x, cufftDoubleCo
 
 
 	N-=1; //N is number of intervals here
-	
+
 	//allocate and compute vector B=z (replaced on gtsv)
 	// z has size N+1 (i=0..N), but we solve only for (i=1..N-1)
 	// (z[0] = z[N] = 0) because of `natural conditions` of spline
@@ -30,7 +30,7 @@ void gpu_interp(cufftDoubleComplex *cu_y, int N, double *cu_new_x, cufftDoubleCo
 	//create handle for sparse
 	cusparseHandle_t handle=0;
 	cusparseCreate(&handle);
-	
+
 	//compute vector Z
 	cusparseStatus_t status = cusparseZgtsv(
 					  handle,
@@ -42,7 +42,7 @@ void gpu_interp(cufftDoubleComplex *cu_y, int N, double *cu_new_x, cufftDoubleCo
 					  cu_B+1,		//right-hand-side vector
 					  N-1);			//leading dimension
 	if (status != CUSPARSE_STATUS_SUCCESS) {
-		printf("sparse status: %d\n", status);	
+		printf("sparse status: %d\n", status);
 		printf("Blad cusparse!\n");
 	}
 	CudaCheckError();
@@ -82,10 +82,11 @@ __global__ void computeB(cufftDoubleComplex *y, cufftDoubleComplex *B, int N) {
 
 __global__ void interpolate(double *new_x, cufftDoubleComplex *new_y, cufftDoubleComplex *z, cufftDoubleComplex *y,
 									 int N, int new_N) {
+	double alpha = 1.0/6;
 	int idx = threadIdx.x + blockIdx.x * blockDim.x;
 	if (idx < new_N) {
 		double x = new_x[idx];
-		
+
 		//get index of interval
 		int i = floor(x);
 		//compute value:
@@ -96,12 +97,20 @@ __global__ void interpolate(double *new_x, cufftDoubleComplex *new_y, cufftDoubl
 		// x = new_x
 		double dist1 = x-i;
 		double dist2 = i+1-x;
+
+		new_y[idx].x = dist1*( z[i+1].x*alpha*(dist1*dist1 - 1) + y[i+1].x ) +
+									  dist2*( z[i].x*alpha*(dist2*dist2 - 1) + y[i].x );
+		new_y[idx].y = dist1*( z[i+1].y*alpha*(dist1*dist1 - 1) +  y[i+1].y ) +
+									  dist2*( z[i].y*alpha*(dist2*dist2 - 1) + y[i].y );
+
+		// that change makes kernel ~2.3x faster
+		/*
 		new_y[idx].x = dist1*( z[i+1].x/6*dist1*dist1 +  (y[i+1].x-z[i+1].x/6) ) +
 					  dist2*( z[i].x/6*dist2*dist2 + (y[i].x-z[i].x/6) );
 		new_y[idx].y = dist1*( z[i+1].y/6*dist1*dist1 +  (y[i+1].y-z[i+1].y/6) ) +
 					  dist2*( z[i].y/6*dist2*dist2 + (y[i].y-z[i].y/6) );
-		
-	}	
+		*/
+	}
 }
 
 
@@ -114,9 +123,6 @@ void init_spline_matrices(cufftDoubleComplex **cu_d, cufftDoubleComplex** cu_dl,
 	N-=1; //N is number of intervals here
 
 	cufftDoubleComplex *d, *du, *dl;
-//	d = (cufftDoubleComplex*) malloc(sizeof(cufftDoubleComplex)*(N-1));
-//	du = (cufftDoubleComplex*) malloc(sizeof(cufftDoubleComplex)*(N-1));
-//	dl = (cufftDoubleComplex*) malloc(sizeof(cufftDoubleComplex)*(N-1));
 	CudaSafeCall( cudaMallocHost((void**)&d, sizeof(cufftDoubleComplex)*(N-1)) );
 	CudaSafeCall( cudaMallocHost((void**)&du, sizeof(cufftDoubleComplex)*(N-1)) );
 	CudaSafeCall( cudaMallocHost((void**)&dl, sizeof(cufftDoubleComplex)*(N-1)) );
@@ -128,7 +134,7 @@ void init_spline_matrices(cufftDoubleComplex **cu_d, cufftDoubleComplex** cu_dl,
 		dl[i+1].x=1;
 		du[i].x=1;
 		d[i].x=4;
-		
+
 		dl[i].y=0;
 		du[i].y=0;
 		d[i].y=0;
@@ -136,32 +142,26 @@ void init_spline_matrices(cufftDoubleComplex **cu_d, cufftDoubleComplex** cu_dl,
 	d[N-2].x=4;
 	dl[0].x=0;
 	du[N-2].x=0;
-	
+
 	dl[N-2].y=0;
 	du[N-2].y=0;
 	d[N-2].y=0;
-	
+
 	//copy to gpu
 	CudaSafeCall( cudaMalloc((void**)cu_d, sizeof(cufftDoubleComplex)*(N-1)));
 	CudaSafeCall( cudaMemcpy(*cu_d, d, sizeof(cufftDoubleComplex)*(N-1), cudaMemcpyHostToDevice));
-	
+
 	CudaSafeCall( cudaMalloc((void**)cu_dl, sizeof(cufftDoubleComplex)*(N-1)));
 	CudaSafeCall( cudaMemcpy(*cu_dl, dl, sizeof(cufftDoubleComplex)*(N-1), cudaMemcpyHostToDevice));
-	
+
 	CudaSafeCall( cudaMalloc((void**)cu_du, sizeof(cufftDoubleComplex)*(N-1)));
 	CudaSafeCall( cudaMemcpy(*cu_du, du, sizeof(cufftDoubleComplex)*(N-1), cudaMemcpyHostToDevice));
-	
+
 	//allocate B (or z) vector
 	CudaSafeCall( cudaMalloc((void**)cu_B, sizeof(cufftDoubleComplex)*(N+1)));
-	
+
 	//clean up
-	//free(d);
-	//free(du);
-	//free(dl);
 	CudaSafeCall( cudaFreeHost(d) );
 	CudaSafeCall( cudaFreeHost(du) );
 	CudaSafeCall( cudaFreeHost(dl) );
 }
-
-
-

@@ -63,6 +63,8 @@ __global__ void compute_modvir(double *aa, double *bb, double cosalfr, double si
 
 __global__ void modvir_normalize(double *aa, double *bb, double s_a, double s_b, int N);
 
+
+//first reduction used in fstat
 template <unsigned int blockSize>
 __device__ void warpReduce(volatile float *sdata, unsigned int tid) {
   if (blockSize >= 64) sdata[tid] += sdata[tid + 32];
@@ -73,7 +75,7 @@ __device__ void warpReduce(volatile float *sdata, unsigned int tid) {
   if (blockSize >= 2) sdata[tid] += sdata[tid + 1];
 }
 template <unsigned int blockSize>
-__global__ void reduction(float *g_idata, float *g_odata, unsigned int n) {
+__global__ void reduction_sum(float *g_idata, float *g_odata, unsigned int n) {
   extern __shared__ volatile float sdata[];
   unsigned int tid = threadIdx.x;
   unsigned int i = blockIdx.x*(blockSize*2) + tid;

@@ -60,6 +60,11 @@ void search(
   CudaSafeCall ( cudaMalloc((void**)&arr->cu_o_aa2, sizeof(double)*modvir_blocks));
   CudaSafeCall ( cudaMalloc((void**)&arr->cu_o_bb2, sizeof(double)*modvir_blocks));
 
+	//cublas handle for scaling
+	cublasHandle_t scale;
+	cublasCreate (&scale);
+
+
   int pm, mm, nn;
 
   char outname[64], qname[64];
@@ -102,7 +107,8 @@ void search(
 		 // (used below to write to the file)
 		 FNum,		      // Candidate signal number
 		 &cand_buffer_count,
-		 outname
+		 outname,
+		 scale		//handle for scaling
 		 );
 
 	//get back to regular spin-down range
@@ -131,6 +137,7 @@ void search(
   CudaSafeCall ( cudaFree(arr->cu_o_bb) );
   CudaSafeCall ( cudaFree(arr->cu_o_aa2) );
   CudaSafeCall ( cudaFree(arr->cu_o_bb2) );
+	cublasDestroy(scale);
 
   tend = get_current_time();
   time_elapsed = get_time_difference(tstart, tend);
@@ -154,7 +161,8 @@ double* job_core(
 		 // (used below to write to the file)
 		 int *FNum,		     // Candidate signal number
 		 int *cand_buffer_count,
-		 const char* outname
+		 const char* outname,
+		 cublasHandle_t scale			//handle for scaling
 		 )
 {
   struct timespec tstart, tend;
@@ -263,10 +271,10 @@ double* job_core(
   cufftExecZ2Z(plans->pl_inv, arr->cu_xa, arr->cu_xa, CUFFT_INVERSE);
   cufftExecZ2Z(plans->pl_inv, arr->cu_xb, arr->cu_xb, CUFFT_INVERSE);
 
-  //scale fft
+  //scale fft with cublas
   ft = (double)sett->interpftpad / sett->Ninterp; //scale FFT
-  scale_fft<<<(sett->Ninterp + BLOCK_SIZE - 1)/BLOCK_SIZE, BLOCK_SIZE>>>
-    ( arr->cu_xa, arr->cu_xb, ft, sett->Ninterp );
+	cublasZdscal( scale, sett->Ninterp, &ft, arr->cu_xa, 1);
+	cublasZdscal( scale, sett->Ninterp, &ft, arr->cu_xb, 1);
   CudaCheckError();
 
   /* spline interpolation here */
@@ -566,8 +574,7 @@ modvir (double sinal, double cosal, double sindel, double cosdel, double sphir, 
 
 
 void modvir_gpu (double sinal, double cosal, double sindel, double cosdel,
-		 double sphir, double cphir, double *cu_a, double *cu_b, int N, Arrays *arr)
-{
+		 double sphir, double cphir, double *cu_a, double *cu_b, int N, Arrays *arr){
 
   double cosalfr = cosal*cphir+sinal*sphir;
   double sinalfr = sinal*cphir-cosal*sphir;
@@ -579,52 +586,53 @@ void modvir_gpu (double sinal, double cosal, double sindel, double cosdel,
     ( cu_a, cu_b, cosalfr, sinalfr, c2d, c2sd, arr->cu_sinmodf,
       arr->cu_cosmodf, sindel, cosdel, N );
 
-		int n = N;
-		int blocks = BLOCK_DIM(n,BLOCK_SIZE_RED);
+	int n = N;
+	int blocks = BLOCK_DIM(n,BLOCK_SIZE_RED);
 
-		bool turn = false;
-		  //normalization
-		  //first, compute sum of squares and sum in every block
-		reduction_sumsq<<<blocks, BLOCK_SIZE_RED, sizeof(double)*2*BLOCK_SIZE_RED>>>
+	bool turn = false;
+
+	//normalization
+	//first, compute sum of squares and sum in every block
+	reduction_sumsq<<<blocks, BLOCK_SIZE_RED, sizeof(double)*2*BLOCK_SIZE_RED>>>
 		    (cu_a, arr->cu_o_aa, n);
-		reduction_sumsq<<<blocks, BLOCK_SIZE_RED, sizeof(double)*2*BLOCK_SIZE_RED>>>
+	reduction_sumsq<<<blocks, BLOCK_SIZE_RED, sizeof(double)*2*BLOCK_SIZE_RED>>>
 		    (cu_b, arr->cu_o_bb, n);
-		CudaCheckError();
+	CudaCheckError();
 
-		double *ina, *inb, *outa, *outb;
-		while(blocks > 1) {
-		  n = blocks;
-		  blocks = BLOCK_DIM(blocks,BLOCK_SIZE_RED);
+	double *ina, *inb, *outa, *outb;
+	while(blocks > 1) {
+		n = blocks;
+		blocks = BLOCK_DIM(blocks,BLOCK_SIZE_RED);
 		    //reduce partial sums
-		  if (turn == false) {
+		if (turn == false) {
 		    ina = arr->cu_o_aa;
 		    inb = arr->cu_o_bb;
 		    outa = arr->cu_o_aa2;
 		    outb = arr->cu_o_bb2;
-		  } else {
+		} else {
 		    ina = arr->cu_o_aa2;
 		    inb = arr->cu_o_bb2;
 		    outa = arr->cu_o_aa;
 		    outb = arr->cu_o_bb;
-		  }
+		}
 
-		  reduction_sum<<<blocks, BLOCK_SIZE_RED, sizeof(double)*2*BLOCK_SIZE_RED>>>
+		reduction_sum<<<blocks, BLOCK_SIZE_RED, sizeof(double)*2*BLOCK_SIZE_RED>>>
 		      (ina, outa, n);
-		  reduction_sum<<<blocks, BLOCK_SIZE_RED, sizeof(double)*2*BLOCK_SIZE_RED>>>
+		reduction_sum<<<blocks, BLOCK_SIZE_RED, sizeof(double)*2*BLOCK_SIZE_RED>>>
 		      (inb, outb, n);
-		  CudaCheckError();
+		CudaCheckError();
 
-		  turn=!turn;
-		  }
+		turn=!turn;
+	}
 
-			double s_a, s_b;
-		  //copy reduction results
-			CudaSafeCall ( cudaMemcpy(&s_a, outa, sizeof(double), cudaMemcpyDeviceToHost));
-			CudaSafeCall ( cudaMemcpy(&s_b, outb, sizeof(double), cudaMemcpyDeviceToHost));
+	double s_a, s_b;
 
-		  s_a = sqrt(s_a/N);
-		  s_b = sqrt(s_b/N);
+	//copy reduction results
+	CudaSafeCall ( cudaMemcpy(&s_a, outa, sizeof(double), cudaMemcpyDeviceToHost));
+	CudaSafeCall ( cudaMemcpy(&s_b, outb, sizeof(double), cudaMemcpyDeviceToHost));
 
+	s_a = sqrt(s_a/N);
+	s_b = sqrt(s_b/N);
 
   //	printf("Sa, Sb: %e %e (GPU)\n", s_a, s_b);
 
@@ -653,11 +661,10 @@ void FStat_gpu(FLOAT_TYPE *cu_F, int N, int nav, float *cu_mu, float *cu_mu_t) {
   //	CudaSafeCall ( cudaMalloc((void**)&cu_mu, sizeof(float)*nav_blocks) );
 
   //sum fstat in blocks
-	reduction<BLOCK_SIZE_RED><<<blocks, BLOCK_SIZE_RED, BLOCK_SIZE_RED*sizeof(float)>>>(cu_F, cu_mu_t, N);
+	reduction_sum<BLOCK_SIZE_RED><<<blocks, BLOCK_SIZE_RED, BLOCK_SIZE_RED*sizeof(float)>>>(cu_F, cu_mu_t, N);
   CudaCheckError();
 
-  //sum blocks computed above
-	//sum blocks computed above
+  //sum blocks computed above and return 1/mu (number of divisions: blocks), then fstat_norm doesn't divide (potential number of divisions: N)
   reduction_sum<<<nav_blocks, nav_threads, nav_threads*sizeof(float)>>>(cu_mu_t, cu_mu, blocks);
   CudaCheckError();
 
