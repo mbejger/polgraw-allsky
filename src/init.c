@@ -23,18 +23,18 @@
  * Command line options
  */
 void handle_opts(int argc, char* argv[], Command_line_opts *opts, Detector_settings *sett) {
-	
+
   opts->hemi=0;
   opts->wd=NULL;
   opts->trl=20;
-  // The default option for FFT interpolation is zero-padding 
+  // The default option for FFT interpolation is zero-padding
   opts->fftinterp=FFT;
-	
+
   strcpy (opts->prefix, TOSTR(PREFIX));
   strcpy (opts->dtaprefix, TOSTR(DTAPREFIX));
   opts->label[0] = '\0';
   opts->range[0] = '\0';
-	
+
   // Initial value of starting frequency
   // set to a negative quantity. If this is not
   // changed by the command line value
@@ -169,8 +169,8 @@ void handle_opts(int argc, char* argv[], Command_line_opts *opts, Detector_setti
 
   opts->white_flag = white_flag;
   opts->s0_flag = s0_flag;
-  opts->checkp_flag = checkp_flag;	
-	
+  opts->checkp_flag = checkp_flag;
+
   printf ("Data directory is %s\n", opts->dtaprefix);
   printf ("Output directory is %s\n", opts->prefix);
   printf ("Frame number is %d\n", opts->ident);
@@ -243,26 +243,26 @@ void read_grid(Detector_settings *sett, Command_line_opts *opts)
   } else {
     perror (filename);
     printf("Problem with %s... Exiting...\n", filename);
-    exit(1); 
+    exit(1);
   }
 
 }
 
 
 
-void init_arrays(Arrays *arr, FLOAT_TYPE** cu_F, 
-		 Command_line_opts *opts, Detector_settings *sett) 
+void init_arrays(Arrays *arr, FLOAT_TYPE** cu_F,
+		 Command_line_opts *opts, Detector_settings *sett)
 {
 
   // Allocates and initializes to zero the data, detector ephemeris
   // and the F-statistic arrays
 
-	CudaSafeCall( cudaMallocHost((void**)&arr->xDat, sizeof(double)*sett->N) );	
 //  arr->xDat = (double *) calloc (sett->N, sizeof (double));
+	CudaSafeCall( cudaMallocHost((void**)&arr->xDat, sizeof(double)*sett->N));
   CudaSafeCall ( cudaMalloc((void**)&arr->cu_xDat, sizeof(double)*sett->N));
 
-	CudaSafeCall( cudaMallocHost((void**)&arr->DetSSB, sizeof(double)*3*sett->N) );
 //  arr->DetSSB = (double *) calloc (3*sett->N, sizeof (double));
+	CudaSafeCall( cudaMallocHost((void**)&arr->DetSSB, sizeof(double)*3*sett->N) );
   CudaSafeCall ( cudaMalloc((void**)&arr->cu_DetSSB, sizeof(double)*3*sett->N));
 
   CudaSafeCall ( cudaMalloc((void**)cu_F, sizeof(FLOAT_TYPE)*sett->fftpad*sett->nfft));
@@ -279,7 +279,7 @@ void init_arrays(Arrays *arr, FLOAT_TYPE** cu_F,
   } else {
     perror (filename);
     printf("Problem with %s... Exiting...\n", filename);
-    exit(1); 
+    exit(1);
   }
   //copy to device
   CudaSafeCall ( cudaMemcpy(arr->cu_xDat, arr->xDat, sizeof(double)*sett->N, cudaMemcpyHostToDevice));
@@ -350,7 +350,7 @@ void init_arrays(Arrays *arr, FLOAT_TYPE** cu_F,
   CudaSafeCall ( cudaMalloc((void**)&arr->cu_shft, sizeof(double)*sett->N));
   CudaSafeCall ( cudaMalloc((void**)&arr->cu_shftf, sizeof(double)*sett->N));
   CudaSafeCall ( cudaMalloc((void**)&arr->cu_tshift, sizeof(double)*sett->N));
-	
+
   //for splines
   init_spline_matrices(&arr->cu_d,
 		       &arr->cu_dl,
@@ -366,14 +366,14 @@ void init_arrays(Arrays *arr, FLOAT_TYPE** cu_F,
   CudaSafeCall (cudaMalloc((void**)&arr->cu_cand_params, sizeof(FLOAT_TYPE)*arr->cand_params_size));
   CudaSafeCall (cudaMalloc((void**)&arr->cu_cand_buffer, sizeof(FLOAT_TYPE)*arr->cand_buffer_size));
   CudaSafeCall (cudaMalloc((void**)&arr->cu_cand_count, sizeof(int)));
-	
+
   //arr->cand_buffer = (FLOAT_TYPE*)malloc(sizeof(FLOAT_TYPE)*arr->cand_buffer_size);
-	  CudaSafeCall( cudaMallocHost((void**)&arr->cand_buffer, sizeof(FLOAT_TYPE)*arr->cand_buffer_size) );	
+	CudaSafeCall( cudaMallocHost((void**)&arr->cand_buffer, sizeof(FLOAT_TYPE)*arr->cand_buffer_size) );
 }
 
 
 
-void set_search_range(Search_range *s_range, Command_line_opts *opts, Detector_settings *sett) 
+void set_search_range(Search_range *s_range, Command_line_opts *opts, Detector_settings *sett)
 {
 
   // Hemispheres (with respect to the ecliptic)
@@ -406,7 +406,7 @@ void set_search_range(Search_range *s_range, Command_line_opts *opts, Detector_s
 
       // this supresses warnings... :)
       if (foo) {
-			
+
       }
       /*
       // the case when range file does not contain 8 integers
@@ -522,7 +522,7 @@ void set_search_range(Search_range *s_range, Command_line_opts *opts, Detector_s
 
 
 
-void plan_fft(FFT_plans *plans, Arrays *arr, 
+void plan_fft(FFT_plans *plans, Arrays *arr,
 	      Detector_settings *sett, Command_line_opts *opts)
 {
   /*
@@ -534,14 +534,14 @@ void plan_fft(FFT_plans *plans, Arrays *arr,
 
   CudaSafeCall ( cudaMalloc((void**)&arr->cu_xa, arr->arr_len*sizeof(cufftDoubleComplex)) );
   CudaSafeCall ( cudaMalloc((void**)&arr->cu_xb, arr->arr_len*sizeof(cufftDoubleComplex)) );
-	
+
   CudaSafeCall ( cudaMalloc((void**)&arr->cu_xar, arr->arr_len*sizeof(cufftDoubleComplex)) );
   CudaSafeCall ( cudaMalloc((void**)&arr->cu_xbr, arr->arr_len*sizeof(cufftDoubleComplex)) );
 
 
   CudaSafeCall ( cudaMalloc((void**)&arr->cu_xa_f, arr->arr_len*sizeof(COMPLEX_TYPE)) );
   CudaSafeCall ( cudaMalloc((void**)&arr->cu_xb_f, arr->arr_len*sizeof(COMPLEX_TYPE)) );
-	
+
   CudaSafeCall ( cudaMalloc((void**)&arr->cu_xar_f, arr->arr_len*sizeof(COMPLEX_TYPE)) );
   CudaSafeCall ( cudaMalloc((void**)&arr->cu_xbr_f, arr->arr_len*sizeof(COMPLEX_TYPE)) );
 
@@ -562,13 +562,13 @@ void plan_fft(FFT_plans *plans, Arrays *arr,
 		 CUFFT_TRANSFORM_TYPE, 1);
 
   }
-	
+
   //plans for interpolation with splines
-	
+
   cufftPlan1d(&(plans->pl_int),
 	      sett->nfft,
 	      CUFFT_Z2Z, 1);
-		
+
   cufftPlan1d(&(plans->pl_inv),
 	      sett->Ninterp,
 	      CUFFT_Z2Z, 1);
@@ -582,7 +582,7 @@ void plan_fft(FFT_plans *plans, Arrays *arr,
 
 
 
-void read_checkpoints(Search_range *s_range, int *FNum, Command_line_opts *opts) 
+void read_checkpoints(Search_range *s_range, int *FNum, Command_line_opts *opts)
 {
 
   /*
@@ -591,7 +591,7 @@ void read_checkpoints(Search_range *s_range, int *FNum, Command_line_opts *opts)
 
   // Checkpointing
   if(opts->checkp_flag) {
-		
+
     // filename of checkpoint state file, depending on the hemisphere
     if(opts->hemi)
       sprintf (opts->qname, "state_%03d_%03d%s_%d.dat", opts->ident, opts->band, opts->label, opts->hemi);
@@ -644,7 +644,7 @@ void cleanup(Detector_settings *sett,
 	     Arrays *arr,
 	     FFT_plans *plans,
 	     Ampl_mod_coeff *amod,
-	     FLOAT_TYPE *cu_F) 
+	     FLOAT_TYPE *cu_F)
 {
 
   //free(arr->xDat);
@@ -655,7 +655,7 @@ void cleanup(Detector_settings *sett,
   //free(arr->aa);
   //free(arr->bb);
   //free(arr->DetSSB);
-	
+
   //free(arr->cand_buffer);
 	CudaSafeCall( cudaFreeHost(arr->aa) );
   CudaSafeCall( cudaFreeHost(arr->bb) );
@@ -670,15 +670,15 @@ void cleanup(Detector_settings *sett,
   cudaFree(arr->cu_xar_f);
   cudaFree(arr->cu_xbr_f);
   cudaFree(arr->cu_xDat);
-	
+
   cudaFree(arr->cu_aa);
   cudaFree(arr->cu_bb);
-	
+
   cudaFree(arr->cu_shft);
   cudaFree(arr->cu_shftf);
   cudaFree(arr->cu_tshift);
   cudaFree(arr->cu_DetSSB);
-	
+
   cudaFree(arr->cu_d);
   cudaFree(arr->cu_dl);
   cudaFree(arr->cu_du);
@@ -692,12 +692,12 @@ void cleanup(Detector_settings *sett,
   cudaFree(arr->cu_cand_buffer);
   cudaFree(arr->cu_cand_params);
   cudaFree(arr->cu_cand_count);
-	
+
   free(sett->M);
 
   if (opts->fftinterp == INT ) {//interbinning
     cudaFree(arr->cu_xa2_f);
     cudaFree(arr->cu_xb2_f);
   }
-	
+
 }
