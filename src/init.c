@@ -1103,12 +1103,6 @@ void convert_to_linear(
     trig->d[i] = sett->oms*sett->N*be[0]; 
     trig->a[i] = sett->oms*sett->N*be[1]; 
 
-    double test = (trig->f[i]*sett->vedva[0][0]
-                + trig->s[i]*sett->vedva[1][0]
-                + trig->d[i]*sett->vedva[2][0]
-                + trig->a[i]*sett->vedva[3][0])/(opts->scale_f)
-                + 0.5*shift[0]; 
-
     trig->fi[i] = round((trig->f[i]*sett->vedva[0][0] 
                 + trig->s[i]*sett->vedva[1][0] 
                 + trig->d[i]*sett->vedva[2][0] 
@@ -1133,7 +1127,7 @@ void convert_to_linear(
                 + trig->a[i]*sett->vedva[3][3])/opts->scale_a  
                 + 0.5*shift[3]);  
 
-    printf("%.8lf %d %d %d %d\n", test, trig->fi[i], trig->si[i], trig->di[i], trig->ai[i]); 
+    printf("%d %d %d %d\n", trig->fi[i], trig->si[i], trig->di[i], trig->ai[i]); 
 
   }
 
