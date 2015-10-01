@@ -1047,10 +1047,10 @@ void convert_to_linear(
   Command_line_opts_coinc *opts,
   Candidate_triggers *trig) {
 
-  int i, j, k, sqrN, numtr, shift[4];
-  double be[2]; 
+  int i, j, k, numtr, shift[4];
+  double sqrN, be[2]; 
 
-  sqrN = sett->N*sett->N;
+  sqrN = pow(sett->N, 2);
 
   // Memory allocation for integer values of triggers 
   numtr = trig->num_of_trig; 
@@ -1068,6 +1068,8 @@ void convert_to_linear(
     i--; val /= 10;
   }
 
+
+/* 
   for(i=0; i<4; i++) { 
     for(j=0; j<4; j++)
       printf("%le ", sett->vedva[j][i]);        
@@ -1085,6 +1087,7 @@ void convert_to_linear(
 
   for(i=0; i<4; i++) printf("%le ", sett->eigval[i]);
   printf("\n\n"); 
+*/ 
 
   // Loop over all candidates
   for(i=0; i<numtr; i++) { 
