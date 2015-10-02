@@ -1012,22 +1012,23 @@ void manage_grid_matrix(
   gsl_eigen_symmv_workspace *w = gsl_eigen_symmv_alloc(4); 
   gsl_eigen_symmv(&m.matrix, eval, evec, w);
   gsl_eigen_symmv_free(w);
-  
-  // Saving the results to the settings struct 
+
+  double eigval[4], eigvec[4][4]; 
+  // Saving the results to the settings struct sett->vedva[][]
   { int i, j;
     for(i=0; i<4; i++) { 
-      sett->eigval[i] = gsl_vector_get(eval, i); 
+      eigval[i] = gsl_vector_get(eval, i); 
       gsl_vector_view evec_i = gsl_matrix_column(evec, i);
 
       for(j=0; j<4; j++)   
-        sett->eigvec[j][i] = gsl_vector_get(&evec_i.vector, j);               
+        eigvec[j][i] = gsl_vector_get(&evec_i.vector, j);               
     } 
 
-    // This is the matrix composed from eigenvector columns
-    // multiplied by a matrix with sqrt(eigenvalues) on diagonal  
+    // This is an auxiliary matrix composed of the eigenvector 
+    // columns multiplied by a matrix with sqrt(eigenvalues) on diagonal  
     for(i=0; i<4; i++)
       for(j=0; j<4; j++)
-        sett->vedva[i][j]  = sett->eigvec[i][j]*sqrt(sett->eigval[j]);  
+        sett->vedva[i][j]  = eigvec[i][j]*sqrt(eigval[j]);  
 
   } 
 
@@ -1068,27 +1069,6 @@ void convert_to_linear(
     i--; val /= 10;
   }
 
-
-/* 
-  for(i=0; i<4; i++) { 
-    for(j=0; j<4; j++)
-      printf("%le ", sett->vedva[j][i]);        
-    printf("\n");         
-  } 
-
-   printf("Eigenvectors: \n");
-  for(i=0; i<4; i++) {
-    for(j=0; j<4; j++)
-      printf("%le ", sett->eigvec[i][j]);
-    printf("\n");
-  }
-
-  printf("Eigenvalues: \n");
-
-  for(i=0; i<4; i++) printf("%le ", sett->eigval[i]);
-  printf("\n\n"); 
-*/ 
-
   // Loop over all candidates
   for(i=0; i<numtr; i++) { 
 
@@ -1109,25 +1089,25 @@ void convert_to_linear(
     trig->fi[i] = round((trig->f[i]*sett->vedva[0][0] 
                 + trig->s[i]*sett->vedva[1][0] 
                 + trig->d[i]*sett->vedva[2][0] 
-                + trig->a[i]*sett->vedva[3][0])/opts->scale_f 
+                + trig->a[i]*sett->vedva[3][0])/(opts->scale_f) 
                 + 0.5*shift[0]);  
 
     trig->si[i] = round((trig->f[i]*sett->vedva[0][1] 
                 + trig->s[i]*sett->vedva[1][1] 
                 + trig->d[i]*sett->vedva[2][1] 
-                + trig->a[i]*sett->vedva[3][1])/opts->scale_s 
+                + trig->a[i]*sett->vedva[3][1])/(opts->scale_s) 
                 + 0.5*shift[1]);  
 
     trig->di[i] = round((trig->f[i]*sett->vedva[0][2] 
                 + trig->s[i]*sett->vedva[1][2] 
                 + trig->d[i]*sett->vedva[2][2] 
-                + trig->a[i]*sett->vedva[3][2])/opts->scale_d  
+                + trig->a[i]*sett->vedva[3][2])/(opts->scale_d)  
                 + 0.5*shift[2]);  
 
     trig->ai[i] = round((trig->f[i]*sett->vedva[0][3] 
                 + trig->s[i]*sett->vedva[1][3] 
                 + trig->d[i]*sett->vedva[2][3] 
-                + trig->a[i]*sett->vedva[3][3])/opts->scale_a  
+                + trig->a[i]*sett->vedva[3][3])/(opts->scale_a) 
                 + 0.5*shift[3]);  
 
     printf("%d %d %d %d\n", trig->fi[i], trig->si[i], trig->di[i], trig->ai[i]); 

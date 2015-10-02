@@ -58,20 +58,6 @@ int main (int argc, char* argv[]) {
   // Manage grid matrix  
   manage_grid_matrix(&sett, &opts);	
 
-  for(i=0; i<16; i++) {
-    printf("%d %le\n", i, sett.M[i]);
-  }
-
-  printf("These are the eigenvectors:\n"); 
-  for(i=0; i<4; i++) {  
-    for(j=0; j<4; j++) 
-        printf("%.15le ", sett.eigvec[j][i]); 
-    printf("\n");
-  } 
-
-  printf("These are the eigenvalues:\n");
-  for(i=0; i<4; i++) printf("%.15le\n", sett.eigval[i]);
-
   // Search settings 
   search_settings(&sett); 
 

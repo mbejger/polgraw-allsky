@@ -124,11 +124,10 @@ typedef struct _search_settings {
   double *M;      // Grid-generating matrix (or Fisher matrix, 
                   // in case of coincidences) 
 
-  double eigvec[4][4], eigval[4]; // eigenvectors and eigenvalues 
-                                  // for the Fisher matrix (coincidences)
-
-  double vedva[4][4];              // transformation matrix
-                                  // V \times (matrix with eigval on diagonal) 
+  double vedva[4][4];   // transformation matrix: its columns are 
+                        // eigenvectors, each component multiplied 
+                        // by sqrt(eigval), see init.c manage_grid_matrix(): 
+                        // sett->vedva[i][j]  = eigvec[i][j]*sqrt(eigval[j])  
 
 } Search_settings;
 
