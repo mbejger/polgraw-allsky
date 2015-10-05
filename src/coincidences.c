@@ -64,7 +64,9 @@ int main (int argc, char* argv[]) {
   printf("dt, oms from settings: %f %f\n", sett.dt, sett.oms); 
 
   read_trigger_files(&sett, &opts, &trig); 
-
+  
+  trig.size = 4;
+  
   printf("Triggers read, in total %d\n", trig.num_of_trig); 
 
 /* for(i=0; i<trig.num_of_trig; i++) 
@@ -83,11 +85,11 @@ int main (int argc, char* argv[]) {
   free(trig.snr);
   free(trig.fr);
 
-  free(trig.fi);
+/*  free(trig.fi);
   free(trig.si);
   free(trig.ai);
   free(trig.di);
-
+*/
 
   return 0; 
 	

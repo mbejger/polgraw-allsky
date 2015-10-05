@@ -185,6 +185,10 @@ typedef struct _triggers {
   int *fi, *si, *ai, *di, *fr; 
   // number of triggers read 
   int num_of_trig; 
+  //columns to compare when searching coincidences
+  int colnum;
+  // number of trigger parameters
+  int size;
 
 } Candidate_triggers; 
 
