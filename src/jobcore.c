@@ -62,7 +62,7 @@ void search(
 
   int pm, mm, nn;    // hemisphere, sky positions 
   int sgnlc;         // number of candidates
-  float *sgnlv;    // array with candidates data
+  FLOAT_TYPE *sgnlv;    // array with candidates data
 
   char outname[512];
   int fd;
@@ -132,7 +132,7 @@ void search(
 	      lck.l_len = 0L;
 
           if (fcntl (fd, F_SETLKW, &lck) < 0) perror ("fcntl()");
-      write (fd, (void *)(sgnlv), sgnlc*NPAR*sizeof(float));
+          write (fd, (void *)(sgnlv), sgnlc*NPAR*sizeof(FLOAT_TYPE));
           if (close (fd) < 0) perror ("close()");
 
 	    } /* if sgnlc */
@@ -159,7 +159,7 @@ void search(
   /* Main job 
    */ 
 
-float* job_core(
+FLOAT_TYPE* job_core(
   int pm,                    // Hemisphere
   int mm,                    // Grid 'sky position'
   int nn,                    // Second grid 'sky position'
@@ -178,7 +178,7 @@ float* job_core(
   double al1, al2, sinalt, cosalt, sindelt, cosdelt, sgnlt[NPAR], 
     nSource[3], het0, sgnl0, ft;
   double _tmp1[sett->nifo][sett->N];
-  float *sgnlv; 
+  FLOAT_TYPE *sgnlv; 
   
   /* Matrix	M(.,.) (defined on page 22 of PolGrawCWAllSkyReview1.pdf file)
      defines the transformation form integers (bin, ss, nn, mm) determining
@@ -607,10 +607,10 @@ float* job_core(
         (*sgnlc)++; // increase found number
 
 	    // Add new parameters to output array 
-    sgnlv = (float *)realloc(sgnlv, NPAR*(*sgnlc)*sizeof(float));
+        sgnlv = (FLOAT_TYPE *)realloc(sgnlv, NPAR*(*sgnlc)*sizeof(FLOAT_TYPE));
 
     for (j=0; j<NPAR; ++j) // save new parameters
-	  sgnlv[NPAR*(*sgnlc-1)+j] = (float)sgnlt[j];
+	  sgnlv[NPAR*(*sgnlc-1)+j] = (FLOAT_TYPE)sgnlt[j];
 
 #ifdef VERBOSE
 	    printf ("\nSignal %d: %d %d %d %d %d \tsnr=%.2f\n", 

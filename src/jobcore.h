@@ -14,10 +14,11 @@ void search(
 	double *F);
 
 /* Main job function
- * The output is stored in single-precision (floats) 
+ * The output is stored in single or double precision 
+ * (FLOAT_TYPE defined in struct.h)  
  */ 
 
-float* job_core(
+FLOAT_TYPE* job_core(
   int pm,                   // hemisphere
   int mm,                   // grid 'sky position'
   int nn,                   // other grid 'sky position'
