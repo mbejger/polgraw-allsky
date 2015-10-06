@@ -65,9 +65,10 @@ int main (int argc, char* argv[]) {
 
   read_trigger_files(&sett, &opts, &trig); 
   
-  trig.size = 4;
+  trig.size = 5;
   
-  printf("Triggers read, in total %d\n", trig.num_of_trig); 
+  printf("%d triggers read in total, from %d frames\n", 
+    trig.num_of_trig, trig.num_of_frames); 
 
 /* for(i=0; i<trig.num_of_trig; i++) 
     printf("%le %le %le %le %f %d\n", 
@@ -76,20 +77,13 @@ int main (int argc, char* argv[]) {
 
   convert_to_linear(&sett, &opts, &trig); 
 
-  // Cleanup: free arrays at the end
-   
+  // Cleanup: free arrays at the end 
   free(trig.f);
   free(trig.s);
   free(trig.a);
   free(trig.d);
   free(trig.snr);
   free(trig.fr);
-
-/*  free(trig.fi);
-  free(trig.si);
-  free(trig.ai);
-  free(trig.di);
-*/
 
   return 0; 
 	

@@ -167,9 +167,12 @@ struct _detector ifo[MAX_DETECTORS];
 // Command line option struct for coincidences 
 typedef struct _comm_line_opts_coinc {
   
-  int help_flag;
+  int help_flag; 
   
-  int shift, scale_f, scale_s, scale_a, scale_d, refr; 
+  int shift, refr;
+  // scale[4] corresponds to scale_f, scale_s, scale_d and scale_a, respetively
+  int scale[4]; 
+
   double fpo, refgps; 
   
   char prefix[512], dtaprefix[512], trigname[512], refloc[512], *wd;
@@ -180,11 +183,11 @@ typedef struct _triggers {
 
   // pointers to trigger values: 
   // frequency, spindown, right ascension, declination and SNR
-  double *f, *s, *a, *d, *snr; 
-  // trigger values transformed to integers, frame number
-  int *fi, *si, *ai, *di, *fr; 
-  // number of triggers read 
-  int num_of_trig; 
+  double *f, *s, *a, *d, *snr;
+  // pointer to frame numbers array 
+  int *fr;  
+  // number of triggers and frames read 
+  int num_of_trig, num_of_frames; 
   //columns to compare when searching coincidences
   int colnum;
   // number of trigger parameters

@@ -309,7 +309,7 @@ void read_trigger_files(
   Command_line_opts_coinc *opts, 
   Candidate_triggers *trig) {
 
-  int i=0, trig_size=4096, current_frame=0;  
+  int i=0, trig_size=4096, current_frame=0, numofframes=0;  
 
   char dirname[512], filename[512]; 
   // Trigger files directory name 
@@ -350,6 +350,8 @@ void read_trigger_files(
                 break; 
             }  
           } 
+
+          numofframes++; 
 
           if((data = fopen(filename, "r")) != NULL) {
 
@@ -409,5 +411,6 @@ void read_trigger_files(
   (void) closedir(dp);
 
   trig->num_of_trig = i; 
+  trig->num_of_frames = numofframes; 
 
 }

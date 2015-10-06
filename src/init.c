@@ -913,17 +913,17 @@ void handle_opts_coinc(
     case 's':
       opts->shift = atof(optarg);
       break;
-    case 'f':
-      opts->scale_f = atoi(optarg);
+    case 'f':   // -scale_f 
+      opts->scale[0] = atoi(optarg);
       break;
-    case 'z':
-      opts->scale_s = atoi(optarg);
+    case 'z':   // -scale_s 
+      opts->scale[1] = atoi(optarg);
       break;
-    case 'a':
-      opts->scale_a = atoi(optarg);
+    case 'b':  // -scale_d 
+      opts->scale[2] = atoi(optarg);
       break;
-    case 'b':
-      opts->scale_d = atoi(optarg);
+    case 'a':  // -scale_a 
+      opts->scale[3] = atoi(optarg);
       break;
     case 'r':
       opts->refr = atoi(optarg);
@@ -1038,42 +1038,43 @@ void manage_grid_matrix(
 } // end of manage grid matrix  
 
 
-  /* Convert triggers to linear integer coordinates 
-   * with the use of eigenvectors and eigenvalues 
-   * obtained in manage_grid_matrix()
-   */ 
- static int colnum = 0; //columns to compare when searching coincidences
-int way2compare(const void * a,const void * b){
-	int** x = (int**) a;
+
+static int colnum = 0; // columns to compare when searching coincidences
+int way2compare(const void *a, const void *b){
+
+    int** x = (int**) a;
 	int** y = (int**) b;
 
 	int xval, yval;
 
-	xval = *(*(x)+colnum);
-	yval = *(*(y)+colnum);
+	xval = *(*(x) + colnum);
+	yval = *(*(y) + colnum);
 
-//	printf("x %d and y %d will be compared \n",xval,yval);
-
-	if (xval < yval){
-		return 1;
-		}
-	else if (xval > yval){
-		return -1;
-		}
-		else{
-		return 0;
-		}
+	if(xval < yval) return 1;
+    else if(xval > yval) return -1;
+	else return 0;
+		
 }
-/* Allocation of memory for martix with given number of rows and columns */
-int** matrix(int rows,int cols){
-	int k;
-	int **m;
-	m = (int **)malloc(rows * sizeof(int *));
+
+// Allocation of memory for martix with given number of rows and columns
+int** matrix(int rows, int cols) {
+
+	int k, **m;
+	m = (int **)malloc(rows*sizeof(int *));
+
 	for (k=0; k<rows; k++){
-		m[k] = (int *) calloc (cols, sizeof(int));
+		m[k] = (int *)calloc(cols, sizeof(int));
 	}
+
 	return m;
+
 }
+
+
+  /* Convert triggers to linear integer coordinates 
+   * with the use of eigenvectors and eigenvalues 
+   * obtained in manage_grid_matrix()
+   */ 
 
 void convert_to_linear(
   Search_settings *sett,
@@ -1081,17 +1082,12 @@ void convert_to_linear(
   Candidate_triggers *trig) {
 
   int i, j, k, numtr, shift[4], **MTR;
-  double sqrN, be[2]; 
+  double sqrN, tmp[4], v[4][4], be[2]; 
 
   sqrN = pow(sett->N, 2);
 
-  // Memory allocation for integer values of triggers 
+  // Total number of triggers 
   numtr = trig->num_of_trig; 
-/*  trig->fi = (int *)calloc(numtr, sizeof(int));
-  trig->si = (int *)calloc(numtr, sizeof(int));
-  trig->di = (int *)calloc(numtr, sizeof(int));
-  trig->ai = (int *)calloc(numtr, sizeof(int));
-*/
 
   // Calculating the shifts from opts->shift 
   int val = opts->shift;
@@ -1102,8 +1098,15 @@ void convert_to_linear(
     i--; val /= 10;
   }
 
-  MTR = matrix(numtr,trig->size);
+  // Allocation of the matrix for the coincidence sorting and search 
+  MTR = matrix(numtr, trig->size);
 
+  // Dividing the transformation matrix elements by the corresponding 
+  // scale factors outside the loop over candidates to save computational time  
+  for(j=0; j<4; j++)  
+    for(i=0; i<4; i++)
+        v[i][j] = sett->vedva[i][j]/(opts->scale[j]);   
+  
   // Loop over all candidates
   for(i=0; i<numtr; i++) { 
 
@@ -1111,72 +1114,67 @@ void convert_to_linear(
     //#mb that the trigger may exit the band   
 
     // Conversion to linear parameters 
-    trig->f[i] *= sett->N; 
-    trig->s[i] *= sqrN; 
+    tmp[0] = trig->f[i]*sett->N; 
+    tmp[1] = trig->s[i]*sqrN; 
 
     // Transformation of astronomical to linear coordinates 
     // C_EPSMA, an average value of epsm, is defined in settings.h  
     ast2lin(trig->a[i], trig->d[i], C_EPSMA, be);
 
-    trig->d[i] = sett->oms*sett->N*be[0]; 
-    trig->a[i] = sett->oms*sett->N*be[1]; 
+    // tmp[2] corresponds to trig->d[i]
+    // tmp[3] corresponds to trig->a[i]
+    tmp[2] = sett->oms*sett->N*be[0]; 
+    tmp[3] = sett->oms*sett->N*be[1]; 
 
-    MTR[i][0] = round((trig->f[i]*sett->vedva[0][0] 
-                + trig->s[i]*sett->vedva[1][0] 
-                + trig->d[i]*sett->vedva[2][0] 
-                + trig->a[i]*sett->vedva[3][0])/(opts->scale_f) 
-                + 0.5*shift[0]);  
+    // Saving the integer candidate values (0=f, 1=s, 2=d, 3=a)  
+    for(j=0; j<4; j++)
+      MTR[i][j] = round(tmp[0]*v[0][j] + tmp[1]*v[1][j] + tmp[2]*v[2][j] 
+                      + tmp[3]*v[3][j] + 0.5*shift[j]);  
 
-    MTR[i][1] = round((trig->f[i]*sett->vedva[0][1] 
-                + trig->s[i]*sett->vedva[1][1] 
-                + trig->d[i]*sett->vedva[2][1] 
-                + trig->a[i]*sett->vedva[3][1])/(opts->scale_s) 
-                + 0.5*shift[1]);  
+    MTR[i][4] = trig->fr[i]; 
 
-    MTR[i][2] = round((trig->f[i]*sett->vedva[0][2] 
-                + trig->s[i]*sett->vedva[1][2] 
-                + trig->d[i]*sett->vedva[2][2] 
-                + trig->a[i]*sett->vedva[3][2])/(opts->scale_d)  
-                + 0.5*shift[2]);  
+    // printf("%d %d %d %d\n", MTR[i][0], MTR[i][1], MTR[i][2], MTR[i][3]); 
 
-    MTR[i][3] = round((trig->f[i]*sett->vedva[0][3] 
-                + trig->s[i]*sett->vedva[1][3] 
-                + trig->d[i]*sett->vedva[2][3] 
-                + trig->a[i]*sett->vedva[3][3])/(opts->scale_a) 
-                + 0.5*shift[3]);  
-	}
+  }
+
+  // Sorting 
+  for (i=0; i<trig->size; i++) {
+    colnum = i;
+	qsort(MTR, numtr, sizeof(int *), way2compare);
+  }
+ 
+  // Finding the duplicate rows in the MTR matrix
+  int **IMTR, diff=0, weight=0, coindx=0, numcoincidences, mincoincidences=2;
+
+  numcoincidences = numtr/mincoincidences; // maximal possible amount of coincidents is the half or correlation with weight of coincidences
+
+  IMTR = matrix(numcoincidences, 2); 
+
+  for (i=0; i<numtr-1; i++) {
+    diff = (MTR[i][0] - MTR[i+1][0]);
 	
-	for (i = 0; i < trig->size ; i++) {
-	  colnum = i;
-	  qsort(MTR, numtr, sizeof(int *), way2compare);
+	if(!diff) { // if first column is not equal then rest could be ignored
+	  for(j=0; j<trig->size; j++) 
+	    // distance measure to compare rows  
+        diff += (MTR[i][j] - MTR[i+1][j])*(MTR[i][j] - MTR[i+1][j]); 
+			
 	}
-	//findinf unique lines in matrix
-	int **IMTR, diff = 0, weight = 0, coindx = 0, numcoincidences, mincoincidences = 2;
-	numcoincidences = 	numtr / mincoincidences; //maximal possible amount of coincidents is the half or correlation with weight of coincidences
-	IMTR = matrix(numcoincidences,2);
-	for (i = 0; i < numtr-1; i++) {
-		diff = (MTR[i][0] - MTR[i+1][0]);
-		if ( !diff ) {//if first is not equal then rest could be ignored
-			for (j = 0; j < trig->size; j++) {
-				diff += (MTR[i][j] - MTR[i+1][j])*(MTR[i][j] - MTR[i+1][j]);//putagoras<->decart coordinates: vector size by difference
-			}
-		}
-		printf("diff %d\t",diff);
-		if ( diff == 0 ) {
-			weight++;
-			if ( weight == mincoincidences - 1 ) {//only coincidences with weight above 1 will be stored
-				coindx++;
-			printf("coincidences %d index %d weight %d coinnum %d mincoin %d\n",coindx,i,weight,numcoincidences,mincoincidences);
-			}
-			IMTR[coindx][0] = i;
-			IMTR[coindx][1] = weight;
-		}
-		else {
-			weight = 0;
-		}
+
+  if(diff==0) {
+	  weight++;
+	  if(weight==mincoincidences - 1) { //only coincidences with weight above 1 will be stored
+	    coindx++;		
+	  }
+	  IMTR[coindx][0] = i;
+	  IMTR[coindx][1] = weight;
+
+	} else weight = 0;
+		
 	}
+
 	colnum = 1;
 	qsort(IMTR, numcoincidences, sizeof(int *), way2compare);
+
 	for (i = 0; i < numcoincidences; i++) {
         int idxmtr = IMTR[i][0];
 	printf("i %d weight %d coincidence %d %d %d %d floatings %8.10e %8.10e %8.10e %8.10e\n", idxmtr, IMTR[i][1],MTR[idxmtr][0],MTR[idxmtr][1],MTR[idxmtr][2],MTR[idxmtr][3], trig->f[idxmtr], trig->s[idxmtr], trig->d[idxmtr], trig->a[idxmtr]);
