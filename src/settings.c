@@ -309,7 +309,7 @@ void read_trigger_files(
   Command_line_opts_coinc *opts, 
   Candidate_triggers *trig) {
 
-  int i=0, trig_size=4096, current_frame=0, numofframes=0;  
+  int i=0, trig_size=1048576, current_frame=0, numofframes=0;  
 
   char dirname[512], filename[512]; 
   // Trigger files directory name 
@@ -319,15 +319,15 @@ void read_trigger_files(
   struct dirent *ep;
   FILE *data; 
 
-  double c[5]; 
+  FLOAT_TYPE c[5]; 
 
-  double *t; int *ti; // testing for realloc  
+  FLOAT_TYPE *t; int *ti; // testing for realloc  
 
-  trig->f   = (double *)calloc(trig_size, sizeof(double));
-  trig->s   = (double *)calloc(trig_size, sizeof(double));
-  trig->d   = (double *)calloc(trig_size, sizeof(double));
-  trig->a   = (double *)calloc(trig_size, sizeof(double));
-  trig->snr = (double *)calloc(trig_size, sizeof(double));
+  trig->f   = (FLOAT_TYPE *)calloc(trig_size, sizeof(FLOAT_TYPE));
+  trig->s   = (FLOAT_TYPE *)calloc(trig_size, sizeof(FLOAT_TYPE));
+  trig->d   = (FLOAT_TYPE *)calloc(trig_size, sizeof(FLOAT_TYPE));
+  trig->a   = (FLOAT_TYPE *)calloc(trig_size, sizeof(FLOAT_TYPE));
+  trig->snr = (FLOAT_TYPE *)calloc(trig_size, sizeof(FLOAT_TYPE));
   trig->fr  = (int *)calloc(trig_size, sizeof(int));
 
   dp = opendir (dirname);
@@ -337,7 +337,6 @@ void read_trigger_files(
       if((ep->d_type == DT_REG) &&
         (strstr(ep->d_name, opts->trigname) != NULL)) { 
 
-          printf("Reading %s... \n", ep->d_name);
           sprintf(filename, "%s/%s", opts->dtaprefix, ep->d_name); 
 
           // This part looks for the first number in the trigger file name, 
@@ -346,7 +345,8 @@ void read_trigger_files(
           epdname = strdup(ep->d_name);  
           while((tmp = strsep(&epdname, "_"))!=NULL) {
             if(tmp[0] >= '0' && tmp[0] <= '9') {
-                current_frame = atoi(tmp);   
+                current_frame = atoi(tmp);
+                printf("Reading %s (frame number %d)...\n", ep->d_name, current_frame); 
                 break; 
             }  
           } 
@@ -355,9 +355,9 @@ void read_trigger_files(
 
           if((data = fopen(filename, "r")) != NULL) {
 
-            double finband; 
+            FLOAT_TYPE finband; 
 
-            while(fread((void *)c, sizeof(double), 5, data)==5) {  
+            while(fread((void *)c, sizeof(FLOAT_TYPE), 5, data)==5) {  
 
               //#mb
               finband = c[0] + 2.*c[1]*sett->N*(opts->refr - current_frame); 
@@ -370,22 +370,22 @@ void read_trigger_files(
 
               i++; 
 
-              } 
+              }   
 
               if(i==trig_size) {
 
                 // Doubling the triggers' array size 
                 trig_size *= 2;
  
-                t = (double*)realloc(trig->f, trig_size*sizeof(double));
+                t = (FLOAT_TYPE*)realloc(trig->f, trig_size*sizeof(FLOAT_TYPE));
                 if(t!=NULL) trig->f = t;
-                t = (double*)realloc(trig->s, trig_size*sizeof(double));
+                t = (FLOAT_TYPE*)realloc(trig->s, trig_size*sizeof(FLOAT_TYPE));
                 if(t!=NULL) trig->s = t;
-                t = (double*)realloc(trig->d, trig_size*sizeof(double));
+                t = (FLOAT_TYPE*)realloc(trig->d, trig_size*sizeof(FLOAT_TYPE));
                 if(t!=NULL) trig->d = t;
-                t = (double*)realloc(trig->a, trig_size*sizeof(double));
+                t = (FLOAT_TYPE*)realloc(trig->a, trig_size*sizeof(FLOAT_TYPE));
                 if(t!=NULL) trig->a = t;
-                t = (double*)realloc(trig->snr, trig_size*sizeof(double));
+                t = (FLOAT_TYPE*)realloc(trig->snr, trig_size*sizeof(FLOAT_TYPE));
                 if(t!=NULL) trig->snr = t;
                 ti = (int*)realloc(trig->fr, trig_size*sizeof(int));
                 if(t!=NULL) trig->fr = ti;

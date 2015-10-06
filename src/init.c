@@ -1082,7 +1082,8 @@ void convert_to_linear(
   Candidate_triggers *trig) {
 
   int i, j, k, numtr, shift[4], **MTR;
-  double sqrN, tmp[4], v[4][4], be[2]; 
+  double sqrN, v[4][4], be[2]; 
+  FLOAT_TYPE tmp[4]; 
 
   sqrN = pow(sett->N, 2);
 
@@ -1117,12 +1118,11 @@ void convert_to_linear(
     tmp[0] = trig->f[i]*sett->N; 
     tmp[1] = trig->s[i]*sqrN; 
 
-    // Transformation of astronomical to linear coordinates 
+    // Transformation of astronomical to linear coordinates;  
     // C_EPSMA, an average value of epsm, is defined in settings.h  
     ast2lin(trig->a[i], trig->d[i], C_EPSMA, be);
 
-    // tmp[2] corresponds to trig->d[i]
-    // tmp[3] corresponds to trig->a[i]
+    // tmp[2] corresponds to trig->d[i], tmp[3] to trig->a[i]
     tmp[2] = sett->oms*sett->N*be[0]; 
     tmp[3] = sett->oms*sett->N*be[1]; 
 
@@ -1132,8 +1132,9 @@ void convert_to_linear(
                       + tmp[3]*v[3][j] + 0.5*shift[j]);  
 
     MTR[i][4] = trig->fr[i]; 
+    MTR[i][5] = i; 
 
-    // printf("%d %d %d %d\n", MTR[i][0], MTR[i][1], MTR[i][2], MTR[i][3]); 
+    //printf("%d %d %d %d %le %le %le %le %d\n", MTR[i][0], MTR[i][1], MTR[i][2], MTR[i][3], trig->f[i], trig->s[i], trig->d[i], trig->a[i], trig->fr[i]); 
 
   }
 
@@ -1156,29 +1157,38 @@ void convert_to_linear(
 	if(!diff) { // if first column is not equal then rest could be ignored
 	  for(j=0; j<trig->size; j++) 
 	    // distance measure to compare rows  
-        diff += (MTR[i][j] - MTR[i+1][j])*(MTR[i][j] - MTR[i+1][j]); 
-			
+        diff += (MTR[i][j] - MTR[i+1][j])*(MTR[i][j] - MTR[i+1][j]); 	
 	}
 
-  if(diff==0) {
+    if(!diff) {
 	  weight++;
-	  if(weight==mincoincidences - 1) { //only coincidences with weight above 1 will be stored
+	  if(weight==mincoincidences-1) // only coincidences with weight above 1 will be stored
 	    coindx++;		
-	  }
 	  IMTR[coindx][0] = i;
 	  IMTR[coindx][1] = weight;
-
 	} else weight = 0;
-		
-	}
+		  
+  }
+ 
+  colnum = 1;
+  qsort(IMTR, numcoincidences, sizeof(int *), way2compare);
 
-	colnum = 1;
-	qsort(IMTR, numcoincidences, sizeof(int *), way2compare);
+  // Parameters of the maximal coincidence 
+  printf("Parameters of the max. coincidence:\n %d %d\n", IMTR[0][0], IMTR[0][1]); 
 
-	for (i = 0; i < numcoincidences; i++) {
-        int idxmtr = IMTR[i][0];
+
+  for(i=0; i<IMTR[0][1]; i++) {
+    int idx = IMTR[0][0]+i;
+    int jdx =  MTR[idx][5]; 
+    printf("%d %d %d %d %d %d %d %le %le %le %le\n", 
+        idx, MTR[idx][0], MTR[idx][1], MTR[idx][2], MTR[idx][3], trig->fr[jdx], jdx, trig->f[jdx], trig->s[jdx], trig->d[jdx], trig->a[jdx]); 
+  }
+
+/*
+  for(i=0; i<numcoincidences; i++) {
+    int idxmtr = IMTR[i][0];
 	printf("i %d weight %d coincidence %d %d %d %d floatings %8.10e %8.10e %8.10e %8.10e\n", idxmtr, IMTR[i][1],MTR[idxmtr][0],MTR[idxmtr][1],MTR[idxmtr][2],MTR[idxmtr][3], trig->f[idxmtr], trig->s[idxmtr], trig->d[idxmtr], trig->a[idxmtr]);
-	}
-
+  }
+*/ 
 
 }

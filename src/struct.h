@@ -8,6 +8,15 @@
 #define DETNAME_LENGTH 2 
 #define XDATNAME_LENGTH 512
 
+// Define COMP_FLOAT this to change the double/single precision of triggers 
+// #define COMP_FLOAT
+
+#ifdef COMP_FLOAT // if single-precision
+    #define FLOAT_TYPE float
+#else             // if double-precision
+    #define FLOAT_TYPE double
+#endif
+
 // Command line option struct for search 
 typedef struct _comm_line_opts {
   
@@ -183,7 +192,7 @@ typedef struct _triggers {
 
   // pointers to trigger values: 
   // frequency, spindown, right ascension, declination and SNR
-  double *f, *s, *a, *d, *snr;
+  FLOAT_TYPE *f, *s, *a, *d, *snr;
   // pointer to frame numbers array 
   int *fr;  
   // number of triggers and frames read 

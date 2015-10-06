@@ -2,6 +2,7 @@
 #define __AUXI_H__
 
 #include <complex.h>
+#include "struct.h"
 
 #define sqr(x) ((x)*(x))
 #define TOSTRA(x) #x
@@ -17,7 +18,7 @@
 void lin2ast(double be1, double be2, int pm, double sepsm, double cepsm,	\
          double *sinal, double *cosal, double *sindel, double *cosdel);
 
-void ast2lin(double alfa, double delta, double epsm, double *be); 
+void ast2lin(FLOAT_TYPE alfa, FLOAT_TYPE delta, double epsm, double *be); 
  
 void spline(complex double *, int, complex double *);
 complex double splint (complex double *, complex double *, int, double);
