@@ -14,10 +14,11 @@ void search(
 	double *F);
 
 /* Main job function
- * The output is stored in single-precision (floats) 
+ * The output is stored in single or double precision 
+ * (FLOAT_TYPE defined in struct.h)  
  */ 
  
-float* job_core(
+FLOAT_TYPE* job_core(
   int pm,                     // hemisphere
   int spinpos,                // no. of sky position in the spotlight range file
   Search_settings *sett,      // search settings
