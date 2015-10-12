@@ -527,7 +527,8 @@ void read_trigger_files(
  
               int idx, idx1, maxi, diff=1;  
               for(j=0; j<4; j++)
-                // using XOR: !(a^b) equals 1 for a=b            
+                // using XOR: !(a^b) equals 1 for a=b
+                //if((candi[i][j])^(candi[i+1][j])) { diff=0; break; }             
                 diff *= !((candi[i][j])^(candi[i+1][j]));
 
               idx = candi[i][6]; 
@@ -641,14 +642,14 @@ void read_trigger_files(
 
   imtr = matrix(numc, 2); 
 
-  // Coincidcenes: counting rows in a sorted table 
+  // Coincidences: counting rows in a sorted table 
   for (i=0; i<(trig->goodcands-1); i++) {
    
     int diff=1; 
-    for(j=0; j<4; j++) {
-      // using XOR: !(a^b) equals 1 for a=b 
+    for(j=0; j<4; j++) 
+      // using XOR: !(a^b) equals 1 for a=b
+      // if((allcandi[i][j])^(allcandi[i+1][j])) { diff=0; break; } 
       diff *= !((allcandi[i][j])^(allcandi[i+1][j]));
-    } 
 
     if(diff) { 
 
