@@ -525,14 +525,14 @@ void read_trigger_files(
             double candsnr=0;  
             for (i=0; i<trig->frameinfo[frcount][1]; i++) {
  
-              int idx, idx1, maxi, diff=0;  
+              int idx, idx1, maxi, diff=1;  
               for(j=0; j<4; j++)
-                //#mb optimize          
-                diff += (candi[i][j] - candi[i+1][j])*(candi[i][j] - candi[i+1][j]);
+                // using XOR: !(a^b) equals 1 for a=b            
+                diff *= !((candi[i][j])^(candi[i+1][j]));
 
               idx = candi[i][6]; 
 
-              if(diff) {
+              if(!diff) {
 
                 int k=i, kidx=idx; 
                 if(maxsnridx) { k=maxi; kidx=maxsnridx; }
@@ -634,70 +634,78 @@ void read_trigger_files(
 
   int **imtr; 
   int weight=1, coindx=0, maxweight=0, numc; 
-  int minnc=10; //#mb mininum number of concidences to register (+-1 - check!) 
 
-  // Maximal possible amount of coincidences with a given threshold minnc 
-  numc = (trig->goodcands)/minnc; 
+  // Maximal possible amount of coincidences, given a threshold for 
+  // a minimum number of interesting coincidences (opts->mincoin)  
+  numc = (trig->goodcands)/(opts->mincoin); 
 
   imtr = matrix(numc, 2); 
 
   // Coincidcenes: counting rows in a sorted table 
   for (i=0; i<(trig->goodcands-1); i++) {
    
-    int diff=0; 
-    for(j=0; j<4; j++) 
-      // distance measure to compare rows
-      //#mb optimize  
-      diff += (allcandi[i][j] - allcandi[i+1][j])*(allcandi[i][j] - allcandi[i+1][j]);    
+    int diff=1; 
+    for(j=0; j<4; j++) {
+      // using XOR: !(a^b) equals 1 for a=b 
+      diff *= !((allcandi[i][j])^(allcandi[i+1][j]));
+    } 
 
-    if(!diff) { 
+    if(diff) { 
 
       weight++; 
-      if(weight==minnc) // add row to table if weight crosses the threshold 
+      if(weight==opts->mincoin) // threshold value  
         coindx++; 
      
     } else {
 
-      if(weight>minnc) { 
+      if(weight>=opts->mincoin) { 
         imtr[coindx][0] = i;
-        imtr[coindx][1] = weight+1;
+        imtr[coindx][1] = weight;
       }  
 
-      weight=0; 
+      weight=1; 
     }     
    
   } 
 
+  // Sorting the coincidences table 
   colnum = 1;
   qsort(imtr, numc, sizeof(int *), way2compare);
 
-  // Maximum conincidence 
-  j = imtr[0][0]+1;
-  int w = imtr[0][1]; 
-  FLOAT_TYPE meanf=0, means=0, meand=0, meana=0, mesnr=0; 
+  // Coincidences above opts->mincoin threshold 
+  printf("%dth coincidences and larger:\n", opts->mincoin);  
+  printf("#coin fi    si     di   ai    meanf        means        meand         meana        mesnr\n"); 
 
-  printf("Maximum coincidence: %d. Parameters:\n", w);
+  int q; 
+  for(q=0; q<coindx; q++) {  
  
-  for(i=imtr[0][1]; i>0; i--) {  
-    int k = j-i; 
-    int f = allcandi[k][6]; 
-    printf("%4d %4d %4d %4d %4d %4d %5le %5le %5le %5le %5le\n", 
+    j = imtr[q][0];
+    int w = imtr[q][1]; 
+    FLOAT_TYPE meanf=0, means=0, meand=0, meana=0, mesnr=0; 
+ 
+    for(i=0; i<imtr[q][1]; i++) {   
+      int k = j-i; 
+      int f = allcandi[k][6]; 
+
+/*
+      printf("%4d %4d %4d %4d %4d %4d %5le %5le %5le %5le %5le\n",
            allcandi[k][0], allcandi[k][1], allcandi[k][2], allcandi[k][3], allcandi[k][4], allcandi[k][5], 
            allcandf[f][0], allcandf[f][1], allcandf[f][2], allcandf[f][3], allcandf[f][4]); 
+*/ 
 
-    meanf += allcandf[f][0]; 
-    means += allcandf[f][1]; 
-    meand += allcandf[f][2]; 
-    meana += allcandf[f][3];
-    mesnr += pow(allcandf[f][4], 2);  
+      meanf += allcandf[f][0]; 
+      means += allcandf[f][1]; 
+      meand += allcandf[f][2]; 
+      meana += allcandf[f][3];
+      mesnr += (allcandf[f][4]*allcandf[f][4]);  
+
+    }
+ 
+    printf("%5d %4d %4d %4d %4d %15le %5le %5le %5le %5le\n", 
+      w, allcandi[j][0], allcandi[j][1], allcandi[j][2], allcandi[j][3], 
+      meanf/w, means/w, meand/w, meana/w, sqrt(mesnr));  
 
   }
-
-  j = imtr[0][0]; 
-  printf("Mean parameters:\n"); 
-  printf("%4d %4d %4d %4d %22le %5le %5le %5le %5le\n", 
-    allcandi[j][0], allcandi[j][1], allcandi[j][2], allcandi[j][3], 
-    meanf/w, means/w, meand/w, meana/w, sqrt(mesnr));  
 
 
   // Freeing auxiliary arrays at the end 
