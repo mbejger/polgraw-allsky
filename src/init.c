@@ -845,6 +845,9 @@ void handle_opts_coinc(
   opts->help_flag=0;
   static int help_flag=0;
 
+  // Default value of the minimal number of coincidences 
+  opts->mincoin=3; 
+
   // Reading arguments 
 
   while (1) {
@@ -874,6 +877,8 @@ void handle_opts_coinc(
       {"trigname", required_argument, 0, 'e'},
       // Location of the reference grid.bin and starting_date files  
       {"refloc", required_argument, 0, 'g'},
+      // Minimal number of coincidences recorded in the output  
+      {"mincoin", required_argument, 0, 'm'},
       {0, 0, 0, 0}
     };
 
@@ -893,7 +898,8 @@ void handle_opts_coinc(
       printf("-fpo          Reference band frequency fpo value\n");
       printf("-dt           Data sampling time dt (default value: 0.5)\n");
       printf("-trigname     Triggers' name prefactor\n");
-      printf("-refloc       Location of the reference grid.bin and starting_date files\n\n");
+      printf("-refloc       Location of the reference grid.bin and starting_date files\n");
+      printf("-mincoin      Minimal number of coincidences recorded\n\n");
 
       printf("Also:\n\n");
       printf("--help		This help\n");
@@ -902,7 +908,7 @@ void handle_opts_coinc(
     }
 
     int option_index = 0;
-    int c = getopt_long_only (argc, argv, "f:p:o:d:b:s:a:z:r:t:e:g:", long_options, &option_index);
+    int c = getopt_long_only (argc, argv, "f:p:o:d:b:s:a:z:r:t:e:g:m:", long_options, &option_index);
     if (c == -1)
       break;
 
@@ -942,6 +948,9 @@ void handle_opts_coinc(
       break;
     case 'g':
       strcpy(opts->refloc, optarg);
+      break;
+    case 'm':
+      opts->mincoin = atoi(optarg);
       break;
     case '?':
       break;

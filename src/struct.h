@@ -183,6 +183,8 @@ typedef struct _comm_line_opts_coinc {
   int shift, refr;
   // scale[4] corresponds to scale_f, scale_s, scale_d and scale_a, respetively
   int scale[4]; 
+  // Minimal number of coincidences recorded in the output  
+  int mincoin; 
 
   double fpo, refgps; 
   
