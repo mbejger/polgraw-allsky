@@ -4,13 +4,15 @@
 #include <fftw3.h>
 #include <complex.h>
 
-#define MAX_DETECTORS 8
-#define DETNAME_LENGTH 2 
-#define XDATNAME_LENGTH 512
+#define MAX_DETECTORS 8        // Maximum number of detectors in network 
+#define DETNAME_LENGTH 2       // Detector name length (H1, L1, V1...)
+#define XDATNAME_LENGTH 512    // Maximum length of input file name xdat*bin 
+#define INICANDSIZE 1024       // 1048576? Initial size for array candidates storage; 
+                               // realloc called if needed (in coincidences)  
 
 // Define COMP_FLOAT this to change the double/single precision of triggers 
+//
 // #define COMP_FLOAT
-
 #ifdef COMP_FLOAT // if single-precision
     #define FLOAT_TYPE float
 #else             // if double-precision
@@ -190,17 +192,12 @@ typedef struct _comm_line_opts_coinc {
 
 typedef struct _triggers { 
 
-  // pointers to trigger values: 
-  // frequency, spindown, right ascension, declination and SNR
-  FLOAT_TYPE *f, *s, *a, *d, *snr;
-  // pointer to frame numbers array 
-  int *fr;  
-  // number of triggers and frames read 
-  int num_of_trig, num_of_frames; 
-  //columns to compare when searching coincidences
-  int colnum;
-  // number of trigger parameters
-  int size;
+  int frameinfo[256][3];    // Info about candidates in frames: 
+                            // - [0] frame number, [1] initial number 
+                            // of candidates, [2] number of candidates
+                            // after sorting    
+
+  int frcount, goodcands; 
 
 } Candidate_triggers; 
 

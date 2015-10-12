@@ -300,6 +300,37 @@ void modvir(
 
 
 
+static int colnum = 0; // columns to compare when searching coincidences
+int way2compare(const void *a, const void *b){
+
+    int** x = (int**) a;
+	int** y = (int**) b;
+
+	int xval, yval;
+
+	xval = *(*(x) + colnum);
+	yval = *(*(y) + colnum);
+
+	if(xval < yval) return 1;
+    else if(xval > yval) return -1;
+	else return 0;
+
+}
+
+// Allocation of memory for martix with given number of rows and columns
+int** matrix(int rows, int cols) {
+
+	int k, **m;
+	m = (int **)malloc(rows*sizeof(int *));
+
+	for (k=0; k<rows; k++){
+		m[k] = (int *)calloc(cols, sizeof(int));
+	}
+
+	return m;
+
+}
+
     /* Obtaining the trigger files list from a given directory
      * and reading their content 
      */ 
@@ -309,7 +340,9 @@ void read_trigger_files(
   Command_line_opts_coinc *opts, 
   Candidate_triggers *trig) {
 
-  int i=0, trig_size=1048576, current_frame=0, numofframes=0;  
+  int i, j, shift[4], candsize=INICANDSIZE, allcandsize=INICANDSIZE, goodcands=0, current_frame=0, frcount=0;  
+  double sqrN, omsN, v[4][4], be[2];
+  FLOAT_TYPE tmp[4], c[5];
 
   char dirname[512], filename[512]; 
   // Trigger files directory name 
@@ -319,19 +352,50 @@ void read_trigger_files(
   struct dirent *ep;
   FILE *data; 
 
-  FLOAT_TYPE c[5]; 
+  int **candi = malloc(candsize*sizeof(int *)); 
+  int **ti; 
+  // 7 columns in a row: fi, si, di, ai, orgpos, fr, i
+  for(i=0; i<candsize; i++) 
+    candi[i] = malloc(7*sizeof(int));
 
-  FLOAT_TYPE *t; int *ti; // testing for realloc  
+  int **allcandi = malloc(allcandsize*sizeof(int *)); 
+  // 7 columns in a row: fi, si, di, ai, orgpos, fr, i
+  for(i=0; i<allcandsize; i++) 
+    allcandi[i] = malloc(7*sizeof(int));
 
-  trig->f   = (FLOAT_TYPE *)calloc(trig_size, sizeof(FLOAT_TYPE));
-  trig->s   = (FLOAT_TYPE *)calloc(trig_size, sizeof(FLOAT_TYPE));
-  trig->d   = (FLOAT_TYPE *)calloc(trig_size, sizeof(FLOAT_TYPE));
-  trig->a   = (FLOAT_TYPE *)calloc(trig_size, sizeof(FLOAT_TYPE));
-  trig->snr = (FLOAT_TYPE *)calloc(trig_size, sizeof(FLOAT_TYPE));
-  trig->fr  = (int *)calloc(trig_size, sizeof(int));
+  FLOAT_TYPE **candf = malloc(candsize*sizeof(FLOAT_TYPE *)); 
+  FLOAT_TYPE **tf; 
+  // 5 columns in a row: f, s, d, a, SNR
+  for(i=0; i<candsize; i++) 
+    candf[i] = malloc(5*sizeof(FLOAT_TYPE));
+
+  FLOAT_TYPE **allcandf = malloc(allcandsize*sizeof(FLOAT_TYPE *));
+  // 5 columns in a row: f, s, d, a, SNR
+  for(i=0; i<allcandsize; i++)
+    allcandf[i] = malloc(5*sizeof(FLOAT_TYPE));
+
 
   dp = opendir (dirname);
   if (dp != NULL) {
+
+    // Calculating the shifts from opts->shift 
+    int val = opts->shift;
+    for(i=0; i<4; i++) shift[i] = 0; 
+    i=3; 
+    while (val > 0) { 
+      if(val%10) shift[i] = val%10; 
+      i--; val /= 10;
+    }
+
+    sqrN = pow(sett->N, 2);
+    omsN = sett->oms*sett->N; 
+
+    // Preparing the transformation matrix elements: division by the corresponding 
+    // scale factors outside the loop over candidates to save computational time  
+    for(j=0; j<4; j++)  
+      for(i=0; i<4; i++)
+        v[i][j] = (sett->vedva[i][j])/(opts->scale[j]);   
+
     while ((ep = readdir (dp))) { 
 
       if((ep->d_type == DT_REG) &&
@@ -341,58 +405,202 @@ void read_trigger_files(
 
           // This part looks for the first number in the trigger file name, 
           // under the assumption that this is the frame number
-          char *tmp, *epdname;
+          char *fr, *epdname;
           epdname = strdup(ep->d_name);  
-          while((tmp = strsep(&epdname, "_"))!=NULL) {
-            if(tmp[0] >= '0' && tmp[0] <= '9') {
-                current_frame = atoi(tmp);
-                printf("Reading %s (frame number %d)...\n", ep->d_name, current_frame); 
-                break; 
-            }  
-          } 
-
-          numofframes++; 
+          while((fr = strsep(&epdname, "_"))!=NULL) {
+            if(fr[0] >= '0' && fr[0] <= '9') {
+              current_frame = atoi(fr);
+              printf("Reading %s... Frame %d: ", ep->d_name, current_frame); 
+              break; 
+            } 
+          }  
 
           if((data = fopen(filename, "r")) != NULL) {
 
-            FLOAT_TYPE finband; 
+            FLOAT_TYPE finband;             
+            // Original candidate number (position in the trigger file) 
+            int orgpos=0;
+            // Counter for 'good' candidates i.e. these that are in band
+            i=0; 
+            frcount++; 
 
+            // Each candidate is represented by 5 FLOAT_TYPE (double or float) numbers
+            // c[0]=f, c[1]=s, c[2]=d, c[3]=a, c[4]=snr
             while(fread((void *)c, sizeof(FLOAT_TYPE), 5, data)==5) {  
 
-              //#mb
-              finband = c[0] + 2.*c[1]*sett->N*(opts->refr - current_frame); 
+              // shifting c[0] (=frequency) to opts->refr reference frame 
+              c[0] = c[0] + 2.*c[1]*(sett->N)*(opts->refr - current_frame); 
 
-              if((finband>0) && (finband<M_PI)) { 
+              // #mb todo: deal with the out-of-band candidates 
+              // if frequency is in band 
+              if((c[0]>0) && (c[0]<M_PI)) { 
 
-                trig->f[i]   = finband; trig->s[i]  = c[1]; 
-                trig->d[i]   = c[2];    trig->a[i]  = c[3]; 
-                trig->snr[i] = c[4];    trig->fr[i] = current_frame;  
+                // Conversion to linear parameters
+                //--------------------------------
 
-              i++; 
+                tmp[0] = c[0]*sett->N; 
+                tmp[1] = c[1]*sqrN; 
+
+                // Transformation of astronomical to linear coordinates;  
+                // C_EPSMA, an average value of epsm, is defined in settings.h  
+                ast2lin(c[3], c[2], C_EPSMA, be);
+
+                // tmp[2] corresponds to declination (d), tmp[3] to right ascension (a) 
+                tmp[2] = omsN*be[0]; 
+                tmp[3] = omsN*be[1]; 
+
+                // Saving candidate values 
+                for(j=0; j<4; j++) { 
+
+                  // Integer values (0=fi, 1=si, 2=di, 3=ai)  
+                  candi[i][j] = round(tmp[0]*v[0][j] + tmp[1]*v[1][j] 
+                              + tmp[2]*v[2][j] + tmp[3]*v[3][j] 
+                              + 0.5*shift[j]);
+ 
+                  // Astrophysical values (0=f, 1=s, 2=d, 3=a)
+                  // f is shifted to opts->refr time frame
+                  candf[i][j] = c[j]; 
+
+                } 
+
+                // Saving the original position, frame number and current index
+                candi[i][4] = orgpos; 
+                candi[i][5] = current_frame;
+                candi[i][6] = i; 
+                // Saving the SNR value 
+                candf[i][4] = c[4]; 
+                i++; 
 
               }   
 
-              if(i==trig_size) {
+              orgpos++;
 
-                // Doubling the triggers' array size 
-                trig_size *= 2;
- 
-                t = (FLOAT_TYPE*)realloc(trig->f, trig_size*sizeof(FLOAT_TYPE));
-                if(t!=NULL) trig->f = t;
-                t = (FLOAT_TYPE*)realloc(trig->s, trig_size*sizeof(FLOAT_TYPE));
-                if(t!=NULL) trig->s = t;
-                t = (FLOAT_TYPE*)realloc(trig->d, trig_size*sizeof(FLOAT_TYPE));
-                if(t!=NULL) trig->d = t;
-                t = (FLOAT_TYPE*)realloc(trig->a, trig_size*sizeof(FLOAT_TYPE));
-                if(t!=NULL) trig->a = t;
-                t = (FLOAT_TYPE*)realloc(trig->snr, trig_size*sizeof(FLOAT_TYPE));
-                if(t!=NULL) trig->snr = t;
-                ti = (int*)realloc(trig->fr, trig_size*sizeof(int));
-                if(t!=NULL) trig->fr = ti;
+              // Resizing the candidates' array, if the previous limit is reached 
+              // (realloc by a factor of 2) 
+              if(i==candsize) {
 
-              }
+                candsize *= 2; 
 
+                ti = realloc(candi, candsize*sizeof(int *)); 
+                if(ti!=NULL) { 
+                  candi = ti; 
+                    for(j=candsize/2; j<candsize; j++)
+                        candi[j] = malloc(7*sizeof(int));
+                } else { 
+                  printf("Problem with memory realloc for candidates array (int)... exiting...\n"); 
+                  exit(EXIT_FAILURE);        
+                } 
+
+                tf = realloc(candf, candsize*sizeof(FLOAT_TYPE *)); 
+                if(tf!=NULL) { 
+                  candf = tf; 
+                    for(j=candsize/2; j<candsize; j++)
+                        candf[j] = malloc(5*sizeof(FLOAT_TYPE));
+                } else { 
+                  printf("Problem with memory realloc for candidates array (astro)... exiting...\n"); 
+                  exit(EXIT_FAILURE);        
+                } 
+
+
+              } // candsize realloc 
+
+            } // while fread 
+
+            // Frame number  
+            trig->frameinfo[frcount][0] = current_frame;
+            // Number of candidates in band for a given frame 
+            trig->frameinfo[frcount][1] = i;  
+
+
+            // Looking for duplicates and selecting the one with highest SNR
+            //--------------------------------------------------------------
+
+            // Sorting the first 4 columns of candi
+            for (i=0; i<4; i++) {
+              colnum = i;
+              qsort(candi, trig->frameinfo[frcount][1], sizeof(int *), way2compare);
             }
+
+            int maxsnridx=0, frgoodcands=0; 
+            double candsnr=0;  
+            for (i=0; i<trig->frameinfo[frcount][1]; i++) {
+ 
+              int idx, idx1, maxi, diff=0;  
+              for(j=0; j<4; j++)
+                //#mb optimize          
+                diff += (candi[i][j] - candi[i+1][j])*(candi[i][j] - candi[i+1][j]);
+
+              idx = candi[i][6]; 
+
+              if(diff) {
+
+                int k=i, kidx=idx; 
+                if(maxsnridx) { k=maxi; kidx=maxsnridx; }
+
+                // Writing to array containing all candidates 
+                for(j=0; j<6; j++) 
+                    allcandi[goodcands][j] = candi[k][j]; 
+                allcandi[goodcands][6] = goodcands; 
+
+                for(j=0; j<5; j++)
+                    allcandf[goodcands][j] = candf[kidx][j];
+                 
+                maxsnridx=0;
+                goodcands++;  
+                frgoodcands++; 
+
+                if(goodcands==allcandsize) {
+
+                  allcandsize *= 2; 
+
+                  ti = realloc(allcandi, allcandsize*sizeof(int *)); 
+                  if(ti!=NULL) { 
+                    allcandi = ti; 
+                    for(j=allcandsize/2; j<allcandsize; j++)
+                      allcandi[j] = malloc(7*sizeof(int));
+                  } else { 
+                    printf("Problem with memory realloc for ALL candidates array (int)... exiting...\n"); 
+                    exit(EXIT_FAILURE);        
+                  }
+ 
+                  tf = realloc(allcandf, allcandsize*sizeof(FLOAT_TYPE *)); 
+                  if(tf!=NULL) { 
+                    allcandf = tf; 
+                    for(j=allcandsize/2; j<allcandsize; j++)
+                      allcandf[j] = malloc(5*sizeof(FLOAT_TYPE));
+                  } else { 
+                    printf("Problem with memory realloc for ALL candidates array (astro)... exiting...\n"); 
+                    exit(EXIT_FAILURE);        
+                  } 
+
+
+                }
+ 
+
+              } else {
+
+                idx1 = candi[i+1][6];
+
+                if(!maxsnridx) {  
+                  maxsnridx = (candf[idx][4] > candf[idx1][4] ? idx : idx1); 
+                  maxi = i; 
+                  candsnr = candf[maxsnridx][4];    
+                } else { 
+                  if(candf[idx][4] > candsnr) {
+                    maxsnridx = idx; maxi = i; 
+                    candsnr = candf[idx][4]; 
+                  } else if(candf[idx1][4] > candsnr) {   
+                    maxsnridx = idx1; maxi = i+1; 
+                    candsnr = candf[idx1][4];
+                  }  
+                }
+              }
+            }
+
+            // Number of unique candidates in a given frame 
+            trig->frameinfo[frcount][2] = frgoodcands; 
+            printf("%d/%d\n", trig->frameinfo[frcount][2], trig->frameinfo[frcount][1]); 
+
 
           } else { 
             printf("Problem with %s...\n", filename);  
@@ -410,7 +618,107 @@ void read_trigger_files(
 
   (void) closedir(dp);
 
-  trig->num_of_trig = i; 
-  trig->num_of_frames = numofframes; 
+  trig->frcount = frcount; 
+  trig->goodcands = goodcands; 
+
+  printf("Total number of candidates from all frames: %d\n", trig->goodcands);
+
+  // Looking for coincidences (the same integer values) between frames
+  //------------------------------------------------------------------
+
+  // Sorting the first 4 columns of allcandi
+  for (i=0; i<4; i++) {
+    colnum = i;
+    qsort(allcandi, trig->goodcands, sizeof(int *), way2compare);
+  }
+
+  int **imtr; 
+  int weight=1, coindx=0, maxweight=0, numc; 
+  int minnc=10; //#mb mininum number of concidences to register (+-1 - check!) 
+
+  // Maximal possible amount of coincidences with a given threshold minnc 
+  numc = (trig->goodcands)/minnc; 
+
+  imtr = matrix(numc, 2); 
+
+  // Coincidcenes: counting rows in a sorted table 
+  for (i=0; i<(trig->goodcands-1); i++) {
+   
+    int diff=0; 
+    for(j=0; j<4; j++) 
+      // distance measure to compare rows
+      //#mb optimize  
+      diff += (allcandi[i][j] - allcandi[i+1][j])*(allcandi[i][j] - allcandi[i+1][j]);    
+
+    if(!diff) { 
+
+      weight++; 
+      if(weight==minnc) // add row to table if weight crosses the threshold 
+        coindx++; 
+     
+    } else {
+
+      if(weight>minnc) { 
+        imtr[coindx][0] = i;
+        imtr[coindx][1] = weight+1;
+      }  
+
+      weight=0; 
+    }     
+   
+  } 
+
+  colnum = 1;
+  qsort(imtr, numc, sizeof(int *), way2compare);
+
+  // Maximum conincidence 
+  j = imtr[0][0]+1;
+  int w = imtr[0][1]; 
+  FLOAT_TYPE meanf=0, means=0, meand=0, meana=0, mesnr=0; 
+
+  printf("Maximum coincidence: %d. Parameters:\n", w);
+ 
+  for(i=imtr[0][1]; i>0; i--) {  
+    int k = j-i; 
+    int f = allcandi[k][6]; 
+    printf("%4d %4d %4d %4d %4d %4d %5le %5le %5le %5le %5le\n", 
+           allcandi[k][0], allcandi[k][1], allcandi[k][2], allcandi[k][3], allcandi[k][4], allcandi[k][5], 
+           allcandf[f][0], allcandf[f][1], allcandf[f][2], allcandf[f][3], allcandf[f][4]); 
+
+    meanf += allcandf[f][0]; 
+    means += allcandf[f][1]; 
+    meand += allcandf[f][2]; 
+    meana += allcandf[f][3];
+    mesnr += pow(allcandf[f][4], 2);  
+
+  }
+
+  j = imtr[0][0]; 
+  printf("Mean parameters:\n"); 
+  printf("%4d %4d %4d %4d %22le %5le %5le %5le %5le\n", 
+    allcandi[j][0], allcandi[j][1], allcandi[j][2], allcandi[j][3], 
+    meanf/w, means/w, meand/w, meana/w, sqrt(mesnr));  
+
+
+  // Freeing auxiliary arrays at the end 
+  for(i=0; i<candsize; i++) { 
+    free(candi[i]);
+    free(candf[i]); 
+  } 
+   
+  for(i=0; i<allcandsize; i++) { 
+    free(allcandi[i]);
+    free(allcandf[i]);
+  }
+
+  for(i=0; i<numc; i++) 
+    free(imtr[i]); 
+
+  free(candi);
+  free(candf); 
+  free(allcandi); 
+  free(allcandf);
+  free(imtr); 
 
 }
+
