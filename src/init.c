@@ -825,6 +825,7 @@ void cleanup(
 } // end of cleanup & memory free 
 
 
+
 	/*	Command line options handling: coincidences  
 	 */ 
 	
@@ -897,7 +898,7 @@ void handle_opts_coinc(
       printf("-refr         Reference frame number\n");
       printf("-fpo          Reference band frequency fpo value\n");
       printf("-dt           Data sampling time dt (default value: 0.5)\n");
-      printf("-trigname     Triggers' name prefactor\n");
+      printf("-trigname     Part of triggers' name (for identifying files)\n");
       printf("-refloc       Location of the reference grid.bin and starting_date files\n");
       printf("-mincoin      Minimal number of coincidences recorded\n\n");
 

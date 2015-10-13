@@ -315,7 +315,7 @@ int way2compare(const void *a, const void *b){
     else if(xval > yval) return -1;
 	else return 0;
 
-}
+} 
 
 // Allocation of memory for martix with given number of rows and columns
 int** matrix(int rows, int cols) {
@@ -405,16 +405,16 @@ void read_trigger_files(
 
           // This part looks for the first number in the trigger file name, 
           // under the assumption that this is the frame number
-          char *fr, *epdname;
+          char *fr, *epdname; 
           epdname = strdup(ep->d_name);  
           while((fr = strsep(&epdname, "_"))!=NULL) {
             if(fr[0] >= '0' && fr[0] <= '9') {
               current_frame = atoi(fr);
-              printf("Reading %s... Frame %d: ", ep->d_name, current_frame); 
+              printf("Reading %s... Frame %d: ", ep->d_name, current_frame);  
               break; 
             } 
           }  
-
+ 
           if((data = fopen(filename, "r")) != NULL) {
 
             FLOAT_TYPE finband;             
@@ -485,7 +485,7 @@ void read_trigger_files(
                 if(ti!=NULL) { 
                   candi = ti; 
                     for(j=candsize/2; j<candsize; j++)
-                        candi[j] = malloc(7*sizeof(int));
+                      candi[j] = malloc(7*sizeof(int));
                 } else { 
                   printf("Problem with memory realloc for candidates array (int)... exiting...\n"); 
                   exit(EXIT_FAILURE);        
@@ -495,7 +495,7 @@ void read_trigger_files(
                 if(tf!=NULL) { 
                   candf = tf; 
                     for(j=candsize/2; j<candsize; j++)
-                        candf[j] = malloc(5*sizeof(FLOAT_TYPE));
+                      candf[j] = malloc(5*sizeof(FLOAT_TYPE));
                 } else { 
                   printf("Problem with memory realloc for candidates array (astro)... exiting...\n"); 
                   exit(EXIT_FAILURE);        
@@ -505,6 +505,7 @@ void read_trigger_files(
               } // candsize realloc 
 
             } // while fread 
+
 
             // Frame number  
             trig->frameinfo[frcount][0] = current_frame;
@@ -594,7 +595,7 @@ void read_trigger_files(
                     maxsnridx = idx1; maxi = i+1; 
                     candsnr = candf[idx1][4];
                   }  
-                }
+                } 
               }
             }
 
@@ -608,7 +609,7 @@ void read_trigger_files(
             perror (filename);
           }
 
-          memset(filename, 0, sizeof(filename));
+          memset(filename, 0, sizeof(filename)); 
           fclose(data); 
 
       } 
@@ -624,6 +625,7 @@ void read_trigger_files(
 
   printf("Total number of candidates from all frames: %d\n", trig->goodcands);
 
+
   // Looking for coincidences (the same integer values) between frames
   //------------------------------------------------------------------
 
@@ -633,8 +635,9 @@ void read_trigger_files(
     qsort(allcandi, trig->goodcands, sizeof(int *), way2compare);
   }
 
-  int **imtr; 
-  int weight=1, coindx=0, maxweight=0, numc; 
+  int **imtr;
+  int coindx=0, numc;
+  unsigned short int weight=1, maxweight=0;   
 
   // Maximal possible amount of coincidences, given a threshold for 
   // a minimum number of interesting coincidences (opts->mincoin)  
@@ -669,64 +672,85 @@ void read_trigger_files(
    
   } 
 
-  // Sorting the coincidences table 
+
+  // Sorting the coincidences table
+  //-------------------------------
   colnum = 1;
   qsort(imtr, numc, sizeof(int *), way2compare);
 
+
   // Coincidences above opts->mincoin threshold 
-  printf("%dth coincidences and larger:\n", opts->mincoin);  
-  printf("#coin fi    si     di   ai    meanf        means        meand         meana        mesnr\n"); 
+  //-------------------------------------------
+  char outname[512]; 
+  sprintf(outname, "%s/%04d_%s.coi", opts->prefix, opts->shift, opts->trigname);
+  data = fopen(outname, "w"); 
 
   int q; 
   for(q=0; q<coindx; q++) {  
  
     j = imtr[q][0];
-    int w = imtr[q][1]; 
-    FLOAT_TYPE meanf=0, means=0, meand=0, meana=0, mesnr=0; 
- 
+    int pari[4], ops[256];
+    unsigned short int l, w=imtr[q][1], fra[256];  
+    float mean[5]; 
+
+    for(l=0; l<5; l++) mean[l]=0; 
+
     for(i=0; i<imtr[q][1]; i++) {   
-      int k = j-i; 
+      int l, k = j-i; 
       int f = allcandi[k][6]; 
+ 
+      for(l=0; l<4; l++)  
+        mean[l] += allcandf[f][l];      
+      mean[4] += allcandf[f][4]*allcandf[f][4];  
 
-/*
-      printf("%4d %4d %4d %4d %4d %4d %5le %5le %5le %5le %5le\n",
-           allcandi[k][0], allcandi[k][1], allcandi[k][2], allcandi[k][3], allcandi[k][4], allcandi[k][5], 
-           allcandf[f][0], allcandf[f][1], allcandf[f][2], allcandf[f][3], allcandf[f][4]); 
-*/ 
-
-      meanf += allcandf[f][0]; 
-      means += allcandf[f][1]; 
-      meand += allcandf[f][2]; 
-      meana += allcandf[f][3];
-      mesnr += (allcandf[f][4]*allcandf[f][4]);  
+      // ops[i]: position in trigger file #fra[i]
+      ops[i] = allcandi[k][4]; 
+      fra[i] = (unsigned short int)allcandi[k][5]; 
 
     }
  
-    printf("%5d %4d %4d %4d %4d %15le %5le %5le %5le %5le\n", 
-      w, allcandi[j][0], allcandi[j][1], allcandi[j][2], allcandi[j][3], 
-      meanf/w, means/w, meand/w, meana/w, sqrt(mesnr));  
+    for(l=0; l<4; l++) {
+//      pari[l]  = allcandi[j][l];   
+      mean[l] /= w; 
+    } 
+
+    mean[4] = sqrt(mean[4]); // SNR mean: sqrt of sum of squares  
+
+    // writing to binary file 
+    fwrite(&w, sizeof(unsigned short int), 1, data); 
+//    fwrite(&pari, sizeof(int), 4, data);  
+    fwrite(&mean, sizeof(float), 5, data);          
+    fwrite(&fra, sizeof(unsigned short int), w, data); 
+    fwrite(&ops, sizeof(int), w, data); 
+ 
+    // Maximal coincidence (first row of imtr[][])
+    //#mb written to stderr 
+    if(!q) 
+    fprintf(stderr, "%s %04d %5f %5hu %5d %15le %5le %5le %5le %5le\n", 
+      opts->trigname, opts->shift, sett->fpo, trig->frcount, w,   
+      mean[0], mean[1], mean[2], mean[3], mean[4]);  
 
   }
 
+  fclose(data); 
 
   // Freeing auxiliary arrays at the end 
   for(i=0; i<candsize; i++) { 
     free(candi[i]);
     free(candf[i]); 
   } 
+  free(candi);
+  free(candf);
    
   for(i=0; i<allcandsize; i++) { 
     free(allcandi[i]);
     free(allcandf[i]);
   }
+  free(allcandi);
+  free(allcandf);
 
   for(i=0; i<numc; i++) 
     free(imtr[i]); 
-
-  free(candi);
-  free(candf); 
-  free(allcandi); 
-  free(allcandf);
   free(imtr); 
 
 }

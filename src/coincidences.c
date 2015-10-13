@@ -65,6 +65,9 @@ int main (int argc, char* argv[]) {
 
   read_trigger_files(&sett, &opts, &trig); 
 
+  // Free arrays at the end 
+  free(sett.M); 
+
   return 0; 
 	
 }
