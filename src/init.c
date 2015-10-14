@@ -22,9 +22,9 @@
 
 
 
-	/*  Command line options handling: search 
-	 */ 
-	
+/*  Command line options handling: search 
+ */ 
+
 void handle_opts(
     Search_settings *sett, 
     Command_line_opts *opts,
@@ -95,7 +95,7 @@ void handle_opts(
 
     if (help_flag) {
 
-      printf("polgraw-allsky CGW search code using the F-statistic\n");
+      printf("polgraw-allsky periodic GWs: search for candidate signals with the F-statistic\n");
       printf("Usage: ./search -[switch1] <value1> -[switch2] <value2> ...\n") ;
       printf("Switches are:\n\n");
       printf("-d, -data         Data directory (default is .)\n");
@@ -849,6 +849,9 @@ void handle_opts_coinc(
   // Default value of the minimal number of coincidences 
   opts->mincoin=3; 
 
+  // Default value of the narrow-down parameter 
+  opts->narrowdown=0.5; 
+
   // Reading arguments 
 
   while (1) {
@@ -880,13 +883,15 @@ void handle_opts_coinc(
       {"refloc", required_argument, 0, 'g'},
       // Minimal number of coincidences recorded in the output  
       {"mincoin", required_argument, 0, 'm'},
+      // Narrow down the frequency band (+- the center of band) 
+      {"narrowdown", required_argument, 0, 'n'},
       {0, 0, 0, 0}
     };
 
     if (help_flag) {
 
-      printf("polgraw-allsky CGW code for concidences among candidates\n");
-      printf("Usage: ./search -[switch1] <value1> -[switch2] <value2> ...\n") ;
+      printf("polgraw-allsky periodic GWs: search for concidences among candidates\n");
+      printf("Usage: ./coincidences -[switch1] <value1> -[switch2] <value2> ...\n") ;
       printf("Switches are:\n\n");
       printf("-data         Data directory (default is ./candidates)\n");
       printf("-output       Output directory (default is ./coinc-results)\n");
@@ -900,7 +905,8 @@ void handle_opts_coinc(
       printf("-dt           Data sampling time dt (default value: 0.5)\n");
       printf("-trigname     Part of triggers' name (for identifying files)\n");
       printf("-refloc       Location of the reference grid.bin and starting_date files\n");
-      printf("-mincoin      Minimal number of coincidences recorded\n\n");
+      printf("-mincoin      Minimal number of coincidences recorded\n");
+      printf("-narrowdown   Narrow-down the frequency band (range [0,1], +- around center)\n\n");
 
       printf("Also:\n\n");
       printf("--help		This help\n");
@@ -909,7 +915,7 @@ void handle_opts_coinc(
     }
 
     int option_index = 0;
-    int c = getopt_long_only (argc, argv, "f:p:o:d:b:s:a:z:r:t:e:g:m:", long_options, &option_index);
+    int c = getopt_long_only (argc, argv, "f:p:o:d:b:s:a:z:r:t:e:g:m:n:", long_options, &option_index);
     if (c == -1)
       break;
 
@@ -953,12 +959,18 @@ void handle_opts_coinc(
     case 'm':
       opts->mincoin = atoi(optarg);
       break;
+    case 'n':
+      opts->narrowdown = atof(optarg);
+      break;
     case '?':
       break;
     default:
       break ;
     } /* switch c */
   } /* while 1 */
+
+  // Putting the parameter in triggers' frequency range [0, pi] 
+  opts->narrowdown *= M_PI; 
 
   printf("#mb add info at the beginning...\n"); 
 

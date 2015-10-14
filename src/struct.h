@@ -186,7 +186,7 @@ typedef struct _comm_line_opts_coinc {
   // Minimal number of coincidences recorded in the output  
   int mincoin; 
 
-  double fpo, refgps; 
+  double fpo, refgps, narrowdown; 
   
   char prefix[512], dtaprefix[512], trigname[512], refloc[512], *wd;
   

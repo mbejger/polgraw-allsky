@@ -428,50 +428,54 @@ void read_trigger_files(
             // c[0]=f, c[1]=s, c[2]=d, c[3]=a, c[4]=snr
             while(fread((void *)c, sizeof(FLOAT_TYPE), 5, data)==5) {  
 
-              // shifting c[0] (=frequency) to opts->refr reference frame 
-              c[0] = c[0] + 2.*c[1]*(sett->N)*(opts->refr - current_frame); 
+              //#mb Narrowing-down the band around center  
+              if((c[0] > M_PI_2 - opts->narrowdown) && (c[0] < M_PI_2 + opts->narrowdown)) {  
+              
+                // shifting c[0] (=frequency) to opts->refr reference frame 
+                c[0] = c[0] + 2.*c[1]*(sett->N)*(opts->refr - current_frame); 
 
-              // #mb todo: deal with the out-of-band candidates 
-              // if frequency is in band 
-              if((c[0]>0) && (c[0]<M_PI)) { 
+                // #mb todo: deal with the out-of-band candidates 
+                // if frequency is in band 
+                if((c[0]>0) && (c[0]<M_PI)) { 
 
-                // Conversion to linear parameters
-                //--------------------------------
+                  // Conversion to linear parameters
+                  //--------------------------------
 
-                tmp[0] = c[0]*sett->N; 
-                tmp[1] = c[1]*sqrN; 
+                  tmp[0] = c[0]*sett->N; 
+                  tmp[1] = c[1]*sqrN; 
 
-                // Transformation of astronomical to linear coordinates;  
-                // C_EPSMA, an average value of epsm, is defined in settings.h  
-                ast2lin(c[3], c[2], C_EPSMA, be);
+                  // Transformation of astronomical to linear coordinates;  
+                  // C_EPSMA, an average value of epsm, is defined in settings.h  
+                  ast2lin(c[3], c[2], C_EPSMA, be);
 
-                // tmp[2] corresponds to declination (d), tmp[3] to right ascension (a) 
-                tmp[2] = omsN*be[0]; 
-                tmp[3] = omsN*be[1]; 
+                  // tmp[2] corresponds to declination (d), tmp[3] to right ascension (a) 
+                  tmp[2] = omsN*be[0]; 
+                  tmp[3] = omsN*be[1]; 
 
-                // Saving candidate values 
-                for(j=0; j<4; j++) { 
+                  // Saving candidate values 
+                  for(j=0; j<4; j++) { 
 
-                  // Integer values (0=fi, 1=si, 2=di, 3=ai)  
-                  candi[i][j] = round(tmp[0]*v[0][j] + tmp[1]*v[1][j] 
-                              + tmp[2]*v[2][j] + tmp[3]*v[3][j] 
-                              + 0.5*shift[j]);
+                    // Integer values (0=fi, 1=si, 2=di, 3=ai)  
+                    candi[i][j] = round(tmp[0]*v[0][j] + tmp[1]*v[1][j] 
+                                + tmp[2]*v[2][j] + tmp[3]*v[3][j] 
+                                + 0.5*shift[j]);
  
-                  // Astrophysical values (0=f, 1=s, 2=d, 3=a)
-                  // f is shifted to opts->refr time frame
-                  candf[i][j] = c[j]; 
+                    // Astrophysical values (0=f, 1=s, 2=d, 3=a)
+                    // f is shifted to opts->refr time frame
+                    candf[i][j] = c[j]; 
 
-                } 
+                  } 
 
-                // Saving the original position, frame number and current index
-                candi[i][4] = orgpos; 
-                candi[i][5] = current_frame;
-                candi[i][6] = i; 
-                // Saving the SNR value 
-                candf[i][4] = c[4]; 
-                i++; 
+                  // Saving the original position, frame number and current index
+                  candi[i][4] = orgpos; 
+                  candi[i][5] = current_frame;
+                  candi[i][6] = i; 
+                  // Saving the SNR value 
+                  candf[i][4] = c[4]; 
+                  i++; 
 
-              }   
+                } // if finband 
+              } //#mb if narrowdown    
 
               orgpos++;
 
