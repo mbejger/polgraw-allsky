@@ -6,10 +6,9 @@
 #include <errno.h>
 #include <sys/types.h>
 #include <sys/stat.h>
-#include <fcntl.h>
 #include <getopt.h>
 #include <gsl/gsl_linalg.h>
-#include <time.h>
+//#include <time.h>
 #include <dirent.h>
 
 #include "auxi.h"
@@ -18,7 +17,6 @@
 #include "struct.h"
 
 // Default output and data directories
-
 #ifndef PREFIX
 #define PREFIX ./coinc-results
 #endif
