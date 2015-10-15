@@ -340,7 +340,8 @@ void read_trigger_files(
   Command_line_opts_coinc *opts, 
   Candidate_triggers *trig) {
 
-  int i, j, shift[4], candsize=INICANDSIZE, allcandsize=INICANDSIZE, goodcands=0, current_frame=0, frcount=0;  
+  int i, j, candsize=INICANDSIZE, allcandsize=INICANDSIZE, goodcands=0, current_frame=0, frcount=0;  
+  int val, shift[4], scale[4]; 
   double sqrN, omsN, v[4][4], be[2];
   FLOAT_TYPE tmp[4], c[5];
 
@@ -379,22 +380,40 @@ void read_trigger_files(
   if (dp != NULL) {
 
     // Calculating the shifts from opts->shift 
-    int val = opts->shift;
-    for(i=0; i<4; i++) shift[i] = 0; 
+    val = opts->shift;
+    for(i=0; i<4; i++) shift[i] = 0; // Initial value: no shift 
     i=3; 
     while (val > 0) { 
       if(val%10) shift[i] = val%10; 
       i--; val /= 10;
     }
 
+    printf("Cell shifts  in f, s, d, a directions: "); 
+    for(i=0; i<4; i++) printf("%d ", shift[i]); 
+    printf("\n"); 
+
+    // Calculating the scaling from opts->scale 
+    val = opts->scale;
+    for(i=0; i<4; i++) scale[i] = 1; // Initial value: no scaling 
+    i=3;
+    while (val > 0) {
+      if(val%10) scale[i] = val%10;
+      i--; val /= 10;
+    }
+
+    printf("Cell scaling in f, s, d, a directions: ");
+    for(i=0; i<4; i++) printf("%d ", scale[i]);
+    printf("\n");
+
+    // Transformation matrix elements: division by the corresponding 
+    // scale factors outside the main loop over candidates    
+    for(j=0; j<4; j++)  
+      for(i=0; i<4; i++)
+        v[i][j] = (sett->vedva[i][j])/scale[j];   
+
     sqrN = pow(sett->N, 2);
     omsN = sett->oms*sett->N; 
 
-    // Preparing the transformation matrix elements: division by the corresponding 
-    // scale factors outside the loop over candidates to save computational time  
-    for(j=0; j<4; j++)  
-      for(i=0; i<4; i++)
-        v[i][j] = (sett->vedva[i][j])/(opts->scale[j]);   
 
     while ((ep = readdir (dp))) { 
 

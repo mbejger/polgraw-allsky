@@ -26,4 +26,5 @@ In alphabetic order:
 * Aleksander Garus
 * Andrzej Królak
 * Maciej Piętka
+* Gevorg Poghosyan
 * Rafał Skrzypiec

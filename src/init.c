@@ -857,16 +857,10 @@ void handle_opts_coinc(
   while (1) {
     static struct option long_options[] = {
       {"help", no_argument, &help_flag, 1},
-      // shift of cells 
+      // Cell shifts  
       {"shift", required_argument, 0, 's'},
-      // Cell scalling in frequency
-      {"scale_f", required_argument, 0, 'f'},
-      // Cell scalling in spindown 
-      {"scale_s", required_argument, 0, 'z'},
-      // Cell scalling in right ascension
-      {"scale_a", required_argument, 0, 'a'},
-      // Cell scalling in declination
-      {"scale_d", required_argument, 0, 'b'},
+      // Cell scaling 
+      {"scale", required_argument, 0, 'z'},
       // Reference frame number 
       {"refr", required_argument, 0, 'r'},
       // output directory
@@ -895,11 +889,8 @@ void handle_opts_coinc(
       printf("Switches are:\n\n");
       printf("-data         Data directory (default is ./candidates)\n");
       printf("-output       Output directory (default is ./coinc-results)\n");
-      printf("-shift        Shift of cells\n");
-      printf("-scale_f      Cell scalling in frequency\n");
-      printf("-scale_s      Cell scalling in spindown\n");
-      printf("-scale_a      Cell scalling in right ascenscion\n");
-      printf("-scale_d      Cell scalling in declination\n");
+      printf("-shift        Cell shifts in fsda directions (4 digit number, e.g. 0101)\n");
+      printf("-scale        Cell scaling in fsda directions (4 digit number, e.g. 4824)\n");
       printf("-refr         Reference frame number\n");
       printf("-fpo          Reference band frequency fpo value\n");
       printf("-dt           Data sampling time dt (default value: 0.5)\n");
@@ -915,7 +906,7 @@ void handle_opts_coinc(
     }
 
     int option_index = 0;
-    int c = getopt_long_only (argc, argv, "f:p:o:d:b:s:a:z:r:t:e:g:m:n:", long_options, &option_index);
+    int c = getopt_long_only (argc, argv, "p:o:d:s:z:r:t:e:g:m:n:", long_options, &option_index);
     if (c == -1)
       break;
 
@@ -923,20 +914,11 @@ void handle_opts_coinc(
     case 'p':
       sett->fpo = atof(optarg);
       break;
-    case 's':
+    case 's': // Cell shifts 
       opts->shift = atof(optarg);
       break;
-    case 'f':   // -scale_f 
-      opts->scale[0] = atoi(optarg);
-      break;
-    case 'z':   // -scale_s 
-      opts->scale[1] = atoi(optarg);
-      break;
-    case 'b':  // -scale_d 
-      opts->scale[2] = atoi(optarg);
-      break;
-    case 'a':  // -scale_a 
-      opts->scale[3] = atoi(optarg);
+    case 'z': // Cell scaling   
+      opts->scale = atoi(optarg);
       break;
     case 'r':
       opts->refr = atoi(optarg);
