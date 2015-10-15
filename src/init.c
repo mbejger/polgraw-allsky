@@ -852,6 +852,12 @@ void handle_opts_coinc(
   // Default value of the narrow-down parameter 
   opts->narrowdown=0.5; 
 
+  // Default value of the cell shift: 0000 (no shifts)
+  opts->shift=0;
+
+  // Default value of the cell scaling: 1111 (no scaling)
+  opts->scale=1111;
+
   // Reading arguments 
 
   while (1) {
@@ -889,8 +895,8 @@ void handle_opts_coinc(
       printf("Switches are:\n\n");
       printf("-data         Data directory (default is ./candidates)\n");
       printf("-output       Output directory (default is ./coinc-results)\n");
-      printf("-shift        Cell shifts in fsda directions (4 digit number, e.g. 0101)\n");
-      printf("-scale        Cell scaling in fsda directions (4 digit number, e.g. 4824)\n");
+      printf("-shift        Cell shifts in fsda directions (4 digit number, e.g. 0101, default 0000)\n");
+      printf("-scale        Cell scaling in fsda directions (4 digit number, e.g. 4824, default 1111)\n");
       printf("-refr         Reference frame number\n");
       printf("-fpo          Reference band frequency fpo value\n");
       printf("-dt           Data sampling time dt (default value: 0.5)\n");

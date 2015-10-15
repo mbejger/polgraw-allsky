@@ -59,7 +59,8 @@ int main (int argc, char* argv[]) {
   // Search settings 
   search_settings(&sett); 
 
-  printf("Settings - dt: %f, oms: %f\n", sett.dt, sett.oms); 
+  printf("Settings dt: %f, oms: %f\n", sett.dt, sett.oms); 
+  printf("Reference frame number: %d\n", opts.refr); 
 
   read_trigger_files(&sett, &opts, &trig); 
 
