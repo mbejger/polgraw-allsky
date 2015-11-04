@@ -10,15 +10,6 @@
 #define INICANDSIZE 1024       // 1048576? Initial size for array candidates storage; 
                                // realloc called if needed (in coincidences)  
 
-// Define COMP_FLOAT this to change the double/single precision of triggers 
-//
-// #define COMP_FLOAT
-#ifdef COMP_FLOAT // if single-precision
-    #define FLOAT_TYPE float
-#else             // if double-precision
-    #define FLOAT_TYPE double
-#endif
-
 // Command line option struct for search 
 typedef struct _comm_line_opts {
   

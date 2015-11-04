@@ -1,13 +1,14 @@
 #ifndef __JOBCORE_H__
 #define __JOBCORE_H__
 
+#include "auxi.h"
 #include "struct.h"
 
 void search(
 	Search_settings *sett,
 	Command_line_opts *opts,
 	Search_range *s_range,
-  FFTW_plans *plans,
+        FFTW_plans *plans,
 	FFTW_arrays *fftw_arr,
 	Aux_arrays *aux,
 	int *Fnum,

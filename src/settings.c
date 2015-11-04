@@ -109,10 +109,14 @@ void detectors_settings(
           // 
           // We assume that in each subdirectory corresponding 
           // to the detector the input data will look as following: 
+          sprintf(x, "%s/%03d/%s/xdatc_%03d%s.bin",
+          opts->dtaprefix, opts->ident, ep->d_name,
+          opts->ident, opts->label);
+/*
           sprintf(x, "%s/%03d/%s/xdatc_%03d_%03d%s.bin",
           opts->dtaprefix, opts->ident, ep->d_name,
           opts->ident, opts->band, opts->label);
-
+*/
           if((data = fopen(x, "r")) != NULL) {
 
             xnames[i]   = calloc(strlen(x)+1, sizeof(char));

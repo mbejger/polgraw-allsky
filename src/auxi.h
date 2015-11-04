@@ -2,7 +2,6 @@
 #define __AUXI_H__
 
 #include <complex.h>
-#include "struct.h"
 
 #define sqr(x) ((x)*(x))
 #define TOSTRA(x) #x
@@ -14,6 +13,14 @@
 #define NAVFSTAT 4096
 #define round(x) floor((x)+0.5)
 
+// Define COMP_FLOAT this to change the double/single precision of triggers 
+//
+// #define COMP_FLOAT
+#ifdef COMP_FLOAT // if single-precision
+    #define FLOAT_TYPE float
+#else             // if double-precision
+    #define FLOAT_TYPE double
+#endif
 
 void lin2ast(double be1, double be2, int pm, double sepsm, double cepsm,	\
          double *sinal, double *cosal, double *sindel, double *cosdel);
