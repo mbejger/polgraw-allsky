@@ -58,6 +58,9 @@ sigen: sigen.o settings.o auxi.o
 coincidences: coincidences.o settings.o auxi.o init.o
 	$(CC) $(LDFLAGS) -gnatv -o $@ $^ $(LOADLIBES)
 
+followup: followup.o settings.o auxi.o init.o
+	$(CC) $(LDFLAGS) -gnatv -o $@ $^ $(LOADLIBES)
+
 doc:
 	doxygen ../doc/Doxyfile
 
