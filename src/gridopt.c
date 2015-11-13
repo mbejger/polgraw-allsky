@@ -500,6 +500,7 @@ int main (int argc, char *argv[]) {
       // minimal match 
       {"minimal match", required_argument, 0, 'm'},
       {"fftpad", required_argument, 0, 'f'},
+      {"dt", required_argument, 0, 't'},
       {0, 0, 0, 0}
     };
 
