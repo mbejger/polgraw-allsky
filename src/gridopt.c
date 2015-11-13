@@ -490,6 +490,8 @@ int main (int argc, char *argv[]) {
   minimal_match = sqrt(.75); 
   // default value of fftpad 
   sett.fftpad = 1; 
+  // default value of dt 
+  sett.dt = 0.5; 
 
   while (1) {
     static struct option long_options[] = {
@@ -502,7 +504,7 @@ int main (int argc, char *argv[]) {
     };
 
     int option_index = 0;
-    c = getopt_long (argc, argv, "i:d:m:f:", long_options,  \
+    c = getopt_long (argc, argv, "i:d:m:f:t:", long_options,  \
          &option_index);
     if (c == -1)
       break;
@@ -518,6 +520,9 @@ int main (int argc, char *argv[]) {
       break;
     case 'f':
       sett.fftpad = atof(optarg);
+      break;
+    case 't':
+      sett.dt = atof(optarg);
       break;
     case '?':
       break;
@@ -602,6 +607,8 @@ int main (int argc, char *argv[]) {
   printf ("MM verified to be = %g\n",sqrt(MM));
   printf ("thickness = %g\n", thickness);
   printf ("fftpad used = %d\n", sett.fftpad); 
+  printf ("dt used = %f\n", sett.dt); 
+  printf ("Number of points N used = %d\n", sett.N); 
 
   {
     FILE *data;
