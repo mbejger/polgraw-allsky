@@ -12,3 +12,17 @@
 3. [Coincidences among candidate signals](coincidences.md)
 4. [Pipeline script](pipeline_script.md)
 5. [Documents and publications](articles.md)
+
+#### Contributors 
+
+In alphabetic order:
+
+* Michał Bejger
+* Jan Bolek
+* Paweł Ciecieląg
+* Orest Dorosh
+* Aleksander Garus
+* Andrzej Królak
+* Maciej Piętka
+* Gevorg Poghosyan
+* Rafał Skrzypiec
