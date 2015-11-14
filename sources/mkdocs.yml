@@ -2,7 +2,7 @@ site_name: Polgraw Group
 
 pages:
 - Home: 'index.md'
-- AllSky CW pipeline:
+- Pipeline description:
     - 'Input data generation': 'input_data.md'
     - 'Search for candidate signals': 'search_for_candidates.md'
     - 'Coincidences between candidates': 'coincidences.md'

@@ -2,13 +2,13 @@
     "docs": [
         {
             "location": "/", 
-            "text": "Polgraw All-Sky Continuous Wave pipeline documentation\n\n\n\n\n\n\n\n\n\n\nTopics\n\n\n\n\nInput data generation\n \n\n\nF-statistic CW search for candidate signals\n\n\nCoincidences among candidate signals\n\n\nPipeline script\n\n\nDocuments and publications", 
+            "text": "Polgraw all-sky search for almost monochromatic gravitational wave signals. Documentation of the pipeline.\n\n\n\n\n\n\n\n\n\n\nTopics\n\n\n\n\nInput data generation\n \n\n\nF-statistic CW search for candidate signals\n\n\nCoincidences among candidate signals\n\n\nPipeline script\n\n\nDocuments and publications", 
             "title": "Home"
         }, 
         {
-            "location": "/#polgraw-all-sky-continuous-wave-pipeline-documentation", 
+            "location": "/#polgraw-all-sky-search-for-almost-monochromatic-gravitational-wave-signals-documentation-of-the-pipeline", 
             "text": "", 
-            "title": "Polgraw All-Sky Continuous Wave pipeline documentation"
+            "title": "Polgraw all-sky search for almost monochromatic gravitational wave signals. Documentation of the pipeline."
         }, 
         {
             "location": "/input_data/", 

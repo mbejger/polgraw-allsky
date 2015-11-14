@@ -1,4 +1,4 @@
-# Polgraw All-Sky Continuous Wave pipeline documentation 
+# Polgraw all-sky search for almost monochromatic gravitational wave signals. Documentation of the pipeline.  
 
 ##
 <p style="margin-left:50px;">
