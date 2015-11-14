@@ -116,8 +116,6 @@
         
             <li><a href="#3-how-to-run-the-program">3. How to run the program?</a></li>
         
-            <li><a href="#34-one-detector-version">3.4. One-detector version</a></li>
-        
             <li><a href="#4-data-structure">4. Data structure</a></li>
         
             <li><a href="#5-input-data-files">5. Input data files</a></li>
@@ -128,8 +126,7 @@
         
             <li><a href="#8-algorithm-flowchart">8. Algorithm flowchart</a></li>
         
-    
-        <li class="main "><a href="#9-versions">9. Versions</a></li>
+            <li><a href="#9-versions">9. Versions</a></li>
         
     
     </ul>
@@ -161,6 +158,7 @@ Modify the <code>Makefile</code> to fit your system. By default the <code>YEPPP!
 <li><code>frame</code> is the number of time frame to be analyzed,</li>
 <li><code>band</code> is the number of the frequency band (see the <a href="#data_structure">data structure</a> description for details). </li>
 </ul>
+<h4 id="_1"></h4>
 <h4 id="31-full-list-of-switches">3.1. Full list of switches</h4>
 <table>
 <thead>
@@ -254,6 +252,7 @@ Modify the <code>Makefile</code> to fit your system. By default the <code>YEPPP!
 
 <p>where the <code>LD_LIBRARY_PATH</code> points to the location of the <code>YEPPP!</code> library. </p>
 <p>The program will proceed assuming that the data directory <code>./test-data-network/001</code> for the time frame <code>001</code> contain subdirectories for the network of detectors (here <code>H1</code> and <code>V1</code>) with input time series <code>xdatc_001_101.bin</code> and the ephemerids files <code>DetSSB.bin</code> in each subdirectory. The grid of parameters files is expected to be in <code>./test-data-network/001/grid.bin</code>. </p>
+<h4 id="_2"></h4>
 <h4 id="33-network-of-detectors-in-spotlight-search-spotlight-branch">3.3. Network of detectors in spotlight search (<code>spotlight</code> branch)</h4>
 <p>For the <code>H1L1</code> network of detectors, using the <a href="https://polgraw.camk.edu.pl/polgraw-allsky/data/test-data-network-injection.tar.gz">test-data-network-injection.tar.gz</a> to search towards a pre-defined direction (spotlight search) in one 2-day segment: </p>
 <pre><code>LD_LIBRARY_PATH=lib/yeppp-1.0.0/binaries/linux/x86_64 ./search -data ./test-data-network-injection -ident 205 -band 000 -spotlight ./test-data-network-injection/205/spot_J0322+0441.dat -fpo 1391.3 -label J0322+0441 -dt 2  
@@ -263,7 +262,7 @@ Modify the <code>Makefile</code> to fit your system. By default the <code>YEPPP!
 <ul>
 <li>instead of calculating the band frequency <code>fpo</code> from <code>band</code>, we provide it directly with the <code>-fpo</code> switch (<code>-band 000</code> is invoked for legacy), </li>
 <li>the input data is denoted with the pulsar label, hence the <code>-label</code> switch, </li>
-<li>the sampling time <code>dt</code> is now set to <code>2s</code>,</li>
+<li>the sampling time <code>dt</code> is now set to <code>2 s</code>,</li>
 <li><code>-spotlight</code> switch points to the location of the spotlight file which contains the list of sky positions, and corresponding number and values of spindowns, in the following format: 
 \begin{equation} 
 h\, N_{sky}\, m_1\, n_1\, N^s_{1}\, s_{1}\, \dots\, s_{N^s_1}\, 
@@ -272,7 +271,6 @@ m_2\, n_2\, N^s_{2}\, s_1\, \dots\, s_{N^s_2}\, \dots,<br />
 where <mathjax>$h$</mathjax> is the hemisphere number (1 or 2), <mathjax>$N_{sky}$</mathjax> is the total number of sky positions in a given spotlight search, <mathjax>$m_i$</mathjax> and <mathjax>$n_i$</mathjax> are the sky positions in linear (grid) coordinates, <mathjax>$N^s_{i}$</mathjax> is the number of spindowns, and <mathjax>$s_{i}\,\dots\, s_{N^s_i}$</mathjax> and the spindowns (in linear coordinates), corresponding to the <mathjax>$i-$</mathjax>th sky position.    </li>
 </ul>
 <p>Results are as follows: </p>
-<h2 id="_1"></h2>
 <p><img alt="Results for the network of detectors" src="../img/1det2det.png" /></p>
 <h4 id="34-one-detector-version">3.4. One-detector version</h4>
 <p>In the case of <code>one-detector</code> and <code>gpu-current</code> versions, test data is in
@@ -296,14 +294,13 @@ file:</p>
    54320.7760185185
 </code></pre>
 
-<p>VSR1 database contains 929 narrow (1 Hz) bands, covering the range 
-100 - 1000 Hz. Neighboring bands overlap by 0.03125 Hz. Beginning 
-frequency <code>fpo</code> of each band is defined as </p>
-<pre><code>   fpo = 100.0 + df * bbb [Hz],
-</code></pre>
-
-<p>where <code>df</code> <mathjax>$= 1 - 2^{-5} = 0.96875$</mathjax> Hz, and <code>bbb</code> is the band number, 
-ranging from 0 to 928.</p>
+<p>Reference band frequency <code>fpo</code> is defined for each band as 
+<mathjax>$$ 
+fpo = 100 + (1 - 2^{-5})\cdot bbb\cdot \frac{1}{2dt}\ \mathrm{[Hz]},
+$$</mathjax>
+where <code>bbb</code> is the band number, and <code>dt</code> is the data sampling time (<code>0.5 s</code> for VSR1 data). 
+VSR1 database contains 929 narrow (1 Hz, <mathjax>$B=1/(2dt)$</mathjax>) bands, covering the range 
+100 - 1000 Hz. Neighboring bands overlap by 0.03125 Hz. </p>
 <h3 id="5-input-data-files">5. Input data files</h3>
 <p>A single run requires 2 data files for each detector <code>DD</code>, stored in <code>data_dir/nnn/DD</code> 
 subdirectory, where <code>DD</code> is <code>H1</code> (Hanford), <code>L1</code> (Livingston), or <code>V1</code> (Virgo Cascina):</p>
@@ -378,7 +375,7 @@ variable is determined by a call to <code>gethostname()</code>, </p>
 </li>
 </ul>
 <h3 id="8-algorithm-flowchart">8. Algorithm flowchart</h3>
-<h2 id="_2"></h2>
+<h2 id="_3"></h2>
 <p><img alt="Code flowchart" src="../img/flowchart.png" /></p>
 <h3 id="9-versions">9. Versions</h3>
 <p>Polgraw-allsky code comes also as an

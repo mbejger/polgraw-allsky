@@ -31,6 +31,7 @@ where
 * `frame` is the number of time frame to be analyzed,
 * `band` is the number of the frequency band (see the [data structure](#data_structure) description for details). 
 
+####
 #### 3.1. Full list of switches
 
 | Switch          | Description       |
@@ -57,8 +58,7 @@ Also
 | --nocheckpoint  |state file will not be created (no checkpointing) |
 | --help          |This help | 
 
-
-#### 3.2. Network of detectors (`master` branch) 
+#### 3.2. Network of detectors (`master` branch)
 
 For the examplary input data time streams `xdatc_001_101.bin` provided in [test-data-network.tar.gz](https://polgraw.camk.edu.pl/polgraw-allsky/data/test-data-network.tar.gz), the call is as follows: 
 ```
@@ -68,7 +68,9 @@ where the `LD_LIBRARY_PATH` points to the location of the `YEPPP!` library.
 
 The program will proceed assuming that the data directory `./test-data-network/001` for the time frame `001` contain subdirectories for the network of detectors (here `H1` and `V1`) with input time series `xdatc_001_101.bin` and the ephemerids files `DetSSB.bin` in each subdirectory. The grid of parameters files is expected to be in `./test-data-network/001/grid.bin`. 
 
+####
 #### 3.3. Network of detectors in spotlight search (`spotlight` branch)
+
 For the `H1L1` network of detectors, using the [test-data-network-injection.tar.gz](https://polgraw.camk.edu.pl/polgraw-allsky/data/test-data-network-injection.tar.gz) to search towards a pre-defined direction (spotlight search) in one 2-day segment: 
 ```
 LD_LIBRARY_PATH=lib/yeppp-1.0.0/binaries/linux/x86_64 ./search -data ./test-data-network-injection -ident 205 -band 000 -spotlight ./test-data-network-injection/205/spot_J0322+0441.dat -fpo 1391.3 -label J0322+0441 -dt 2  
@@ -77,7 +79,7 @@ The injection corresponds to a pulsar J0322+0441. Note the differences with resp
 
 * instead of calculating the band frequency `fpo` from `band`, we provide it directly with the `-fpo` switch (`-band 000` is invoked for legacy), 
 * the input data is denoted with the pulsar label, hence the `-label` switch, 
-* the sampling time `dt` is now set to `2s`,
+* the sampling time `dt` is now set to `2 s`,
 * `-spotlight` switch points to the location of the spotlight file which contains the list of sky positions, and corresponding number and values of spindowns, in the following format: 
 \begin{equation} 
 h\, N_{sky}\, m_1\, n_1\, N^s_{1}\, s_{1}\, \dots\, s_{N^s_1}\, 
@@ -86,7 +88,7 @@ m_2\, n_2\, N^s_{2}\, s_1\, \dots\, s_{N^s_2}\, \dots,
 where $h$ is the hemisphere number (1 or 2), $N_{sky}$ is the total number of sky positions in a given spotlight search, $m_i$ and $n_i$ are the sky positions in linear (grid) coordinates, $N^s_{i}$ is the number of spindowns, and $s_{i}\,\dots\, s_{N^s_i}$ and the spindowns (in linear coordinates), corresponding to the $i-$th sky position.    
 
 Results are as follows: 
-##
+
 ![Results for the network of detectors](img/1det2det.png)
 
 #### 3.4. One-detector version 
@@ -117,14 +119,13 @@ file:
    % cat 042/starting_date
    54320.7760185185
 ```
-VSR1 database contains 929 narrow (1 Hz) bands, covering the range 
-100 - 1000 Hz. Neighboring bands overlap by 0.03125 Hz. Beginning 
-frequency `fpo` of each band is defined as 
-```
-   fpo = 100.0 + df * bbb [Hz],
-```
-where `df` $= 1 - 2^{-5} = 0.96875$ Hz, and `bbb` is the band number, 
-ranging from 0 to 928.
+Reference band frequency `fpo` is defined for each band as 
+$$ 
+fpo = 100 + (1 - 2^{-5})\cdot bbb\cdot \frac{1}{2dt}\ \mathrm{[Hz]},
+$$
+where `bbb` is the band number, and `dt` is the data sampling time (`0.5 s` for VSR1 data). 
+VSR1 database contains 929 narrow (1 Hz, $B=1/(2dt)$) bands, covering the range 
+100 - 1000 Hz. Neighboring bands overlap by 0.03125 Hz. 
 
 ### 5. Input data files
 
