@@ -183,8 +183,8 @@ void handle_opts(
   // fpo_val is optionally read from the command line
   // Its initial value is set to -1
   if(!(sett->fpo >= 0))
-    // The usual definition:
-    sett->fpo = 100. + 0.96875 * opts->band;
+    // The usual definition (multiplying the offset by B=1/(2dt) ):
+    sett->fpo = 100. + 0.96875*opts->band*(0.5/sett->dt);
 
   printf("The reference frequency fpo is %f\n", sett->fpo);
   printf("The data sampling time dt is  %f\n", sett->dt); 
