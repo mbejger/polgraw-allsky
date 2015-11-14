@@ -1,14 +1,13 @@
-site_name: Polgraw Group 
+site_name: Polgraw Group  
 
 pages:
 - Home: 'index.md'
 - AllSky CW pipeline:
-    - 'Introduction': 'polgraw-allsky/index.md'
-    - 'Input data generation': 'polgraw-allsky/input_data.md'
-    - 'Search for candidate signals': 'polgraw-allsky/search_for_candidates.md'
-    - 'Coincidences between candidates': 'polgraw-allsky/coincidences.md'
-    - 'Pipeline script': 'polgraw-allsky/pipeline_script.md'
-    - 'Literature': 'polgraw-allsky/articles.md'
+    - 'Input data generation': 'input_data.md'
+    - 'Search for candidate signals': 'search_for_candidates.md'
+    - 'Coincidences between candidates': 'coincidences.md'
+    - 'Pipeline script': 'pipeline_script.md'
+    - 'Literature': 'articles.md'
 
 theme_dir: 'custom_theme'
 markdown_extensions: ['extra', 'mathjax', 'iconfonts(base=fa,prefix=fa)']

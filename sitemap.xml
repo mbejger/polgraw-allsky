@@ -12,37 +12,31 @@
     
         
     <url>
-     <loc>None/polgraw-allsky/</loc>
+     <loc>None/input_data/</loc>
      <lastmod>2015-11-14</lastmod>
      <changefreq>daily</changefreq>
     </url>
         
     <url>
-     <loc>None/polgraw-allsky/input_data/</loc>
+     <loc>None/search_for_candidates/</loc>
      <lastmod>2015-11-14</lastmod>
      <changefreq>daily</changefreq>
     </url>
         
     <url>
-     <loc>None/polgraw-allsky/search_for_candidates/</loc>
+     <loc>None/coincidences/</loc>
      <lastmod>2015-11-14</lastmod>
      <changefreq>daily</changefreq>
     </url>
         
     <url>
-     <loc>None/polgraw-allsky/coincidences/</loc>
+     <loc>None/pipeline_script/</loc>
      <lastmod>2015-11-14</lastmod>
      <changefreq>daily</changefreq>
     </url>
         
     <url>
-     <loc>None/polgraw-allsky/pipeline_script/</loc>
-     <lastmod>2015-11-14</lastmod>
-     <changefreq>daily</changefreq>
-    </url>
-        
-    <url>
-     <loc>None/polgraw-allsky/articles/</loc>
+     <loc>None/articles/</loc>
      <lastmod>2015-11-14</lastmod>
      <changefreq>daily</changefreq>
     </url>
