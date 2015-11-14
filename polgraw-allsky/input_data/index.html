@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        
+        
+        
+        <link rel="shortcut icon" href="../../img/favicon.ico">
+
+	<title>Input data generation - Polgraw Group</title>
+
+        <link href="../../css/bootstrap-3.0.3.min.css" rel="stylesheet">
+        <link href="../../css/font-awesome-4.0.3.css" rel="stylesheet">
+        <link rel="stylesheet" href="../../css/highlight.css">
+        <link href="../../css/base.css" rel="stylesheet">
+
+        <!-- HTML5 shim and Respond.js IE8 support of HTML5 elements and media queries -->
+        <!--[if lt IE 9]>
+            <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+            <script src="https://oss.maxcdn.com/libs/respond.js/1.3.0/respond.min.js"></script>
+        <![endif]-->
+
+        
+    </head>
+
+    <body>
+
+        <div class="navbar navbar-default navbar-fixed-top" role="navigation">
+    <div class="container">
+
+        <!-- Collapsed navigation -->
+        <div class="navbar-header">
+            <!-- Expander button -->
+            <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
+                <span class="sr-only">Toggle navigation</span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+            </button>
+
+            <!-- Main title -->
+            <a class="navbar-brand" href="../..">Polgraw Group</a>
+        </div>
+
+        <!-- Expanded navigation -->
+        <div class="navbar-collapse collapse">
+            <!-- Main navigation -->
+            <ul class="nav navbar-nav">
+            
+            
+                <li >
+                    <a href="../..">Home</a>
+                </li>
+            
+            
+            
+                <li class="dropdown active">
+                    <a href="#" class="dropdown-toggle" data-toggle="dropdown">AllSky CW pipeline <b class="caret"></b></a>
+                    <ul class="dropdown-menu">
+                    
+                        <li >
+                            <a href="../">Introduction</a>
+                        </li>
+                    
+                        <li class="active">
+                            <a href="./">Input data generation</a>
+                        </li>
+                    
+                        <li >
+                            <a href="../search_for_candidates/">Search for candidate signals</a>
+                        </li>
+                    
+                        <li >
+                            <a href="../coincidences/">Coincidences between candidates</a>
+                        </li>
+                    
+                        <li >
+                            <a href="../pipeline_script/">Pipeline script</a>
+                        </li>
+                    
+                        <li >
+                            <a href="../articles/">Literature</a>
+                        </li>
+                    
+                    </ul>
+                </li>
+            
+            
+            </ul>
+
+            <!-- Search, Navigation and Repo links -->
+            <ul class="nav navbar-nav navbar-right">
+                <li >
+                    <a rel="next" href="../">
+                        <i class="fa fa-arrow-left"></i> Previous
+                    </a>
+                </li>
+                <li >
+                    <a rel="prev" href="../search_for_candidates/">
+                        Next <i class="fa fa-arrow-right"></i>
+                    </a>
+                </li>
+                
+            </ul>
+        </div>
+    </div>
+</div>
+
+        <div class="container">
+            <div class="col-md-3"><div class="bs-sidebar hidden-print affix well" role="complementary">
+    <ul class="nav bs-sidenav">
+    
+        <li class="main active"><a href="#input-data-generation">Input data generation</a></li>
+        
+            <li><a href="#extract_band">extract_band</a></li>
+        
+            <li><a href="#gen2day-description">gen2day description</a></li>
+        
+    
+    </ul>
+</div></div>
+            <div class="col-md-9" role="main">
+
+<h1 id="input-data-generation">Input data generation</h1>
+<h2 id="extract_band"><code>extract_band</code></h2>
+<p>This code converts Short Fourier Transform Database files to time series. </p>
+<h3 id="prerequisites">Prerequisites</h3>
+<h3 id="how-to-run-it">How to run it?</h3>
+<pre><code>&gt; extract_band &lt; input_file
+</code></pre>
+
+<p>where <code>input_file</code> is an ASCII file contaning the following rows:  </p>
+<ul>
+<li>Maximal number of SFT</li>
+<li>The name of the output file</li>
+<li>The list of SFT files</li>
+<li>The frequency band in Hz</li>
+</ul>
+<p>for example: </p>
+<pre><code>100000
+J0034+1612_2010-10-10.out
+J0034+1612_2010-10-10.list
+718.2480
+1
+</code></pre>
+
+<h3 id="output">Output</h3>
+<p>Example output: </p>
+<pre><code>% Beginning freq- Band- Samples in one stretch- Subsampling factor- inter (overlapping, 2 if data were overlapped)- Frequency step- Scaling factor- ***The data are real and imag of the FFT
+% 908.152344 0.250000 256 8192.000000 2  0.0009766 1.000000e-20
+% FFT number in the file; Beginning mjd days; Gps s; Gps ns;
+% 100 55099.5879745370 937922816 0
+ 4.59662571e+02  2.27630825e+01
+-3.50387007e+02 -2.20005558e+02
+ 3.57587904e+02  1.01217077e+02
+ 1.74400486e+02  2.62086552e+02
+ 2.21804800e+02 -5.20278366e+02
+-3.87826732e+02 -1.55758978e+02
+
+</code></pre>
+
+<h2 id="gen2day-description"><code>gen2day</code> description</h2></div>
+        </div>
+
+	<footer class="col-md-12">
+		<hr>
+		
+		<center>Documentation built with <a href="http://www.mkdocs.org/">MkDocs</a>.</center>
+	</footer>
+
+
+        <script src="../../js/jquery-1.10.2.min.js"></script>
+        <script src="../../js/bootstrap-3.0.3.min.js"></script>
+        <script src="../../js/highlight.pack.js"></script>
+        <script src="../../js/base.js"></script>
+        <script src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-MML-AM_HTMLorMML"></script>
+        <script src="../../js/mathjaxhelper.js"></script>
+    </body>
+</html>

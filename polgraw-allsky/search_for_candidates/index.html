@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        
+        
+        
+        <link rel="shortcut icon" href="../../img/favicon.ico">
+
+	<title>Search for candidate signals - Polgraw Group</title>
+
+        <link href="../../css/bootstrap-3.0.3.min.css" rel="stylesheet">
+        <link href="../../css/font-awesome-4.0.3.css" rel="stylesheet">
+        <link rel="stylesheet" href="../../css/highlight.css">
+        <link href="../../css/base.css" rel="stylesheet">
+
+        <!-- HTML5 shim and Respond.js IE8 support of HTML5 elements and media queries -->
+        <!--[if lt IE 9]>
+            <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+            <script src="https://oss.maxcdn.com/libs/respond.js/1.3.0/respond.min.js"></script>
+        <![endif]-->
+
+        
+    </head>
+
+    <body>
+
+        <div class="navbar navbar-default navbar-fixed-top" role="navigation">
+    <div class="container">
+
+        <!-- Collapsed navigation -->
+        <div class="navbar-header">
+            <!-- Expander button -->
+            <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
+                <span class="sr-only">Toggle navigation</span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+            </button>
+
+            <!-- Main title -->
+            <a class="navbar-brand" href="../..">Polgraw Group</a>
+        </div>
+
+        <!-- Expanded navigation -->
+        <div class="navbar-collapse collapse">
+            <!-- Main navigation -->
+            <ul class="nav navbar-nav">
+            
+            
+                <li >
+                    <a href="../..">Home</a>
+                </li>
+            
+            
+            
+                <li class="dropdown active">
+                    <a href="#" class="dropdown-toggle" data-toggle="dropdown">AllSky CW pipeline <b class="caret"></b></a>
+                    <ul class="dropdown-menu">
+                    
+                        <li >
+                            <a href="../">Introduction</a>
+                        </li>
+                    
+                        <li >
+                            <a href="../input_data/">Input data generation</a>
+                        </li>
+                    
+                        <li class="active">
+                            <a href="./">Search for candidate signals</a>
+                        </li>
+                    
+                        <li >
+                            <a href="../coincidences/">Coincidences between candidates</a>
+                        </li>
+                    
+                        <li >
+                            <a href="../pipeline_script/">Pipeline script</a>
+                        </li>
+                    
+                        <li >
+                            <a href="../articles/">Literature</a>
+                        </li>
+                    
+                    </ul>
+                </li>
+            
+            
+            </ul>
+
+            <!-- Search, Navigation and Repo links -->
+            <ul class="nav navbar-nav navbar-right">
+                <li >
+                    <a rel="next" href="../input_data/">
+                        <i class="fa fa-arrow-left"></i> Previous
+                    </a>
+                </li>
+                <li >
+                    <a rel="prev" href="../coincidences/">
+                        Next <i class="fa fa-arrow-right"></i>
+                    </a>
+                </li>
+                
+            </ul>
+        </div>
+    </div>
+</div>
+
+        <div class="container">
+            <div class="col-md-3"><div class="bs-sidebar hidden-print affix well" role="complementary">
+    <ul class="nav bs-sidenav">
+    
+        <li class="main active"><a href="#f-statistic-candidate-signal-search">F-statistic candidate signal search</a></li>
+        
+            <li><a href="#1-prerequisites">1. Prerequisites</a></li>
+        
+            <li><a href="#2-compilation">2. Compilation</a></li>
+        
+            <li><a href="#3-how-to-run-the-program">3. How to run the program?</a></li>
+        
+            <li><a href="#34-one-detector-version">3.4. One-detector version</a></li>
+        
+            <li><a href="#4-data-structure">4. Data structure</a></li>
+        
+            <li><a href="#5-input-data-files">5. Input data files</a></li>
+        
+            <li><a href="#6-output-files">6. Output files</a></li>
+        
+            <li><a href="#7-auxiliary-files">7. Auxiliary files</a></li>
+        
+            <li><a href="#8-algorithm-flowchart">8. Algorithm flowchart</a></li>
+        
+    
+        <li class="main "><a href="#9-versions">9. Versions</a></li>
+        
+    
+    </ul>
+</div></div>
+            <div class="col-md-9" role="main">
+
+<h1 id="f-statistic-candidate-signal-search">F-statistic candidate signal search</h1>
+<p>Default (serial) version of the code for a network of detectors is available at <a href="https://github.com/mbejger/polgraw-allsky/tree/master">github</a>. To get it, run <code>git clone https://github.com/mbejger/polgraw-allsky.git</code>. </p>
+<h3 id="1-prerequisites">1. Prerequisites</h3>
+<p>The code is written in standard <code>C</code>. <a href="http://www.gnu.org/software/gsl/">GNU Scientific Library (GSL)</a> and the <a href="http://www.fftw.org">FFTW library</a> (version 3.0 or later) are needed to run the code. <a href="http://www.gnu.org/software/libc/manual/html_node/Accessing-Directories.html#Accessing-Directories">GNU struct dirent</a> objects are used to read the directories. </p>
+<p>Optionally, <a href="http://shibatch.sourceforge.net">SLEEF</a> or
+<a href="http://www.yeppp.info">YEPPP!</a>, libraries for high-performance computing that
+are optimized for speed are used to evaluate the trigonometric functions in
+<code>search</code>. These libraries are ported with the source code and are located in
+<code>src/lib</code>. The choice which of these libraries to use has to be made at compilation time by
+modifying the <code>Makefile</code>. </p>
+<h3 id="2-compilation">2. Compilation</h3>
+<p>Run  <code>make search</code> or <code>make</code> (search is a default option). Resulting  binary is called <code>search</code>. 
+Modify the <code>Makefile</code> to fit your system. By default the <code>YEPPP!</code> library is selected. </p>
+<h3 id="3-how-to-run-the-program">3. How to run the program?</h3>
+<p>Minimal call of <code>search</code> is as follows (code compiled with the <code>GNUSINCOS</code> option): </p>
+<pre><code>  ./search -d data_dir -o output_dir -i frame -b band  
+</code></pre>
+
+<p>where</p>
+<ul>
+<li><code>data_dir</code> is the base directory of input data files,</li>
+<li><code>output_dir</code>is a directory to write the output,</li>
+<li><code>frame</code> is the number of time frame to be analyzed,</li>
+<li><code>band</code> is the number of the frequency band (see the <a href="#data_structure">data structure</a> description for details). </li>
+</ul>
+<h4 id="31-full-list-of-switches">3.1. Full list of switches</h4>
+<table>
+<thead>
+<tr>
+<th>Switch</th>
+<th align="left">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>-d, -data</td>
+<td align="left">Data directory (default is <code>.</code></td>
+</tr>
+<tr>
+<td>-o, -output</td>
+<td align="left">Output directory (default is <code>./candidates</code></td>
+</tr>
+<tr>
+<td>-i, -ident</td>
+<td align="left">Frame number</td>
+</tr>
+<tr>
+<td>-b, -band</td>
+<td align="left">Band number</td>
+</tr>
+<tr>
+<td>-l, -label</td>
+<td align="left">Custom label for the input and output files</td>
+</tr>
+<tr>
+<td>-r, -range</td>
+<td align="left">File with grid range or pulsar position</td>
+</tr>
+<tr>
+<td>-c, -cwd</td>
+<td align="left">Change to directory <code>&lt;dir&gt;</code></td>
+</tr>
+<tr>
+<td>-t, -threshold</td>
+<td align="left">Threshold for the F-statistic (default is 20)</td>
+</tr>
+<tr>
+<td>-h, -hemisphere</td>
+<td align="left">Hemisphere (default is 0 - does both)</td>
+</tr>
+<tr>
+<td>-p, -fpo</td>
+<td align="left">Reference band frequency fpo value</td>
+</tr>
+<tr>
+<td>-s, -dt</td>
+<td align="left">Data sampling time dt (default value: 0.5)</td>
+</tr>
+<tr>
+<td>-x, -addsig</td>
+<td align="left">Add signal with parameters from <code>&lt;file&gt;</code></td>
+</tr>
+</tbody>
+</table>
+<p>Also </p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th align="left"></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>--whitenoise</td>
+<td align="left">white Gaussian noise assumed</td>
+</tr>
+<tr>
+<td>--nospindown</td>
+<td align="left">spindowns neglected</td>
+</tr>
+<tr>
+<td>--nocheckpoint</td>
+<td align="left">state file will not be created (no checkpointing)</td>
+</tr>
+<tr>
+<td>--help</td>
+<td align="left">This help</td>
+</tr>
+</tbody>
+</table>
+<h4 id="32-network-of-detectors-master-branch">3.2. Network of detectors (<code>master</code> branch)</h4>
+<p>For the examplary input data time streams <code>xdatc_001_101.bin</code> provided in <a href="https://polgraw.camk.edu.pl/polgraw-allsky/data/test-data-network.tar.gz">test-data-network.tar.gz</a>, the call is as follows: </p>
+<pre><code>LD_LIBRARY_PATH=lib/yeppp-1.0.0/binaries/linux/x86_64 ./search -data ./test-data-network -ident 001 -band 101
+</code></pre>
+
+<p>where the <code>LD_LIBRARY_PATH</code> points to the location of the <code>YEPPP!</code> library. </p>
+<p>The program will proceed assuming that the data directory <code>./test-data-network/001</code> for the time frame <code>001</code> contain subdirectories for the network of detectors (here <code>H1</code> and <code>V1</code>) with input time series <code>xdatc_001_101.bin</code> and the ephemerids files <code>DetSSB.bin</code> in each subdirectory. The grid of parameters files is expected to be in <code>./test-data-network/001/grid.bin</code>. </p>
+<h4 id="33-network-of-detectors-in-spotlight-search-spotlight-branch">3.3. Network of detectors in spotlight search (<code>spotlight</code> branch)</h4>
+<p>For the <code>H1L1</code> network of detectors, using the <a href="https://polgraw.camk.edu.pl/polgraw-allsky/data/test-data-network-injection.tar.gz">test-data-network-injection.tar.gz</a> to search towards a pre-defined direction (spotlight search) in one 2-day segment: </p>
+<pre><code>LD_LIBRARY_PATH=lib/yeppp-1.0.0/binaries/linux/x86_64 ./search -data ./test-data-network-injection -ident 205 -band 000 -spotlight ./test-data-network-injection/205/spot_J0322+0441.dat -fpo 1391.3 -label J0322+0441 -dt 2  
+</code></pre>
+
+<p>The injection corresponds to a pulsar J0322+0441. Note the differences with respect to the minimal call: </p>
+<ul>
+<li>instead of calculating the band frequency <code>fpo</code> from <code>band</code>, we provide it directly with the <code>-fpo</code> switch (<code>-band 000</code> is invoked for legacy), </li>
+<li>the input data is denoted with the pulsar label, hence the <code>-label</code> switch, </li>
+<li>the sampling time <code>dt</code> is now set to <code>2s</code>,</li>
+<li><code>-spotlight</code> switch points to the location of the spotlight file which contains the list of sky positions, and corresponding number and values of spindowns, in the following format: 
+\begin{equation} 
+h\, N_{sky}\, m_1\, n_1\, N^s_{1}\, s_{1}\, \dots\, s_{N^s_1}\, 
+m_2\, n_2\, N^s_{2}\, s_1\, \dots\, s_{N^s_2}\, \dots,<br />
+\end{equation} 
+where <mathjax>$h$</mathjax> is the hemisphere number (1 or 2), <mathjax>$N_{sky}$</mathjax> is the total number of sky positions in a given spotlight search, <mathjax>$m_i$</mathjax> and <mathjax>$n_i$</mathjax> are the sky positions in linear (grid) coordinates, <mathjax>$N^s_{i}$</mathjax> is the number of spindowns, and <mathjax>$s_{i}\,\dots\, s_{N^s_i}$</mathjax> and the spindowns (in linear coordinates), corresponding to the <mathjax>$i-$</mathjax>th sky position.    </li>
+</ul>
+<p>Results are as follows: </p>
+<h2 id="_1"></h2>
+<p><img alt="Results for the network of detectors" src="../img/1det2det.png" /></p>
+<h4 id="34-one-detector-version">3.4. One-detector version</h4>
+<p>In the case of <code>one-detector</code> and <code>gpu-current</code> versions, test data is in
+<a href="https://polgraw.camk.edu.pl/polgraw-allsky/data/test-data.tar.gz">test-data.tar.gz</a>. 
+The directory <code>001</code> contains directly the <code>DetSSB.bin</code>, <code>grid.bin</code> and <code>xdatc_001_101.bin</code> files. </p>
+<h3 id="4-data-structure">4. Data structure</h3>
+<p><a id="data_structure"></a> 
+We describe the structure using the VSR1 data as an example. 
+Time of the first sample in MJD (Modified Julian Date) is 54239.00 
+(corresponding to 2007/05/18, UTC 12:00). </p>
+<p>In this run the data was divided into 68 time frames, each of them 2 
+sideral  days  long, rounded to half second (172328 seconds each). 
+Since we use the sampling time of <code>0.5s</code>, total number of data points 
+in each time frame is <code>N=344656</code>. </p>
+<p>Frames are labelled with three-digit consecutive number, 
+from <code>001</code> to <code>068</code>. Frame label is the name of a subfolder, containing 
+all narrowband sequences corresponding to that frame, e.g., <code>./042</code>.</p>
+<p>Beginning MJD of each time frame is saved in the <code>nnn/starting_date</code> 
+file:</p>
+<pre><code>   % cat 042/starting_date
+   54320.7760185185
+</code></pre>
+
+<p>VSR1 database contains 929 narrow (1 Hz) bands, covering the range 
+100 - 1000 Hz. Neighboring bands overlap by 0.03125 Hz. Beginning 
+frequency <code>fpo</code> of each band is defined as </p>
+<pre><code>   fpo = 100.0 + df * bbb [Hz],
+</code></pre>
+
+<p>where <code>df</code> <mathjax>$= 1 - 2^{-5} = 0.96875$</mathjax> Hz, and <code>bbb</code> is the band number, 
+ranging from 0 to 928.</p>
+<h3 id="5-input-data-files">5. Input data files</h3>
+<p>A single run requires 2 data files for each detector <code>DD</code>, stored in <code>data_dir/nnn/DD</code> 
+subdirectory, where <code>DD</code> is <code>H1</code> (Hanford), <code>L1</code> (Livingston), or <code>V1</code> (Virgo Cascina):</p>
+<ul>
+<li>
+<p><code>xdat_nnn_bbb.bin</code> - time-domain narrow-band data sequence, sampled
+     at  half second. <code>nnn</code> is the number of time frame, <code>bbb</code> is the
+     number of frequency band,</p>
+</li>
+<li>
+<p><code>DetSSB.bin</code>  -  location  of  the  detector  w.r.t. the Solar
+   System Barycenter (SSB), in
+     Cartesian coordinates, sampled at half second (3dim array of size <code>N</code>). 
+     Last two records
+     of  this file  are the angle <code>phir</code>, determining the  position of
+     Earth in  its diurnal motion, and the obliquity of  the ecliptic
+     <code>epsm</code>, both calculated for the first sample of the data,</p>
+</li>
+</ul>
+<p>as we as the sky positions-frequency-spindown grid file in linear coordinates 
+(common for all the detectors), stored in <code>data_dir/nnn</code>: </p>
+<ul>
+<li><code>grid.bin</code> - generator matrix of an optimal grid of templates. </li>
+</ul>
+<h3 id="6-output-files">6. Output files</h3>
+<p>Binary output  files,   containing  trigger  events   above  an  arbitrary
+threshold, are written to  the output_dir directory.  There are two output
+files for every input data sequence: <code>triggers_nnn_bbb_1.bin</code> and
+<code>triggers_nnn_bbb_2.bin</code>,  where  <code>1</code>  and  <code>2</code> correspond to  northern  and
+southern  ecliptic  hemisphere. Every trigger (candidate) event  occupies <code>40</code>
+consecutive bytes (5 double numbers), with the following meaning:</p>
+<table>
+<thead>
+<tr>
+<th>Record no.</th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>frequency [radians, between 0 and <mathjax>$\pi$</mathjax>] above <code>fpo</code></td>
+</tr>
+<tr>
+<td>2</td>
+<td>spindown [Hz s<sup>-1</sup>]</td>
+</tr>
+<tr>
+<td>3</td>
+<td>declination [radians]</td>
+</tr>
+<tr>
+<td>4</td>
+<td>right ascension [radians]</td>
+</tr>
+<tr>
+<td>5</td>
+<td>signal to noise ratio</td>
+</tr>
+</tbody>
+</table>
+<h3 id="7-auxiliary-files">7. Auxiliary files</h3>
+<p>There is a couple of auxiliary files created by the <code>search</code> 
+in the working directory:</p>
+<ul>
+<li>
+<p><code>wisdom-hostname.dat</code> - "wisdom" file created by the <code>FFTW</code>. The <code>hostname</code> 
+variable is determined by a call to <code>gethostname()</code>, </p>
+</li>
+<li>
+<p><code>state_nnn_bbb.dat</code> - checkpoint file.  The  search can  be safely restarted, calculations will continue  from the last grid position saved to this file. After successful termination, checkpoint file is left empty.</p>
+</li>
+</ul>
+<h3 id="8-algorithm-flowchart">8. Algorithm flowchart</h3>
+<h2 id="_2"></h2>
+<p><img alt="Code flowchart" src="../img/flowchart.png" /></p>
+<h3 id="9-versions">9. Versions</h3>
+<p>Polgraw-allsky code comes also as an
+<a href="http://www.sciencedirect.com/science/article/pii/S0010465514003774">MPI</a>,
+<a href="https://github.com/mbejger/polgraw-allsky/tree/spotlight">network of detectors spotlight
+search</a> and a
+<a href="https://github.com/mbejger/polgraw-allsky/tree/gpu-current">GPU</a> (currently
+one detector) version. </p></div>
+        </div>
+
+	<footer class="col-md-12">
+		<hr>
+		
+		<center>Documentation built with <a href="http://www.mkdocs.org/">MkDocs</a>.</center>
+	</footer>
+
+
+        <script src="../../js/jquery-1.10.2.min.js"></script>
+        <script src="../../js/bootstrap-3.0.3.min.js"></script>
+        <script src="../../js/highlight.pack.js"></script>
+        <script src="../../js/base.js"></script>
+        <script src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-MML-AM_HTMLorMML"></script>
+        <script src="../../js/mathjaxhelper.js"></script>
+    </body>
+</html>
