@@ -37,7 +37,7 @@ VECLIB = lib/yeppp-1.0.0/binaries/linux/x86_64/libyeppp.so
 endif
 
 
-all: veclib search
+all: veclib sigen search coincidences
 
 ifeq ($(strip $(SINCOS)),SLEEF)
 veclib:
@@ -46,7 +46,7 @@ veclib:
 endif
 ifeq ($(strip $(SINCOS)),YEPPP)
 veclib:
-	echo "Using prebuild YEPPP library: $(VECLIB)"
+	@echo -e "\nUsing prebuild YEPPP library from: $(VECLIB)\n"
 endif
 
 search: main.o jobcore.o timer.o settings.o auxi.o init.o
@@ -80,4 +80,4 @@ ifeq ($(strip $(SINCOS)),SLEEF)
 endif
 
 uninstall: clean
-	rm -f search
+	rm -f sigen search coincidences
