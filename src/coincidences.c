@@ -483,7 +483,8 @@ void read_trigger_files(Search_settings *sett,
     j = imtr[q][0];
     int pari[4], ops[256];
     unsigned short int l, w=imtr[q][1], fra[256];  
-    float mean[5]; 
+    double mean[5]; 
+    float meanf[5]; 
 
     for(l=0; l<5; l++) mean[l]=0; 
 
@@ -508,17 +509,19 @@ void read_trigger_files(Search_settings *sett,
 
     mean[4] = sqrt(mean[4]); // SNR mean: sqrt of sum of squares  
 
+    for(l=0; l<5; l++) meanf[l] = (float)mean[l]; 
+
     // writing to binary file 
     fwrite(&w, sizeof(unsigned short int), 1, data); 
 //    fwrite(&pari, sizeof(int), 4, data);  
-    fwrite(&mean, sizeof(float), 5, data);          
+    fwrite(&meanf, sizeof(float), 5, data);          
     fwrite(&fra, sizeof(unsigned short int), w, data); 
     fwrite(&ops, sizeof(int), w, data); 
  
     // Maximal coincidence (first row of imtr[][])
     //#mb written to stderr 
     if(!q) 
-    fprintf(stderr, "%s %04d %5f %5hu %5d %15le %5le %5le %5le %5le\n", 
+    fprintf(stderr, "%s %04d %5f %5hu %5d %15.8le %5.8le %5.8le %5.8le %5le\n", 
       opts->trigname, opts->shift, sett->fpo, trig->frcount, w,   
       mean[0], mean[1], mean[2], mean[3], mean[4]);  
 

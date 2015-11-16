@@ -1036,11 +1036,43 @@ void manage_grid_matrix(
 
     // This is an auxiliary matrix composed of the eigenvector 
     // columns multiplied by a matrix with sqrt(eigenvalues) on diagonal  
-    for(i=0; i<4; i++)
-      for(j=0; j<4; j++)
-        sett->vedva[i][j]  = eigvec[i][j]*sqrt(eigval[j]);  
-
+    for(i=0; i<4; i++) { 
+      for(j=0; j<4; j++) { 
+        sett->vedva[i][j]  = eigvec[i][j]*sqrt(eigval[j]); 
+//        printf("%.12le ", sett->vedva[i][j]); 
+      } 
+//      printf("\n"); 
+    }
+      
   } 
+
+/* 
+  //#mb matrix generated in matlab, for tests 
+  double _tmp[4][4] = { 
+    {-2.8622034614137332e-001, -3.7566564762376159e-002, -4.4001551065376701e-012, -3.4516253934827171e-012}, 
+    {-2.9591999145463371e-001, 3.6335210834374479e-002, 8.1252443441098394e-014, -6.8170555119669981e-014}, 
+    {1.5497867603229576e-005, 1.9167007413107127e-006, 1.0599051611325639e-008, -5.0379548388381567e-008}, 
+    {2.4410008440913992e-005, 3.2886518554938671e-006, -5.7338464150027107e-008, -9.3126913365595100e-009},
+  };
+
+  { int i,j; 
+  for(i=0; i<4; i++) 
+    for(j=0; j<4; j++) 
+      sett->vedva[i][j]  = _tmp[i][j]; 
+  }
+
+  printf("\n"); 
+
+  { int i, j; 
+  for(i=0; i<4; i++) { 
+    for(j=0; j<4; j++) {
+        printf("%.12le ", sett->vedva[i][j]);
+      }
+      printf("\n"); 
+  } 
+
+ } 
+*/ 
 
   gsl_vector_free (eval);
   gsl_matrix_free (evec);
