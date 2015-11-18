@@ -231,7 +231,7 @@ while read line; do
 
   # Searching for coincidences 
   for shi in {0..1}{0..1}{0..1}{0..1}; do
-    ./coincidences -data $candout -trigname $name -refloc ${coisrc}/coinc-testdata -fpo $fpo -shift $shi -scale 4444 -refr 100 -dt 2 -maxcoin 15 -narrowdown 0.2 -output ${coiout}/${name} 2>> ${coiout}/${name}/summary 1> /dev/null  
+    ./coincidences -data $candout -trigname $name -refloc ${coisrc}/coinc-testdata -fpo $fpo -shift $shi -scale 4444 -refr 100 -dt 2 -mincoin 15 -narrowdown 0.2 -output ${coiout}/${name} 2>> ${coiout}/${name}/summary 1> /dev/null  
   done
 
   # Selecting maximal coincidence among all 16 shifts (col. 5) 
