@@ -13,7 +13,7 @@ Other branches are the network-of-detectors [spotlight](https://github.com/mbejg
 [one detector](https://github.com/mbejger/polgraw-allsky/tree/one-detector) and [GPU](https://github.com/mbejger/polgraw-allsky/tree/gpu-current) 
 versions. 
 
-See doc/readme_search.txt and the [documentation page](http://polgraw.camk.edu.pl/polgraw-allsky) 
+See doc/readme_search.txt and the [documentation page](http://mbejger.github.io/polgraw-allsky/) 
 for some more details (documentation may not be complete).
 
 Contributors
