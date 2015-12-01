@@ -1,0 +1,49 @@
+SEARCH_DIR = ../../search/network/src-cpu
+
+# FFTW_DIR - fftw location, remember to compile it with optimizations (e.g. avx)
+FFTW_DIR = /opt/fftw/3.3.4/gnu
+
+CC = gcc
+# pre-processor flags: TIMERS, VERBOSE (rich stdout output)
+#CFLAGS = -DPREFIX="./candidates" -DTIMERS -D$(SINCOS)
+CFLAGS = -I$(SEARCH_DIR) -I$(FFTW_DIR)/include
+CFLAGS += -g -Wall -Wno-unused -fno-omit-frame-pointer \
+          -O3 -ffast-math -funsafe-loop-optimizations -funroll-loops \
+          -march=corei7-avx -mtune=corei7-avx -mavx
+#cpu specific optimizations e.g.: 
+#sandy-bridge (psk)
+	#-march=corei7-avx -mtune=corei7-avx -mavx
+#westmere (plgrid)
+	#-march=corei7 -mtune=corei7
+
+LDFLAGS = -L$(FFTW_DIR)/lib
+
+LOADLIBES = -Wl,--dynamic-linker=/lib64/ld-linux-x86-64.so.2 \
+	    -static -lfftw3 -lgsl -lgslcblas \
+	    -Wl,-Bdynamic -lc -lrt -lm
+
+
+all: coincidences
+
+coincidences: coincidences.o settings.o auxi.o init.o
+	$(CC) $(LDFLAGS) -o $@ $^ $(LOADLIBES)
+
+settings.o: $(SEARCH_DIR)/settings.c
+	$(CC) $(CFLAGS) -c -o $@ $<
+
+init.o: $(SEARCH_DIR)/init.c  $(SEARCH_DIR)/settings.h $(SEARCH_DIR)/struct.h $(SEARCH_DIR)/init.h $(SEARCH_DIR)/auxi.h
+	$(CC) $(CFLAGS) -c -o $@ $<
+
+auxi.o: $(SEARCH_DIR)/auxi.c $(SEARCH_DIR)/auxi.h
+	$(CC) -c -g -O3 -Wall -o $@ $<
+
+doc:
+	doxygen ../doc/Doxyfile
+
+clean:
+	rm -f *.o
+
+uninstall: clean
+	rm -f coincidences
+
+.PHONY: all doc clean uninstall
