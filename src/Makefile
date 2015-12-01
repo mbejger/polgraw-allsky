@@ -8,7 +8,7 @@ CC = gcc -g -fno-omit-frame-pointer
 # pre-processor flags: TIMERS, VERBOSE (rich stdout output)
 CFLAGS = -Wall -Wno-unused -DPREFIX="./candidates" -DTIMERS \
 	-O3 -ffast-math -funsafe-loop-optimizations -funroll-loops \
-        -I$(FFTW_DIR)/include -D$(SINCOS) -march=corei7-avx -mtune=corei7-avx -mavx
+        -I$(FFTW_DIR)/include -D$(SINCOS) -march=corei7-avx -mtune=corei7-avx -mavx -fopenmp 
 #cpu specific optimizations e.g.: 
 #sandy-bridge (psk)
 	#-march=corei7-avx -mtune=corei7-avx -mavx
@@ -19,7 +19,7 @@ LDFLAGS = -L$(FFTW_DIR)/lib
 
 LOADLIBES = -Wl,--dynamic-linker=/lib64/ld-linux-x86-64.so.2 \
 	    -static -lfftw3 -lgsl -lgslcblas \
-	    -Wl,-Bdynamic -lc -lrt -lm
+	    -Wl,-Bdynamic -lc -lrt -lm -fopenmp 
 
 ifeq ($(strip $(SINCOS)),SLEEF)
 SPATH = lib/sleef-2.80/simd
@@ -49,7 +49,7 @@ veclib:
 	echo "Using prebuild YEPPP library: $(VECLIB)"
 endif
 
-search: main.o jobcore.o timer.o settings.o auxi.o init.o
+search: main.o jobcore.o timer.o settings.o auxi.o init.o 
 	$(CC) $(LDFLAGS) -gnatv -o $@ $^ $(LOADLIBES)
 
 sigen: sigen.o settings.o auxi.o
@@ -57,9 +57,9 @@ sigen: sigen.o settings.o auxi.o
 
 coincidences: coincidences.o settings.o auxi.o init.o
 	$(CC) $(LDFLAGS) -gnatv -o $@ $^ $(LOADLIBES)
-
-followup: followup.o settings.o auxi.o init.o
-	$(CC) $(LDFLAGS) -gnatv -o $@ $^ $(LOADLIBES)
+# open mp library added!
+followup: followup.o timer.o settings.o auxi.o init.o 
+	$(CC) $(LDFLAGS) -gnatv -fopenmp -o $@ $^ $(LOADLIBES)
 
 doc:
 	doxygen ../doc/Doxyfile
