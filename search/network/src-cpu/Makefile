@@ -52,7 +52,7 @@ veclib:
 endif
 
 
-search: main.o jobcore.o timer.o settings.o auxi.o init.o 
+search: main.o jobcore.o timer.o settings.o auxi.o init.o
 	$(CC) $(LDFLAGS) -o $@ $^ $(LOADLIBES)
 
 jobcore.o: settings.h timer.h auxi.h
@@ -66,9 +66,6 @@ settings.o: settings.h struct.h
 auxi.o: auxi.c auxi.h
 	$(CC) -c -O3 -Wall -o $@ $< 
 
-doc:
-	doxygen ../doc/Doxyfile
-
 clean:
 	rm -f *.o
 ifeq ($(strip $(SINCOS)),SLEEF)
@@ -78,15 +75,12 @@ endif
 uninstall: clean
 	rm -f search
 
-.PHONY: all veclib clean uninstall doc
+.PHONY: all veclib clean uninstall
 
 #----------------------------------------------
+
 #sigen: sigen.o settings.o auxi.o
-#	$(CC) $(LDFLAGS) -gnatv -o $@ $^ $(LOADLIBES)
-#
-#coincidences: coincidences.o settings.o auxi.o init.o
-#	$(CC) $(LDFLAGS) -gnatv -o $@ $^ $(LOADLIBES)
-#
+#	$(CC) $(LDFLAGS) -o $@ $^ $(LOADLIBES)
 #
 #gridopt.o: gridopt.c 
 #	$(CC) -c -o $@ $< -O3 -Wall
@@ -94,7 +88,5 @@ uninstall: clean
 #lineph.o: lineph.c 
 #	$(CC) -c -o $@ $< -O3 -Wall
 #
-#
 #gridopt: gridopt.o auxi.o lineph.o settings.o
-#	$(CC) $(LDFLAGS) -gnatv -o $@ $^ -Wl,-Bdynamic -lc -lrt -lgsl -lgslcblas -lm 
-
+#	$(CC) $(LDFLAGS) -o $@ $^ -Wl,-Bdynamic -lc -lrt -lgsl -lgslcblas -lm 
