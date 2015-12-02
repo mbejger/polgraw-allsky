@@ -1,7 +1,7 @@
 MACROS = -DPREFIX="./candidates" -DDTAPREFIX="." -DTIMERS=1
 CFLAGS = -O3 -g -I/usr/local/cuda/include/
 LDFLAGS = -L/usr/local/cuda/lib -L/usr/local/cuda/lib64
-LIBS = -lm -lgsl -lgslcblas -lcufft -lcuda -lcudart -lcusparse -lcublas
+LIBS = -static -lgsl -lgslcblas -Wl,-Bdynamic -lcufft -lcuda -lcudart -lcusparse -lcublas -lc -lrt -lm
 
 TARGET = gwsearch-gpu
 OBJS = main.o jobcore.o auxi.o timer.o settings.o init.o spline_z.o kernels.o
