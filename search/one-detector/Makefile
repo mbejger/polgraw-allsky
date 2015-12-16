@@ -1,4 +1,4 @@
-SUBDIRS = src-cpu src-gpu
+SUBDIRS = src src-gpu
 
 subdirs: $(SUBDIRS)
 
