@@ -26,7 +26,7 @@ LOADLIBES = -Wl,--dynamic-linker=/lib64/ld-linux-x86-64.so.2 \
 	    -Wl,-Bdynamic -lc -lrt -lm -fopenmp 
 
 ifeq ($(strip $(SINCOS)),SLEEF)
-SPATH = lib/sleef-2.80/simd
+SPATH = $(SEARCH_DIR)/lib/sleef-2.80/simd
 CFLAGS  += -DENABLE_AVX -I$(SPATH)
 LDFLAGS += -L$(SPATH)
 LOADLIBES += -lsleef-avx
@@ -34,10 +34,11 @@ VECLIB = $(SPATH)/libsleef-avx.so
 #sleef-2.80/purec/sleefdp.o
 endif
 ifeq ($(strip $(SINCOS)),YEPPP)
-CFLAGS  += -Ilib/yeppp-1.0.0/library/headers
-LDFLAGS += -Llib/yeppp-1.0.0/binaries/linux/x86_64
+VECPATH = $(SEARCH_DIR)/lib/yeppp-1.0.0
+CFLAGS  += -I$(VECPATH)/library/headers
+LDFLAGS += -L$(VECPATH)/binaries/linux/x86_64
 LOADLIBES += -lyeppp
-VECLIB = lib/yeppp-1.0.0/binaries/linux/x86_64/libyeppp.so
+VECLIB = $(VECPATH)/binaries/linux/x86_64/libyeppp.so
 endif
 
 
@@ -50,11 +51,11 @@ veclib:
 endif
 ifeq ($(strip $(SINCOS)),YEPPP)
 veclib:
-	echo "Using prebuild YEPPP library: $(VECLIB)"
+	@echo "Using prebuild YEPPP library: $(VECLIB)"
 endif
 
 
-# open mp library added!
+# openmp library added!
 followup: followup.o settings.o auxi.o init.o 
 	$(CC) $(LDFLAGS) -fopenmp -o $@ $^ $(LOADLIBES)
 
@@ -70,9 +71,6 @@ auxi.o: $(SEARCH_DIR)/auxi.c $(SEARCH_DIR)/auxi.h
 
 doc:
 	doxygen ../doc/Doxyfile
-
-#auxi.o: auxi.c 
-#	$(CC) -c -o $@ $< -O3 -Wall
 
 clean:
 	rm -f *.o
