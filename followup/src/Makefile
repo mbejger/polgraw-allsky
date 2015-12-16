@@ -1,3 +1,5 @@
+SEARCH_DIR = ../../search/network/src-cpu
+
 # FFTW_DIR - fftw location, remember to compile it with optimizations (e.g. avx)
 # SINCOS = {YEPPP or SLEEF or GNUSINCOS or NOSINCOS}
 FFTW_DIR = /opt/fftw/3.3.4/gnu
@@ -7,7 +9,7 @@ CC = gcc
 
 # pre-processor flags: TIMERS, VERBOSE (rich stdout output)
 CFLAGS = -DPREFIX="./candidates" -DTIMERS -D$(SINCOS)
-CFLAGS += -I$(FFTW_DIR)/include 
+CFLAGS += -I$(FFTW_DIR)/include -I$(SEARCH_DIR)
 CFLAGS += -g -Wall -Wno-unused -fno-omit-frame-pointer \
 	-O3 -ffast-math -funsafe-loop-optimizations -funroll-loops \
 	-march=corei7-avx -mtune=corei7-avx -mavx -fopenmp 
@@ -53,14 +55,24 @@ endif
 
 
 # open mp library added!
-followup: followup.o timer.o settings.o auxi.o init.o 
+followup: followup.o settings.o auxi.o init.o 
 	$(CC) $(LDFLAGS) -fopenmp -o $@ $^ $(LOADLIBES)
+
+settings.o: $(SEARCH_DIR)/settings.c
+	$(CC) $(CFLAGS) -c -o $@ $<
+
+init.o: $(SEARCH_DIR)/init.c  $(SEARCH_DIR)/settings.h $(SEARCH_DIR)/struct.h $(SEARCH_DIR)/init.h $(SEARCH_DIR)/auxi.h
+	$(CC) $(CFLAGS) -c -o $@ $<
+
+auxi.o: $(SEARCH_DIR)/auxi.c $(SEARCH_DIR)/auxi.h
+	$(CC) -c -g -O3 -Wall -o $@ $<
+
 
 doc:
 	doxygen ../doc/Doxyfile
 
-auxi.o: auxi.c 
-	$(CC) -c -o $@ $< -O3 -Wall
+#auxi.o: auxi.c 
+#	$(CC) -c -o $@ $< -O3 -Wall
 
 clean:
 	rm -f *.o
