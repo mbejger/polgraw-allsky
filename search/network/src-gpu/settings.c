@@ -3,9 +3,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include "struct.h"
 #include "settings.h"
 #include "auxi.h"
-#include "struct.h"
 
 #include "cuda_error.h"
 

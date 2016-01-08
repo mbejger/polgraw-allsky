@@ -11,8 +11,8 @@
 #include <time.h>
 
 #include "auxi.h"
-#include "settings.h"
 #include "struct.h"
+#include "settings.h"
 #include "jobcore.h"
 #include "init.h"
 

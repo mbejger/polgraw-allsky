@@ -1,11 +1,11 @@
 #ifndef __SETTINGS_H__
 #define __SETTINGS_H__
 
-#include <cuda.h>
-#include <cuda_runtime_api.h>
-#include <cufft.h>
+//#include <cuda.h>
+//#include <cuda_runtime_api.h>
+//#include <cufft.h>
 
-#include "struct.h"
+//#include "struct.h"
 #include "floats.h"
 
 #define NPAR 5 		/* no. of trigger parameters */
