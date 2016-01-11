@@ -1,3 +1,5 @@
+TARGET = gwsearch-cpu
+
 # FFTW_DIR - fftw location, remember to compile it with optimizations (e.g. avx)
 # SINCOS = {YEPPP or SLEEF or GNUSINCOS or NOSINCOS}
 FFTW_DIR = /opt/fftw/3.3.4/gnu
@@ -19,27 +21,27 @@ CFLAGS += -g -Wall -Wno-unused -fno-omit-frame-pointer \
 
 LDFLAGS = -L$(FFTW_DIR)/lib
 
-LOADLIBES = -Wl,--dynamic-linker=/lib64/ld-linux-x86-64.so.2 \
-	    -static -lfftw3 -lgsl -lgslcblas \
-	    -Wl,-Bdynamic -lc -lrt -lm
+LDLIBS = -Wl,--dynamic-linker=/lib64/ld-linux-x86-64.so.2 \
+	 -static -lfftw3 -lgsl -lgslcblas \
+	 -Wl,-Bdynamic -lc -lrt -lm
 
 ifeq ($(strip $(SINCOS)),SLEEF)
 SPATH = lib/sleef-2.80/simd
 CFLAGS  += -DENABLE_AVX -I$(SPATH)
 LDFLAGS += -L$(SPATH)
-LOADLIBES += -lsleef-avx
+LDLIBS += -lsleef-avx
 VECLIB = $(SPATH)/libsleef-avx.so
 #sleef-2.80/purec/sleefdp.o
 endif
 ifeq ($(strip $(SINCOS)),YEPPP)
 CFLAGS  += -Ilib/yeppp-1.0.0/library/headers
 LDFLAGS += -Llib/yeppp-1.0.0/binaries/linux/x86_64
-LOADLIBES += -lyeppp
+LDLIBS += -lyeppp
 VECLIB = lib/yeppp-1.0.0/binaries/linux/x86_64/libyeppp.so
 endif
 
 
-all: veclib search
+all: veclib $(TARGET)
 
 ifeq ($(strip $(SINCOS)),SLEEF)
 veclib:
@@ -52,8 +54,8 @@ veclib:
 endif
 
 
-search: main.o jobcore.o timer.o settings.o auxi.o init.o
-	$(CC) $(LDFLAGS) -o $@ $^ $(LOADLIBES)
+$(TARGET): main.o jobcore.o timer.o settings.o auxi.o init.o
+	$(CC) $(LDFLAGS) -o $@ $^ $(LDLIBS)
 
 jobcore.o: settings.h timer.h auxi.h
 
@@ -73,14 +75,14 @@ ifeq ($(strip $(SINCOS)),SLEEF)
 endif
 
 uninstall: clean
-	rm -f search
+	rm -f $(TARGET)
 
 .PHONY: all veclib clean uninstall
 
 #----------------------------------------------
 
 #sigen: sigen.o settings.o auxi.o
-#	$(CC) $(LDFLAGS) -o $@ $^ $(LOADLIBES)
+#	$(CC) $(LDFLAGS) -o $@ $^ $(LDLIBS)
 #
 #gridopt.o: gridopt.c 
 #	$(CC) -c -o $@ $< -O3 -Wall
