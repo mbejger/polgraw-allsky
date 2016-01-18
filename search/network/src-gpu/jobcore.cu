@@ -17,14 +17,6 @@
 #include "timer.h"
 
 #include <assert.h>
-#if defined(SLEEF)
-//#include "sleef-2.80/purec/sleef.h"
-#include <sleefsimd.h>
-#elif defined(YEPPP)
-#include <yepLibrary.h>
-#include <yepCore.h>
-#include <yepMath.h>
-#endif
 
 
 void save_array(complex double *arr, int N, const char* file) {
@@ -355,23 +347,6 @@ FLOAT_TYPE* job_core(
     bb += bbtemp/ifo[n].sig.sig2;   
   }
 
-#ifdef YEPPP
-#define VLEN 2048
-    yepLibrary_Init();
-    //printf("npoints=%d, size=%d\n", Npoints, Npoints*sizeof(Yep64f));
-    Yep64f _p[VLEN];
-    Yep64f _s[VLEN];
-    Yep64f _c[VLEN];
-    enum YepStatus status;
-    int bnd = (sett->N/VLEN)*VLEN;
-    //printf("npoints=%d, bnd=%d\n", sett->N, bnd);
-#endif
-#ifdef SLEEF
-    double _p[VECTLENDP], _c[VECTLENDP];
-    vdouble2 v;
-    vdouble a;
-#endif
-
 
   /* Spindown loop 
    */
@@ -414,62 +389,7 @@ FLOAT_TYPE* job_core(
 
       // phase modulation before fft
 
-#if defined(SLEEF)
-      // use simd sincos from the SLEEF library;
-      // VECTLENDP is a simd vector length defined in the SLEEF library
-      // and it depends on selected instruction set e.g. -DENABLE_AVX
-      for (i=0; i<sett->N; i+=VECTLENDP) {
-	for(j=0; j<VECTLENDP; j++)
-	  _p[j] =  het1*(i+j) + sgnlt[1]*_tmp1[0][i+j];
-	
-	a = vloadu(_p);
-	v = xsincos(a);
-	vstoreu(_p, v.x); // reuse _p for sin
-	vstoreu(_c, v.y);
-	
-	for(j=0; j<VECTLENDP; ++j){
-	  exph = _c[j] - I*_p[j];
-	  fftw_arr->xa[i+j] = ifo[0].sig.xDatma[i+j]*exph; ///ifo[0].sig.sig2;
-	  fftw_arr->xb[i+j] = ifo[0].sig.xDatmb[i+j]*exph; ///ifo[0].sig.sig2;
-	}
-      } 
-#elif defined(YEPPP)
-      // use yeppp! library;
-      // VLEN is length of vector to be processed
-      // for caches L1/L2 64/256kb optimal value is ~2048
-      for (j=0; j<bnd; j+=VLEN) {
-	for (i=0; i<VLEN; ++i)
-	  _p[i] =  het1*(i+j) + sgnlt[1]*_tmp1[0][i+j];
-	
-	status = yepMath_Sin_V64f_V64f(_p, _s, VLEN);
-	assert(status == YepStatusOk);
-	status = yepMath_Cos_V64f_V64f(_p, _c, VLEN);
-	assert(status == YepStatusOk);
-	
-	for (i=0; i<VLEN; ++i) {
-          exph = _c[i] - I*_s[i];
-	  fftw_arr->xa[i+j] = ifo[0].sig.xDatma[i+j]*exph; ///ifo[0].sig.sig2;
-	  fftw_arr->xb[i+j] = ifo[0].sig.xDatmb[i+j]*exph; ///ifo[0].sig.sig2;
-	}
-      }
-      // remaining part is shorter than VLEN - no need to vectorize
-      for (i=0; i<sett->N-bnd; ++i){
-	j = bnd + i;
-	_p[i] =  het1*j + sgnlt[1]*_tmp1[0][j];
-      }
-
-      status = yepMath_Sin_V64f_V64f(_p, _s, sett->N-bnd);
-      assert(status == YepStatusOk);
-      status = yepMath_Cos_V64f_V64f(_p, _c, sett->N-bnd);
-      assert(status == YepStatusOk);
-
-      for (i=0; i<sett->N-bnd; ++i) {
-	j = bnd + i;
-	exph = _c[i] - I*_s[i];
-	fftw_arr->xa[j] = ifo[0].sig.xDatma[j]*exph; ///ifo[0].sig.sig2;
-	fftw_arr->xb[j] = ifo[0].sig.xDatmb[j]*exph; ///ifo[0].sig.sig2;
-      }
-#elif defined(GNUSINCOS)
+#if defined(GNUSINCOS)
       for(i=sett->N-1; i!=-1; --i) {
         phase = het1*i + sgnlt[1]*_tmp1[0][i];
 	sincos(phase, &sp, &cp);
@@ -477,87 +397,13 @@ FLOAT_TYPE* job_core(
         fftw_arr->xa[i] = ifo[0].sig.xDatma[i]*exph; ///ifo[0].sig.sig2;
         fftw_arr->xb[i] = ifo[0].sig.xDatmb[i]*exph; ///ifo[0].sig.sig2;
       }
-#else
-      for(i=sett->N-1; i!=-1; --i) {
-        phase = het1*i + sgnlt[1]*_tmp1[0][i];
-	cp = cos(phase);
-      	sp = sin(phase);
-	exph = cp - I*sp;
-        fftw_arr->xa[i] = ifo[0].sig.xDatma[i]*exph; ///ifo[0].sig.sig2;
-        fftw_arr->xb[i] = ifo[0].sig.xDatmb[i]*exph; ///ifo[0].sig.sig2;
-      }
 #endif
 
       for(n=1; n<sett->nifo; ++n) {
-#if defined(SLEEF)
-      // use simd sincos from the SLEEF library;
-      // VECTLENDP is a simd vector length defined in the SLEEF library
-      // and it depends on selected instruction set e.g. -DENABLE_AVX
-	for (i=0; i<sett->N; i+=VECTLENDP) {
-	  for(j=0; j<VECTLENDP; j++)
-	    _p[j] =  het1*(i+j) + sgnlt[1]*_tmp1[n][i+j];
-	
-	  a = vloadu(_p);
-	  v = xsincos(a);
-	  vstoreu(_p, v.x); // reuse _p for sin
-	  vstoreu(_c, v.y);
-	
-	  for(j=0; j<VECTLENDP; ++j){
-	    exph = _c[j] - I*_p[j];
-	    fftw_arr->xa[i+j] = ifo[n].sig.xDatma[i+j]*exph; //*sig2inv;
-	    fftw_arr->xb[i+j] = ifo[n].sig.xDatmb[i+j]*exph; //*sig2inv;
-	  }
-	} 
-#elif defined(YEPPP)
-	// use yeppp! library;
-	// VLEN is length of vector to be processed
-	// for caches L1/L2 64/256kb optimal value is ~2048
-	for (j=0; j<bnd; j+=VLEN) {
-	  for (i=0; i<VLEN; ++i)
-	    _p[i] =  het1*(i+j) + sgnlt[1]*_tmp1[n][i+j];
-	
-	  status = yepMath_Sin_V64f_V64f(_p, _s, VLEN);
-	  assert(status == YepStatusOk);
-	  status = yepMath_Cos_V64f_V64f(_p, _c, VLEN);
-	  assert(status == YepStatusOk);
-	
-	  for (i=0; i<VLEN; ++i) {
-	    exph = _c[i] - I*_s[i];
-	    fftw_arr->xa[i+j] += ifo[n].sig.xDatma[i+j]*exph; //*sig2inv;
-	    fftw_arr->xb[i+j] += ifo[n].sig.xDatmb[i+j]*exph; //*sig2inv;
-	  }
-	}
-	// remaining part is shorter than VLEN - no need to vectorize
-	for (i=0; i<sett->N-bnd; ++i){
-	  j = bnd + i;
-	  _p[i] =  het1*j + sgnlt[1]*_tmp1[n][j];
-	}
-
-	status = yepMath_Sin_V64f_V64f(_p, _s, sett->N-bnd);
-	assert(status == YepStatusOk);
-	status = yepMath_Cos_V64f_V64f(_p, _c, sett->N-bnd);
-	assert(status == YepStatusOk);
-
-	for (i=0; i<sett->N-bnd; ++i) {
-	  j = bnd + i;
-	  exph = _c[i] - I*_s[i];
-	  fftw_arr->xa[j] += ifo[n].sig.xDatma[j]*exph; //*sig2inv;
-	  fftw_arr->xb[j] += ifo[n].sig.xDatmb[j]*exph; //*sig2inv;
-	}
-
-#elif defined(GNUSINCOS)
+#if defined(GNUSINCOS)
 	for(i=sett->N-1; i!=-1; --i) {
 	  phase = het1*i + sgnlt[1]*_tmp1[n][i];
 	  sincos(phase, &sp, &cp);
-	  exph = cp - I*sp;
-	  fftw_arr->xa[i] += ifo[n].sig.xDatma[i]*exph; //*sig2inv;
-	  fftw_arr->xb[i] += ifo[n].sig.xDatmb[i]*exph; //*sig2inv;
-	}
-#else
-	for(i=sett->N-1; i!=-1; --i) {
-	  phase = het1*i + sgnlt[1]*_tmp1[n][i];
-	  cp = cos(phase);
-	  sp = sin(phase);
 	  exph = cp - I*sp;
 	  fftw_arr->xa[i] += ifo[n].sig.xDatma[i]*exph; //*sig2inv;
 	  fftw_arr->xb[i] += ifo[n].sig.xDatmb[i]*exph; //*sig2inv;
