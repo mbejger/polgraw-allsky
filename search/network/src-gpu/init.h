@@ -1,37 +1,70 @@
-
 #ifndef __INIT_H__
 #define __INIT_H__
 
 #include "struct.h"
-#include "floats.h"
 
+void handle_opts(
+	Search_settings *sett,
+	Command_line_opts *opts,
+    int argc,  
+	char* argv[]);  
 
-//command line options handling
-void handle_opts(int argc, char* argv[], Command_line_opts *opts, Detector_settings *sett);
+void init_arrays(
+  Search_settings *sett,
+  Command_line_opts *opts, 
+  Aux_arrays *aux_arr, 
+  double** F);
 
-//array creation
-void init_arrays(Arrays *arr, FLOAT_TYPE** cu_F,  Command_line_opts *opts, Detector_settings *sett);
+void add_signal(
+  Search_settings *sett,
+  Command_line_opts *opts,
+  Aux_arrays *aux_arr,
+  Search_range *s_range);
 
-//determination of search range 
-void set_search_range(Search_range *s_range, Command_line_opts *opts, Detector_settings *sett);
+void set_search_range(
+	Search_settings *sett, 
+	Command_line_opts *opts, 
+	Search_range *s_range);  
 
-//grid reading
-void read_grid(Detector_settings *sett, Command_line_opts *opts);
+void read_grid(
+	Search_settings *sett, 
+	Command_line_opts *opts);
 
-//planning FFTs
-void plan_fft(FFT_plans *plans, Arrays *arr, Detector_settings *sett, Command_line_opts *opts);
+void plan_fftw(
+	Search_settings *sett, 
+	Command_line_opts *opts, 
+  FFTW_plans *plans, 
+	FFTW_arrays *fftw_arr, 
+	Aux_arrays *aux_arr);
 
-//reading checkpoint status
-void read_checkpoints(Search_range *s_range, int *Fnum, Command_line_opts *opts);
+void read_checkpoints(
+	Command_line_opts *opts, 
+  Search_range *s_range,
+  int *Fnum);
 
-//array deallocation
-void cleanup(Detector_settings *sett,
-				Command_line_opts *opts,
-				Search_range *s_range,
-				Arrays *arr,
-				FFT_plans *plans,
-				Ampl_mod_coeff *amod,
-				FLOAT_TYPE *cu_F);
+void cleanup(
+	Search_settings *sett,
+	Command_line_opts *opts,
+	Search_range *s_range,
+	FFTW_plans *plans,
+	FFTW_arrays *fftw_arr,
+	Aux_arrays *aux,
+	double *F);
 
+// Coincidences specific functions 
+void handle_opts_coinc(
+	Search_settings *sett,
+	Command_line_opts_coinc *opts,
+    int argc,  
+	char* argv[]);  
+
+void manage_grid_matrix(
+    Search_settings *sett,
+    Command_line_opts_coinc *opts);
+
+void convert_to_linear(
+    Search_settings *sett,
+    Command_line_opts_coinc *opts, 
+    Candidate_triggers *trig);
 
 #endif

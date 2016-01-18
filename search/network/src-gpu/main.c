@@ -2,21 +2,25 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <math.h>
+#include <complex.h>
+#include <fftw3.h>
 #include <string.h>
 #include <errno.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <getopt.h>
+#include <gsl/gsl_linalg.h>
 #include <time.h>
+#include <dirent.h>
 
 #include "auxi.h"
-#include "struct.h"
 #include "settings.h"
+#include "struct.h"
 #include "jobcore.h"
 #include "init.h"
 
-/* Default output and data directories */
+// Default output and data directories
 
 #ifndef PREFIX
 #define PREFIX ./candidates
@@ -27,108 +31,87 @@
 #endif
 
 
-/*
- * Main
- */
 int main (int argc, char* argv[]) {
 
   Command_line_opts opts;
-  Detector_settings sett;
-  FLOAT_TYPE *cu_F;
-  Search_range s_range;
-  Arrays arr;
+  Search_settings sett;
+  Search_range s_range; 
+  Aux_arrays aux_arr;
+  double *F; 			  // F-statistic array
+  int i; 
 
-  /* init */
-
-  /*
-    ############ Command line options ################
-  */
-
-  handle_opts(argc, argv, &opts, &sett); 
+  // Command line options 
+  handle_opts(&sett, &opts, argc, argv);  
 	
-  /*
-    ############ Output data handling ################
-  */
+  // Output data handling
   struct stat buffer;
 
   if (stat(opts.prefix, &buffer) == -1) {
     if (errno == ENOENT) {
-      /* Output directory apparently does not exist, try to create one */
-      if (mkdir(opts.prefix, S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH	\
-		| S_IXOTH) == -1) {
-	perror (opts.prefix);
-	return 1;
+      // Output directory apparently does not exist, try to create one
+      if(mkdir(opts.prefix, S_IRWXU | S_IRGRP | S_IXGRP 
+          | S_IROTH	| S_IXOTH) == -1) {
+	      perror (opts.prefix);
+	      return 1;
       }
-    } else { /* can't access output directory */
+    } else { // can't access output directory
       perror (opts.prefix);
       return 1;
     }
   }
-
-  /*
-    ############ Read grid data ################
-  */
-  read_grid(&sett, &opts);
-
-  /*
-    ############ Detector settings ################
-  */
-  settings (&sett, &opts, &arr); //detector settings
+ 
+  // Grid data 
+  read_grid(&sett, &opts);	
 	
-  /*
-    ############ Amplitude modulation functions ################
-  */
+  // Search settings
+  search_settings(&sett); 
 
-  Ampl_mod_coeff amod;
-  rogcvir(&amod, &sett); //Virgo amplitude modulation function coefficients
+  // Detector network settings
+  detectors_settings(&sett, &opts); 
 
-  /*
-    ############ Initialize arrays ################
-  */
+  // Array initialization
+  init_arrays(&sett, &opts, &aux_arr, &F);
 
-  init_arrays(&arr, &cu_F, &opts, &sett);
+  // Amplitude modulation functions for each detector  
+  for(i=0; i<sett.nifo; i++)   
+    rogcvir(&ifo[i]); 
 
-  /*
-    ############ Set searching ranges ################
-  */
-  set_search_range(&s_range, &opts, &sett);
+  // Grid search range
+  if(strlen(opts.addsig))
 
-  /*
-    ############ FFT planning ################
-  */
-  FFT_plans fft_plans;
-  plan_fft(&fft_plans, &arr, &sett, &opts);
+    // If addsig switch used, add signal from file, 
+    // search around this position (+- gsize)
+    add_signal(&sett, &opts, &aux_arr, &s_range); 
+  else 
 
-  /*
-    ############ Read checkpoints ################
-  */
-  int Fnum; //candidate signal number
-  read_checkpoints(&s_range, &Fnum, &opts);
-	
-  /*
-    ############ Main job ################
-  */
+  // Set search range from range file  
+  set_search_range(&sett, &opts, &s_range);
 
-  search(
-	 &sett,
-	 &opts,
-	 &s_range,
-	 &arr,
-	 &fft_plans,
-	 &amod,
-	 &Fnum,
-	 cu_F
-	 );
-	
+  // FFT plans 
+  FFTW_plans fftw_plans;
+  FFTW_arrays fftw_arr;
+  plan_fftw(&sett, &opts, &fftw_plans, &fftw_arr, &aux_arr);
+
+  // Checkpointing
+  int Fnum=0;			        // candidate signal number
+  read_checkpoints(&opts, &s_range, &Fnum);
+
+  // main search job
+  search(&sett, &opts, &s_range, 
+        &fftw_plans, &fftw_arr, &aux_arr,
+	      &Fnum, F);
+
+  // state file zeroed at the end of the run
   FILE *state;
-  // state file zeroed at the end of calculations
   if(opts.checkp_flag) {
     state = fopen (opts.qname, "w");
     fclose (state);
   }
 	
-  cleanup(&sett, &opts, &s_range, &arr, &fft_plans, &amod, cu_F);
-	
-  return 0;
-}
+  // Cleanup & memory free 
+  cleanup(&sett, &opts, &s_range, 
+          &fftw_plans, &fftw_arr, &aux_arr, F);
 
+  return 0; 
+	
+}

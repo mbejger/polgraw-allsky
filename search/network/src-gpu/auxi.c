@@ -1,7 +1,6 @@
 #ifndef __SETTINGS_H__
 #define __SETTINGS_H__
 
-
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdarg.h>
@@ -14,79 +13,116 @@
 
 // lin2ast described in Phys. Rev. D 82, 022005 (2010) (arXiv:1003.0844)
 void
-lin2ast (double be1, double be2, int pm, double sepsm, double cepsm,	\
+lin2ast (double be1, double be2, int pm, double sepsm, double cepsm, 
          double *sinal, double *cosal, double *sindel, double *cosdel) {
+
   *sindel = be1*sepsm-(2*pm-3)*sqrt(1.-sqr(be1)-sqr(be2))*cepsm;
   *cosdel = sqrt(1.-sqr(*sindel));
   *sinal = (be1-sepsm*(*sindel))/(cepsm*(*cosdel));
   *cosal = be2/(*cosdel);
+
 } /* lin2ast() */
 
+void ast2lin (FLOAT_TYPE alfa, FLOAT_TYPE delta, double epsm, double *be) {
 
-/*
+  /* alfa - right ascension [rad]
+     delta - declination [rad]
+     Mean obliquity of the equator with respect to the ecliptic at J2000.0:
+     epsm =  84381.448*pi/(3600*180)
+  */
 
-  void
-  spline(complex double *y, int n, complex double *y2)
-  {
+    be[0] = cos(epsm)*sin(alfa)*cos(delta)+sin(epsm)*sin(delta);
+    be[1] = cos(alfa)*cos(delta);
+
+    //#mb this is not needed at the moment 
+/* 
+    double d1 = asin(be[0]*sin(epsm) 
+            + sqrt(1. - be[0]*be[0] - be[1]*be[1])*cos(epsm)) - delta;
+
+//  double d2 = asin(be[0]*sin(epsm) 
+//          - sqrt(1. - be[0]*be[0] - be[1]*be[1])*cos(epsm)) - delta;
+
+    int pm; 
+
+    if(fabs(d1)  < 10.*DBL_EPSILON)
+        pm = 1;
+    else
+        pm = 2;
+
+    return pm; 
+*/ 
+
+}
+
+
+inline void
+spline(complex double *y, int n, complex double *y2)
+{
   int i, k;
-  complex double p, qn, un, *u;
+  complex double invp, qn, un;
 
-  u = (complex double *) calloc (n-1, sizeof (complex double));
-  y2[0]=u[0]=.0;
+  static complex double *u = NULL;
+  if (!u) u = (complex double *)malloc((n-1)*sizeof(complex double));
+  //  u = (complex double *) calloc (n-1, sizeof (complex double));
+  y2[0] = u[0] = 0.;
 
-  for (i=1; i<n-1; i++) {
-  p = .5*y2[i-1]+2.;
-  y2[i] = -.5/p;
-  u[i] = y[i+1]-2.*y[i]+y[i-1];
-  u[i] = (3.*u[i]-.5*u[i-1])/p;
-  } * for i *
-  qn = un = .0;
+  for (i=1; i<n-1; ++i) {
+    //p = .5*y2[i-1]+2.;
+    //y2[i] = -.5/p;
+    //u[i] = y[i+1]-2.*y[i]+y[i-1];
+    //u[i] = (3.*u[i]-.5*u[i-1])/p;
+    invp = 2./(y2[i-1]+4.);
+    y2[i] = -.5*invp;
+    u[i] = y[i-1]-2.*y[i]+y[i+1];
+    u[i] = (-.5*u[i-1]+3.*u[i])*invp;
+  }
+  qn = un = 0.;
   y2[n-1] = (un-qn*u[n-2])/(qn*y2[n-2]+1.);
-  for (k=n-2; k>=0; k--)
-  y2[k] = y2[k]*y2[k+1]+u[k];
-  free (u);
-  } * spline() *
+  for (k=n-2; k>=0; --k)
+    y2[k] = y2[k]*y2[k+1]+u[k];
+  //free (u);
+} /* spline() */
 
-  complex double
-  splint (complex double *ya, complex double *y2a, int n, double x)
-  {
+inline complex double
+splint (complex double *ya, complex double *y2a, int n, double x)
+{
   int klo, khi;
   double b, a;
 
   if (x<0 || x>n-1)
-  return 0.;
+    return 0.;
   klo = floor (x);
   khi = klo+1;
   a = khi - x;
   b = x - klo;
   return a*ya[klo]+b*ya[khi]+((a*a*a-a)*y2a[klo]+(b*b*b-b)*y2a[khi])/6.0;
-  } * splint() *
+} /* splint() */
 
-  void
-  splintpad (complex double *ya, double *shftf, int N, int interpftpad,	\
-  complex double *out) {
-  * Cubic spline with "natural" boundary conditions.
-  Input:
-  ya[i] - value of the function being interpolated in x_i = i,
-  for i = 0 .. (interpftpad*N-1)	(changed on exit);
-  Interpolating spline will be calculated at the points
-  interpftpad*(i-shftf[i]), for i = 0 .. (N-1);
-  N - number of output data points.
-  Output:
-  out[i] - value of the interpolating function
-  at interpftpad*(i-shftf[i]).
-  *
+void
+splintpad (complex double *ya, double *shftf, int N, int interpftpad,	\
+           complex double *out) {
+  /* Cubic spline with "natural" boundary conditions.
+     Input:
+     ya[i] - value of the function being interpolated in x_i = i,
+     for i = 0 .. (interpftpad*N-1)	(changed on exit);
+     Interpolating spline will be calculated at the points
+     interpftpad*(i-shftf[i]), for i = 0 .. (N-1);
+     N - number of output data points.
+     Output:
+     out[i] - value of the interpolating function
+     at interpftpad*(i-shftf[i]).
+  */
   complex double *y2;
   double x;
   int i;
-  y2 = (complex double *) calloc (interpftpad*N, sizeof (complex double)); //vector twice-size of N
+  y2 = (complex double *) malloc (interpftpad*N*sizeof (complex double)); //vector twice-size of N
   spline (ya, interpftpad*N, y2);
-  for (i=0; i<N; i++) {
-  x = interpftpad*(i-shftf[i]);
-  out[i] = splint (ya, y2, interpftpad*N, x);
-  } * for i *
+  for (i=0; i<N; ++i) {
+    x = interpftpad*(i-shftf[i]);
+    out[i] = splint (ya, y2, interpftpad*N, x);
+  } /* for i */
   free (y2);
-  } * splintab */
+} /* splintpad */
 
 double
 var (double *x, int n) {
@@ -178,10 +214,6 @@ gridr (double *M, int *spndr, int *nr, int *mr, double oms, double Smax) {
   }
 } /* gridr() */
 
-
-
-
-
 double FStat (double *F, int nfft, int nav, int indx) {
   /* FStat Smoothed F-statistic */
 
@@ -194,25 +226,21 @@ double FStat (double *F, int nfft, int nav, int indx) {
   int i, j;
   double mu, *fr, pxout=0.;
 
-  //indx is set to zero...
   indx /= nav;
-  fr = F; //fr is F-stat begining
-  for (j=0; j<nfft/nav; j++) { //for every block
+  fr = F;
+  for (j=0; j<nfft/nav; j++) {
     mu = 0.;
-    for (i=0; i<nav; i++) //for every element in block
-      mu += *fr++; //sum F-stat in mu
-    mu /= 2.*nav; //divide mu by 2*block_length
-    if (j == indx) //if this is the index declared (0)
-      pxout = mu; //assing mu to pxout
-    fr -= nav;//back fr to block start
     for (i=0; i<nav; i++)
-      *fr++ /= mu; //divide F-stat by mu
+      mu += *fr++;
+    mu /= 2.*nav;
+    if (j == indx)
+      pxout = mu;
+    fr -= nav;
+    for (i=0; i<nav; i++)
+      *fr++ /= mu;
   } /* for j */
   return pxout;
 } /* FStat() */
-
-
-
 
 int
 ludcmp (double *a, int n, int *indx, double *d)
@@ -319,6 +347,57 @@ lubksb (double *a, int n, int *indx, double *b)
   return 0;
 } /* lubksb() */
 
+int
+invm (const double *a, int N, double *y)
+     /* Inverse of a real matrix a[0..N-1][0..N-1].
+	Input:
+		a[0..N-1][0..N-1] - given matrix (saved on exit)
+		N	      - number of rows and columns of a
+        Output:
+		y[0..N-1][0..N-1] - inverse of a
+     */
+{
+  double d, *col, *al;
+  int i, j, *indx;
 
+  al = (double *) calloc (sqr(N), sizeof (double));
+  indx = (int *) calloc (N, sizeof (int));
+  col = (double *) calloc (N, sizeof (double));
+  for (i=0; i<sqr(N); i++)
+    al[i] = a[i];
+  if (ludcmp (al, N, indx, &d))
+    return 1;
+  for (j=0; j<N; j++) {
+    for (i=0; i<N; i++)
+      col[i] = 0.0;
+    col[j] = 1.0;
+    lubksb (al, N, indx, col);
+    for (i=0; i<N; i++)
+      y[N*i+j] = col[i];
+  }
+  free (col);
+  free (indx);
+  free (al);
+  return 0;
+} /* invm() */
+
+double
+det (const double *a, int N)
+     /* determinant of a real matrix a[0..N-1][0..N-1] */
+{
+  double d, *al;;
+  int j, *indx;
+
+  al = (double *) calloc (sqr(N), sizeof (double));
+  indx = (int *) calloc (N, sizeof (int));
+  for (j=0; j<sqr(N); j++)
+    al[j] = a[j];
+  ludcmp (al, N, indx, &d);
+  for (j=0; j<N; j++)
+    d *= al[N*j+j];
+  free (indx);
+  free (al);
+  return d;
+} /* det() */
 
 #endif

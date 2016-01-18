@@ -1,3 +1,4 @@
+#define _GNU_SOURCE
 #include <math.h>
 #include <stdio.h>
 #include <sys/types.h>
@@ -5,671 +6,639 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <malloc.h>
+#include <gsl/gsl_vector.h>
 #include <complex.h>
-
-#include <cuda.h>
-#include <cuda_runtime_api.h>
-#include <cufft.h>
+#include <fftw3.h>
 
 /* JobCore file */
 #include "jobcore.h"
 #include "auxi.h"
 #include "settings.h"
 #include "timer.h"
-#include "kernels.h"
-#include "spline_z.h"
 
-//__constant__ Detector_settings *cu_sett;
-//__constant__ Command_line_opts *cu_opts;
-//__constant__ Ampl_mod_coeff *cu_amod;
-
-__constant__ double cu_c[9];
-
-//main searching function (loops inside)
-void search(
-	    Detector_settings *sett,
-	    Command_line_opts *opts,
-	    Search_range *s_range,
-	    Arrays *arr,
-	    FFT_plans *plans,
-	    Ampl_mod_coeff *amod,
-	    int *FNum,
-	    FLOAT_TYPE *cu_F
-	    )
-{
-
-  struct timespec tstart = get_current_time(), tend;
-  double time_elapsed;
-
-  //copy ampl. mod. coef. to constant memory
-  copy_amod_coeff(amod);
-
-  int cand_buffer_count = 0;
-
-  //allocate vector for FStat_gpu
-  int nav_blocks = (sett->nmax - sett->nmin)/NAV;     //number of nav-blocks
-  int blocks = (sett->nmax - sett->nmin)/BLOCK_SIZE;  //number of blocks for Fstat-smoothing
-
-  CudaSafeCall ( cudaMalloc((void**)&arr->cu_mu_t, sizeof(FLOAT_TYPE)*blocks) );
-  CudaSafeCall ( cudaMalloc((void**)&arr->cu_mu, sizeof(FLOAT_TYPE)*nav_blocks) );
-
-  //allocate auxiliary vectors for modvir
-  int modvir_blocks = BLOCK_DIM(sett->N, BLOCK_SIZE_RED);
-  CudaSafeCall ( cudaMalloc((void**)&arr->cu_o_aa, sizeof(double)*modvir_blocks));
-  CudaSafeCall ( cudaMalloc((void**)&arr->cu_o_bb, sizeof(double)*modvir_blocks));
-  CudaSafeCall ( cudaMalloc((void**)&arr->cu_o_aa2, sizeof(double)*modvir_blocks));
-  CudaSafeCall ( cudaMalloc((void**)&arr->cu_o_bb2, sizeof(double)*modvir_blocks));
-
-	//cublas handle for scaling
-	cublasHandle_t scale;
-	cublasCreate (&scale);
+#include <assert.h>
+#if defined(SLEEF)
+//#include "sleef-2.80/purec/sleef.h"
+#include <sleefsimd.h>
+#elif defined(YEPPP)
+#include <yepLibrary.h>
+#include <yepCore.h>
+#include <yepMath.h>
+#endif
 
 
-  int pm, mm, nn;
-
-  char outname[64], qname[64];
-
-  FILE *state;
-  if(opts->checkp_flag) {
-    if(opts->hemi)
-      sprintf (qname, "state_%03d_%03d%s_%d.dat", opts->ident, opts->band, opts->label, opts->hemi);
-    else
-      sprintf (qname, "state_%03d_%03d%s.dat", opts->ident, opts->band, opts->label);
-
-    state = fopen (qname, "w");
+void save_array(complex double *arr, int N, const char* file) {
+  int i;
+  FILE *fc = fopen(file, "w");
+  for (i=0; i<N; i++) {
+    fprintf(fc, "%d %e + i %e\n", i, creal(arr[i]), cimag(arr[i]));
   }
+  fclose(fc);
+}
 
-  for (pm=s_range->pst; pm<=s_range->pmr[1]; pm++) {	// loop over hemispheres
-    sprintf (outname, "%s/triggers_%03d_%03d%s_%d.bin", opts->prefix, opts->ident,
-	     opts->band, opts->label, pm);
+void save_array_double(double *arr, int N, const char* file) {
+  int i;
+  FILE *fc = fopen(file, "w");
+  for (i=0; i<N; i++) {
+    fprintf(fc, "%d %e\n", i, arr[i]);
+  }
+  fclose(fc);
+}
 
-    for (mm=s_range->mst; mm<=s_range->mr[1]; mm++) {	 // 2 loops over
-      for (nn=s_range->nst; nn<=s_range->nr[1]; nn++) {	 // sky positions
 
-	if(opts->checkp_flag) {
-	  fprintf (state, "%d %d %d %d %d\n", pm, mm, nn, s_range->sst, *FNum);
-	  fflush (state);
-	}
+// Main searching function (loops inside)
+void search(
+  Search_settings *sett,
+  Command_line_opts *opts,
+  Search_range *s_range,
+  FFTW_plans *plans,
+  FFTW_arrays *fftw_arr,
+  Aux_arrays *aux,
+  int *FNum,
+  double *F) {
 
-	/* Loop over Spindows here */
-	job_core(
-		 pm,	              // hemisphere
-		 mm,		      // grid 'sky position'
-		 nn,		      // other grid 'sky position'
-		 sett,		      // detector settings
-		 opts,		      // cmd opts
-		 s_range,	      // range for searching
-		 arr,
-		 plans,	              // plans for fftw
-		 amod,	              //amplitude modulation functions coefficients
-		 cu_F,
-		 // of the candidate signal
-		 // (used below to write to the file)
-		 FNum,		      // Candidate signal number
-		 &cand_buffer_count,
-		 outname,
-		 scale		//handle for scaling
-		 );
+  // struct stat buffer;
+  struct flock lck;
 
-	//get back to regular spin-down range
-	s_range->sst = s_range->spndr[0];
+  int pm, mm, nn;    // hemisphere, sky positions 
+  int sgnlc;         // number of candidates
+  FLOAT_TYPE *sgnlv;    // array with candidates data
 
+  char outname[512];
+  int fd;
+  FILE *state;
+
+#ifdef TIMERS
+  struct timespec tstart = get_current_time(), tend;
+#endif
+
+  state=NULL;
+  if(opts->checkp_flag) 
+    state = fopen (opts->qname, "w");
+
+  /* Loop over hemispheres
+   */ 
+
+  for (pm=s_range->pst; pm<=s_range->pmr[1]; ++pm) {
+
+    sprintf (outname, "%s/triggers_%03d_%03d%s_%d.bin", 
+	     opts->prefix, opts->ident, opts->band, opts->label, pm);
+    
+    /* Two main loops over sky positions 
+     */ 
+
+    for (mm=s_range->mst; mm<=s_range->mr[1]; ++mm) {	
+      for (nn=s_range->nst; nn<=s_range->nr[1]; ++nn) {	
+	
+        if(opts->checkp_flag) {
+          ftruncate(fileno(state), 0);  
+  	      fprintf(state, "%d %d %d %d %d\n", pm, mm, nn, s_range->sst, *FNum);
+		      fseek(state, 0, SEEK_SET);
+	    }
+	
+	    /* Loop over spindowns is inside job_core() */
+	    sgnlv = job_core(
+			 pm,           // hemisphere
+			 mm,           // grid 'sky position'
+			 nn,           // other grid 'sky position'
+			 sett,         // search settings
+			 opts,         // cmd opts
+			 s_range,      // range for searching
+			 plans,        // fftw plans 
+			 fftw_arr,     // arrays for fftw
+			 aux,          // auxiliary arrays
+			 F,            // F-statistics array
+			 &sgnlc,       // reference to array with the parameters
+                     // of the candidate signal
+                     // (used below to write to the file)
+			 FNum);        // Candidate signal number
+	
+	    // Get back to regular spin-down range
+	    s_range->sst = s_range->spndr[0];
+
+	    /* Add trigger parameters to a file */
+
+	    // if any signals found (Fstat>Fc)
+	    if (sgnlc) {
+	      if((fd = open (outname, O_WRONLY|O_CREAT|O_APPEND,
+            S_IRUSR|S_IWUSR|S_IRGRP|S_IROTH)) < 0) {
+	        perror (outname);
+	        return;
+	      }
+
+	      lck.l_type = F_WRLCK;
+	      lck.l_whence = 0;
+	      lck.l_start = 0L;
+	      lck.l_len = 0L;
+
+          if (fcntl (fd, F_SETLKW, &lck) < 0) perror ("fcntl()");
+          write (fd, (void *)(sgnlv), sgnlc*NPAR*sizeof(FLOAT_TYPE));
+          if (close (fd) < 0) perror ("close()");
+
+	    } /* if sgnlc */
+	    free (sgnlv);
       } // for nn
-
-      //if there's non-saved data
-      if (cand_buffer_count > 0) {
-	save_candidates(arr->cu_cand_buffer, arr->cand_buffer, &cand_buffer_count, outname);
-      }
-
       s_range->nst = s_range->nr[0];
     } // for mm
-    s_range->mst = s_range->mr[0];
+    s_range->mst = s_range->mr[0]; 
   } // for pm
 
-  if(opts->checkp_flag) {
-    fclose (state);
-  }
+  if(opts->checkp_flag) 
+    fclose(state); 
 
-  //cleanup
-  cudaFree(arr->cu_mu);
-  cudaFree(arr->cu_mu_t);
-  CudaSafeCall ( cudaFree(arr->cu_o_aa) );
-  CudaSafeCall ( cudaFree(arr->cu_o_bb) );
-  CudaSafeCall ( cudaFree(arr->cu_o_aa2) );
-  CudaSafeCall ( cudaFree(arr->cu_o_bb2) );
-	cublasDestroy(scale);
-
+#ifdef TIMERS
   tend = get_current_time();
-  time_elapsed = get_time_difference(tstart, tend);
-  printf("Time elapsed for searching: %e s\n", time_elapsed);
+  // printf("tstart = %d . %d\ntend = %d . %d\n", tstart.tv_sec, tstart.tv_usec, tend.tv_sec, tend.tv_usec);
+  double time_elapsed = get_time_difference(tstart, tend);
+  printf("Time elapsed: %e s\n", time_elapsed);
+#endif
 
 }
 
 
-double* job_core(
-		 int pm,		     // hemisphere
-		 int mm,		     // grid 'sky position'
-		 int nn,		     // other grid 'sky position'
-		 Detector_settings *sett,    // detector settings
-		 Command_line_opts *opts,    // cmd opts
-		 Search_range *s_range,	     // range for searching
-		 Arrays *arr,
-		 FFT_plans *plans,	     // plans for fftw
-		 Ampl_mod_coeff *amod,	     //amplitude modulation functions coefficients
-		 FLOAT_TYPE *cu_F,
-		 // of the candidate signal
-		 // (used below to write to the file)
-		 int *FNum,		     // Candidate signal number
-		 int *cand_buffer_count,
-		 const char* outname,
-		 cublasHandle_t scale			//handle for scaling
-		 )
-{
-  struct timespec tstart, tend;
+  /* Main job 
+   */ 
 
-  int j;
+FLOAT_TYPE* job_core(
+  int pm,                    // Hemisphere
+  int mm,                    // Grid 'sky position'
+  int nn,                    // Second grid 'sky position'
+  Search_settings *sett,     // Search settings
+  Command_line_opts *opts,   // Search options 
+  Search_range *s_range,     // Range for searching
+  FFTW_plans *plans,         // Plans for fftw
+  FFTW_arrays *fftw_arr,     // Arrays for fftw
+  Aux_arrays *aux,           // Auxiliary arrays
+  double *F,                 // F-statistics array
+  int *sgnlc,                // Candidate trigger parameters 
+ int *FNum) {                // Candidate signal number
+
+  int i, j, n;
   int smin = s_range->sst, smax = s_range->spndr[1];
-  double al1, al2, sinalt, cosalt, sindelt, cosdelt, sgnlt[NPAR],
+  double al1, al2, sinalt, cosalt, sindelt, cosdelt, sgnlt[NPAR], 
     nSource[3], het0, sgnl0, ft;
-
-
-  //sgnlt includes current parameters
-
+  double _tmp1[sett->nifo][sett->N];
+  FLOAT_TYPE *sgnlv; 
+  
   /* Matrix	M(.,.) (defined on page 22 of PolGrawCWAllSkyReview1.pdf file)
      defines the transformation form integers (bin, ss, nn, mm) determining
      a grid point to linear coordinates omega, omegadot, alpha_1, alpha_2),
      where bin is the frequency bin number and alpha_1 and alpha_2 are
      defined on p. 22 of PolGrawCWAllSkyReview1.pdf file.
 
-     [omega]
-     [bin]
-     [omegadot]		    = M(.,.) \times [ss]
-     [alpha_1/omega]	    [nn]
-     [alpha_2/omega]	    [mm]
+     [omega]                          [bin]
+     [omegadot]       = M(.,.) \times [ss]
+     [alpha_1/omega]                  [nn]
+     [alpha_2/omega]                  [mm]
 
      Array M[.] is related to matrix M(.,.) in the following way;
 
-     [ M[0] M[4] M[8]	M[12] ]
-     M(.,.) =  [ M[1] M[5] M[9]	 M[13] ]
-               [ M[2] M[6] M[10] M[14] ]
-               [ M[3] M[7] M[11] M[15] ]
+                 [ M[0] M[4] M[8]  M[12] ]
+      M(.,.) =   [ M[1] M[5] M[9]  M[13] ]
+                 [ M[2] M[6] M[10] M[14] ]
+                 [ M[3] M[7] M[11] M[15] ]
 
      and
 
      M[1] = M[2] = M[3] = M[6] = M[7] = 0
-
   */
 
-  //grid positions: alpha1 and alpha2, as described in paper
-  al1 = nn*sett->M[10]+mm*sett->M[14];
-  al2 = nn*sett->M[11]+mm*sett->M[15];
+  // Grid positions
+  al1 = nn*sett->M[10] + mm*sett->M[14];
+  al2 = nn*sett->M[11] + mm*sett->M[15];
 
-
-  /*
-    ############ Checking coordinates ################
-  */
+  sgnlv = NULL;
+  *sgnlc = 0;
 
   // check if the search is in an appropriate region of the grid
   // if not, returns NULL
-  if((sqr(al1)+sqr(al2))/sqr(sett->oms) > 1.) return NULL ;
-
+  if ((sqr(al1)+sqr(al2))/sqr(sett->oms) > 1.) return NULL ;
 
   int ss;
-  double shft1;
+  double shft1, phase, cp, sp;
+  complex double exph;
 
-  //change linear (grid) coordinates to real coordinates
-  lin2ast (al1/sett->oms, al2/sett->oms, pm, sett->sepsm, sett->cepsm,
-	   &sinalt, &cosalt, &sindelt, &cosdelt);
+  // Change linear (grid) coordinates to real coordinates
+  lin2ast(al1/sett->oms, al2/sett->oms, 
+	  pm, sett->sepsm, sett->cepsm,
+	  &sinalt, &cosalt, &sindelt, &cosdelt);
 
-  // calculate declination and right ascencion
-  // which will be written in file as candidate signal sky positions
-  sgnlt[2] = asin (sindelt);
-  sgnlt[3] = fmod (atan2 (sinalt, cosalt)+2.*M_PI, 2.*M_PI);
+  // calculate declination and right ascention
+  // written in file as candidate signal sky positions
+  sgnlt[2] = asin(sindelt);
+  sgnlt[3] = fmod(atan2(sinalt, cosalt) + 2.*M_PI, 2.*M_PI);
+
+  het0 = fmod(nn*sett->M[8] + mm*sett->M[12], sett->M[0]);
+
+  // Nyquist frequency 
+  int nyqst = (sett->nfft)/2 + 1;
+
+  // Loop for each detector 
+  for(n=0; n<sett->nifo; ++n) { 
+
+    /* Amplitude modulation functions aa and bb 
+     * for each detector (in signal sub-struct 
+     * of _detector, ifo[n].sig.aa, ifo[n].sig.bb) 
+     */
+
+    modvir(sinalt, cosalt, sindelt, cosdelt,
+	   sett->N, &ifo[n], aux);
+	
+    // Calculate detector positions with respect to baricenter
+    nSource[0] = cosalt*cosdelt;
+    nSource[1] = sinalt*cosdelt;
+    nSource[2] = sindelt;
+
+    shft1 = nSource[0]*ifo[n].sig.DetSSB[0]
+          + nSource[1]*ifo[n].sig.DetSSB[1]
+          + nSource[2]*ifo[n].sig.DetSSB[2];
+
+    for(i=0; i<sett->N; ++i) {
+
+      ifo[n].sig.shft[i] = nSource[0]*ifo[n].sig.DetSSB[i*3]
+	                 + nSource[1]*ifo[n].sig.DetSSB[i*3+1]
+	                 + nSource[2]*ifo[n].sig.DetSSB[i*3+2];
+    
+      ifo[n].sig.shftf[i] = ifo[n].sig.shft[i] - shft1;
+      _tmp1[n][i] = aux->t2[i] + (double)(2*i)*ifo[n].sig.shft[i];
+
+      // Phase modulation 
+      phase = het0*i + sett->oms*ifo[n].sig.shft[i];
+#ifdef NOSINCOS
+      cp = cos(phase);
+      sp = sin(phase);
+#else
+      sincos(phase, &sp, &cp);
+#endif
+
+      exph = cp - I*sp;
+
+      // Matched filter 
+      ifo[n].sig.xDatma[i] = 
+        ifo[n].sig.xDat[i]*ifo[n].sig.aa[i]*exph;
+      ifo[n].sig.xDatmb[i] = 
+        ifo[n].sig.xDat[i]*ifo[n].sig.bb[i]*exph;
+  
+    }
+
+    /* Resampling using spline interpolation:
+     * This will double the sampling rate 
+     */ 
+  
+    for(i=0; i < sett->N; ++i) {
+      fftw_arr->xa[i] = ifo[n].sig.xDatma[i];
+      fftw_arr->xb[i] = ifo[n].sig.xDatmb[i];
+    }
+ 
+    // Zero-padding (filling with 0s up to sett->nfft, 
+    // the nearest power of 2)
+    for (i=sett->N; i<sett->nfft; ++i) {
+      fftw_arr->xa[i] = 0.;
+      fftw_arr->xb[i] = 0.;
+    }
+
+    fftw_execute(plans->pl_int);  //forward fft (len nfft)
+    fftw_execute(plans->pl_int2); //forward fft (len nfft)
+
+    // move frequencies from second half of spectrum; 
+    // loop length: nfft - nyqst = nfft - nfft/2 - 1 = nfft/2 - 1
+    for(i=nyqst + sett->Ninterp - sett->nfft, j=nyqst; 
+        i<sett->Ninterp; ++i, ++j) {
+      fftw_arr->xa[i] = fftw_arr->xa[j];
+      fftw_arr->xb[i] = fftw_arr->xb[j];
+    }
+	
+    //  zero frequencies higher than nyquist
+    for (i=nyqst; i<nyqst + sett->Ninterp - sett->nfft; ++i) {
+      fftw_arr->xa[i] = 0.;
+      fftw_arr->xb[i] = 0.;
+    }
+
+    // Backward fft (len Ninterp = nfft*interpftpad)
+    fftw_execute (plans->pl_inv);     
+    fftw_execute (plans->pl_inv2); 
+
+    ft = (double)sett->interpftpad / sett->Ninterp; //scale FFT
+    for (i=0; i < sett->Ninterp; ++i) {
+      fftw_arr->xa[i] *= ft;
+      fftw_arr->xb[i] *= ft;
+    }
+
+    //  struct timeval tstart = get_current_time(), tend;
+
+    // Spline interpolation to xDatma, xDatmb arrays
+    splintpad(fftw_arr->xa, ifo[n].sig.shftf, sett->N, 
+      sett->interpftpad, ifo[n].sig.xDatma);   
+    splintpad(fftw_arr->xb, ifo[n].sig.shftf, sett->N, 
+      sett->interpftpad, ifo[n].sig.xDatmb);
+
+  } // end of detector loop 
+
+  // square sums of modulation factors 
+  double aa = 0., bb = 0.; 
+
+  for(n=0; n<sett->nifo; ++n) {
+
+    double aatemp = 0., bbtemp = 0.;
+ 
+    for(i=0; i<sett->N; ++i) {
+      aatemp += sqr(ifo[n].sig.aa[i]);
+      bbtemp += sqr(ifo[n].sig.bb[i]);
+    }
+
+    for(i=0; i<sett->N; ++i) {
+      ifo[n].sig.xDatma[i] /= ifo[n].sig.sig2;
+      ifo[n].sig.xDatmb[i] /= ifo[n].sig.sig2;
+    }
+
+    aa += aatemp/ifo[n].sig.sig2; 
+    bb += bbtemp/ifo[n].sig.sig2;   
+  }
+
+#ifdef YEPPP
+#define VLEN 2048
+    yepLibrary_Init();
+    //printf("npoints=%d, size=%d\n", Npoints, Npoints*sizeof(Yep64f));
+    Yep64f _p[VLEN];
+    Yep64f _s[VLEN];
+    Yep64f _c[VLEN];
+    enum YepStatus status;
+    int bnd = (sett->N/VLEN)*VLEN;
+    //printf("npoints=%d, bnd=%d\n", sett->N, bnd);
+#endif
+#ifdef SLEEF
+    double _p[VECTLENDP], _c[VECTLENDP];
+    vdouble2 v;
+    vdouble a;
+#endif
 
 
-  // amplitude modulation function
-  modvir_gpu(sinalt, cosalt, sindelt, cosdelt, sett->sphir,
-	     sett->cphir, arr->cu_aa, arr->cu_bb, sett->N, arr);
+  /* Spindown loop 
+   */
 
-  //calculate detector positions with respect to baricenter
-  nSource[0] = cosalt*cosdelt;
-  nSource[1] = sinalt*cosdelt;
-  nSource[2] = sindelt;
-
-  shft1 = 0.;
-  for (j=0; j<3; j++)
-    shft1 += nSource[j]*arr->DetSSB[j];
-  het0 = fmod (nn*sett->M[8]+mm*sett->M[12], sett->M[0]);
-
-  //compute shifted time, modulate phase and pad zeros to size 'nfft'
-  shift_time_mod<<<(sett->nfft + BLOCK_SIZE - 1)/BLOCK_SIZE, BLOCK_SIZE>>>
-    ( shft1, het0, nSource[0], nSource[1], nSource[2],
-      arr->cu_xDat, arr->cu_xa, arr->cu_xb, arr->cu_shft,
-      arr->cu_shftf, arr->cu_tshift, arr->cu_aa, arr->cu_bb, arr->cu_DetSSB,
-      sett->oms, sett->N, sett->nfft, sett->interpftpad );
-  CudaCheckError();
-
-  /* Resampling */
-  /*
-    This part is performed to double the sampling rate (get twice more samples)
-  */
-
-  cudaDeviceSynchronize();
-
-  int nyqst = (sett->nfft+2)/2; // Nyquist frequency
-
-  //fft
-  cufftExecZ2Z(plans->pl_int, arr->cu_xa, arr->cu_xa, CUFFT_FORWARD);
-  cufftExecZ2Z(plans->pl_int, arr->cu_xb, arr->cu_xb, CUFFT_FORWARD);
-
-  //shift frequencies and remove those over Nyquist
-  resample_postfft<<<(sett->Ninterp + BLOCK_SIZE - 1)/BLOCK_SIZE, BLOCK_SIZE>>>
-    ( arr->cu_xa, arr->cu_xb, sett->nfft, sett->Ninterp, nyqst );
-  CudaCheckError();
-
-  //fft back
-  cufftExecZ2Z(plans->pl_inv, arr->cu_xa, arr->cu_xa, CUFFT_INVERSE);
-  cufftExecZ2Z(plans->pl_inv, arr->cu_xb, arr->cu_xb, CUFFT_INVERSE);
-
-  //scale fft with cublas
-  ft = (double)sett->interpftpad / sett->Ninterp; //scale FFT
-	cublasZdscal( scale, sett->Ninterp, &ft, arr->cu_xa, 1);
-	cublasZdscal( scale, sett->Ninterp, &ft, arr->cu_xb, 1);
-  CudaCheckError();
-
-  /* spline interpolation here */
-
-  //interpolation of xa
-  gpu_interp(arr->cu_xa,	//input data
-	     sett->Ninterp,	//input data length
-	     arr->cu_tshift,	//output time domain
-	     arr->cu_xar,	//output values
-	     sett->N,		//output data length
-	     arr->cu_d,		//diagonal
-	     arr->cu_dl,	//upper diagonal
-	     arr->cu_du,	//lower diagonal
-	     arr->cu_B);	//coefficient matrix
-
-  //interpolation of xb
-  gpu_interp(arr->cu_xb,	//input data
-	     sett->Ninterp,	//input data length
-	     arr->cu_tshift,	//output time domain
-	     arr->cu_xbr,	//output values
-	     sett->N,		//output data length
-	     arr->cu_d,		//diagonal
-	     arr->cu_dl,	//upper diagonal
-	     arr->cu_du,	//lower diagonal
-	     arr->cu_B);	//coefficient matrix
-
-
-  /* here we have arrays cu_xar and cu_xbr with spline-interpolated signal */
-
-  //copy arrays to float (or to double, again...)
-  double_to_float<<<(sett->N + BLOCK_SIZE - 1) / BLOCK_SIZE, BLOCK_SIZE>>>
-    (arr->cu_xar, arr->cu_xbr,
-     arr->cu_xar_f, arr->cu_xbr_f, sett->N);
-
+#ifdef TIMERS
+  struct timespec tstart, tend;
   double spindown_timer = 0;
   int spindown_counter  = 0;
-
-  /*
-    ############ Spindown loop ################
-  */
+#endif
 
   printf ("\n>>%d\t%d\t%d\t[%d..%d]\n", *FNum, mm, nn, smin, smax);
 
-  // if no-spindown
-  if (opts->s0_flag) smin = smax;
-  // if spindown parameter is taken into account,
-  // smin != smax
-  for (ss=smin; ss<=smax; ss++) {
+  // No-spindown calculations
+  if(opts->s0_flag) smin = smax;
+  // if spindown parameter is taken into account, smin != smax
+  for(ss=smin; ss<=smax; ++ss) {
+
+#ifdef TIMERS
+    tstart = get_current_time();
+#endif 
 
     // Spindown parameter
-    sgnlt[1] = (opts->s0_flag ? 0. : ss * sett->M[5] + nn * sett->M[9] + mm * sett->M[13]);
+    sgnlt[1] = (opts->s0_flag ? 0. : ss*sett->M[5] + nn*sett->M[9] + mm*sett->M[13]);
+    
+    // Spindown range
+    if(sgnlt[1] >= -sett->Smax && sgnlt[1] <= sett->Smax) { 
 
-    if (sgnlt[1] >= -sett->Smax && sgnlt[1] <= 0.) { //look only for negative-valued spindowns
-      tstart = get_current_time();
+      int ii;
+      double Fc, het1;
 
-      double  het1;
-
-      // print a 'dot' every new spindown
-      // (now it slows down execution)
-      putchar('.');
-      fflush (stdout);
+#ifdef VERBOSE
+      //print a 'dot' every new spindown
+      printf ("."); fflush (stdout);
+#endif 
 
       het1 = fmod(ss*sett->M[4], sett->M[0]);
-      if (het1<0) het1 += sett->M[0];
+      if(het1<0) het1 += sett->M[0];
 
-      sgnl0 = het0+het1;
+      sgnl0 = het0 + het1;
 
-      // this kernel modulates phase
-      // xar -> xa
-      phase_mod_2<<<(sett->N + BLOCK_SIZE - 1)/BLOCK_SIZE, BLOCK_SIZE>>>
-	( arr->cu_xa_f, arr->cu_xb_f,
-	  arr->cu_xar_f, arr->cu_xbr_f,
-	  het1, sgnlt[1], arr->cu_shft,
-	  sett->N );
+      // phase modulation before fft
 
-      // arrays used in different interpolation methods aren't the same
-      COMPLEX_TYPE *cu_xa_final, *cu_xb_final;
-
-      if (opts->fftinterp == INT) { //interpolation by interbinning
-	//pad zeros from N to nfft
-		pad_zeros<<<(sett->nfft - sett->N + BLOCK_SIZE - 1)/BLOCK_SIZE, BLOCK_SIZE>>>
-	  ( arr->cu_xa_f+sett->N, arr->cu_xb_f+sett->N, sett->nfft - sett->N );
-
-	CudaCheckError();
-
-	// FFT length nfft
-	CUFFT_EXEC_FFT(plans->plan, arr->cu_xa_f, arr->cu_xa_f, CUFFT_FORWARD);
-	CUFFT_EXEC_FFT(plans->plan, arr->cu_xb_f, arr->cu_xb_f, CUFFT_FORWARD);
-
-	// make a gap between every bin
-	interbinning_gap<<<(sett->nfft/2 + BLOCK_SIZE - 1)/BLOCK_SIZE, BLOCK_SIZE>>>
-	  ( arr->cu_xa_f, arr->cu_xb_f, arr->cu_xa2_f, arr->cu_xb2_f, sett->nfft );
-	CudaCheckError();
-
-	//interpolate values between every bin
-	interbinning_interp<<<( (sett->nfft-2)/2 + BLOCK_SIZE - 1)/BLOCK_SIZE, BLOCK_SIZE>>>
-	  ( arr->cu_xa2_f, arr->cu_xb2_f, sett->nfft );
-	CudaCheckError();
-
-	cu_xa_final = arr->cu_xa2_f;
-	cu_xb_final = arr->cu_xb2_f;
-
-      } else { //interpolation by FFT (fftpad-times-longer FFT)
-	//pad zeros from N to nfft*fftpad
-	//pad_zeros<<<(sett->nfft*sett->fftpad - sett->N + BLOCK_SIZE - 1)/BLOCK_SIZE, BLOCK_SIZE>>>
-	// ( arr->cu_xa_f+sett->N, arr->cu_xb_f+sett->N, sett->nfft*sett->fftpad - sett->N );
-	/*
-	pad_zeros1<<<(sett->nfft*sett->fftpad - sett->N + BLOCK_SIZE - 1)/BLOCK_SIZE, BLOCK_SIZE>>>
-	  ( arr->cu_xa_f+sett->N, sett->nfft*sett->fftpad - sett->N );
-	pad_zeros1<<<(sett->nfft*sett->fftpad - sett->N + BLOCK_SIZE - 1)/BLOCK_SIZE, BLOCK_SIZE>>>
-	  ( arr->cu_xb_f+sett->N, sett->nfft*sett->fftpad - sett->N );
-	*/
-
-	cuMemsetD32Async((CUdeviceptr) (arr->cu_xa_f+sett->N), 0,
-			 (sett->nfft*sett->fftpad - sett->N)*2, NULL);
-	cuMemsetD32Async((CUdeviceptr) (arr->cu_xb_f+sett->N), 0,
-			 (sett->nfft*sett->fftpad - sett->N)*2, NULL);
-
-	CudaCheckError();
-
-	//fft length fftpad*nfft
-	CUFFT_EXEC_FFT(plans->plan, arr->cu_xa_f, arr->cu_xa_f, CUFFT_FORWARD);
-	CUFFT_EXEC_FFT(plans->plan, arr->cu_xb_f, arr->cu_xb_f, CUFFT_FORWARD);
-
-	cu_xa_final = arr->cu_xa_f;
-	cu_xb_final = arr->cu_xb_f;
+#if defined(SLEEF)
+      // use simd sincos from the SLEEF library;
+      // VECTLENDP is a simd vector length defined in the SLEEF library
+      // and it depends on selected instruction set e.g. -DENABLE_AVX
+      for (i=0; i<sett->N; i+=VECTLENDP) {
+	for(j=0; j<VECTLENDP; j++)
+	  _p[j] =  het1*(i+j) + sgnlt[1]*_tmp1[0][i+j];
+	
+	a = vloadu(_p);
+	v = xsincos(a);
+	vstoreu(_p, v.x); // reuse _p for sin
+	vstoreu(_c, v.y);
+	
+	for(j=0; j<VECTLENDP; ++j){
+	  exph = _c[j] - I*_p[j];
+	  fftw_arr->xa[i+j] = ifo[0].sig.xDatma[i+j]*exph; ///ifo[0].sig.sig2;
+	  fftw_arr->xb[i+j] = ifo[0].sig.xDatmb[i+j]*exph; ///ifo[0].sig.sig2;
+	}
+      } 
+#elif defined(YEPPP)
+      // use yeppp! library;
+      // VLEN is length of vector to be processed
+      // for caches L1/L2 64/256kb optimal value is ~2048
+      for (j=0; j<bnd; j+=VLEN) {
+	for (i=0; i<VLEN; ++i)
+	  _p[i] =  het1*(i+j) + sgnlt[1]*_tmp1[0][i+j];
+	
+	status = yepMath_Sin_V64f_V64f(_p, _s, VLEN);
+	assert(status == YepStatusOk);
+	status = yepMath_Cos_V64f_V64f(_p, _c, VLEN);
+	assert(status == YepStatusOk);
+	
+	for (i=0; i<VLEN; ++i) {
+          exph = _c[i] - I*_s[i];
+	  fftw_arr->xa[i+j] = ifo[0].sig.xDatma[i+j]*exph; ///ifo[0].sig.sig2;
+	  fftw_arr->xb[i+j] = ifo[0].sig.xDatmb[i+j]*exph; ///ifo[0].sig.sig2;
+	}
       }
+      // remaining part is shorter than VLEN - no need to vectorize
+      for (i=0; i<sett->N-bnd; ++i){
+	j = bnd + i;
+	_p[i] =  het1*j + sgnlt[1]*_tmp1[0][j];
+      }
+
+      status = yepMath_Sin_V64f_V64f(_p, _s, sett->N-bnd);
+      assert(status == YepStatusOk);
+      status = yepMath_Cos_V64f_V64f(_p, _c, sett->N-bnd);
+      assert(status == YepStatusOk);
+
+      for (i=0; i<sett->N-bnd; ++i) {
+	j = bnd + i;
+	exph = _c[i] - I*_s[i];
+	fftw_arr->xa[j] = ifo[0].sig.xDatma[j]*exph; ///ifo[0].sig.sig2;
+	fftw_arr->xb[j] = ifo[0].sig.xDatmb[j]*exph; ///ifo[0].sig.sig2;
+      }
+#elif defined(GNUSINCOS)
+      for(i=sett->N-1; i!=-1; --i) {
+        phase = het1*i + sgnlt[1]*_tmp1[0][i];
+	sincos(phase, &sp, &cp);
+	exph = cp - I*sp;
+        fftw_arr->xa[i] = ifo[0].sig.xDatma[i]*exph; ///ifo[0].sig.sig2;
+        fftw_arr->xb[i] = ifo[0].sig.xDatmb[i]*exph; ///ifo[0].sig.sig2;
+      }
+#else
+      for(i=sett->N-1; i!=-1; --i) {
+        phase = het1*i + sgnlt[1]*_tmp1[0][i];
+	cp = cos(phase);
+      	sp = sin(phase);
+	exph = cp - I*sp;
+        fftw_arr->xa[i] = ifo[0].sig.xDatma[i]*exph; ///ifo[0].sig.sig2;
+        fftw_arr->xb[i] = ifo[0].sig.xDatmb[i]*exph; ///ifo[0].sig.sig2;
+      }
+#endif
+
+      for(n=1; n<sett->nifo; ++n) {
+#if defined(SLEEF)
+      // use simd sincos from the SLEEF library;
+      // VECTLENDP is a simd vector length defined in the SLEEF library
+      // and it depends on selected instruction set e.g. -DENABLE_AVX
+	for (i=0; i<sett->N; i+=VECTLENDP) {
+	  for(j=0; j<VECTLENDP; j++)
+	    _p[j] =  het1*(i+j) + sgnlt[1]*_tmp1[n][i+j];
+	
+	  a = vloadu(_p);
+	  v = xsincos(a);
+	  vstoreu(_p, v.x); // reuse _p for sin
+	  vstoreu(_c, v.y);
+	
+	  for(j=0; j<VECTLENDP; ++j){
+	    exph = _c[j] - I*_p[j];
+	    fftw_arr->xa[i+j] = ifo[n].sig.xDatma[i+j]*exph; //*sig2inv;
+	    fftw_arr->xb[i+j] = ifo[n].sig.xDatmb[i+j]*exph; //*sig2inv;
+	  }
+	} 
+#elif defined(YEPPP)
+	// use yeppp! library;
+	// VLEN is length of vector to be processed
+	// for caches L1/L2 64/256kb optimal value is ~2048
+	for (j=0; j<bnd; j+=VLEN) {
+	  for (i=0; i<VLEN; ++i)
+	    _p[i] =  het1*(i+j) + sgnlt[1]*_tmp1[n][i+j];
+	
+	  status = yepMath_Sin_V64f_V64f(_p, _s, VLEN);
+	  assert(status == YepStatusOk);
+	  status = yepMath_Cos_V64f_V64f(_p, _c, VLEN);
+	  assert(status == YepStatusOk);
+	
+	  for (i=0; i<VLEN; ++i) {
+	    exph = _c[i] - I*_s[i];
+	    fftw_arr->xa[i+j] += ifo[n].sig.xDatma[i+j]*exph; //*sig2inv;
+	    fftw_arr->xb[i+j] += ifo[n].sig.xDatmb[i+j]*exph; //*sig2inv;
+	  }
+	}
+	// remaining part is shorter than VLEN - no need to vectorize
+	for (i=0; i<sett->N-bnd; ++i){
+	  j = bnd + i;
+	  _p[i] =  het1*j + sgnlt[1]*_tmp1[n][j];
+	}
+
+	status = yepMath_Sin_V64f_V64f(_p, _s, sett->N-bnd);
+	assert(status == YepStatusOk);
+	status = yepMath_Cos_V64f_V64f(_p, _c, sett->N-bnd);
+	assert(status == YepStatusOk);
+
+	for (i=0; i<sett->N-bnd; ++i) {
+	  j = bnd + i;
+	  exph = _c[i] - I*_s[i];
+	  fftw_arr->xa[j] += ifo[n].sig.xDatma[j]*exph; //*sig2inv;
+	  fftw_arr->xb[j] += ifo[n].sig.xDatmb[j]*exph; //*sig2inv;
+	}
+
+#elif defined(GNUSINCOS)
+	for(i=sett->N-1; i!=-1; --i) {
+	  phase = het1*i + sgnlt[1]*_tmp1[n][i];
+	  sincos(phase, &sp, &cp);
+	  exph = cp - I*sp;
+	  fftw_arr->xa[i] += ifo[n].sig.xDatma[i]*exph; //*sig2inv;
+	  fftw_arr->xb[i] += ifo[n].sig.xDatmb[i]*exph; //*sig2inv;
+	}
+#else
+	for(i=sett->N-1; i!=-1; --i) {
+	  phase = het1*i + sgnlt[1]*_tmp1[n][i];
+	  cp = cos(phase);
+	  sp = sin(phase);
+	  exph = cp - I*sp;
+	  fftw_arr->xa[i] += ifo[n].sig.xDatma[i]*exph; //*sig2inv;
+	  fftw_arr->xb[i] += ifo[n].sig.xDatmb[i]*exph; //*sig2inv;
+	}
+#endif
+
+      } 
+
+      // Zero-padding 
+      for(i = sett->fftpad*sett->nfft-1; i != sett->N-1; --i)
+	    fftw_arr->xa[i] = fftw_arr->xb[i] = 0.; 
+
+      fftw_execute (plans->plan);
+      fftw_execute (plans->plan2);
 
       (*FNum)++;
 
-      //compute F-stat
-      compute_Fstat<<<(sett->nmax-sett->nmin + BLOCK_SIZE - 1)/BLOCK_SIZE, BLOCK_SIZE>>>
-	( cu_xa_final + sett->nmin,
-	  cu_xb_final + sett->nmin,
-	  cu_F + sett->nmin,
-	  1/(sett->crf0),
-	  sett->nmax - sett->nmin );
-      CudaCheckError();
-
-      // normalize F-statistics
-      if (sett->sig2 < 0.0) { // when noise is not white-noise
-	FStat_gpu(cu_F+sett->nmin, sett->nmax - sett->nmin, NAV, arr->cu_mu, arr->cu_mu_t);
-      } else { // when noise is white-noise
-	kernel_norm_Fstat_wn<<<(sett->nmax - sett->nmin + BLOCK_SIZE - 1)/BLOCK_SIZE, BLOCK_SIZE>>>
-	  ( cu_F + sett->nmin,
-	    1/(sett->sig2),
-	    sett->nmax - sett->nmin );
+    // Computing F-statistic 
+    for (i=sett->nmin; i<sett->nmax; i++) {
+      F[i] = (sqr(creal(fftw_arr->xa[i])) 
+             + sqr(cimag(fftw_arr->xa[i])))/aa  
+             + (sqr(creal(fftw_arr->xb[i])) 
+             + sqr(cimag(fftw_arr->xb[i])))/bb;
       }
 
-      //zero candidates count
-      cudaMemset(arr->cu_cand_count, 0, sizeof(int));
+      // Normalize F-statistics 
+      if(!(opts->white_flag))  // if the noise is not white noise
+        FStat(F + sett->nmin, sett->nmax - sett->nmin, NAVFSTAT, 0);
 
-      /* FINDING AND SAVING CANDIDATES */
-      find_candidates<<<(sett->nmax - sett->nmin + BLOCK_SIZE - 1)/BLOCK_SIZE, BLOCK_SIZE>>>
-	( cu_F,				// F-statistic array
-	  arr->cu_cand_params,	        // local parameters buffer
-	  arr->cu_cand_count,	        // local found candidates count
-	  opts->trl,			// threshold value
-	  sett->nmin,			// minimum F-statistic array index
-	  sett->nmax,			// maximum -||-
-	  1/((double)sett->fftpad),			// FFT padding for calculation of freq.
-	  1/((double)sett->nfft),			// FFT length
-	  sgnl0,			// base frequency parameter
-	  sett->nd,			// number of degrees of freedom
-	  sgnlt[1],			// spindown
-	  sgnlt[2],			// sky
-	  sgnlt[3] );			// positions
+      for(i=sett->nmin; i<sett->nmax; i++) {
+        if ((Fc = F[i]) > opts->trl) { // if F-stat exceeds trl (critical value)
+          // Find local maximum for neighboring signals 
+          ii = i;
 
+        while (++i < sett->nmax && F[i] > opts->trl) {
+         if(F[i] >= Fc) {
+           ii = i;
+           Fc = F[i];
+         } // if F[i] 
+        } // while i 
 
-/////////////////////////
+        // Candidate signal frequency
+        sgnlt[0] = 2.*M_PI*ii/((double) sett->fftpad*sett->nfft) + sgnl0;
+	    // Signal-to-noise ratio
+	    sgnlt[4] = sqrt(2.*(Fc-sett->nd));
 
-      int cand_count;
-      cudaMemcpy(&cand_count, arr->cu_cand_count, sizeof(int), cudaMemcpyDeviceToHost);
+        (*sgnlc)++; // increase found number
 
-      if (cand_count>0) { //if something was found
-	printf ("\nSome signals found in %d %d %d %d\n", pm, mm, nn, ss);
-	cudaMemcpy(arr->cu_cand_buffer + *cand_buffer_count * NPAR,
-		   arr->cu_cand_params,
-		   sizeof(FLOAT_TYPE) * cand_count*NPAR,
-		   cudaMemcpyDeviceToDevice);
-	*cand_buffer_count += cand_count;
+	    // Add new parameters to output array 
+        sgnlv = (FLOAT_TYPE *)realloc(sgnlv, NPAR*(*sgnlc)*sizeof(FLOAT_TYPE));
 
-	// check if it's time to save results
-	// (place left in buffer is less than one-spindown buffer length)
-	if (*cand_buffer_count >= arr->cand_buffer_size - arr->cand_params_size) {
-	  save_candidates(arr->cu_cand_buffer, arr->cand_buffer, cand_buffer_count, outname);
-	}
-      }
+    for (j=0; j<NPAR; ++j) // save new parameters
+	  sgnlv[NPAR*(*sgnlc-1)+j] = (FLOAT_TYPE)sgnlt[j];
 
-      tend = get_current_time();
-      spindown_timer += get_time_difference(tstart, tend);
-      spindown_counter++;
+#ifdef VERBOSE
+	    printf ("\nSignal %d: %d %d %d %d %d \tsnr=%.2f\n", 
+		  *sgnlc, pm, mm, nn, ss, ii, sgnlt[4]);
+#endif 
 
-    } /* if sgnlt[1] */
-  } /* for ss */
+	    } // if Fc > trl 
+      } // for i
 
+#ifdef TIMERS
+    tend = get_current_time();
+    spindown_timer += get_time_difference(tstart, tend);
+    spindown_counter++;
+#endif
+
+    } // if sgnlt[1] 
+  } // for ss 
+
+#ifndef VERBOSE 
+	    printf("Number of signals found: %d\n", *sgnlc); 
+#endif 
+
+#ifdef TIMERS
   printf("\nTotal spindown loop time: %e s, mean spindown time: %e s (%d runs)\n",
-	 spindown_timer, spindown_timer/spindown_counter, spindown_counter);
+    spindown_timer, spindown_timer/spindown_counter, spindown_counter);
+#endif
 
-  return 0;
-} /* JobCore() */
+  return sgnlv;
 
+} // jobcore
 
-
-void save_candidates(FLOAT_TYPE* cu_cand_buffer, FLOAT_TYPE* cand_buffer,
-		     int *cand_buffer_count, const char* outname)
-{
-  CudaSafeCall
-    ( cudaMemcpy(cand_buffer, cu_cand_buffer, sizeof(FLOAT_TYPE)*NPAR * (*cand_buffer_count),
-		 cudaMemcpyDeviceToHost)
-      );
-
-  struct flock lck;
-  int fd;
-
-  if ((fd = open (outname, O_WRONLY|O_CREAT|O_APPEND,
-		  S_IRUSR|S_IWUSR|S_IRGRP|S_IROTH)) < 0) {
-    perror (outname);
-    return;
-  }
-  lck.l_type = F_WRLCK;
-  lck.l_whence = 0;
-  lck.l_start = 0L;
-  lck.l_len = 0L;
-  if (fcntl (fd, F_SETLKW, &lck) < 0) perror ("fcntl()");
-
-  //#mb
-  // For debbuging
-  /*
-  int jj, kk;
-  printf("\nParameters to save:\n");
-  for (jj=0; jj<*cand_buffer_count; jj++) {
-    for(kk=0; kk<NPAR; kk++) {
-      printf("%lf ", cand_buffer[jj*NPAR+kk]);
-    }
-    printf("\n");
-  }
-  */
-
-  write (fd, (void *)(cand_buffer), *cand_buffer_count*NPAR*sizeof(FLOAT_TYPE));
-
-  if (close (fd) < 0) perror ("close()");
-  *cand_buffer_count = 0;
-}
-
-
-
-//not used
-//left for reference
-void
-modvir (double sinal, double cosal, double sindel, double cosdel, double sphir, double cphir,
-	double *a, double *b, int Np, Ampl_mod_coeff *amod, Arrays *arr)
-{
-  /* Amplitude modulation functions */
-  int t;
-  double cosalfr, sinalfr, c2d, c2sd, c, s, c2s, cs, as, bs;
-
-  double c1 = amod->c1,
-         c2 = amod->c2,
-         c3 = amod->c3,
-         c4 = amod->c4,
-         c5 = amod->c5,
-         c6 = amod->c6,
-         c7 = amod->c7,
-         c8 = amod->c8,
-         c9 = amod->c9;
-
-  cosalfr = cosal*cphir+sinal*sphir;
-  sinalfr = sinal*cphir-cosal*sphir;
-  c2d = sqr(cosdel);
-  c2sd = sindel*cosdel;
-
-  as = bs = 0.;
-  for (t=0; t<Np; t++) {
-    c = cosalfr * arr->cosmodf[t]+sinalfr * arr->sinmodf[t];
-    s = sinalfr * arr->cosmodf[t]-cosalfr * arr->sinmodf[t];
-    c2s = 2.*sqr(c);
-    cs = c*s;
-    /* modulation factors */
-    a[t] = c1*(2.-c2d)*c2s+c2*(2.-c2d)*2.*cs+c3*c2sd*c+c4*c2sd*s-c1*(2.-c2d)+c5*c2d;
-    b[t] = c6*sindel*c2s+c7*sindel*2.*cs+c8*cosdel*c+c9*cosdel*s-c6*sindel;
-    as += sqr(a[t]);
-    bs += sqr(b[t]);
-  } /* for t */
-  as /= Np;
-  bs /= Np;
-  as = sqrt (as);
-  bs = sqrt (bs);
-  printf("Sa, Sb: %e %e (CPU)\n", as, bs);
-  for (t=0; t<Np; t++) {
-    a[t] /= as;
-    b[t] /= bs;
-  }
-
-} /* modvir() */
-
-
-
-void modvir_gpu (double sinal, double cosal, double sindel, double cosdel,
-		 double sphir, double cphir, double *cu_a, double *cu_b, int N, Arrays *arr){
-
-  double cosalfr = cosal*cphir+sinal*sphir;
-  double sinalfr = sinal*cphir-cosal*sphir;
-  double c2d = sqr(cosdel);
-  double c2sd = sindel*cosdel;
-
-  //compute aa, bb
-  compute_modvir<<<BLOCK_DIM(N, BLOCK_SIZE), BLOCK_SIZE>>>
-    ( cu_a, cu_b, cosalfr, sinalfr, c2d, c2sd, arr->cu_sinmodf,
-      arr->cu_cosmodf, sindel, cosdel, N );
-
-	int n = N;
-	int blocks = BLOCK_DIM(n,BLOCK_SIZE_RED);
-
-	bool turn = false;
-
-	//normalization
-	//first, compute sum of squares and sum in every block
-	reduction_sumsq<<<blocks, BLOCK_SIZE_RED, sizeof(double)*2*BLOCK_SIZE_RED>>>
-		    (cu_a, arr->cu_o_aa, n);
-	reduction_sumsq<<<blocks, BLOCK_SIZE_RED, sizeof(double)*2*BLOCK_SIZE_RED>>>
-		    (cu_b, arr->cu_o_bb, n);
-	CudaCheckError();
-
-	double *ina, *inb, *outa, *outb;
-	while(blocks > 1) {
-		n = blocks;
-		blocks = BLOCK_DIM(blocks,BLOCK_SIZE_RED);
-		    //reduce partial sums
-		if (turn == false) {
-		    ina = arr->cu_o_aa;
-		    inb = arr->cu_o_bb;
-		    outa = arr->cu_o_aa2;
-		    outb = arr->cu_o_bb2;
-		} else {
-		    ina = arr->cu_o_aa2;
-		    inb = arr->cu_o_bb2;
-		    outa = arr->cu_o_aa;
-		    outb = arr->cu_o_bb;
-		}
-
-		reduction_sum<<<blocks, BLOCK_SIZE_RED, sizeof(double)*2*BLOCK_SIZE_RED>>>
-		      (ina, outa, n);
-		reduction_sum<<<blocks, BLOCK_SIZE_RED, sizeof(double)*2*BLOCK_SIZE_RED>>>
-		      (inb, outb, n);
-		CudaCheckError();
-
-		turn=!turn;
-	}
-
-	double s_a, s_b;
-
-	//copy reduction results
-	CudaSafeCall ( cudaMemcpy(&s_a, outa, sizeof(double), cudaMemcpyDeviceToHost));
-	CudaSafeCall ( cudaMemcpy(&s_b, outb, sizeof(double), cudaMemcpyDeviceToHost));
-
-	s_a = sqrt(s_a/N);
-	s_b = sqrt(s_b/N);
-
-  //	printf("Sa, Sb: %e %e (GPU)\n", s_a, s_b);
-
-  //normalize
-  modvir_normalize<<<BLOCK_DIM(N, BLOCK_SIZE), BLOCK_SIZE>>>(cu_a, cu_b, 1/(s_a), 1/(s_b), N);
-  CudaCheckError();
-
-}
-
-
-/* WARNING
-   This won't necessarily work for other values than:
-   NAV = 4096
-   N = nmax - nmin = 507904
-   For those given above it works fine.
-   Reason is the "reduction depth", i.e. number of required \
-   reduction kernel calls.
-*/
-void FStat_gpu(FLOAT_TYPE *cu_F, int N, int nav, float *cu_mu, float *cu_mu_t) {
-
-  int nav_blocks = N/nav;           //number of blocks
-  int nav_threads = nav/BLOCK_SIZE; //number of blocks computing one nav-block
-  int blocks = N/BLOCK_SIZE;
-
-  //	CudaSafeCall ( cudaMalloc((void**)&cu_mu_t, sizeof(float)*blocks) );
-  //	CudaSafeCall ( cudaMalloc((void**)&cu_mu, sizeof(float)*nav_blocks) );
-
-  //sum fstat in blocks
-	reduction_sum<BLOCK_SIZE_RED><<<blocks, BLOCK_SIZE_RED, BLOCK_SIZE_RED*sizeof(float)>>>(cu_F, cu_mu_t, N);
-  CudaCheckError();
-
-  //sum blocks computed above and return 1/mu (number of divisions: blocks), then fstat_norm doesn't divide (potential number of divisions: N)
-  reduction_sum<<<nav_blocks, nav_threads, nav_threads*sizeof(float)>>>(cu_mu_t, cu_mu, blocks);
-  CudaCheckError();
-
-  //divide by mu/(2*NAV)
-  fstat_norm<<<blocks, BLOCK_SIZE>>>(cu_F, cu_mu, N, nav);
-  CudaCheckError();
-
-}

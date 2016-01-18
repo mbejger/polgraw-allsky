@@ -1,6 +1,6 @@
 TARGET = gwsearch-gpu
 
-CC = g++
+CC = gcc
 NVCC = nvcc
 
 MACROS = -DPREFIX="./candidates" -DDTAPREFIX="." -DTIMERS=1
@@ -14,13 +14,13 @@ LDLIBS = -Wl,--dynamic-linker=/lib64/ld-linux-x86-64.so.2 \
 	 -static -lgsl -lgslcblas \
 	 -Wl,-Bdynamic -lcufft -lcuda -lcudart -lcusparse -lcublas -lc -lrt -lm
 
-OBJS = main.o jobcore.o auxi.o timer.o settings.o init.o spline_z.o kernels.o
+OBJS = main.o jobcore.o auxi.o timer.o settings.o init.o #spline_z.o kernels.o
 
 ${TARGET}: ${OBJS}
 	$(CC) ${LDFLAGS} -o $@ $+ $(LDLIBS)
 
 %.o: %.c
-	$(CC) -c -Wall -pedantic -std=c++0x ${CFLAGS} ${MACROS} $(INC) -o $@ $+
+	$(CC) -c -Wall ${CFLAGS} ${MACROS} $(INC) -o $@ $+
 
 %.o: %.cu
 	$(NVCC) -c ${CFLAGS} $(NCFLAGS) ${MACROS} $(INC) -o $@ $+
