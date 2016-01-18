@@ -8,7 +8,7 @@ SINCOS =  GNUSINCOS #or NOSINCOS
 CC = gcc
 NVCC = gcc -x c #nvcc
 
-CFLAGS = -DPREFIX="./candidates" -DTIMERS -D$(SINCOS)
+CFLAGS = -DPREFIX="./candidates" -DTIMERS=1 -D$(SINCOS) -DVERBOSE
 NCFLAGS := $(CFLAGS)
 CFLAGS += -I$(FFTW_DIR)/include 
 CFLAGS += -g -Wall -Wno-unused -fno-omit-frame-pointer \

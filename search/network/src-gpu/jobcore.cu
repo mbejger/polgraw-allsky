@@ -60,7 +60,7 @@ void search(
   int fd;
   FILE *state;
 
-#ifdef TIMERS
+#if TIMERS>2
   struct timespec tstart = get_current_time(), tend;
 #endif
 
@@ -138,7 +138,7 @@ void search(
   if(opts->checkp_flag) 
     fclose(state); 
 
-#ifdef TIMERS
+#if TIMERS>2
   tend = get_current_time();
   // printf("tstart = %d . %d\ntend = %d . %d\n", tstart.tv_sec, tstart.tv_usec, tend.tv_sec, tend.tv_usec);
   double time_elapsed = get_time_difference(tstart, tend);
@@ -348,10 +348,9 @@ FLOAT_TYPE* job_core(
   }
 
 
-  /* Spindown loop 
-   */
+  /* Spindown loop */
 
-#ifdef TIMERS
+#if TIMERS>2
   struct timespec tstart, tend;
   double spindown_timer = 0;
   int spindown_counter  = 0;
@@ -361,15 +360,16 @@ FLOAT_TYPE* job_core(
 
   // No-spindown calculations
   if(opts->s0_flag) smin = smax;
+
   // if spindown parameter is taken into account, smin != smax
   for(ss=smin; ss<=smax; ++ss) {
 
-#ifdef TIMERS
+#if TIMERS>2
     tstart = get_current_time();
 #endif 
 
     // Spindown parameter
-    sgnlt[1] = (opts->s0_flag ? 0. : ss*sett->M[5] + nn*sett->M[9] + mm*sett->M[13]);
+    sgnlt[1] = ss*sett->M[5] + nn*sett->M[9] + mm*sett->M[13];
     
     // Spindown range
     if(sgnlt[1] >= -sett->Smax && sgnlt[1] <= sett->Smax) { 
@@ -466,7 +466,7 @@ FLOAT_TYPE* job_core(
 	    } // if Fc > trl 
       } // for i
 
-#ifdef TIMERS
+#if TIMERS>2
     tend = get_current_time();
     spindown_timer += get_time_difference(tstart, tend);
     spindown_counter++;
@@ -475,11 +475,11 @@ FLOAT_TYPE* job_core(
     } // if sgnlt[1] 
   } // for ss 
 
-#ifndef VERBOSE 
+#ifndef VERBOSE
 	    printf("Number of signals found: %d\n", *sgnlc); 
 #endif 
 
-#ifdef TIMERS
+#if TIMERS>2
   printf("\nTotal spindown loop time: %e s, mean spindown time: %e s (%d runs)\n",
     spindown_timer, spindown_timer/spindown_counter, spindown_counter);
 #endif
