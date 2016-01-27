@@ -9,7 +9,7 @@ CC = gcc
 
 # pre-processor flags: TIMERS, VERBOSE (rich stdout output)
 CFLAGS = -DPREFIX="./candidates" -DTIMERS -D$(SINCOS)
-CFLAGS = -I$(FFTW_DIR)/include 
+CFLAGS += -I$(FFTW_DIR)/include 
 CFLAGS += -g -Wall -Wno-unused -fno-omit-frame-pointer \
 	  -O3 -ffast-math -funsafe-loop-optimizations -funroll-loops \
 	  -march=corei7-avx -mtune=corei7-avx -mavx
