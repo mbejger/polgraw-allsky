@@ -56,7 +56,7 @@ endif
 
 
 # openmp library added!
-followup: followup.o settings.o auxi.o init.o 
+followup: followup.o settings.o auxi.o init.o glue.o neigh.o
 	$(CC) $(LDFLAGS) -fopenmp -o $@ $^ $(LOADLIBES)
 
 settings.o: $(SEARCH_DIR)/settings.c
@@ -67,6 +67,13 @@ init.o: $(SEARCH_DIR)/init.c  $(SEARCH_DIR)/settings.h $(SEARCH_DIR)/struct.h $(
 
 auxi.o: $(SEARCH_DIR)/auxi.c $(SEARCH_DIR)/auxi.h
 	$(CC) -c -g -O3 -Wall -o $@ $<
+
+glue.o: $(SEARCH_DIR)/glue.c $(SEARCH_DIR)/glue.h
+	$(CC) $(CFLAGS) -c -o $@ $<
+
+neigh.o: $(SEARCH_DIR)/neigh.c $(SEARCH_DIR)/neigh.h
+	$(CC) $(CFLAGS) -c -o $@ $<
+
 
 
 doc:
