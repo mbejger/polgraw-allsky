@@ -2,14 +2,14 @@
 Main followup programm. Required files
 (all should be in directory 'data' - given 
 as argument) :
-
 'candidates.coi' - File with candidates from coincidences
 'list.txt'
-
 Ver. 2.0
 Functions glue and neigh added!
-
-TO DO: simplex function
+Ver. 3.0
+Mesh adaptive direct search (MADS) added (to find real
+maximum)
+TO DO: compare MADS with simplex and ...
 
 MS
 */
@@ -39,6 +39,7 @@ MS
 
 #include "glue.h"
 #include "neigh.h"
+
 #include <assert.h>
 #if defined(SLEEF)
 //#include "sleef-2.80/purec/sleef.h"
@@ -80,7 +81,6 @@ double* Fstatnet(Search_settings *sett, Command_line_opts *opts, Aux_arrays *aux
 	double shft1, cosPH, sinPH, phase[sett->N];
   	double sinalt, cosalt, sindelt, cosdelt;
 	int i = 0, n = 0; 
-//	double *fstat_out = malloc(10*sizeof(int)); //output
 	static double fstat_out[10]; //output
 	double aa = 0., bb = 0., aaa = 0., bbb = 0.;
 #ifdef YEPPP
@@ -174,6 +174,68 @@ double* Fstatnet(Search_settings *sett, Command_line_opts *opts, Aux_arrays *aux
 	return fstat_out;
 }
 
+//mesh adaptive direct search (MADS) maximum search declaration
+
+double* MADS(Search_settings *sett, Command_line_opts *opts, Aux_arrays *aux, double *F, double* in){
+	double p[4];
+	static double out[10]; //output
+	int i, j, k, l, m, n, o;
+  	double sinalt, cosalt, sindelt, cosdelt;
+	double nSource[3];
+	double *res;
+	double extr[10];
+	float param = 0.009; //initial size of mesh
+	float step = 0.001;  //how much mesh should be resized
+
+
+	for(i = 0; i < 4; i++) p[i] = in[6+i];
+	for(i = 0; i < 10; i++) extr[i] = in[i];
+	while(param >= 0.001){  //when to end computations
+		k = 0;
+		for(j = 0; j < 8; j++){
+			if(j < 4){
+				p[k] = in[6+k] + param*in[6+k];
+				k++;
+			}
+			else { 
+				k--;
+				p[k] = in[6+k] - param*in[6+k];
+			}
+			sinalt = sin(p[3]);
+			cosalt = cos(p[3]);
+			sindelt = sin(p[2]);
+			cosdelt = cos(p[2]);
+
+			nSource[0] = cosalt*cosdelt;
+			nSource[1] = sinalt*cosdelt;
+			nSource[2] = sindelt;
+
+			for (o = 0; o < sett->nifo; ++o){
+				modvir(sinalt, cosalt, sindelt, cosdelt, 
+			   		sett->N, &ifo[o], aux);  
+			}
+			res = Fstatnet(sett, opts, aux, F, p, nSource); //Fstat function for mesh points
+			if (res[5] < extr[5]){
+				for (l = 0; l < 10; l++){ 
+					extr[l] = res[l];
+				}
+			}
+
+		}
+		if (extr[5] == in[5]){
+			param = param - step;
+		}
+		else{
+			for(m = 0; m < 4; m++) p[m] = extr[6+m];
+			in[5] = extr[5];
+		}
+	}
+	for (n= 0; n < 10; n++){
+		out[n] = extr[n];
+	}
+	return out;
+}
+
 int main (int argc, char *argv[]) {
 	Search_settings sett;	
 	Command_line_opts opts;
@@ -184,7 +246,8 @@ int main (int argc, char *argv[]) {
 	int d, o, m;
 	int bins = 10, ROW;		// neighbourhood of point will be divide into defined number of bins
 	double *results;		// Vector with results from Fstatnet function
-	long double results_max[10];		  
+	double *maximum;		// True maximum of Fstat
+	double results_max[10];		  
 	double s1, s2, s3, s4;
 	double sgnlo[4]; //  arr[ROW][COL], arrg[ROW][COL]; 
 	float **arr, **arrg;
@@ -201,7 +264,7 @@ int main (int argc, char *argv[]) {
 //Glue function
 	glue(opts.prefix, opts.dtaprefix, opts.label);
 
-//	opts.dtaprefix = "./data_total";
+	sprintf(opts.dtaprefix, "./data_total");
 	sprintf(opts.dtaprefix, "%s/followup_total_data", opts.prefix); 
 	opts.ident = 000;
 	
@@ -292,6 +355,7 @@ int main (int argc, char *argv[]) {
 						sgnlo[1] = arr[m][1];
 
 						results = Fstatnet(&sett, &opts, &aux_arr, F, sgnlo, nSource);
+
 // Maximum value in points searching
 						if(results[5] < results_max[5]){
 							for (i = 0; i < 10; i++){
@@ -302,6 +366,9 @@ int main (int argc, char *argv[]) {
 					}
 				}
 }
+				maximum = MADS(&sett, &opts, &aux_arr, F, results_max);
+
+
 			}
 //		}
 	}
@@ -312,10 +379,15 @@ int main (int argc, char *argv[]) {
 	}
 // Output information
 	puts("**********************************************************************");
-	printf("***	Maximum value of F-statistic for points is : (-)%Lf	***\n", -results_max[5]);
-	printf("Sgnlo: %Le %Le %Le %Le\n", results_max[6], results_max[7], results_max[8], results_max[9]);
-	printf("Amplitudes: %Le %Le %Le %Le\n", results_max[0], results_max[1], results_max[2], results_max[3]);
-	printf("Signal-to-noise ratio: %Le\n", results_max[4]); 
+	printf("***	Maximum value of F-statistic for grid is : (-)%lf	***\n", -results_max[5]);
+	printf("Sgnlo: %le %le %le %le\n", results_max[6], results_max[7], results_max[8], results_max[9]);
+	printf("Amplitudes: %le %le %le %le\n", results_max[0], results_max[1], results_max[2], results_max[3]);
+	printf("Signal-to-noise ratio: %le\n", results_max[4]); 
+	puts("**********************************************************************");
+	printf("***	True maximum is : (-)%lf				***\n", -maximum[5]);
+	printf("Sgnlo for true maximum: %le %le %le %le\n", maximum[6], maximum[7], maximum[8], maximum[9]);
+	printf("Amplitudes for true maximum: %le %le %le %le\n", maximum[0], maximum[1], maximum[2], maximum[3]);
+	printf("Signal-to-noise ratio for true maximum: %le\n", maximum[4]); 
 	puts("**********************************************************************");
 
 // Cleanup & memory free 
@@ -325,7 +397,10 @@ int main (int argc, char *argv[]) {
 
 }
 
-//Test for: (was ok)
+//old test
 //time LD_LIBRARY_PATH=lib/yeppp-1.0.0/binaries/linux/x86_64 ./followup -data ./data -ident 001 -band 100 -fpo 199.21875 
 // new test: 
-//time LD_LIBRARY_PATH=/home/msieniawska/tests/polgraw-allsky/search/network/src-cpu/lib/yeppp-1.0.0/binaries/linux/x86_64/ ./followup -data /home/msieniawska/tests/polgraw-allsky/followup/src/data/ -output /home/msieniawska/tests/polgraw-allsky/followup/src/output -label J0000+1902 -band 1902
+//time LD_LIBRARY_PATH=/home/msieniawska/tests/polgraw-allsky/search/network/src-cpu/lib/yeppp-1.0.0/binaries/linux/x86_64/ ./followup -data /home/msieniawska/tests/polgraw-allsky/followup/src/testdata/ -output /home/msieniawska/tests/polgraw-allsky/followup/src/output -label J0000+1902 -band 1902
+//test for basic testdata:
+//time LD_LIBRARY_PATH=/home/msieniawska/tests/polgraw-allsky/search/network/src-cpu/lib/yeppp-1.0.0/binaries/linux/x86_64/ ./followup -data /home/msieniawska/tests/polgraw-allsky/followup/src/testdata/ -output /home/msieniawska/tests/polgraw-allsky/followup/src/output -band 100 -ident 10 -fpo 199.21875
+
