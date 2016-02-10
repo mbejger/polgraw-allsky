@@ -6,7 +6,6 @@
 
 #include "settings.h"
 #include "auxi.h"
-#include "struct.h"
 
 
 /* Search settings: 
@@ -91,8 +90,8 @@ void detectors_settings(
   DIR *dp;
   struct dirent *ep;
 
-  char **detnames  = malloc(MAX_DETECTORS*sizeof(char*));   
-  char **xnames = malloc(MAX_DETECTORS*sizeof(char*));
+  char **detnames = (char **)malloc(MAX_DETECTORS*sizeof(char *));   
+  char **xnames = (char **)malloc(MAX_DETECTORS*sizeof(char *));
 
   dp = opendir (dirname);
   if (dp != NULL) {
@@ -119,8 +118,8 @@ void detectors_settings(
 */
           if((data = fopen(x, "r")) != NULL) {
 
-            xnames[i]   = calloc(strlen(x)+1, sizeof(char));
-            detnames[i] = calloc(DETNAME_LENGTH+1, sizeof(char));
+            xnames[i]   = (char *)calloc(strlen(x)+1, sizeof(char));
+            detnames[i] = (char *)calloc(DETNAME_LENGTH+1, sizeof(char));
 
             strncpy(xnames[i], x, strlen(x));
             strncpy(detnames[i], ep->d_name, DETNAME_LENGTH);
@@ -231,7 +230,7 @@ void detectors_settings(
    * of the Virgo detector
    */ 
 
-void rogcvir(Detector_settings *ifo) {
+void rogcvir(Detector_settings *ifoi) {
 
   /* In the notation of Phys. Rev. D 58, 063001 (1998):
    * ephi = lambda (geographical latitude phi in radians)
@@ -240,15 +239,15 @@ void rogcvir(Detector_settings *ifo) {
    * (see modvir function in jobcore.c for Eqs. 12 and 13)
    */ 
 
-  ifo->amod.c1 = .25*sin(2.*ifo->egam)*(1+sqr(sin(ifo->ephi)));
-  ifo->amod.c2 = -.5*cos(2.*ifo->egam)*sin(ifo->ephi);
-  ifo->amod.c3 = .5*sin(2.*ifo->egam)*sin(2.*ifo->ephi);
-  ifo->amod.c4 = -cos(2.*ifo->egam)*cos(ifo->ephi);
-  ifo->amod.c5 = .75*sin(2.*ifo->egam)*sqr(cos(ifo->ephi));
-  ifo->amod.c6 = cos(2.*ifo->egam)*sin(ifo->ephi);
-  ifo->amod.c7 = .5*sin(2.*ifo->egam)*(1.+sqr(sin(ifo->ephi)));
-  ifo->amod.c8 = cos(2.*ifo->egam)*cos(ifo->ephi);
-  ifo->amod.c9 = .5*sin(2.*ifo->egam)*sin(2.*ifo->ephi);
+  ifoi->amod.c1 = .25*sin(2.*ifoi->egam)*(1+sqr(sin(ifoi->ephi)));
+  ifoi->amod.c2 = -.5*cos(2.*ifoi->egam)*sin(ifoi->ephi);
+  ifoi->amod.c3 = .5*sin(2.*ifoi->egam)*sin(2.*ifoi->ephi);
+  ifoi->amod.c4 = -cos(2.*ifoi->egam)*cos(ifoi->ephi);
+  ifoi->amod.c5 = .75*sin(2.*ifoi->egam)*sqr(cos(ifoi->ephi));
+  ifoi->amod.c6 = cos(2.*ifoi->egam)*sin(ifoi->ephi);
+  ifoi->amod.c7 = .5*sin(2.*ifoi->egam)*(1.+sqr(sin(ifoi->ephi)));
+  ifoi->amod.c8 = cos(2.*ifoi->egam)*cos(ifoi->ephi);
+  ifoi->amod.c9 = .5*sin(2.*ifoi->egam)*sin(2.*ifoi->ephi);
 
 } // rogcvir
 
@@ -256,6 +255,8 @@ void rogcvir(Detector_settings *ifo) {
   /* Amplitude modulation of the signal
    */ 
 
+// replaced by modvir_gpu in jobcore.cu
+#if 0
 void modvir(
   double sinal, 
   double cosal, 
@@ -301,4 +302,4 @@ void modvir(
   } 
 
 } // modvir
-
+#endif

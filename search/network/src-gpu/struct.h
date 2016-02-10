@@ -1,8 +1,9 @@
 #ifndef __STRUCT_H__
 #define __STRUCT_H__
 
-#include <fftw3.h>
+//#include <fftw3.h>
 #include <complex.h>
+#include <cufft.h>
 
 #define MAX_DETECTORS 8        // Maximum number of detectors in network 
 #define DETNAME_LENGTH 2       // Detector name length (H1, L1, V1...)
@@ -10,7 +11,7 @@
 #define INICANDSIZE 1024       // 1048576? Initial size for array candidates storage; 
                                // realloc called if needed (in coincidences)  
 
-// Command line option struct for search 
+/* Command line option struct for search  */
 typedef struct _comm_line_opts {
   
   int white_flag, 		// white noise flag
@@ -29,13 +30,13 @@ typedef struct _comm_line_opts {
 } Command_line_opts;
 
 
-// input signal arrays
+/* input signal arrays */
 typedef struct _signals {
 	
-  double *xDat;
-  double *DetSSB;       // Ephemeris of the detector
-  double *aa, *bb;      // Amplitude modulation functions
-  double *shftf, *shft; // Resampling and time-shifting
+  double *xDat, *xDat_d;
+  double *DetSSB, *DetSSB_d;   // Ephemeris of the detector
+  double *aa_d, *bb_d;         // Amplitude modulation functions
+  double *shftf_d, *shft_d;    // Resampling and time-shifting
   
   double epsm, 
          phir, 
@@ -47,56 +48,54 @@ typedef struct _signals {
          sig2; 	  // variance of signal
 
   int Nzeros;
-  complex double *xDatma, *xDatmb;
+  cufftDoubleComplex *xDatma_d, *xDatmb_d;
 
 } Signals;
 
 
-//fftw arrays
-typedef struct _fftw_arrays {
+/* fftw arrays */
+typedef struct _fft_arrays {
 
-  fftw_complex *xa, *xb;
+  cufftDoubleComplex *xa_d, *xb_d;
   int arr_len;
-  
-} FFTW_arrays;
+
+} FFT_arrays;
 
 
-  /* Search range
-   */ 
-
+/* Search range  */ 
 typedef struct _search_range {
+
   int pmr[2], mr[2], nr[2], spndr[2];
   int pst, mst, nst, sst;
+
 } Search_range;
 
 
-  /* FFTW plans
-   */ 
+/* FFTW plans  */ 
+typedef struct _fft_plans {
 
-typedef struct _fftw_plans {
-  fftw_plan plan,    // main plan
-            pl_int,  // interpolation forward
-            pl_inv;  // interpolation backward
-  fftw_plan plan2,   // main plan
-            pl_int2, // interpolation forward
-            pl_inv2; // interpolation backward
-} FFTW_plans;
+  cufftHandle plan,    // main plan
+              pl_int,  // interpolation forward
+              pl_inv;  // interpolation backward
+  cufftHandle plan2,   // main plan
+              pl_int2, // interpolation forward
+              pl_inv2; // interpolation backward
+
+} FFT_plans;
 
 
-  /* Auxiluary arrays
-   */ 
-
+/* Auxiluary arrays  */ 
 typedef struct _aux_arrays {
 
-  double *sinmodf, *cosmodf; // Earth position
-  double *t2;                // time^2
+  double *sinmodf_d, *cosmodf_d; // Earth position
+  double *t2_d  ;                // time^2
+  double *tshift_d;
+  cufftDoubleComplex *diag_d, *ldiag_d, *udiag_d, *B_d; //used in spline interpolation
 
 } Aux_arrays;
 
 
-  /* Search settings 
-   */ 
-
+/* Search settings */ 
 typedef struct _search_settings {
 
   double fpo,    // Band frequency
@@ -134,18 +133,16 @@ typedef struct _search_settings {
 } Search_settings;
 
 
-  /* Amplitude modulation function coefficients
-   */ 
+  /* Amplitude modulation function coefficients */ 
 
 typedef struct _ampl_mod_coeff {
-	double c1, c2, c3, c4, c5, c6, c7, c8, c9;
+  double c1, c2, c3, c4, c5, c6, c7, c8, c9;
 } Ampl_mod_coeff;
 
 
-  /* Detector and its data related settings 
-   */ 
+  /* Detector and its data related settings */ 
 
-typedef struct _detector { 
+typedef struct _detector {
 
   char xdatname[XDATNAME_LENGTH]; 
   char name[DETNAME_LENGTH]; 
@@ -164,7 +161,7 @@ typedef struct _detector {
   /* Array of detectors (network) 
    */ 
 
-struct _detector ifo[MAX_DETECTORS]; 
+extern Detector_settings ifo[MAX_DETECTORS]; 
 
 // Command line option struct for coincidences 
 typedef struct _comm_line_opts_coinc {
@@ -196,3 +193,5 @@ typedef struct _triggers {
 } Candidate_triggers; 
 
 #endif 
+
+

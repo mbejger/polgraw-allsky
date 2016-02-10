@@ -5,12 +5,12 @@ TARGET = gwsearch-gpu
 FFTW_DIR = /opt/fftw/3.3.4/gnu
 SINCOS =  GNUSINCOS #or NOSINCOS
 
-CC = gcc
-NVCC = gcc -x c #nvcc
+CC = g++
+NVCC = nvcc -rdc=true
 
-CFLAGS = -DPREFIX="./candidates" -DTIMERS=1 -D$(SINCOS) -DVERBOSE
+CFLAGS = -DPREFIX="./candidates" -DTIMERS=3 -D$(SINCOS) -DVERBOSE -DCUDA_DEV=0
+CFLAGS += -I/usr/local/cuda/include/
 NCFLAGS := $(CFLAGS)
-CFLAGS += -I$(FFTW_DIR)/include 
 CFLAGS += -g -Wall -Wno-unused -fno-omit-frame-pointer \
           -O3 -ffast-math -funsafe-loop-optimizations -funroll-loops \
           -march=corei7-avx -mtune=corei7-avx -mavx
@@ -19,32 +19,29 @@ CFLAGS += -g -Wall -Wno-unused -fno-omit-frame-pointer \
         #-march=corei7-avx -mtune=corei7-avx -mavx
 #westmere (plgrid)
         #-march=corei7 -mtune=corei7
-LDFLAGS = -L$(FFTW_DIR)/lib
-LDLIBS = -Wl,--dynamic-linker=/lib64/ld-linux-x86-64.so.2 \
-         -static -lfftw3 -lgsl -lgslcblas \
-         -Wl,-Bdynamic -lc -lrt -lm
+#LDFLAGS = -L$(FFTW_DIR)/lib
+#LDLIBS = -Wl,--dynamic-linker=/lib64/ld-linux-x86-64.so.2 \
+#         -static -lfftw3 -lgsl -lgslcblas \
+#         -Wl,-Bdynamic -lc -lrt -lm
 
-NCFLAGS += -I$(FFTW_DIR)/include
-NCFLAGS += -O3 -g #--ptxas-options=-v -G -use_fast_math -arch=sm_35
-NCFLAGS += -I/usr/local/cuda/include/
+#NCFLAGS += -I$(FFTW_DIR)/include 
+NCFLAGS += -DBLOCK_SIZE=256 
+NCFLAGS += -O3 -g --ptxas-options=-v -G -use_fast_math -arch=sm_35
 
 
-#MACROS = -DPREFIX="./candidates" -DDTAPREFIX="." -DTIMERS=1 -DGNUSINCOS
-#CFLAGS = -O3 -g
-#NCFLAGS = --ptxas-options=-v -G -use_fast_math -arch=sm_35 
-#
-#INC = -I/usr/local/cuda/include/
-#
-#LDFLAGS = -L/usr/local/cuda/lib64
+LDFLAGS = -L/usr/local/cuda/lib64
 #LDLIBS = -Wl,--dynamic-linker=/lib64/ld-linux-x86-64.so.2 \
 #	 -static -lgsl -lgslcblas \
 #	 -Wl,-Bdynamic -lcufft -lcuda -lcudart -lcusparse -lcublas -lc -lrt -lm
-#
 
-OBJS = main.o jobcore.o timer.o settings.o auxi.o init.o #spline_z.o kernels.o
+LDLIBS = -Xlinker --dynamic-linker=/lib64/ld-linux-x86-64.so.2 \
+	 -Xlinker -static -lgsl -lgslcblas \
+	 -Xlinker -Bdynamic -lcufft -lcuda -lcudart -lcusparse -lcublas -lc -lrt -lm
+
+OBJS = main.o jobcore.o timer.o settings.o auxi.o init.o kernels.o spline_z.o
 
 ${TARGET}: ${OBJS}
-	$(CC) ${LDFLAGS} -o $@ $+ $(LDLIBS)
+	$(NVCC) ${NCFLAGS} ${LDFLAGS} -o $@ $+ $(LDLIBS)
 
 %.o: %.c
 	$(CC) -c -Wall ${CFLAGS} -o $@ $+
@@ -52,7 +49,12 @@ ${TARGET}: ${OBJS}
 %.o: %.cu
 	$(NVCC) -c $(NCFLAGS) -o $@ $+
 
-clean:
+clean: 
+	$(NVCC) --clean-targets -c jobcore.cu -o jobcore.o
+	$(NVCC) --clean-targets -c init.cu -o init.o
+	$(NVCC) --clean-targets -c kernels.cu -o kernels.o
+	$(NVCC) --clean-targets -c spline_z.cu -o spline_z.o
 	rm -f ${TARGET} ${OBJS}
+
 
 .PHONY: $(TARGET) clean

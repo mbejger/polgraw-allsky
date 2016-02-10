@@ -45,16 +45,17 @@ void detectors_settings(
     Command_line_opts *opts);
 
 void rogcvir(
-    Detector_settings *ifo); 
+    Detector_settings *ifoi); 
 
-void modvir(
+void modvir_gpu(
     double sinal, 
     double cosal, 
     double sindel, 
     double cosdel,	
     int Np, 
-    Detector_settings *ifo, 
-    Aux_arrays *aux);
+    Detector_settings *ifoi, 
+    Aux_arrays *aux,
+    int idet );
 
 int lineph (double, double *, double *, char *, char *, int);
 

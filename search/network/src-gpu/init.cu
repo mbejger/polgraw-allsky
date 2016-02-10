@@ -3,34 +3,31 @@
 #include <unistd.h>
 #include <math.h>
 #include <complex.h>
-#include <fftw3.h>
 #include <string.h>
 #include <errno.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <getopt.h>
-#include <gsl/gsl_linalg.h>
-#include <gsl/gsl_math.h>
-#include <gsl/gsl_eigen.h>
 #include <time.h>
 
-#include "init.h"
+#include "cuda_error.h"
 #include "struct.h"
+#include "init.h"
 #include "settings.h"
 #include "auxi.h"
+#include "kernels.h"
+#include "spline_z.h"
 
+#include <cuda_runtime_api.h>
+#include <cufft.h>
 
+/*  Command line options handling: search  */ 
 
-/*  Command line options handling: search 
- */ 
-
-void handle_opts(
-    Search_settings *sett, 
-    Command_line_opts *opts,
-	int argc, 
-	char* argv[]) {
-	
+void handle_opts( Search_settings *sett, 
+		  Command_line_opts *opts,
+		  int argc, char* argv[]) {
+  
   opts->hemi=0;
   opts->wd=NULL;
   opts->trl=20;
@@ -217,43 +214,39 @@ void handle_opts(
 } // end of command line options handling 
 
 
-	/* Generate grid from the M matrix (grid.bin)
-	 */ 
+/* Generate grid from the M matrix (grid.bin) */ 
 
-void read_grid(
-	Search_settings *sett, 
-	Command_line_opts *opts) {
+void read_grid( Search_settings *sett, 
+	        Command_line_opts *opts) {
 
   sett->M = (double *) calloc (16, sizeof (double));
 
   FILE *data;
   char filename[512];
   sprintf (filename, "%s/%03d/grid.bin", opts->dtaprefix, opts->ident);
-	if ((data=fopen (filename, "r")) != NULL) {
-    fread ((void *)&sett->fftpad, sizeof (int), 1, data);
+  if ((data=fopen (filename, "r")) != NULL) {
+    fread ((void *)&sett->fftpad, sizeof(int), 1, data);
 
-	printf("Using fftpad from the grid file: %d\n", sett->fftpad); 
+    printf("Using fftpad from the grid file: %d\n", sett->fftpad); 
 	
     // M: vector of 16 components consisting of 4 rows
     // of 4x4 grid-generating matrix
-    fread ((void *)sett->M, sizeof (double), 16, data);
+    fread ((void *)sett->M, sizeof(double), 16, data);
     fclose (data);
   } else {
-	  perror (filename);
-      exit(EXIT_FAILURE);
+    perror (filename);
+    exit(EXIT_FAILURE);
   }
 
 } // end of read grid 
 
 
-  /* Array initialization 
-	 */ 
+ /* Array initialization */ 
 
-void init_arrays(
-  Search_settings *sett, 
-  Command_line_opts *opts,
-  Aux_arrays *aux_arr,
-  double** F) {
+void init_arrays( Search_settings *sett, 
+		  Command_line_opts *opts,
+		  Aux_arrays *aux_arr,
+		  double **F_d) {
 
   int i, status; 
   // Allocates and initializes to zero the data, detector ephemeris
@@ -261,9 +254,19 @@ void init_arrays(
 
   FILE *data;
 
+  sett->Ninterp = sett->interpftpad*sett->nfft;
+  sett->nfftf = sett->fftpad*sett->nfft;
+
+
   for(i=0; i<sett->nifo; i++) { 
 
-    ifo[i].sig.xDat = (double *) calloc(sett->N, sizeof(double));
+    /// ifo[i].sig.xDat = (double *) calloc(sett->N, sizeof(double));
+    /// mapped memory works for CUDART_VERSION >= 2020
+    /// we should test if it's available, if not copy data explicitly to device
+    CudaSafeCall( cudaHostAlloc((void **)&(ifo[i].sig.xDat), sett->N*sizeof(double), 
+				cudaHostAllocMapped) );
+    CudaSafeCall( cudaHostGetDevicePointer((void **)&(ifo[i].sig.xDat_d), 
+					   (void *)ifo[i].sig.xDat, 0) );
 
     // Input time-domain data handling
     // 
@@ -273,7 +276,7 @@ void init_arrays(
 
     if((data = fopen(ifo[i].xdatname, "r")) != NULL) {
       status = fread((void *)(ifo[i].sig.xDat), 
-               sizeof(double), sett->N, data);
+		     sizeof(double), sett->N, data);
       fclose (data);
 
     } else {
@@ -288,33 +291,39 @@ void init_arrays(
 
     ifo[i].sig.Nzeros = Nzeros; 
 
+
     // factor N/(N - Nzeros) to account for null values in the data
     ifo[i].sig.crf0 = (double)sett->N/(sett->N - ifo[i].sig.Nzeros);
 
     // Estimation of the variance for each detector 
     ifo[i].sig.sig2 = (ifo[i].sig.crf0)*var(ifo[i].sig.xDat, sett->N);
 
-    ifo[i].sig.DetSSB = (double *) calloc(3*sett->N, sizeof(double));
+    //ifo[i].sig.DetSSB = (double *) calloc(3*sett->N, sizeof(double));
+    CudaSafeCall( cudaHostAlloc((void **)&(ifo[i].sig.DetSSB), 3*sett->N*sizeof(double), 
+				cudaHostAllocMapped) );
+    CudaSafeCall( cudaHostGetDevicePointer((void **)&(ifo[i].sig.DetSSB_d), 
+					   (void *)ifo[i].sig.DetSSB, 0) );
+
 
     // Ephemeris file handling
     char filename[512];
     sprintf (filename, "%s/%03d/%s/DetSSB.bin", 
-        opts->dtaprefix, opts->ident, ifo[i].name);
+	     opts->dtaprefix, opts->ident, ifo[i].name);
 
     if((data = fopen(filename, "r")) != NULL) {
       // Detector position w.r.t Solar System Baricenter
       // for every datapoint
       status = fread((void *)(ifo[i].sig.DetSSB), 
-               sizeof(double), 3*sett->N, data);
+		     sizeof(double), 3*sett->N, data);
 
       // Deterministic phase defining the position of the Earth
       // in its diurnal motion at t=0 
       status = fread((void *)(&ifo[i].sig.phir), 
-               sizeof(double), 1, data);
-
+		     sizeof(double), 1, data);
+      printf("phir=%f\n", ifo[i].sig.phir );
       // Earth's axis inclination to the ecliptic at t=0
       status = fread((void *)(&ifo[i].sig.epsm), 
-               sizeof(double), 1, data);
+		     sizeof(double), 1, data);
       fclose (data);
 
       printf("Using %s as detector %s ephemerids...\n", filename, ifo[i].name);
@@ -333,7 +342,8 @@ void init_arrays(
     sett->sepsm = ifo[i].sig.sepsm; 
     sett->cepsm = ifo[i].sig.cepsm; 
 
-    ifo[i].sig.xDatma = 
+
+    /*    ifo[i].sig.xDatma = 
       (complex double *) calloc(sett->N, sizeof(complex double));
     ifo[i].sig.xDatmb = 
       (complex double *) calloc(sett->N, sizeof(complex double));
@@ -343,8 +353,24 @@ void init_arrays(
 
     ifo[i].sig.shft = (double *) calloc(sett->N, sizeof(double));
     ifo[i].sig.shftf = (double *) calloc(sett->N, sizeof(double));
- 
+    */
+    CudaSafeCall( cudaMalloc((void**)&ifo[i].sig.xDatma_d,
+				 sizeof(cufftDoubleComplex)*sett->N) );
+    CudaSafeCall( cudaMalloc((void**)&ifo[i].sig.xDatmb_d, 
+				 sizeof(cufftDoubleComplex)*sett->N) );
+
+    CudaSafeCall( cudaMalloc((void**)&(ifo[i].sig.aa_d), 
+				 sizeof(double)*sett->N) );
+    CudaSafeCall( cudaMalloc((void**)&(ifo[i].sig.bb_d), 
+				 sizeof(double)*sett->N) );
+
+    CudaSafeCall( cudaMalloc((void**)&(ifo[i].sig.shft_d), 
+				 sizeof(double)*sett->N) );
+    CudaSafeCall( cudaMalloc((void**)&(ifo[i].sig.shftf_d), 
+				 sizeof(double)*sett->N) );
+
   } // end loop for detectors 
+
 
   // Check if the ephemerids have the same epsm parameter
   for(i=1; i<sett->nifo; i++) {  
@@ -360,33 +386,53 @@ void init_arrays(
   sett->sepsm = ifo[0].sig.sepsm;
   sett->cepsm = ifo[0].sig.cepsm;
 
-  *F = (double *) calloc(2*sett->nfft, sizeof(double));
+  //  *F = (double *) calloc(2*sett->nfft, sizeof(double));
+  CudaSafeCall ( cudaMalloc((void **)F_d, 2*sett->nfft*sizeof(double)));
 
   // Auxiliary arrays, Earth's rotation
-  aux_arr->t2 = (double *) calloc(sett->N, sizeof (double));
-  aux_arr->cosmodf = (double *) calloc(sett->N, sizeof (double));
-  aux_arr->sinmodf = (double *) calloc(sett->N, sizeof (double));
+  //aux_arr->t2 = (double *) calloc(sett->N, sizeof (double));
+  //aux_arr->cosmodf = (double *) calloc(sett->N, sizeof (double));
+  //aux_arr->sinmodf = (double *) calloc(sett->N, sizeof (double));
+
+  CudaSafeCall( cudaMalloc((void**)&(aux_arr->t2_d),
+			   sizeof(double)*sett->N) );
+  CudaSafeCall( cudaMalloc((void**)&(aux_arr->cosmodf_d), 
+			   sizeof(double)*sett->N) );
+  CudaSafeCall( cudaMalloc((void**)&(aux_arr->sinmodf_d), 
+			   sizeof(double)*sett->N) );
+
+  CudaSafeCall( cudaMalloc((void**)&(aux_arr->tshift_d),
+			   sizeof(double)*sett->N) );
+
+  init_spline_matrices(&aux_arr->diag_d, &aux_arr->ldiag_d, &aux_arr->udiag_d, 
+		       &aux_arr->B_d, sett->Ninterp);
+
+  compute_sincosmodf<<<sett->N/256+1,256>>>(aux_arr->sinmodf_d, aux_arr->cosmodf_d, 
+					    sett->omr, sett->N);
+  /*
   double omrt;
 
   for (i=0; i<sett->N; i++) {
-    omrt = (sett->omr)*i;     // Earth angular velocity * dt * i
-    aux_arr->t2[i] = sqr((double)i);
-    aux_arr->cosmodf[i] = cos(omrt);
-    aux_arr->sinmodf[i] = sin(omrt);
-
+    omrt = (sett->omr)*(double)i;     // Earth angular velocity * dt * i
+    printf(">>> omrt=%f\n", omrt);
+    (aux_arr->t2_d)[i] = sqr((double)i);
+    aux_arr->cosmodf_d[i] = cos(omrt);
+    aux_arr->sinmodf_d[i] = sin(omrt);
   }
-
+  */
 } // end of init arrays 
 
 
-  /* Add signal to data
-   */ 
+  /* Add signal to data */ 
 
+/// disabled in gpu version - would need to rewrite for gpu 
+/// due to sig.aa, sig.bb dependency
+#if 0
 void add_signal(
-  Search_settings *sett,
-  Command_line_opts *opts,
-  Aux_arrays *aux_arr,
-  Search_range *s_range) {
+		Search_settings *sett,
+		Command_line_opts *opts,
+		Aux_arrays *aux_arr,
+		Search_range *s_range) {
 
   int i, j, n, gsize; 
   double h0, cof; 
@@ -399,129 +445,125 @@ void add_signal(
   if ((data=fopen (opts->addsig, "r")) != NULL) {
 	
     fscanf (data, "%le %d %d", &h0, &gsize, s_range->pmr);     
-	  for(i=0; i<10; i++)
-			fscanf(data, "%le",i+sgnlo); 	
-		fclose (data);
-                    
-    } else {
-      perror (opts->addsig);
-    }
-  
- 		// VSR1 search-specific parametrization of freq. 
-		// for the software injection
-		// snglo[0]: frequency, sgnlo[1]: frequency. derivative  
-	  //#mb fixme
-	  //sgnlo[0] += - 2.*sgnlo[1]*(sett->N)*(68 - opts->ident); 
+    for(i=0; i<10; i++)
+      fscanf(data, "%le",i+sgnlo); 	
+    fclose (data);
 
-    cof = sett->oms + sgnlo[0]; 
-        			  
-    for(i=0; i<2; i++) sgnlol[i] = sgnlo[i]; 
-	  
-    sgnlol[2] = sgnlo[8]*cof; 
-	  sgnlol[3] = sgnlo[9]*cof;  
-		 	
-		// solving a linear system in order to translate 
-		// sky position, frequency and spindown (sgnlo parameters) 
-		// into the position in the grid
-		 
-		double *MM ; 
-		MM = (double *) calloc (16, sizeof (double));
-		for(i=0; i<16; i++) MM[i] = sett->M[i] ;
-		
-		gsl_vector *x = gsl_vector_alloc (4);     
-		int s;
-		
-		gsl_matrix_view m = gsl_matrix_view_array (MM, 4, 4);
-		gsl_matrix_transpose (&m.matrix) ; 
-		gsl_vector_view b = gsl_vector_view_array (sgnlol, 4);
-		gsl_permutation *p = gsl_permutation_alloc (4);
-     
-		gsl_linalg_LU_decomp (&m.matrix, p, &s);
-		gsl_linalg_LU_solve (&m.matrix, p, &b.vector, x);
-     
-		s_range->spndr[0] = round(gsl_vector_get(x,1)); 
-		s_range->nr[0] 	= round(gsl_vector_get(x,2));
-		s_range->mr[0] 	= round(gsl_vector_get(x,3));
-       
-		gsl_permutation_free (p);
-		gsl_vector_free (x);
-		free (MM);
-       
-		// Define the grid range in which the signal will be looked for
-		s_range->spndr[1] = s_range->spndr[0] + gsize; 
-    s_range->spndr[0] -= gsize;
-		s_range->nr[1] = s_range->nr[0] + gsize; 
-    s_range->nr[0] -= gsize;
-		s_range->mr[1] = s_range->mr[0] + gsize; 
-    s_range->mr[0] -= gsize;
-		s_range->pmr[1] = s_range->pmr[0]; 
-       	  
-		// sgnlo[2]: declination, snglo[3]: right ascension 
-		sindadd = sin(sgnlo[2]); 
-		cosdadd = cos(sgnlo[2]); 
-		sinaadd = sin(sgnlo[3]);  
-		cosaadd = cos(sgnlo[3]); 
-		
-    // Loop for each detector 
-    for(n=0; n<sett->nifo; n++) {
+  } else {
+    perror (opts->addsig);
+  }
 
-      modvir(sinaadd, cosaadd, sindadd, cosdadd,
-             sett->N, &ifo[n], aux_arr);
+  // VSR1 search-specific parametrization of freq. 
+  // for the software injection
+  // snglo[0]: frequency, sgnlo[1]: frequency. derivative  
+  //#mb fixme
+  //sgnlo[0] += - 2.*sgnlo[1]*(sett->N)*(68 - opts->ident); 
 
-      // Normalization of the modulation amplitudes 
-      double as = 0, bs = 0;
-      for (i=0; i<sett->N; i++) {
-        as += sqr(ifo[n].sig.aa[i]); 
-        bs += sqr(ifo[n].sig.bb[i]);
-      }
+  cof = sett->oms + sgnlo[0]; 
 
-      as /= sett->N; bs /= sett->N;
-      as = sqrt (as); bs = sqrt (bs);
- 
-      for (i=0; i<sett->N; i++) {
-        ifo[n].sig.aa[i] /= as;
-        ifo[n].sig.bb[i] /= bs; 
-      }
+  for(i=0; i<2; i++) sgnlol[i] = sgnlo[i]; 
 
-		  nSource[0] = cosaadd*cosdadd;
-		  nSource[1] = sinaadd*cosdadd;
-		  nSource[2] = sindadd;
-								
-      // adding signal to data (point by point)  								
-		  for (i=0; i<sett->N; i++) {
+  sgnlol[2] = sgnlo[8]*cof; 
+  sgnlol[3] = sgnlo[9]*cof;  
 
-			  shiftadd = 0.; 					 
-			  for (j=0; j<3; j++)
-				  shiftadd += nSource[j]*ifo[n].sig.DetSSB[i*3+j];		 
-					 
-			  phaseadd = sgnlo[0]*i + sgnlo[1]*aux_arr->t2[i]  
-				  	 + (sett->oms + sgnlo[0] + 2.*sgnlo[1]*i)*shiftadd;
+  // solving a linear system in order to translate 
+  // sky position, frequency and spindown (sgnlo parameters) 
+  // into the position in the grid
 
-			  signadd = sgnlo[4]*(ifo[n].sig.aa[i])*cos(phaseadd) 
-				        + sgnlo[6]*(ifo[n].sig.aa[i])*sin(phaseadd) 
-				        + sgnlo[5]*(ifo[n].sig.bb[i])*cos(phaseadd) 
-				        + sgnlo[7]*(ifo[n].sig.bb[i])*sin(phaseadd);
-						
-			  if(ifo[n].sig.xDat[i]) { 
-				  ifo[n].sig.xDat[i] += h0*signadd;
-//				  thsnr   += pow(signadd, 2.);
-			  }	 
-		  }
-  
+  double *MM ; 
+  MM = (double *) calloc (16, sizeof (double));
+  for(i=0; i<16; i++) MM[i] = sett->M[i] ;
+
+  gsl_vector *x = gsl_vector_alloc (4);     
+  int s;
+
+  gsl_matrix_view m = gsl_matrix_view_array (MM, 4, 4);
+  gsl_matrix_transpose (&m.matrix) ; 
+  gsl_vector_view b = gsl_vector_view_array (sgnlol, 4);
+  gsl_permutation *p = gsl_permutation_alloc (4);
+
+  gsl_linalg_LU_decomp (&m.matrix, p, &s);
+  gsl_linalg_LU_solve (&m.matrix, p, &b.vector, x);
+
+  s_range->spndr[0] = round(gsl_vector_get(x,1)); 
+  s_range->nr[0] 	= round(gsl_vector_get(x,2));
+  s_range->mr[0] 	= round(gsl_vector_get(x,3));
+
+  gsl_permutation_free (p);
+  gsl_vector_free (x);
+  free (MM);
+
+  // Define the grid range in which the signal will be looked for
+  s_range->spndr[1] = s_range->spndr[0] + gsize; 
+  s_range->spndr[0] -= gsize;
+  s_range->nr[1] = s_range->nr[0] + gsize; 
+  s_range->nr[0] -= gsize;
+  s_range->mr[1] = s_range->mr[0] + gsize; 
+  s_range->mr[0] -= gsize;
+  s_range->pmr[1] = s_range->pmr[0]; 
+
+  // sgnlo[2]: declination, snglo[3]: right ascension 
+  sindadd = sin(sgnlo[2]); 
+  cosdadd = cos(sgnlo[2]); 
+  sinaadd = sin(sgnlo[3]);  
+  cosaadd = cos(sgnlo[3]); 
+
+  // Loop for each detector 
+  for(n=0; n<sett->nifo; n++) {
+
+    modvir(sinaadd, cosaadd, sindadd, cosdadd,
+	   sett->N, &ifo[n], aux_arr);
+
+    // Normalization of the modulation amplitudes 
+    double as = 0, bs = 0;
+    for (i=0; i<sett->N; i++) {
+      as += sqr(ifo[n].sig.aa[i]); 
+      bs += sqr(ifo[n].sig.bb[i]);
     }
 
+    as /= sett->N; bs /= sett->N;
+    as = sqrt (as); bs = sqrt (bs);
 
+    for (i=0; i<sett->N; i++) {
+      ifo[n].sig.aa[i] /= as;
+      ifo[n].sig.bb[i] /= bs; 
+    }
+
+    nSource[0] = cosaadd*cosdadd;
+    nSource[1] = sinaadd*cosdadd;
+    nSource[2] = sindadd;
+
+    // adding signal to data (point by point)  								
+    for (i=0; i<sett->N; i++) {
+
+      shiftadd = 0.; 					 
+      for (j=0; j<3; j++)
+	shiftadd += nSource[j]*ifo[n].sig.DetSSB[i*3+j];		 
+
+      phaseadd = sgnlo[0]*i + sgnlo[1]*aux_arr->t2[i]  
+	+ (sett->oms + sgnlo[0] + 2.*sgnlo[1]*i)*shiftadd;
+
+      signadd = sgnlo[4]*(ifo[n].sig.aa[i])*cos(phaseadd) 
+	+ sgnlo[6]*(ifo[n].sig.aa[i])*sin(phaseadd) 
+	+ sgnlo[5]*(ifo[n].sig.bb[i])*cos(phaseadd) 
+	+ sgnlo[7]*(ifo[n].sig.bb[i])*sin(phaseadd);
+
+      if(ifo[n].sig.xDat[i]) { 
+	ifo[n].sig.xDat[i] += h0*signadd;
+	//  thsnr   += pow(signadd, 2.);
+      }	 
+    }
+
+  }
 
 } 
+#endif
 
+   /* Search range */ 
 
-	/* Search range 
-	 */ 
-
-void set_search_range(
-	Search_settings *sett, 
-	Command_line_opts *opts, 
-	Search_range *s_range) { 
+void set_search_range( Search_settings *sett, 
+		       Command_line_opts *opts, 
+		       Search_range *s_range) { 
 
   // Hemispheres (with respect to the ecliptic)
   if(opts->hemi) {
@@ -532,7 +574,7 @@ void set_search_range(
     s_range->pmr[0] = 1;
     s_range->pmr[1] = 2;
   }
-
+  
   // If the parameter range is invoked, the search is performed
   // within the range of grid parameters from an ascii file
   // ("-r range_file" from the command line)
@@ -547,7 +589,7 @@ void set_search_range(
 			s_range->pmr, 1+s_range->pmr);
 
       if (aqq) {
-			
+
       }
       /*
       //#mb commented-out for now - useful for tests 
@@ -656,115 +698,79 @@ void set_search_range(
     // Establish the grid range in which the search will be performed
     // with the use of the M matrix from grid.bin
     gridr(
-	    sett->M, 
-	    s_range->spndr,
-	    s_range->nr,
-	    s_range->mr,
-	    sett->oms,
-	    sett->Smax);
+	  sett->M, 
+	  s_range->spndr,
+	  s_range->nr,
+	  s_range->mr,
+	  sett->oms,
+	  sett->Smax);
 
   }
 
 } // end of set search range 
 
 
-  /* FFT Plans 
-	 */
 
-void plan_fftw(
-  Search_settings *sett, 
-	Command_line_opts *opts,
-	FFTW_plans *plans, 
-	FFTW_arrays *fftw_arr, 
-	Aux_arrays *aux_arr) {
+void plan_fft (Search_settings *sett, 
+	       // Command_line_opts *opts,
+	       FFT_plans *plans, 
+	       FFT_arrays *fft_arr
+	       // Aux_arrays *aux_arr
+	       ) {
 
-  char hostname[512], wfilename[512];
-  FILE *wisdom;
+  //  sett->Ninterp = sett->interpftpad*sett->nfft; //moved to init_arrays
 
-  /* Imports a "wisdom file" containing information 
-   * (previous tests) about how to optimally compute Fourier 
-   * transforms on a given machine. If wisdom file is not present, 
-   * it will be created after the test (measure) runs 
-   * of the fft_plans are performed below 
-   * (see http://www.fftw.org/fftw3_doc/Wisdom.html)
-   */ 
+  fft_arr->arr_len = (sett->fftpad*sett->nfft > sett->Ninterp 
+		       ? sett->fftpad*sett->nfft : sett->Ninterp);
 
-  gethostname(hostname, 512);
-  sprintf (wfilename, "wisdom-%s.dat", hostname);
-  if((wisdom = fopen (wfilename, "r")) != NULL) {
-    fftw_import_wisdom_from_file(wisdom);
-    fclose (wisdom);
-  }
+  CudaSafeCall ( cudaMalloc((void **)&fft_arr->xa_d, 2*fft_arr->arr_len*sizeof(cufftDoubleComplex)) );
+  fft_arr->xb_d = fft_arr->xa_d + fft_arr->arr_len;
 
-  sett->Ninterp = sett->interpftpad*sett->nfft; 
+  //  sett->nfftf = sett->fftpad*sett->nfft; // moved to init_arrays
 
-  // array length (xa, xb) is max{fftpad*nfft, Ninterp}
-  fftw_arr->arr_len = (sett->fftpad*sett->nfft > sett->Ninterp 
-                    ? sett->fftpad*sett->nfft : sett->Ninterp);
+  // no need for plans '2' - dimaensions are the same
+  cufftPlan1d( &(plans->plan), sett->nfftf, CUFFT_Z2Z, 1);
+  cufftPlan1d( &(plans->pl_int), sett->nfft, CUFFT_Z2Z, 1);
+  cufftPlan1d( &(plans->pl_inv), sett->Ninterp, CUFFT_Z2Z, 1);
 
-  fftw_arr->xa = fftw_malloc(2*fftw_arr->arr_len*sizeof(fftw_complex));
-  fftw_arr->xb = fftw_arr->xa + fftw_arr->arr_len;
+  CudaSafeCall ( cudaMalloc((void **)&fft_arr->xa_d, 2*fft_arr->arr_len*sizeof(cufftDoubleComplex)) );
 
-  sett->nfftf = sett->fftpad*sett->nfft;
-
-  // Change FFTW_MEASURE to FFTW_PATIENT for more optimized plan
-  // (takes more time to generate the wisdom file)
-  plans->plan = fftw_plan_dft_1d(sett->nfftf, fftw_arr->xa, fftw_arr->xa, FFTW_FORWARD, FFTW_MEASURE);
-  plans->plan2 = fftw_plan_dft_1d(sett->nfftf, fftw_arr->xb, fftw_arr->xb, FFTW_FORWARD, FFTW_MEASURE);
-	                             
-  plans->pl_int = fftw_plan_dft_1d(sett->nfft, fftw_arr->xa, fftw_arr->xa, FFTW_FORWARD, FFTW_MEASURE);
-  plans->pl_int2 = fftw_plan_dft_1d(sett->nfft, fftw_arr->xb, fftw_arr->xb, FFTW_FORWARD, FFTW_MEASURE);
-	                             
-  plans->pl_inv = fftw_plan_dft_1d(sett->Ninterp, fftw_arr->xa, fftw_arr->xa, FFTW_BACKWARD, FFTW_MEASURE);
-  plans->pl_inv2 = fftw_plan_dft_1d(sett->Ninterp, fftw_arr->xb, fftw_arr->xb, FFTW_BACKWARD, FFTW_MEASURE);
-	                             
-  // Generates a wisdom FFT file if there is none
-  if((wisdom = fopen(wfilename, "r")) == NULL) {
-    wisdom = fopen(wfilename, "w");
-    fftw_export_wisdom_to_file(wisdom);
-  }
-
-  fclose (wisdom);
-
-} // end of FFT plans 
+}
 
 
-  /* Checkpointing
-	 */
+/* Checkpointing */
 
-void read_checkpoints(
-	Command_line_opts *opts, 
-  Search_range *s_range, 
-	int *FNum) {
+void read_checkpoints(Command_line_opts *opts, 
+		      Search_range *s_range, 
+		      int *FNum) {
 
-  
   if(opts->checkp_flag) {
-		
+
     // filename of checkpoint state file, depending on the hemisphere
     if(opts->hemi)
       sprintf(opts->qname, "state_%03d_%03d%s_%d.dat",  
-	            opts->ident, opts->band, opts->label, opts->hemi);
+	      opts->ident, opts->band, opts->label, opts->hemi);
     else
       sprintf(opts->qname, "state_%03d_%03d%s.dat", 
-	            opts->ident, opts->band, opts->label);
+	      opts->ident, opts->band, opts->label);
 
     FILE *state;
     if((state = fopen(opts->qname, "r")) != NULL) {
 
       // Scan the state file to get last recorded parameters
       if((fscanf(state, "%d %d %d %d %d", &s_range->pst, &s_range->mst,
-		      &s_range->nst, &s_range->sst, FNum)) == EOF) {
+		 &s_range->nst, &s_range->sst, FNum)) == EOF) {
 
-        // This means that state file is empty (=end of the calculations)
-		    fprintf (stderr, "State file empty: nothing to do...\n");
-		    fclose (state);
-		    return;
+	// This means that state file is empty (=end of the calculations)
+	fprintf (stderr, "State file empty: nothing to do...\n");
+	fclose (state);
+	return;
 
       }
 
       fclose (state);
 
-    // No state file - start from the beginning
+      // No state file - start from the beginning
     } else {
       s_range->pst = s_range->pmr[0];
       s_range->mst = s_range->mr[0];
@@ -784,59 +790,60 @@ void read_checkpoints(
 } // end reading checkpoints
 
 
-  /* Cleanup & memory free 
-	 */
+   /* Cleanup & memory free */
 
 void cleanup(
-	Search_settings *sett,
-	Command_line_opts *opts,
-	Search_range *s_range,
-	FFTW_plans *plans,
-	FFTW_arrays *fftw_arr,
-	Aux_arrays *aux,
-	double *F) {
+	     Search_settings *sett,
+	     Command_line_opts *opts,
+	     Search_range *s_range,
+	     FFT_plans *plans,
+	     FFT_arrays *fft_arr,
+	     Aux_arrays *aux,
+	     double *F_d) {
 
   int i; 
-
+  
   for(i=0; i<sett->nifo; i++) {
-    free(ifo[i].sig.xDat);
-    free(ifo[i].sig.xDatma);
-    free(ifo[i].sig.xDatmb);
-    free(ifo[i].sig.DetSSB);
-    free(ifo[i].sig.aa);
-    free(ifo[i].sig.bb);
-    free(ifo[i].sig.shftf);
-    free(ifo[i].sig.shft);
+    CudaSafeCall( cudaFreeHost(ifo[i].sig.xDat) );
+    CudaSafeCall( cudaFreeHost(ifo[i].sig.DetSSB) );
+
+    CudaSafeCall( cudaFree(ifo[i].sig.xDatma_d) );
+    CudaSafeCall( cudaFree(ifo[i].sig.xDatmb_d) );
+
+    CudaSafeCall( cudaFree(ifo[i].sig.aa_d) );
+    CudaSafeCall( cudaFree(ifo[i].sig.bb_d) );
+
+    CudaSafeCall( cudaFree(ifo[i].sig.shft_d) );
+    CudaSafeCall( cudaFree(ifo[i].sig.shftf_d) );
   } 
-	
-  free(aux->sinmodf);
-  free(aux->cosmodf);
-  free(aux->t2);
-  free(F);
-	
-  fftw_free(fftw_arr->xa);
-	
+
+  CudaSafeCall( cudaFree(aux->cosmodf_d) );
+  CudaSafeCall( cudaFree(aux->sinmodf_d) );
+  CudaSafeCall( cudaFree(aux->t2_d) );
+
+  CudaSafeCall( cudaFree(F_d) );
+
+  CudaSafeCall( cudaFree(fft_arr->xa_d) );
+
   free(sett->M);
-	
-  fftw_destroy_plan(plans->plan);
-  fftw_destroy_plan(plans->pl_int);
-  fftw_destroy_plan(plans->pl_inv);
+
+  cufftDestroy(plans->plan);
+  cufftDestroy(plans->pl_int);
+  cufftDestroy(plans->pl_inv);
 
 } // end of cleanup & memory free 
 
 
 
-	/*	Command line options handling: coincidences  
-	 */ 
-	
-void handle_opts_coinc(
-    Search_settings *sett, 
-    Command_line_opts_coinc *opts,
-	int argc, 
-	char* argv[]) {
-	
+ /* Command line options handling: coincidences  */ 
+
+void handle_opts_coinc( Search_settings *sett, 
+			Command_line_opts_coinc *opts,
+			int argc, 
+			char* argv[]) {
+
   opts->wd=NULL;
-	
+
   strcpy (opts->prefix, TOSTR(PREFIX));
   strcpy (opts->dtaprefix, TOSTR(DTAPREFIX));
 
@@ -966,14 +973,15 @@ void handle_opts_coinc(
 
 
 
-	/* Manage grid matrix (read from grid.bin, find eigenvalues 
-	 * and eigenvectors) and reference GPS time from starting_time
-     * (expected to be in the same directory)    
-	 */ 
+#if 0
+/* Manage grid matrix (read from grid.bin, find eigenvalues 
+ * and eigenvectors) and reference GPS time from starting_time
+ * (expected to be in the same directory)    
+ */ 
 
 void manage_grid_matrix(
-	Search_settings *sett, 
-	Command_line_opts_coinc *opts) {
+			Search_settings *sett, 
+			Command_line_opts_coinc *opts) {
 
   sett->M = (double *)calloc(16, sizeof (double));
 
@@ -987,31 +995,31 @@ void manage_grid_matrix(
 
     fread ((void *)&sett->fftpad, sizeof (int), 1, data);
 
-	printf("fftpad from the grid file: %d\n", sett->fftpad); 
-	
+    printf("fftpad from the grid file: %d\n", sett->fftpad); 
+
     fread ((void *)sett->M, sizeof(double), 16, data);
     // We actually need the second (Fisher) matrix from grid.bin, 
     // hence the second fread: 
     fread ((void *)sett->M, sizeof(double), 16, data);
     fclose (data);
   } else {
-	  perror (filename);
-      exit(EXIT_FAILURE);
+    perror (filename);
+    exit(EXIT_FAILURE);
   }
 
-/* //#mb seems not needed at the moment 
-  sprintf (filename, "%s/starting_date", opts->refloc);
-  
-  if ((data=fopen (filename, "r")) != NULL) {
-    fscanf(data, "%le", &opts->refgps);
+  /* //#mb seems not needed at the moment 
+     sprintf (filename, "%s/starting_date", opts->refloc);
 
-    printf("Reading the reference starting_date file at %s The GPS time is %12f\n", opts->refloc, opts->refgps);
-    fclose (data);
-  } else {
-      perror (filename);
-      exit(EXIT_FAILURE);
-  }
-*/ 
+     if ((data=fopen (filename, "r")) != NULL) {
+     fscanf(data, "%le", &opts->refgps);
+
+     printf("Reading the reference starting_date file at %s The GPS time is %12f\n", opts->refloc, opts->refgps);
+     fclose (data);
+     } else {
+     perror (filename);
+     exit(EXIT_FAILURE);
+     }
+  */ 
 
   // Calculating the eigenvectors and eigenvalues 
   gsl_matrix_view m = gsl_matrix_view_array(sett->M, 4, 4);
@@ -1031,52 +1039,109 @@ void manage_grid_matrix(
       gsl_vector_view evec_i = gsl_matrix_column(evec, i);
 
       for(j=0; j<4; j++)   
-        eigvec[j][i] = gsl_vector_get(&evec_i.vector, j);               
+	eigvec[j][i] = gsl_vector_get(&evec_i.vector, j);               
     } 
 
     // This is an auxiliary matrix composed of the eigenvector 
     // columns multiplied by a matrix with sqrt(eigenvalues) on diagonal  
     for(i=0; i<4; i++) { 
       for(j=0; j<4; j++) { 
-        sett->vedva[i][j]  = eigvec[i][j]*sqrt(eigval[j]); 
-//        printf("%.12le ", sett->vedva[i][j]); 
+	sett->vedva[i][j]  = eigvec[i][j]*sqrt(eigval[j]); 
+	//        printf("%.12le ", sett->vedva[i][j]); 
       } 
-//      printf("\n"); 
+      //      printf("\n"); 
     }
-      
+
   } 
 
-/* 
+  /* 
   //#mb matrix generated in matlab, for tests 
   double _tmp[4][4] = { 
-    {-2.8622034614137332e-001, -3.7566564762376159e-002, -4.4001551065376701e-012, -3.4516253934827171e-012}, 
-    {-2.9591999145463371e-001, 3.6335210834374479e-002, 8.1252443441098394e-014, -6.8170555119669981e-014}, 
-    {1.5497867603229576e-005, 1.9167007413107127e-006, 1.0599051611325639e-008, -5.0379548388381567e-008}, 
-    {2.4410008440913992e-005, 3.2886518554938671e-006, -5.7338464150027107e-008, -9.3126913365595100e-009},
+  {-2.8622034614137332e-001, -3.7566564762376159e-002, -4.4001551065376701e-012, -3.4516253934827171e-012}, 
+  {-2.9591999145463371e-001, 3.6335210834374479e-002, 8.1252443441098394e-014, -6.8170555119669981e-014}, 
+  {1.5497867603229576e-005, 1.9167007413107127e-006, 1.0599051611325639e-008, -5.0379548388381567e-008}, 
+  {2.4410008440913992e-005, 3.2886518554938671e-006, -5.7338464150027107e-008, -9.3126913365595100e-009},
   };
 
   { int i,j; 
   for(i=0; i<4; i++) 
-    for(j=0; j<4; j++) 
-      sett->vedva[i][j]  = _tmp[i][j]; 
+  for(j=0; j<4; j++) 
+  sett->vedva[i][j]  = _tmp[i][j]; 
   }
 
   printf("\n"); 
 
   { int i, j; 
   for(i=0; i<4; i++) { 
-    for(j=0; j<4; j++) {
-        printf("%.12le ", sett->vedva[i][j]);
-      }
-      printf("\n"); 
+  for(j=0; j<4; j++) {
+  printf("%.12le ", sett->vedva[i][j]);
+  }
+  printf("\n"); 
   } 
 
- } 
-*/ 
+  } 
+  */ 
 
   gsl_vector_free (eval);
   gsl_matrix_free (evec);
 
 } // end of manage grid matrix  
 
+#endif
 
+/*---------------------------------------------------------------------------*/
+
+/*
+  Initialize CUDA: cuinit
+  - sets cuda device to (in priority order): cdev, 0 
+  - returns: device id or -1 on error
+*/
+int cuinit(int cdev)
+{
+  int dev, deviceCount = 0;
+  cudaDeviceProp deviceProp;
+  
+  if (cudaGetDeviceCount(&deviceCount) != cudaSuccess) {
+    printf("ERROR: cudaGetDeviceCount FAILED CUDA Driver and Runtime version may be mismatched.\n");
+    return(-1);
+  }
+  if (deviceCount == 0) {
+    printf("ERROR: There is no device supporting CUDA\n");
+    return(-1);
+  }
+  if (cdev < 0 && cdev >= deviceCount) {
+    printf("\nWARNING: Device %d is not available! Trying device 0\n", cdev);
+    cdev = 0;
+  }
+
+  printf("__________________________________CUDA devices___________________________________\n");
+  printf("Set | ID |        Name        |   Gmem(B)   | Smem(B) | Cmem(B) | C.Cap. | Thr/bl |\n");
+  
+  for (dev = 0; dev < deviceCount; ++dev) {
+    cudaGetDeviceProperties(&deviceProp, dev);
+    if (deviceProp.major == 9999 && deviceProp.minor == 9999) {
+      printf("- | %1d | %16s | Error | Error | Error | Error | Error |\n", dev, deviceProp.name );
+      if ( dev==cdev ) {
+	printf("ERROR: Can't set device %d\n", cdev);
+	return(-1);
+      }
+    }
+    if (dev==cdev) {
+      printf(" *  |");
+      cudaSetDevice(cdev);
+    } else {
+      printf("    |");
+    }
+    printf(" %1d  | %18.18s | %11Zu | %7Zu | %7Zu |   %d.%d  | %6d |\n", 
+	   dev, deviceProp.name, deviceProp.totalGlobalMem, deviceProp.sharedMemPerBlock, 
+	   deviceProp.totalConstMem, deviceProp.major, deviceProp.minor, deviceProp.maxThreadsPerBlock );
+  }
+  printf("---------------------------------------------------------------------------------\n");
+  
+  /* enable mapped memory */
+  cudaSetDeviceFlags(cudaDeviceMapHost);
+
+  /* force initialization */
+  cudaThreadSynchronize();
+  return(cdev);
+}

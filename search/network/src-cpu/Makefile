@@ -8,7 +8,7 @@ SINCOS =  YEPPP #YEPPP or SLEEF or GNUSINCOS or NOSINCOS
 CC = gcc
 
 # pre-processor flags: TIMERS, VERBOSE (rich stdout output)
-CFLAGS = -DPREFIX="./candidates" -DTIMERS -D$(SINCOS)
+CFLAGS = -DPREFIX="./candidates" -DTIMERS=3 -D$(SINCOS) -DVERBOSE
 CFLAGS += -I$(FFTW_DIR)/include 
 CFLAGS += -g -Wall -Wno-unused -fno-omit-frame-pointer \
 	  -O3 -ffast-math -funsafe-loop-optimizations -funroll-loops \

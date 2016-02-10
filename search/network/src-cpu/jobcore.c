@@ -253,6 +253,10 @@ FLOAT_TYPE* job_core(
           + nSource[1]*ifo[n].sig.DetSSB[1]
           + nSource[2]*ifo[n].sig.DetSSB[2];
 
+    //    printf("shft1=%f\n",shft1 );
+    //printf("DetSSB[0]=%f\n",ifo[n].sig.DetSSB[0] );
+
+
     for(i=0; i<sett->N; ++i) {
 
       ifo[n].sig.shft[i] = nSource[0]*ifo[n].sig.DetSSB[i*3]
@@ -355,6 +359,9 @@ FLOAT_TYPE* job_core(
     bb += bbtemp/ifo[n].sig.sig2;   
   }
 
+  //  printf("maa=%f,  mbb=%f\n", aa, bb);
+  //  exit(0);
+
 #ifdef YEPPP
 #define VLEN 2048
     yepLibrary_Init();
@@ -376,7 +383,7 @@ FLOAT_TYPE* job_core(
   /* Spindown loop 
    */
 
-#ifdef TIMERS
+#if TIMERS>2
   struct timespec tstart, tend;
   double spindown_timer = 0;
   int spindown_counter  = 0;
@@ -389,7 +396,7 @@ FLOAT_TYPE* job_core(
   // if spindown parameter is taken into account, smin != smax
   for(ss=smin; ss<=smax; ++ss) {
 
-#ifdef TIMERS
+#if TIMERS>2
     tstart = get_current_time();
 #endif 
 
@@ -620,7 +627,7 @@ FLOAT_TYPE* job_core(
 	    } // if Fc > trl 
       } // for i
 
-#ifdef TIMERS
+#if TIMERS>2
     tend = get_current_time();
     spindown_timer += get_time_difference(tstart, tend);
     spindown_counter++;
@@ -633,7 +640,7 @@ FLOAT_TYPE* job_core(
 	    printf("Number of signals found: %d\n", *sgnlc); 
 #endif 
 
-#ifdef TIMERS
+#if TIMERS>2
   printf("\nTotal spindown loop time: %e s, mean spindown time: %e s (%d runs)\n",
     spindown_timer, spindown_timer/spindown_counter, spindown_counter);
 #endif
