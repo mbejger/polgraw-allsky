@@ -611,18 +611,28 @@ FLOAT_TYPE* job_core(
 	    // Signal-to-noise ratio
 	    sgnlt[4] = sqrt(2.*(Fc-sett->nd));
 
-        (*sgnlc)++; // increase found number
+        // Checking if signal is within a known instrumental line 
+        int k, veto_status=0; 
+        for(k=0; k<sett->numlines_band; k++)
+          if(sgnlt[0]>=sett->lines[k][0] && sgnlt[0]<=sett->lines[k][1]) { 
+            veto_status=1; 
+            break; 
+          }   
 
-	    // Add new parameters to output array 
-        sgnlv = (FLOAT_TYPE *)realloc(sgnlv, NPAR*(*sgnlc)*sizeof(FLOAT_TYPE));
+        if(!veto_status) { 
 
-    for (j=0; j<NPAR; ++j) // save new parameters
-	  sgnlv[NPAR*(*sgnlc-1)+j] = (FLOAT_TYPE)sgnlt[j];
+            (*sgnlc)++; // increase found number
+	        // Add new parameters to output array 
+            sgnlv = (FLOAT_TYPE *)realloc(sgnlv, NPAR*(*sgnlc)*sizeof(FLOAT_TYPE));
+
+            for(j=0; j<NPAR; ++j) // save new parameters
+	            sgnlv[NPAR*(*sgnlc-1)+j] = (FLOAT_TYPE)sgnlt[j];
 
 #ifdef VERBOSE
 	    printf ("\nSignal %d: %d %d %d %d %d \tsnr=%.2f\n", 
 		  *sgnlc, pm, mm, nn, ss, ii, sgnlt[4]);
 #endif 
+        } 
 
 	    } // if Fc > trl 
       } // for i

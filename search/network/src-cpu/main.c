@@ -69,6 +69,9 @@ int main (int argc, char* argv[]) {
   // Detector network settings
   detectors_settings(&sett, &opts); 
 
+  if(opts.veto_flag)  
+    lines_in_band(&sett);
+
   // Array initialization
   init_arrays(&sett, &opts, &aux_arr, &F);
 

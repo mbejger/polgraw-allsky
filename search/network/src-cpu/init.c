@@ -34,8 +34,8 @@ void handle_opts(
   opts->hemi=0;
   opts->wd=NULL;
   opts->trl=20;
-  opts->fftinterp=INT;
-	
+  opts->fftinterp=INT;	
+
   strcpy (opts->prefix, TOSTR(PREFIX));
   strcpy (opts->dtaprefix, TOSTR(DTAPREFIX));
 
@@ -45,7 +45,7 @@ void handle_opts(
 	
   // Initial value of starting frequency set to a negative quantity. 
   // If this is not changed by the command line value, fpo is calculated 
-  // from the band number b (fpo = fpo = 100. + 0.96875*b)
+  // from the band number b (fpo = fpo = 100. + 0.96875*b/(2dt))
   sett->fpo = -1;
 
   // Default initial value of the data sampling time 
@@ -55,8 +55,10 @@ void handle_opts(
   opts->white_flag=0;
   opts->s0_flag=0;
   opts->checkp_flag=0;
+  opts->veto_flag=0; 
 
-  static int help_flag=0, white_flag=0, s0_flag=0, checkp_flag=1;
+  static int help_flag=0, white_flag=0, s0_flag=0, 
+             checkp_flag=1, veto_flag=0;
 
   // Reading arguments 
 
@@ -66,6 +68,7 @@ void handle_opts(
       {"whitenoise", no_argument, &white_flag, 1},
       {"nospindown", no_argument, &s0_flag, 1},
       {"nocheckpoint", no_argument, &checkp_flag, 0},
+      {"vetolines", no_argument, &veto_flag, 1}, 
       // frame number
       {"ident", required_argument, 0, 'i'},
       // frequency band number
@@ -115,6 +118,7 @@ void handle_opts(
       printf("--whitenoise      White Gaussian noise assumed\n");
       printf("--nospindown      Spindowns neglected\n");
       printf("--nocheckpoint    State file won't be created (no checkpointing)\n");
+      printf("--vetolines       Veto known lines from files in data directory\n");
       printf("--help            This help\n");
 
       exit (0);
@@ -173,7 +177,8 @@ void handle_opts(
 
   opts->white_flag = white_flag;
   opts->s0_flag = s0_flag;
-  opts->checkp_flag = checkp_flag;	
+  opts->checkp_flag = checkp_flag;
+  opts->veto_flag = veto_flag; 
 	
   printf("Input data directory is %s\n", opts->dtaprefix);
   printf("Output directory is %s\n", opts->prefix);
@@ -213,6 +218,9 @@ void handle_opts(
     printf ("Changing working directory to %s\n", opts->wd);
     if (chdir(opts->wd)) { perror (opts->wd); abort (); }
   }
+
+  if(opts->veto_flag) 
+    printf("Known lines will be vetoed (reading from files in the data directory)\n");
 
 } // end of command line options handling 
 
