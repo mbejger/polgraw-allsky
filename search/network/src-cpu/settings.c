@@ -67,6 +67,9 @@ void search_settings(
   sett->nmin = sett->fftpad*NAV*sett->B;
   sett->nmax = (sett->nfft/2 - NAV*sett->B)*sett->fftpad;
 
+  // initial value of number of known instrumental lines in band 
+  sett->numlines_band=0; 
+
 } // search settings  
 
 
@@ -186,7 +189,7 @@ void detectors_settings(
 
       printf("Using %s IFO as detector #%d... %s as input time series data\n", 
         ifo[i].name, i, ifo[i].xdatname);
- 
+
     // Livingston L1 detector
     } else if(!strcmp("L1", detnames[i])) {
 
@@ -212,6 +215,14 @@ void detectors_settings(
       exit(EXIT_FAILURE);
     }
 
+  } 
+
+  // Vetoing known lines 
+  if(opts->veto_flag) { 
+    for(i=0; i<sett->nifo; i++) {
+      printf("Reading known lines data for %s from %s\n", ifo[i].name, dirname);
+      read_lines(opts, &ifo[i]);
+    } 
   } 
 
   // memory free for detnames and xdatnames
@@ -302,3 +313,152 @@ void modvir(
 
 } // modvir
 
+int read_lines(
+    Command_line_opts *opts, 
+    Detector_settings *ifo) { 
+
+    int i=0, lnum, alllines, j; 
+    double l[MAXL][7]; 
+    char linefile[512], line[128] = {0}; 
+    FILE *data; 
+  
+    sprintf(linefile, "%s/O1LinesToBeCleaned_%s_v1.txt", 
+        opts->dtaprefix, ifo->name);
+
+    // Reading line data from the input file (data)   
+    // Columns are: 
+    // 1 - frequency spacing (Hz) of comb (or frequency of single line)
+    // 2 - comb type (0 - singlet, 1 - comb with fixed width, 2 - comb with scaling width)
+    // 3 - frequency offset of 1st visible harmonic (Hz)
+    // 4 - index of first visible harmonic
+    // 5 - index of last visible harmonic
+    // 6 - width of left band (Hz)
+    // 7 - width of right band (Hz)
+
+    if ((data = fopen(linefile, "r")) != NULL) {
+
+        while (fgets(line, 128, data) != NULL) {
+
+            // Skip comment lines beginning with '%'
+            if (*line == '%') continue;
+
+            j=0; 
+            char *t;  
+            for(t = strtok(line, "\t "); t != NULL; t = strtok(NULL, "\t ")) {
+              l[i][j] = atof(t);
+              j++; 
+            }
+
+            i++;  
+ 
+        }
+
+    } else {  
+        printf("No known lines file %s for %s IFO found. Continuing without.\n", 
+            linefile, ifo->name);
+        return 0; 
+    } 
+
+    // The number of data for lines
+    lnum = i; 
+
+    fclose(data); 
+
+    // Produce line widths 
+    //--------------------
+ 
+    j=0; 
+    for(i=0; i<lnum; i++) { 
+
+        int line_type = (int)(l[i][1]);
+        int indf = (int)(l[i][3]);
+        int indl = (int)(l[i][4]);
+        int k; 
+
+        switch(line_type) { 
+
+        // Singlet
+        case 0: 
+//            printf("Singlet\n");    
+            ifo->lines[j][0] = l[i][0] - l[i][5]; 
+            ifo->lines[j][1] = l[i][0] + l[i][6];
+//            printf("%f %f\n", ifo->lines[j][0], ifo->lines[j][1]);
+            j++;
+            break; 
+
+        // Comb with fixed width. Vetoing the band 
+        // [offset+index*spacing-leftwidth, offset+index*spacing+rightwidth] 
+        case 1:                  
+//            printf("Fixed width\n"); 
+            for(k=indf; k<=indl; k++) { 
+                ifo->lines[j][0] = l[i][2] + k*l[i][0] - l[i][5];
+                ifo->lines[j][1] = l[i][2] + k*l[i][0] + l[i][6];
+//                printf("%f %f\n", ifo->lines[j][0], ifo->lines[j][1]);
+                j++; 
+            } 
+            break; 
+ 
+        // Comb with scaling-width. Vetoing the band 
+        // [offset+index*spacing-index*leftwidth, offset+index*spacing+index*rightwidth]       
+        case 2: 
+//            printf("Scalling-width\n"); 
+            for(k=indf; k<=indl; k++) { 
+                ifo->lines[j][0] = l[i][2] + k*l[i][0] - k*l[i][5];
+                ifo->lines[j][1] = l[i][2] + k*l[i][0] + k*l[i][6];
+//                printf("%f %f\n", ifo->lines[j][0], ifo->lines[j][1]);
+                j++; 
+            }
+            break; 
+        } 
+
+    }
+
+    ifo->numlines = j; 
+    printf("Number of known lines in %s: %d\n", ifo->name, ifo->numlines); 
+
+return 0; 
+
+}
+
+void lines_in_band(
+    Search_settings* sett) {
+
+    int i, j, k=0; 
+    double bs, be;        // Band start and end  
+    double ll, lr, l, r;  // Line left and right side
+
+    bs = sett->fpo; 
+    be = sett->fpo + sett->B; 
+
+    for(i=0; i<sett->nifo; i++) { 
+
+      printf("Looking for known lines for %s between %f and %f...\n", 
+        ifo[i].name, bs, be); 
+
+      for(j=0; j<ifo[i].numlines; j++) {
+
+        double l = ifo[i].lines[j][0]; 
+        double r = ifo[i].lines[j][1];
+
+        if(!(r < bs || l > be)) { 
+
+           if(l > bs) ll = l;
+           else ll = bs;     
+
+           if(r < be) lr = r;
+           else lr = be;     
+
+           sett->lines[k][0] = (ll-bs)/(sett->B)*M_PI;  
+           sett->lines[k][1] = (lr-bs)/(sett->B)*M_PI;
+
+           printf("%f %f %f %f\n", ll, lr, sett->lines[k][0], sett->lines[k][1]);
+           k++; 
+
+        }      
+      }
+    } 
+
+    sett->numlines_band = k;
+    printf("%d known lines in total in band.\n", sett->numlines_band);     
+
+}     
