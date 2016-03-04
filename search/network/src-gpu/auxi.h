@@ -25,9 +25,6 @@
 void lin2ast(double be1, double be2, int pm, double sepsm, double cepsm,	\
          double *sinal, double *cosal, double *sindel, double *cosdel);
 
-void spline(complex double *, int, complex double *);
-complex double splint (complex double *, complex double *, int, double);
-void splintpad (complex double *, double *, int, int, complex double*);
 double var (double *, int);
 
 void gridr (double *, int *, int *, int *, double, double);

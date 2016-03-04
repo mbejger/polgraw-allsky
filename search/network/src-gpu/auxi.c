@@ -11,91 +11,19 @@
 #include "auxi.h"
 
 
-// lin2ast described in Phys. Rev. D 82, 022005 (2010) (arXiv:1003.0844)
-void
-lin2ast (double be1, double be2, int pm, double sepsm, double cepsm, 
-         double *sinal, double *cosal, double *sindel, double *cosdel) {
+/* lin2ast described in Phys. Rev. D 82, 022005 (2010) (arXiv:1003.0844) */
+void lin2ast (double be1, double be2, int pm, double sepsm, double cepsm, 
+	      double *sinal, double *cosal, double *sindel, double *cosdel) {
 
   *sindel = be1*sepsm-(2*pm-3)*sqrt(1.-sqr(be1)-sqr(be2))*cepsm;
   *cosdel = sqrt(1.-sqr(*sindel));
   *sinal = (be1-sepsm*(*sindel))/(cepsm*(*cosdel));
   *cosal = be2/(*cosdel);
-
+  
 } /* lin2ast() */
 
 
-
-inline void
-spline(complex double *y, int n, complex double *y2)
-{
-  int i, k;
-  complex double invp, qn, un;
-
-  static complex double *u = NULL;
-  if (!u) u = (complex double *)malloc((n-1)*sizeof(complex double));
-  //  u = (complex double *) calloc (n-1, sizeof (complex double));
-  y2[0] = u[0] = 0.;
-
-  for (i=1; i<n-1; ++i) {
-    //p = .5*y2[i-1]+2.;
-    //y2[i] = -.5/p;
-    //u[i] = y[i+1]-2.*y[i]+y[i-1];
-    //u[i] = (3.*u[i]-.5*u[i-1])/p;
-    invp = 2./(y2[i-1]+4.);
-    y2[i] = -.5*invp;
-    u[i] = y[i-1]-2.*y[i]+y[i+1];
-    u[i] = (-.5*u[i-1]+3.*u[i])*invp;
-  }
-  qn = un = 0.;
-  y2[n-1] = (un-qn*u[n-2])/(qn*y2[n-2]+1.);
-  for (k=n-2; k>=0; --k)
-    y2[k] = y2[k]*y2[k+1]+u[k];
-  //free (u);
-} /* spline() */
-
-inline complex double
-splint (complex double *ya, complex double *y2a, int n, double x)
-{
-  int klo, khi;
-  double b, a;
-
-  if (x<0 || x>n-1)
-    return 0.;
-  klo = floor (x);
-  khi = klo+1;
-  a = khi - x;
-  b = x - klo;
-  return a*ya[klo]+b*ya[khi]+((a*a*a-a)*y2a[klo]+(b*b*b-b)*y2a[khi])/6.0;
-} /* splint() */
-
-void
-splintpad (complex double *ya, double *shftf, int N, int interpftpad,	\
-           complex double *out) {
-  /* Cubic spline with "natural" boundary conditions.
-     Input:
-     ya[i] - value of the function being interpolated in x_i = i,
-     for i = 0 .. (interpftpad*N-1)	(changed on exit);
-     Interpolating spline will be calculated at the points
-     interpftpad*(i-shftf[i]), for i = 0 .. (N-1);
-     N - number of output data points.
-     Output:
-     out[i] - value of the interpolating function
-     at interpftpad*(i-shftf[i]).
-  */
-  complex double *y2;
-  double x;
-  int i;
-  y2 = (complex double *) malloc (interpftpad*N*sizeof (complex double)); //vector twice-size of N
-  spline (ya, interpftpad*N, y2);
-  for (i=0; i<N; ++i) {
-    x = interpftpad*(i-shftf[i]);
-    out[i] = splint (ya, y2, interpftpad*N, x);
-  } /* for i */
-  free (y2);
-} /* splintpad */
-
-double
-var (double *x, int n) {
+double var (double *x, int n) {
   /* var(x, n) returns the variance (square of the standard deviation)
      of a given vector x of length n.
   */
@@ -113,11 +41,10 @@ var (double *x, int n) {
 
 
 
-void
-gridr (double *M, int *spndr, int *nr, int *mr, double oms, double Smax) {
+void gridr (double *M, int *spndr, int *nr, int *mr, double oms, double Smax) {
   double cof, Mp[16], smx[64], d, Ob;
   int i, j, indx[4];
-
+  
   /* Grid range */
 
   // input:
@@ -212,8 +139,7 @@ double FStat (double *F, int nfft, int nav, int indx) {
   return pxout;
 } /* FStat() */
 
-int
-ludcmp (double *a, int n, int *indx, double *d)
+int ludcmp (double *a, int n, int *indx, double *d)
 /*	LU decomposition of a given real matrix a[0..n-1][0..n-1]
 	Input:
 	a		- an array containing elements of matrix a
@@ -280,8 +206,7 @@ ludcmp (double *a, int n, int *indx, double *d)
   return 0;
 } /* ludcmp() */
 
-int
-lubksb (double *a, int n, int *indx, double *b)
+int lubksb (double *a, int n, int *indx, double *b)
 /* Solves the set of n linear equations A X=B.
    Input:
    a[0..n-1][0..n-1] - LU decomposition af a matrix A,
@@ -317,8 +242,8 @@ lubksb (double *a, int n, int *indx, double *b)
   return 0;
 } /* lubksb() */
 
-int
-invm (const double *a, int N, double *y)
+
+int invm (const double *a, int N, double *y)
      /* Inverse of a real matrix a[0..N-1][0..N-1].
 	Input:
 		a[0..N-1][0..N-1] - given matrix (saved on exit)
@@ -351,8 +276,8 @@ invm (const double *a, int N, double *y)
   return 0;
 } /* invm() */
 
-double
-det (const double *a, int N)
+
+double det (const double *a, int N)
      /* determinant of a real matrix a[0..N-1][0..N-1] */
 {
   double d, *al;;
