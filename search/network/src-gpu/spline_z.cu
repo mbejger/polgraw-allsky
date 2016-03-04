@@ -83,7 +83,7 @@ __global__ void computeB(cufftDoubleComplex *y, cufftDoubleComplex *B, int N) {
 __global__ void interpolate(double *new_x, cufftDoubleComplex *new_y, 
 			    cufftDoubleComplex *z, cufftDoubleComplex *y,
 			    int N, int new_N) {
-  double alpha = 1.0/6;
+  double alpha = 1./6.;
   int idx = threadIdx.x + blockIdx.x * blockDim.x;
   if (idx < new_N) {
     double x = new_x[idx];
@@ -101,7 +101,7 @@ __global__ void interpolate(double *new_x, cufftDoubleComplex *new_y,
     
     new_y[idx].x = dist1*( z[i+1].x*alpha*(dist1*dist1 - 1) + y[i+1].x ) +
       dist2*( z[i].x*alpha*(dist2*dist2 - 1) + y[i].x );
-    new_y[idx].y = dist1*( z[i+1].y*alpha*(dist1*dist1 - 1) +  y[i+1].y ) +
+    new_y[idx].y = dist1*( z[i+1].y*alpha*(dist1*dist1 - 1) + y[i+1].y ) +
       dist2*( z[i].y*alpha*(dist2*dist2 - 1) + y[i].y );
     
     // that change makes kernel ~2.3x faster
@@ -116,6 +116,7 @@ __global__ void interpolate(double *new_x, cufftDoubleComplex *new_y,
 
 
 
+/* !!!pci make this a kernel, write directly to the device memory */
 void init_spline_matrices(cufftDoubleComplex **cu_d, cufftDoubleComplex **cu_dl,
 			  cufftDoubleComplex **cu_du, cufftDoubleComplex **cu_B,
 			  int N) {
@@ -140,9 +141,9 @@ void init_spline_matrices(cufftDoubleComplex **cu_d, cufftDoubleComplex **cu_dl,
     du[i].y=0;
     d[i].y=0;
   }
-  d[N-2].x=4;
   dl[0].x=0;
   du[N-2].x=0;
+  d[N-2].x=4;
   
   dl[N-2].y=0;
   du[N-2].y=0;

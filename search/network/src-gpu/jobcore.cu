@@ -410,7 +410,7 @@ FLOAT_TYPE* job_core(
       }
 
       // initialize arrays to 0. with integer 0
-      // assuming double , remember to change whan switching to float
+      // assuming double , remember to change when switching to float
       cuMemsetD32Async((CUdeviceptr) (fft_arr->xa_d + sett->N), 0,
 		       (sett->nfftf - sett->N)*2*(sizeof(double)/4), NULL);
       cuMemsetD32Async((CUdeviceptr) (fft_arr->xb_d + sett->N), 0,

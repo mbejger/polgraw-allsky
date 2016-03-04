@@ -23,36 +23,6 @@ lin2ast (double be1, double be2, int pm, double sepsm, double cepsm,
 
 } /* lin2ast() */
 
-void ast2lin (FLOAT_TYPE alfa, FLOAT_TYPE delta, double epsm, double *be) {
-
-  /* alfa - right ascension [rad]
-     delta - declination [rad]
-     Mean obliquity of the equator with respect to the ecliptic at J2000.0:
-     epsm =  84381.448*pi/(3600*180)
-  */
-
-    be[0] = cos(epsm)*sin(alfa)*cos(delta)+sin(epsm)*sin(delta);
-    be[1] = cos(alfa)*cos(delta);
-
-    //#mb this is not needed at the moment 
-/* 
-    double d1 = asin(be[0]*sin(epsm) 
-            + sqrt(1. - be[0]*be[0] - be[1]*be[1])*cos(epsm)) - delta;
-
-//  double d2 = asin(be[0]*sin(epsm) 
-//          - sqrt(1. - be[0]*be[0] - be[1]*be[1])*cos(epsm)) - delta;
-
-    int pm; 
-
-    if(fabs(d1)  < 10.*DBL_EPSILON)
-        pm = 1;
-    else
-        pm = 2;
-
-    return pm; 
-*/ 
-
-}
 
 
 inline void

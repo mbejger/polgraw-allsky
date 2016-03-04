@@ -569,7 +569,7 @@ void set_search_range( Search_settings *sett,
   if(opts->hemi) {
     s_range->pmr[0] = opts->hemi;
     s_range->pmr[1] = opts->hemi;
-
+    
   } else {
     s_range->pmr[0] = 1;
     s_range->pmr[1] = 2;
@@ -580,119 +580,32 @@ void set_search_range( Search_settings *sett,
   // ("-r range_file" from the command line)
   FILE *data;
   if (strlen (opts->range)) {
-
+    
     if ((data=fopen (opts->range, "r")) != NULL) {
-
+      
       int aqq = fscanf (data, "%d %d %d %d %d %d %d %d",
 			s_range->spndr, 1+s_range->spndr, s_range->nr,
 			1+s_range->nr, s_range->mr, 1+s_range->mr,
 			s_range->pmr, 1+s_range->pmr);
-
-      if (aqq) {
-
+      
+      if (aqq != 8) {
+	printf("Error when reading range file!\n");
+	exit(EXIT_FAILURE);
       }
-      /*
-      //#mb commented-out for now - useful for tests 
-
-      // the case when range file does not contain 8 integers
-      // describing the grid ranges, but other values:
-      // the pulsar position, frequency, and spindowns.
-      if(range_status!=8) {
-
-      rewind(data);
-      range_status = fscanf (data, "%le %le %le %le %le %le %d",
-      &pepoch, &alpha, &delta, &f0, &f1, &f2, &gsize);
-
-      // GPS time of the first sample
-      double gps1;
-      sprintf (filename, "%s/%03d/starting_date", dtaprefix, ident);
-      if ((data2 = fopen (filename, "r")) != NULL) {
-      fscanf (data2, "%le", &gps1);
-      fclose(data2);
-      } else {
-      perror (filename);
-      return 1;
-      }
-
-      // Conversion of mjd to gps time
-      double pepoch_gps = (pepoch - 44244)*86400 - 51.184;
-      //			 gps1 = (gps1 - 44244)*86400 - 51.184;
-
-      // Interpolation of ephemeris parameters to the starting time
-      double *sgnlo;
-      sgnlo = (double *) calloc (4, sizeof (double));
-
-      double *be;
-      be = (double *) calloc (2, sizeof (double));
-
-      // ast2lin (auxi.c) returns the hemisphere number
-      // and the vector be (used for sky position in linear coords.)
-      pmr[0] = ast2lin(alpha, delta, epsm, be);
-
-      sgnlo[0] = f0 + f1*(gps1 - pepoch_gps) + f2*pow(gps1 - pepoch_gps, 2)/2.;
-      sgnlo[0] = 2*M_PI*2*sgnlo[0]*dt - oms;
-
-      sgnlo[1] = f1 + f2*(gps1 - pepoch_gps);
-      sgnlo[1] = M_PI*2*sgnlo[1]*dt*dt;
-
-      sgnlo[2] = be[0]*(oms + sgnlo[0]);
-      sgnlo[3] = be[1]*(oms + sgnlo[0]);
-
-      // solving a linear system in order to translate
-      // sky position, frequency and spindown (sgnlo parameters)
-      // into the position in the grid
-
-      gsl_vector *x = gsl_vector_alloc (4);
-      int s;
-
-      gsl_matrix_view m = gsl_matrix_view_array (M, 4, 4);
-      gsl_matrix_transpose (&m.matrix) ;
-      gsl_vector_view b = gsl_vector_view_array (sgnlo, 4);
-      gsl_permutation *p = gsl_permutation_alloc (4);
-
-      gsl_linalg_LU_decomp (&m.matrix, p, &s);
-      gsl_linalg_LU_solve (&m.matrix, p, &b.vector, x);
-
-      spndr[0] = round(gsl_vector_get(x, 1));
-      nr[0]		= round(gsl_vector_get(x, 2));
-      mr[0]		= round(gsl_vector_get(x, 3));
-
-      gsl_permutation_free (p);
-      gsl_vector_free (x);
-      free (be);
-      free (sgnlo);
-
-
-      // Warnings and infos
-      if(hemi)
-
-      printf("Warning: -h switch hemisphere choice (%d) may be altered\nby the choice of -r grid range...\n", hemi);
-
-      // Define the grid range in which the signal will be looked for
-      spndr[1] = spndr[0] + gsize ;
-      spndr[0] -= gsize;
-      nr[1] = nr[0] + gsize ;
-      nr[0] -= gsize;
-      mr[1] = mr[0] + gsize ;
-      mr[0] -= gsize;
-      pmr[1] = pmr[0];
-
-      }
-      */
-
+      
       fclose (data);
-
+      
     } else {
       perror (opts->range);
       exit(EXIT_FAILURE);
     }
-
+    
     // Grid range is established from above
     printf("The following grid range is used\n");
-    printf("(spndr, nr, mr, pmr pairs): %d %d %d %d %d %d %d %d\n", \
+    printf("(spndr, nr, mr, pmr pairs): %d %d %d %d %d %d %d %d\n",	\
 	   s_range->spndr[0], s_range->spndr[1], s_range->nr[0], s_range->nr[1],
 	   s_range->mr[0], s_range->mr[1], s_range->pmr[0], s_range->pmr[1]);
-
+    
   } else {
 
     // Establish the grid range in which the search will be performed
@@ -704,7 +617,7 @@ void set_search_range( Search_settings *sett,
 	  s_range->mr,
 	  sett->oms,
 	  sett->Smax);
-
+    
   }
 
 } // end of set search range 
