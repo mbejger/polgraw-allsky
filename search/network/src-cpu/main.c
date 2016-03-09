@@ -69,11 +69,21 @@ int main (int argc, char* argv[]) {
   // Detector network settings
   detectors_settings(&sett, &opts); 
 
-  if(opts.veto_flag)  
-    lines_in_band(&sett);
-
-  // Array initialization
+  // Array initialization and reading the ephemerids 
   init_arrays(&sett, &opts, &aux_arr, &F);
+
+
+  // Reading known lines data from external files 
+  if(opts.veto_flag) { 
+    for(i=0; i<sett.nifo; i++) {
+      printf("Reading known lines data for %s from %s\n", ifo[i].name, opts.dtaprefix);
+      read_lines(&sett, &opts, &ifo[i]);
+    }
+
+    // Vetoing known lines in band 
+    lines_in_band(&sett); 
+  } 
+
 
   // Amplitude modulation functions for each detector  
   for(i=0; i<sett.nifo; i++)   

@@ -404,7 +404,9 @@ FLOAT_TYPE* job_core(
     sgnlt[1] = (opts->s0_flag ? 0. : ss*sett->M[5] + nn*sett->M[9] + mm*sett->M[13]);
     
     // Spindown range
-    if(sgnlt[1] >= -sett->Smax && sgnlt[1] <= sett->Smax) { 
+    //#mb !!! Limits put by hand for RDC_O1 !!!
+    if(sgnlt[1] >= -1e-8 && sgnlt[1] <= 1e-9) { 
+//    if(sgnlt[1] >= -sett->Smax && sgnlt[1] <= 0) { 
 
       int ii;
       double Fc, het1;

@@ -112,14 +112,15 @@ void detectors_settings(
           // 
           // We assume that in each subdirectory corresponding 
           // to the detector the input data will look as following: 
-          sprintf(x, "%s/%03d/%s/xdatc_%03d%s.bin",
+/*          sprintf(x, "%s/%03d/%s/xdatc_%03d%s.bin",
           opts->dtaprefix, opts->ident, ep->d_name,
           opts->ident, opts->label);
-/*
-          sprintf(x, "%s/%03d/%s/xdatc_%03d_%03d%s.bin",
+*/
+
+          sprintf(x, "%s/%03d/%s/xdatc_%03d_%04d%s.bin",
           opts->dtaprefix, opts->ident, ep->d_name,
           opts->ident, opts->band, opts->label);
-*/
+
           if((data = fopen(x, "r")) != NULL) {
 
             xnames[i]   = calloc(strlen(x)+1, sizeof(char));
@@ -217,14 +218,6 @@ void detectors_settings(
 
   } 
 
-  // Vetoing known lines 
-  if(opts->veto_flag) { 
-    for(i=0; i<sett->nifo; i++) {
-      printf("Reading known lines data for %s from %s\n", ifo[i].name, dirname);
-      read_lines(opts, &ifo[i]);
-    } 
-  } 
-
   // memory free for detnames and xdatnames
   for(i=0; i<sett->nifo; i++) { 
     free(detnames[i]);
@@ -314,6 +307,7 @@ void modvir(
 } // modvir
 
 int read_lines(
+    Search_settings *sett, 
     Command_line_opts *opts, 
     Detector_settings *ifo) { 
 
@@ -366,7 +360,72 @@ int read_lines(
 
     // Produce line widths 
     //--------------------
+
+    // Fixed line widths for each detector 
+    // based on the broadening modulation 
+    // due to the detector movement 
+
+    double dE[3*sett->N]; 
+
+    // First derivative DetSSB (velocity)  
+    for(i=0; i<sett->N; i++) { 
+
+      for(j=0; j<3; j++)  
+        dE[i*3+j] = fabs(ifo->sig.DetSSB[(i+1)*3+j] - ifo->sig.DetSSB[i*3+j]); 
+
+    } 
+
+    double dEmax[3] = {0}; 
+
+    // Find maximum absolute values 
+    for(i=0; i<sett->N-1; i++) {
+
+      for(j=0; j<3; j++) 
+        if(dE[i*3+j] > dEmax[j]) 
+          dEmax[j] = dE[i*3+j]; 
+
+    } 
+
+//#mb test printout 
+//    printf("dEmax %f %f %f\n", dEmax[0], dEmax[1], dEmax[2]); 
  
+    double dtE[3*sett->N]; 
+
+    // First derivative 
+    for(i=0; i<sett->N; i++) { 
+
+      for(j=0; j<3; j++)  
+        dtE[i*3+j] = fabs(ifo->sig.DetSSB[(i+1)*3+j]*(i+1) - ifo->sig.DetSSB[i*3+j]*i)*sett->dt; 
+
+    } 
+
+    double dtEmax[3] = {0}; 
+
+    // Find maximum absolute values 
+    for(i=0; i<sett->N-1; i++) {
+
+      for(j=0; j<3; j++) 
+        if(dtE[i*3+j] > dtEmax[j]) 
+          dtEmax[j] = dtE[i*3+j]; 
+
+    } 
+
+//#mb test printout 
+//    printf("dtEmax %f %f %f\n", dtEmax[0], dtEmax[1], dtEmax[2]); 
+
+    //#mb !!! Limits put by hand for RDC_O1 !!! 
+    double fdotMax = 0.5e-8, Dfmaxmax, normdtEmax=0., normdEmax=0.;
+
+    for(j=0; j<3; j++) { 
+
+      normdtEmax += pow(dtEmax[j], 2.); 
+      normdEmax  += pow(dEmax[j], 2.);
+
+    } 
+
+    // Apply line widths 
+    //------------------
+
     j=0; 
     for(i=0; i<lnum; i++) { 
 
@@ -379,10 +438,18 @@ int read_lines(
 
         // Singlet
         case 0: 
-//            printf("Singlet\n");    
+/*            printf("Singlet\n");    
             ifo->lines[j][0] = l[i][0] - l[i][5]; 
             ifo->lines[j][1] = l[i][0] + l[i][6];
-//            printf("%f %f\n", ifo->lines[j][0], ifo->lines[j][1]);
+*/
+
+            // Line width from the resampling broadening 
+            Dfmaxmax = 2.*fdotMax*(sett->N*sett->dt + sqrt(normdtEmax)) + l[i][0]*sqrt(normdEmax);
+
+            // The original width of a line is replaced with Dfmaxmax
+            ifo->lines[j][0] = l[i][0] - Dfmaxmax; 
+            ifo->lines[j][1] = l[i][0] + Dfmaxmax;
+//          printf("%f %f\n", ifo->lines[j][0], ifo->lines[j][1]);
             j++;
             break; 
 
@@ -391,9 +458,20 @@ int read_lines(
         case 1:                  
 //            printf("Fixed width\n"); 
             for(k=indf; k<=indl; k++) { 
-                ifo->lines[j][0] = l[i][2] + k*l[i][0] - l[i][5];
+/*              ifo->lines[j][0] = l[i][2] + k*l[i][0] - l[i][5];
                 ifo->lines[j][1] = l[i][2] + k*l[i][0] + l[i][6];
-//                printf("%f %f\n", ifo->lines[j][0], ifo->lines[j][1]);
+*/
+
+                // Line width from the resampling broadening 
+                double linefreq = l[i][2] + k*l[i][0]; 
+
+                Dfmaxmax = 2.*fdotMax*(sett->N*sett->dt + sqrt(normdtEmax)) 
+                  + linefreq*sqrt(normdEmax);
+
+                // The original width of a line is replaced with Dfmaxmax
+                ifo->lines[j][0] = linefreq - Dfmaxmax;
+                ifo->lines[j][1] = linefreq + Dfmaxmax;
+//              printf("%f %f\n", ifo->lines[j][0], ifo->lines[j][1]);
                 j++; 
             } 
             break; 
@@ -403,9 +481,19 @@ int read_lines(
         case 2: 
 //            printf("Scalling-width\n"); 
             for(k=indf; k<=indl; k++) { 
-                ifo->lines[j][0] = l[i][2] + k*l[i][0] - k*l[i][5];
+/*              ifo->lines[j][0] = l[i][2] + k*l[i][0] - k*l[i][5];
                 ifo->lines[j][1] = l[i][2] + k*l[i][0] + k*l[i][6];
-//                printf("%f %f\n", ifo->lines[j][0], ifo->lines[j][1]);
+*/
+
+                // Line width from the resampling broadening 
+                double linefreq = l[i][2] + k*l[i][0];
+
+                Dfmaxmax = 2.*fdotMax*(sett->N*sett->dt + sqrt(normdtEmax)) 
+                  + linefreq*sqrt(normdEmax);
+
+                ifo->lines[j][0] = linefreq - k*Dfmaxmax;
+                ifo->lines[j][1] = linefreq + k*Dfmaxmax;
+//              printf("%f %f\n", ifo->lines[j][0], ifo->lines[j][1]);
                 j++; 
             }
             break; 

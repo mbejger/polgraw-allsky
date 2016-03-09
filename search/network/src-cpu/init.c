@@ -45,7 +45,7 @@ void handle_opts(
 	
   // Initial value of starting frequency set to a negative quantity. 
   // If this is not changed by the command line value, fpo is calculated 
-  // from the band number b (fpo = fpo = 100. + 0.96875*b/(2dt))
+  // from the band number b (fpo = fpo = fstart + 0.96875*b/(2dt))
   sett->fpo = -1;
 
   // Default initial value of the data sampling time 
@@ -188,11 +188,14 @@ void handle_opts(
   // fpo_val is optionally read from the command line
   // Its initial value is set to -1
   if(!(sett->fpo >= 0))
-    // The usual definition (multiplying the offset by B=1/(2dt) ):
-    sett->fpo = 100. + 0.96875*opts->band*(0.5/sett->dt);
+
+    // The usual definition (multiplying the offset by B=1/(2dt))
+    // !!! in RDC_O1 the fstart equals 10, not 100 like in VSR1 !!! 
+    // 
+    sett->fpo = 10. + 0.96875*opts->band*(0.5/sett->dt);
 
   printf("The reference frequency fpo is %f\n", sett->fpo);
-  printf("The data sampling time dt is  %f\n", sett->dt); 
+  printf("The data sampling time dt is %f\n", sett->dt); 
 
   if (opts->white_flag)
     printf ("Assuming white Gaussian noise\n");
