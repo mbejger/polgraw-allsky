@@ -753,10 +753,10 @@ void read_checkpoints(
 		
     // filename of checkpoint state file, depending on the hemisphere
     if(opts->hemi)
-      sprintf(opts->qname, "state_%03d_%03d%s_%d.dat",  
+      sprintf(opts->qname, "state_%03d_%04d%s_%d.dat",  
 	            opts->ident, opts->band, opts->label, opts->hemi);
     else
-      sprintf(opts->qname, "state_%03d_%03d%s.dat", 
+      sprintf(opts->qname, "state_%03d_%04d%s.dat", 
 	            opts->ident, opts->band, opts->label);
 
     FILE *state;

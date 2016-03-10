@@ -81,7 +81,7 @@ void search(
 
   for (pm=s_range->pst; pm<=s_range->pmr[1]; ++pm) {
 
-    sprintf (outname, "%s/triggers_%03d_%03d%s_%d.bin", 
+    sprintf (outname, "%s/triggers_%03d_%04d%s_%d.bin", 
 	     opts->prefix, opts->ident, opts->band, opts->label, pm);
     
     /* Two main loops over sky positions 
