@@ -194,7 +194,7 @@ void read_trigger_files(Search_settings *sett,
 
     while ((ep = readdir (dp))) { 
 
-      if((ep->d_type == DT_REG) &&
+      if(((ep->d_type == DT_REG) || (ep->d_type == DT_LNK)) &&
 	 (strstr(ep->d_name, opts->trigname) != NULL)) { 
 
 	sprintf(filename, "%s/%s", opts->dtaprefix, ep->d_name); 
@@ -232,7 +232,14 @@ void read_trigger_files(Search_settings *sett,
 	      
  	      // #mb todo: deal with the out-of-band candidates 
 	      // if frequency is in band 
-	      if((c[0]>0) && (c[0]<M_PI)) { 
+	      // c[4] = 4.0620192023179804 corresponds to F-stat = 10.25
+	      // c[4] = 4.1231056256176606 corresponds to F-stat = 10.5
+	      // c[4] = 4.2426406871192848 corresponds to F-stat = 11 
+	      // c[4] = 4.4721359549995796 corresponds to F-stat = 12
+	      // c[4] = 5.0990195135927845 corresponds to F-stat = 15
+	      // because  
+	      // c[4] = rho = \sqrt{2(F-2)}
+	      if(((c[0]>0) && (c[0]<M_PI))) { 
 		
 		// Conversion to linear parameters
 		//--------------------------------
@@ -492,8 +499,21 @@ void read_trigger_files(Search_settings *sett,
       int l, k = j-i; 
       int f = allcandi[k][6]; 
  
-      for(l=0; l<4; l++)  
+//#mb 
+//      for(l=0; l<4; l++)  
+//        mean[l] += allcandf[f][l]; 
+
+//#mb definition for alpha (mean[3]) in MDC Stage4 
+      for(l=0; l<3; l++)  
         mean[l] += allcandf[f][l];      
+
+      if(allcandf[f][3]>M_PI) 
+//        mean[3] += 2*M_PI - arccos(cos(allcandf[f][3])); 
+        mean[3] += 2*M_PI - allcandf[f][3]; 
+      else 
+        mean[3] += allcandf[f][3];     
+
+
       mean[4] += allcandf[f][4]*allcandf[f][4];  
 
       // ops[i]: position in trigger file #fra[i]
