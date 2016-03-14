@@ -869,6 +869,9 @@ void handle_opts_coinc(
   // Default value of the cell scaling: 1111 (no scaling)
   opts->scale=1111;
 
+  // Default signal-to-noise threshold cutoff
+  opts->snrcutoff=6;
+
   // Reading arguments 
 
   while (1) {
@@ -896,6 +899,8 @@ void handle_opts_coinc(
       {"mincoin", required_argument, 0, 'm'},
       // Narrow down the frequency band (+- the center of band) 
       {"narrowdown", required_argument, 0, 'n'},
+      // Signal-to-noise threshold cutoff  
+      {"snrcutoff", required_argument, 0, 'c'},
       {0, 0, 0, 0}
     };
 
@@ -914,7 +919,8 @@ void handle_opts_coinc(
       printf("-trigname     Part of triggers' name (for identifying files)\n");
       printf("-refloc       Location of the reference grid.bin and starting_date files\n");
       printf("-mincoin      Minimal number of coincidences recorded\n");
-      printf("-narrowdown   Narrow-down the frequency band (range [0,1], +- around center)\n\n");
+      printf("-narrowdown   Narrow-down the frequency band (range [0, 0.5] +- around center)\n");
+      printf("-snrcutoff    Signal-to-noise threshold cutoff (default value: 6)\n\n");
 
       printf("Also:\n\n");
       printf("--help		This help\n");
@@ -923,7 +929,7 @@ void handle_opts_coinc(
     }
 
     int option_index = 0;
-    int c = getopt_long_only (argc, argv, "p:o:d:s:z:r:t:e:g:m:n:", long_options, &option_index);
+    int c = getopt_long_only (argc, argv, "p:o:d:s:z:r:t:e:g:m:n:c:", long_options, &option_index);
     if (c == -1)
       break;
 
@@ -961,6 +967,9 @@ void handle_opts_coinc(
     case 'n':
       opts->narrowdown = atof(optarg);
       break;
+    case 'c':
+      opts->snrcutoff = atof(optarg);
+      break;
     case '?':
       break;
     default:
@@ -972,6 +981,9 @@ void handle_opts_coinc(
   opts->narrowdown *= M_PI; 
 
   printf("#mb add info at the beginning...\n"); 
+  printf("The SNR threshold cutoff is %.12f, ", opts->snrcutoff); 
+  printf("corresponding to F-statistic value of %.12f\n", 
+    pow(opts->snrcutoff, 2)/2. + 2); 
 
 } // end of command line options handling: coincidences  
 

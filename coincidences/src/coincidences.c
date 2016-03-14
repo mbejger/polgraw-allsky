@@ -236,10 +236,11 @@ void read_trigger_files(Search_settings *sett,
 	      // c[4] = 4.1231056256176606 corresponds to F-stat = 10.5
 	      // c[4] = 4.2426406871192848 corresponds to F-stat = 11 
 	      // c[4] = 4.4721359549995796 corresponds to F-stat = 12
+	      // c[4] = 4.5825756949558398 corresponds to F-stat = 12.5
 	      // c[4] = 5.0990195135927845 corresponds to F-stat = 15
 	      // because  
 	      // c[4] = rho = \sqrt{2(F-2)}
-	      if(((c[0]>0) && (c[0]<M_PI))) { 
+	      if(((c[0]>0) && (c[0]<M_PI)) && (c[4] > opts->snrcutoff)) { 
 		
 		// Conversion to linear parameters
 		//--------------------------------
