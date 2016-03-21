@@ -58,6 +58,13 @@ void modvir(
 
 int lineph (double, double *, double *, char *, char *, int);
 
+int read_lines(
+     Search_settings *sett,
+     Command_line_opts *opts, 
+     Detector_settings *ifo);
+
+void lines_in_band(Search_settings* sett);  
+
 // Coincidences 
 void read_trigger_files(
     Search_settings *sett,

@@ -15,13 +15,14 @@ MS
 #include <sys/stat.h>
 #include "glue.h"
 
-void glue(char prfx[512], char dataprfx[512], char band[512]){
+int glue(char prfx[512], char dataprfx[512], char band[512], int nod){
 	FILE *list; 
 	FILE *fp;
 	FILE *output;
 	int i, j, k, l, flag = 0;
 	int data = 1;
 	int line;
+	int base_size = 258493; //size of DetSSB.bin (in bytes) for nod = 1
 	char xdat[200];
 	char listpath[200];
 	char path[200];
@@ -37,13 +38,14 @@ void glue(char prfx[512], char dataprfx[512], char band[512]){
 	ssb1 = (float *) calloc (data, sizeof(float));
 	ssb2 = (float *) calloc (data, sizeof(float));
 	sprintf(listpath, "%s/list.txt", dataprfx);
+
 	
 	if ((list = fopen (listpath, "r")) != NULL) {
 		l = 0;
 		while (fscanf(list, "%d\n", &line) == 1){
 			if (l != 0) flag = 1;
 			l++;
-			sprintf(xdat, "xdatc_%03d%s.bin", line, band);
+			sprintf(xdat, "xdatc_%02d%s.bin", line, band);
 			mkdir(prfx, 0777);
 			sprintf(output_tot, "%s/followup_total_data/", prfx);
 			mkdir(output_tot, 0777);
@@ -70,7 +72,7 @@ void glue(char prfx[512], char dataprfx[512], char band[512]){
 					sprintf(part, "/H1/%s", xdat);
 					sprintf(out, "%s/H1/xdatc_000%s.bin", output_0, band);
 				}
-				sprintf(path, "%s/%03d%s", dataprfx, line, part);
+				sprintf(path, "%s/%02d%s", dataprfx, line, part);
 				if ((fp = fopen (path, "rb")) != NULL) {
 					k = 0;
 					if ((output = fopen (out, "ab")) != NULL) {			
@@ -85,11 +87,12 @@ void glue(char prfx[512], char dataprfx[512], char band[512]){
 						else {
 							while (!feof(fp)) {
 								if((fread ((void *)(cand), sizeof (float), data, fp))==data){
-									if(k < 516986){
+									if(k < (base_size*nod)){ //for nod = 2: k < 516986
 										fwrite((void *)(cand), sizeof (float), data, output);
 									}
-									if((k == 516986)&&(flag == 0)) ssb1[0] = cand[0];
-									if((k == 516987)&&(flag == 0)) ssb2[0] = cand[0];
+									if((k == base_size*nod)&&(flag == 0)) ssb1[0] = cand[0]; //for nod = 2: k == 516986
+									if((k == (base_size*nod)+1)&&(flag == 0)) ssb2[0] = cand[0]; //for nod = 2: k == 516987
+
 									k++;
 								}
 							}

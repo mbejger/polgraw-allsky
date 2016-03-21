@@ -34,8 +34,8 @@ void handle_opts(
   opts->hemi=0;
   opts->wd=NULL;
   opts->trl=20;
-  opts->fftinterp=INT;
-	
+  opts->fftinterp=INT;	
+
   strcpy (opts->prefix, TOSTR(PREFIX));
   strcpy (opts->dtaprefix, TOSTR(DTAPREFIX));
 
@@ -45,7 +45,7 @@ void handle_opts(
 	
   // Initial value of starting frequency set to a negative quantity. 
   // If this is not changed by the command line value, fpo is calculated 
-  // from the band number b (fpo = fpo = 100. + 0.96875*b)
+  // from the band number b (fpo = fpo = fstart + 0.96875*b/(2dt))
   sett->fpo = -1;
 
   // Default initial value of the data sampling time 
@@ -55,8 +55,10 @@ void handle_opts(
   opts->white_flag=0;
   opts->s0_flag=0;
   opts->checkp_flag=0;
+  opts->veto_flag=0; 
 
-  static int help_flag=0, white_flag=0, s0_flag=0, checkp_flag=1;
+  static int help_flag=0, white_flag=0, s0_flag=0, 
+             checkp_flag=1, veto_flag=0;
 
   // Reading arguments 
 
@@ -66,6 +68,7 @@ void handle_opts(
       {"whitenoise", no_argument, &white_flag, 1},
       {"nospindown", no_argument, &s0_flag, 1},
       {"nocheckpoint", no_argument, &checkp_flag, 0},
+      {"vetolines", no_argument, &veto_flag, 1}, 
       // frame number
       {"ident", required_argument, 0, 'i'},
       // frequency band number
@@ -115,6 +118,7 @@ void handle_opts(
       printf("--whitenoise      White Gaussian noise assumed\n");
       printf("--nospindown      Spindowns neglected\n");
       printf("--nocheckpoint    State file won't be created (no checkpointing)\n");
+      printf("--vetolines       Veto known lines from files in data directory\n");
       printf("--help            This help\n");
 
       exit (0);
@@ -173,7 +177,8 @@ void handle_opts(
 
   opts->white_flag = white_flag;
   opts->s0_flag = s0_flag;
-  opts->checkp_flag = checkp_flag;	
+  opts->checkp_flag = checkp_flag;
+  opts->veto_flag = veto_flag; 
 	
   printf("Input data directory is %s\n", opts->dtaprefix);
   printf("Output directory is %s\n", opts->prefix);
@@ -183,11 +188,14 @@ void handle_opts(
   // fpo_val is optionally read from the command line
   // Its initial value is set to -1
   if(!(sett->fpo >= 0))
-    // The usual definition (multiplying the offset by B=1/(2dt) ):
-    sett->fpo = 100. + 0.96875*opts->band*(0.5/sett->dt);
+
+    // The usual definition (multiplying the offset by B=1/(2dt))
+    // !!! in RDC_O1 the fstart equals 10, not 100 like in VSR1 !!! 
+    // 
+    sett->fpo = 10. + 0.96875*opts->band*(0.5/sett->dt);
 
   printf("The reference frequency fpo is %f\n", sett->fpo);
-  printf("The data sampling time dt is  %f\n", sett->dt); 
+  printf("The data sampling time dt is %f\n", sett->dt); 
 
   if (opts->white_flag)
     printf ("Assuming white Gaussian noise\n");
@@ -213,6 +221,9 @@ void handle_opts(
     printf ("Changing working directory to %s\n", opts->wd);
     if (chdir(opts->wd)) { perror (opts->wd); abort (); }
   }
+
+  if(opts->veto_flag) 
+    printf("Known lines will be vetoed (reading from files in the data directory)\n");
 
 } // end of command line options handling 
 
@@ -742,10 +753,10 @@ void read_checkpoints(
 		
     // filename of checkpoint state file, depending on the hemisphere
     if(opts->hemi)
-      sprintf(opts->qname, "state_%03d_%03d%s_%d.dat",  
+      sprintf(opts->qname, "state_%03d_%04d%s_%d.dat",  
 	            opts->ident, opts->band, opts->label, opts->hemi);
     else
-      sprintf(opts->qname, "state_%03d_%03d%s.dat", 
+      sprintf(opts->qname, "state_%03d_%04d%s.dat", 
 	            opts->ident, opts->band, opts->label);
 
     FILE *state;
@@ -858,6 +869,9 @@ void handle_opts_coinc(
   // Default value of the cell scaling: 1111 (no scaling)
   opts->scale=1111;
 
+  // Default signal-to-noise threshold cutoff
+  opts->snrcutoff=6;
+
   // Reading arguments 
 
   while (1) {
@@ -885,6 +899,8 @@ void handle_opts_coinc(
       {"mincoin", required_argument, 0, 'm'},
       // Narrow down the frequency band (+- the center of band) 
       {"narrowdown", required_argument, 0, 'n'},
+      // Signal-to-noise threshold cutoff  
+      {"snrcutoff", required_argument, 0, 'c'},
       {0, 0, 0, 0}
     };
 
@@ -903,7 +919,8 @@ void handle_opts_coinc(
       printf("-trigname     Part of triggers' name (for identifying files)\n");
       printf("-refloc       Location of the reference grid.bin and starting_date files\n");
       printf("-mincoin      Minimal number of coincidences recorded\n");
-      printf("-narrowdown   Narrow-down the frequency band (range [0,1], +- around center)\n\n");
+      printf("-narrowdown   Narrow-down the frequency band (range [0, 0.5] +- around center)\n");
+      printf("-snrcutoff    Signal-to-noise threshold cutoff (default value: 6)\n\n");
 
       printf("Also:\n\n");
       printf("--help		This help\n");
@@ -912,7 +929,7 @@ void handle_opts_coinc(
     }
 
     int option_index = 0;
-    int c = getopt_long_only (argc, argv, "p:o:d:s:z:r:t:e:g:m:n:", long_options, &option_index);
+    int c = getopt_long_only (argc, argv, "p:o:d:s:z:r:t:e:g:m:n:c:", long_options, &option_index);
     if (c == -1)
       break;
 
@@ -950,6 +967,9 @@ void handle_opts_coinc(
     case 'n':
       opts->narrowdown = atof(optarg);
       break;
+    case 'c':
+      opts->snrcutoff = atof(optarg);
+      break;
     case '?':
       break;
     default:
@@ -961,6 +981,9 @@ void handle_opts_coinc(
   opts->narrowdown *= M_PI; 
 
   printf("#mb add info at the beginning...\n"); 
+  printf("The SNR threshold cutoff is %.12f, ", opts->snrcutoff); 
+  printf("corresponding to F-statistic value of %.12f\n", 
+    pow(opts->snrcutoff, 2)/2. + 2); 
 
 } // end of command line options handling: coincidences  
 

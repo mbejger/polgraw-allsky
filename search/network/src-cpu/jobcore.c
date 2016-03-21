@@ -83,7 +83,7 @@ void search(
 
   for (pm=s_range->pst; pm<=s_range->pmr[1]; ++pm) {
 
-    sprintf (outname, "%s/triggers_%03d_%03d%s_%d.bin", 
+    sprintf (outname, "%s/triggers_%03d_%04d%s_%d.bin", 
 	     opts->prefix, opts->ident, opts->band, opts->label, pm);
     
     /* Two main loops over sky positions */ 
@@ -434,7 +434,9 @@ int job_core(int pm,                   // Hemisphere
     sgnlt[1] = (opts->s0_flag ? 0. : ss*sett->M[5] + nn*sett->M[9] + mm*sett->M[13]);
     
     // Spindown range
-    if(sgnlt[1] >= -sett->Smax && sgnlt[1] <= sett->Smax) { 
+    //#mb !!! Limits put by hand for RDC_O1 !!!
+    if(sgnlt[1] >= -1.2566e-7 && sgnlt[1] <= 1.2566e-8) { 
+//    if(sgnlt[1] >= -sett->Smax && sgnlt[1] <= 0) { 
 
       int ii;
       double Fc, het1;
@@ -655,6 +657,16 @@ int job_core(int pm,                   // Hemisphere
 	  // Signal-to-noise ratio
 	  sgnlt[4] = sqrt(2.*(Fc-sett->nd));
 	  
+      // Checking if signal is within a known instrumental line 
+      int k, veto_status=0; 
+      for(k=0; k<sett->numlines_band; k++)
+        if(sgnlt[0]>=sett->lines[k][0] && sgnlt[0]<=sett->lines[k][1]) { 
+          veto_status=1; 
+          break; 
+        }   
+
+      if(!veto_status) { 
+
 	  (*sgnlc)++; // increase found number
 	  // Add new parameters to output array 
 	  //sgnlv = (FLOAT_TYPE *)realloc(sgnlv, NPAR*(*sgnlc)*sizeof(FLOAT_TYPE));
@@ -666,7 +678,7 @@ int job_core(int pm,                   // Hemisphere
 	  printf ("\nSignal %d: %d %d %d %d %d snr=%.2f\n", 
 		  *sgnlc, pm, mm, nn, ss, ii, sgnlt[4]);
 #endif
-	  
+	  }
 	} // if Fc > trl 
       } // for i
       
@@ -713,6 +725,16 @@ int job_core(int pm,                   // Hemisphere
 	  // Signal-to-noise ratio
 	  sgnlt[4] = sqrt(2.*(F[Fmax[i]] - sett->nd));
 
+        // Checking if signal is within a known instrumental line 
+        int k, veto_status=0; 
+        for(k=0; k<sett->numlines_band; k++)
+          if(sgnlt[0]>=sett->lines[k][0] && sgnlt[0]<=sett->lines[k][1]) { 
+            veto_status=1; 
+            break; 
+          }   
+
+        if(!veto_status) { 
+
 	  (*sgnlc)++; // increase number of found candidates
 	  // Add new parameters to buffer array 
 	  for (j=0; j<NPAR; ++j)
@@ -721,6 +743,7 @@ int job_core(int pm,                   // Hemisphere
 	  printf ("\nSignal %d: %d %d %d %d %d snr=%.2f\n", 
 		  *sgnlc, pm, mm, nn, ss, Fmax[i], sgnlt[4]);
 #endif 
+    }
 	}
       } // i
 #endif // old/new version
