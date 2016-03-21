@@ -71,7 +71,7 @@ void search(
 #ifdef TIMERS
   struct timespec tstart = get_current_time(), tend;
 #endif
-
+  
   // Allocate buffer for triggers
   sgnlv = (FLOAT_TYPE *)calloc(NPAR*2*sett->nfft, sizeof(FLOAT_TYPE));
 
@@ -436,16 +436,16 @@ int job_core(int pm,                   // Hemisphere
     // Spindown range
     //#mb !!! Limits put by hand for RDC_O1 !!!
     if(sgnlt[1] >= -1.2566e-7 && sgnlt[1] <= 1.2566e-8) { 
-//    if(sgnlt[1] >= -sett->Smax && sgnlt[1] <= 0) { 
+      //    if(sgnlt[1] >= -sett->Smax && sgnlt[1] <= 0) { 
 
       int ii;
       double Fc, het1;
-
+      
 #ifdef VERBOSE
       //print a 'dot' every new spindown
       printf ("."); fflush (stdout);
 #endif 
-
+      
       het1 = fmod(ss*sett->M[4], sett->M[0]);
       if(het1<0) het1 += sett->M[0];
 
@@ -614,14 +614,12 @@ int job_core(int pm,                   // Hemisphere
 
       (*FNum)++;
 
-    // Computing F-statistic 
+      // Computing F-statistic 
       for (i=sett->nmin; i<sett->nmax; i++) {
-	F[i] = (sqr(creal(fftw_arr->xa[i])) 
-		+ sqr(cimag(fftw_arr->xa[i])))/aa  
-	  + (sqr(creal(fftw_arr->xb[i])) 
-             + sqr(cimag(fftw_arr->xb[i])))/bb;
+	F[i] = (sqr(creal(fftw_arr->xa[i])) + sqr(cimag(fftw_arr->xa[i])))/aa +
+	       (sqr(creal(fftw_arr->xb[i])) + sqr(cimag(fftw_arr->xb[i])))/bb;
       }
-
+      
 #if 0
       FILE *f1 = fopen("fraw-1.dat", "w");
       for(i=sett->nmin; i<sett->nmax; i++)
@@ -657,25 +655,23 @@ int job_core(int pm,                   // Hemisphere
 	  // Signal-to-noise ratio
 	  sgnlt[4] = sqrt(2.*(Fc-sett->nd));
 	  
-      // Checking if signal is within a known instrumental line 
-      int k, veto_status=0; 
-      for(k=0; k<sett->numlines_band; k++)
-        if(sgnlt[0]>=sett->lines[k][0] && sgnlt[0]<=sett->lines[k][1]) { 
-          veto_status=1; 
-          break; 
-        }   
-
-      if(!veto_status) { 
-
-	  (*sgnlc)++; // increase found number
-	  // Add new parameters to output array 
-	  //sgnlv = (FLOAT_TYPE *)realloc(sgnlv, NPAR*(*sgnlc)*sizeof(FLOAT_TYPE));
+	  // Checking if signal is within a known instrumental line 
+	  int k, veto_status = 0; 
+	  for(k=0; k<sett->numlines_band; k++)
+	    if(sgnlt[0]>=sett->lines[k][0] && sgnlt[0]<=sett->lines[k][1]) { 
+	      veto_status=1; 
+	      break; 
+	    }   
 	  
-	  for (j=0; j<NPAR; ++j)    // save new parameters
-	    sgnlv[NPAR*(*sgnlc-1)+j] = (FLOAT_TYPE)sgnlt[j];
-
+	  if(!veto_status) { 
+	    
+	    (*sgnlc)++; // increase found number
+	    // Add new parameters to output array 
+	    for (j=0; j<NPAR; ++j)    // save new parameters
+	      sgnlv[NPAR*(*sgnlc-1)+j] = (FLOAT_TYPE)sgnlt[j];
+	    
 #ifdef VERBOSE
-	  printf ("\nSignal %d: %d %d %d %d %d snr=%.2f\n", 
+	    printf ("\nSignal %d: %d %d %d %d %d snr=%.2f\n", 
 		  *sgnlc, pm, mm, nn, ss, ii, sgnlt[4]);
 #endif
 	  }
@@ -725,25 +721,25 @@ int job_core(int pm,                   // Hemisphere
 	  // Signal-to-noise ratio
 	  sgnlt[4] = sqrt(2.*(F[Fmax[i]] - sett->nd));
 
-        // Checking if signal is within a known instrumental line 
-        int k, veto_status=0; 
-        for(k=0; k<sett->numlines_band; k++)
-          if(sgnlt[0]>=sett->lines[k][0] && sgnlt[0]<=sett->lines[k][1]) { 
-            veto_status=1; 
-            break; 
-          }   
-
-        if(!veto_status) { 
-
-	  (*sgnlc)++; // increase number of found candidates
-	  // Add new parameters to buffer array 
-	  for (j=0; j<NPAR; ++j)
-	    sgnlv[NPAR*(*sgnlc-1)+j] = (FLOAT_TYPE)sgnlt[j];
+	  // Checking if signal is within a known instrumental line 
+	  int k, veto_status=0; 
+	  for(k=0; k<sett->numlines_band; k++)
+	    if(sgnlt[0]>=sett->lines[k][0] && sgnlt[0]<=sett->lines[k][1]) { 
+	      veto_status=1; 
+	      break; 
+	    }   
+	  
+	  if(!veto_status) { 
+	    
+	    (*sgnlc)++; // increase number of found candidates
+	    // Add new parameters to buffer array 
+	    for (j=0; j<NPAR; ++j)
+	      sgnlv[NPAR*(*sgnlc-1)+j] = (FLOAT_TYPE)sgnlt[j];
 #ifdef VERBOSE
-	  printf ("\nSignal %d: %d %d %d %d %d snr=%.2f\n", 
-		  *sgnlc, pm, mm, nn, ss, Fmax[i], sgnlt[4]);
+	    printf ("\nSignal %d: %d %d %d %d %d snr=%.2f\n", 
+		    *sgnlc, pm, mm, nn, ss, Fmax[i], sgnlt[4]);
 #endif 
-    }
+	  }
 	}
       } // i
 #endif // old/new version
@@ -758,14 +754,14 @@ int job_core(int pm,                   // Hemisphere
   } // for ss 
   
 #ifndef VERBOSE 
-	    printf("Number of signals found: %d\n", *sgnlc); 
+  printf("Number of signals found: %d\n", *sgnlc); 
 #endif 
 
 #if TIMERS>2
   printf("\nTotal spindown loop time: %e s, mean spindown time: %e s (%d runs)\n",
-    spindown_timer, spindown_timer/spindown_counter, spindown_counter);
+	 spindown_timer, spindown_timer/spindown_counter, spindown_counter);
 #endif
-
+  
   return 0;
-
+  
 } // jobcore
