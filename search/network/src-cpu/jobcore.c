@@ -48,103 +48,128 @@ void save_array_double(double *arr, int N, const char* file) {
 
 // Main searching function (loops inside)
 void search(
-  Search_settings *sett,
-  Command_line_opts *opts,
-  Search_range *s_range,
-  FFTW_plans *plans,
-  FFTW_arrays *fftw_arr,
-  Aux_arrays *aux,
-  int *FNum,
-  double *F) {
+	    Search_settings *sett,
+	    Command_line_opts *opts,
+	    Search_range *s_range,
+	    FFTW_plans *plans,
+	    FFTW_arrays *fftw_arr,
+	    Aux_arrays *aux,
+	    int *FNum,
+	    double *F) {
 
   // struct stat buffer;
   struct flock lck;
 
-  int pm, mm, nn;    // hemisphere, sky positions 
-  int sgnlc;         // number of candidates
+  int pm, mm, nn;       // hemisphere, sky positions 
+  int sgnlc=0;          // number of candidates
   FLOAT_TYPE *sgnlv;    // array with candidates data
 
   char outname[512];
-  int fd;
+  int fd, status;
   FILE *state;
 
 #ifdef TIMERS
   struct timespec tstart = get_current_time(), tend;
 #endif
 
-  state=NULL;
+  // Allocate buffer for triggers
+  sgnlv = (FLOAT_TYPE *)calloc(NPAR*2*sett->nfft, sizeof(FLOAT_TYPE));
+
+  state = NULL;
   if(opts->checkp_flag) 
     state = fopen (opts->qname, "w");
 
-  /* Loop over hemispheres
-   */ 
+  /* Loop over hemispheres */ 
 
   for (pm=s_range->pst; pm<=s_range->pmr[1]; ++pm) {
 
     sprintf (outname, "%s/triggers_%03d_%03d%s_%d.bin", 
 	     opts->prefix, opts->ident, opts->band, opts->label, pm);
     
-    /* Two main loops over sky positions 
-     */ 
-
+    /* Two main loops over sky positions */ 
+    
     for (mm=s_range->mst; mm<=s_range->mr[1]; ++mm) {	
       for (nn=s_range->nst; nn<=s_range->nr[1]; ++nn) {	
 	
         if(opts->checkp_flag) {
           ftruncate(fileno(state), 0);  
-  	      fprintf(state, "%d %d %d %d %d\n", pm, mm, nn, s_range->sst, *FNum);
-		      fseek(state, 0, SEEK_SET);
-	    }
+	  fprintf(state, "%d %d %d %d %d\n", pm, mm, nn, s_range->sst, *FNum);
+	  fseek(state, 0, SEEK_SET);
+	}
 	
-	    /* Loop over spindowns is inside job_core() */
-	    sgnlv = job_core(
-			 pm,           // hemisphere
-			 mm,           // grid 'sky position'
-			 nn,           // other grid 'sky position'
-			 sett,         // search settings
-			 opts,         // cmd opts
-			 s_range,      // range for searching
-			 plans,        // fftw plans 
-			 fftw_arr,     // arrays for fftw
-			 aux,          // auxiliary arrays
-			 F,            // F-statistics array
-			 &sgnlc,       // reference to array with the parameters
-                     // of the candidate signal
-                     // (used below to write to the file)
-			 FNum);        // Candidate signal number
+	/* Loop over spindowns is inside job_core() */
+	status = job_core(
+			  pm,           // hemisphere
+			  mm,           // grid 'sky position'
+			  nn,           // other grid 'sky position'
+			  sett,         // search settings
+			  opts,         // cmd opts
+			  s_range,      // range for searching
+			  plans,        // fftw plans 
+			  fftw_arr,     // arrays for fftw
+			  aux,          // auxiliary arrays
+			  F,            // F-statistics array
+			  &sgnlc,       // current number of candidates
+			  sgnlv,        // candidate array
+			  FNum);        // candidate signal number
 	
-	    // Get back to regular spin-down range
-	    s_range->sst = s_range->spndr[0];
+	// Get back to regular spin-down range
+	s_range->sst = s_range->spndr[0];
 
-	    /* Add trigger parameters to a file */
+	/* Add trigger parameters to a file */
 
-	    // if any signals found (Fstat>Fc)
-	    if (sgnlc) {
-	      if((fd = open (outname, O_WRONLY|O_CREAT|O_APPEND,
-            S_IRUSR|S_IWUSR|S_IRGRP|S_IROTH)) < 0) {
-	        perror (outname);
-	        return;
-	      }
+	// if enough signals found (no. of signals > half length of buffer)
+	if (sgnlc > sett->nfft) {
+	  if((fd = open (outname, 
+			 O_WRONLY|O_CREAT|O_APPEND, S_IRUSR|
+			 S_IWUSR|S_IRGRP|S_IROTH)) < 0) {
+	    perror(outname);
+	    return;
+	  }
 
-	      lck.l_type = F_WRLCK;
-	      lck.l_whence = 0;
-	      lck.l_start = 0L;
-	      lck.l_len = 0L;
-
+	  lck.l_type = F_WRLCK;
+	  lck.l_whence = 0;
+	  lck.l_start = 0L;
+	  lck.l_len = 0L;
+	  
           if (fcntl (fd, F_SETLKW, &lck) < 0) perror ("fcntl()");
-          write (fd, (void *)(sgnlv), sgnlc*NPAR*sizeof(FLOAT_TYPE));
-          if (close (fd) < 0) perror ("close()");
+          write(fd, (void *)(sgnlv), sgnlc*NPAR*sizeof(FLOAT_TYPE));
+          if (close(fd) < 0) perror ("close()");
+	  sgnlc=0;
 
-	    } /* if sgnlc */
-	    free (sgnlv);
+	} /* if sgnlc > sett-nfft */
       } // for nn
       s_range->nst = s_range->nr[0];
     } // for mm
     s_range->mst = s_range->mr[0]; 
-  } // for pm
 
+
+    // Write the leftover from the last iteration of the buffer 
+    if((fd = open(outname, 
+		  O_WRONLY|O_CREAT|O_APPEND, S_IRUSR|
+		  S_IWUSR|S_IRGRP|S_IROTH)) < 0) {
+      perror(outname);
+      return; 
+    }
+
+    lck.l_type = F_WRLCK;
+    lck.l_whence = 0;
+    lck.l_start = 0L;
+    lck.l_len = 0L;
+    
+    if (fcntl (fd, F_SETLKW, &lck) < 0) perror ("fcntl()");
+    write(fd, (void *)(sgnlv), sgnlc*NPAR*sizeof(FLOAT_TYPE));
+    if (close(fd) < 0) perror ("close()");
+    sgnlc=0; 
+
+  } // for pm
+  
+  //#mb state file has to be modified accordingly to the buffer
   if(opts->checkp_flag) 
     fclose(state); 
+
+  // Free triggers buffer
+  free(sgnlv);
 
 #ifdef TIMERS
   tend = get_current_time();
@@ -156,31 +181,29 @@ void search(
 }
 
 
-  /* Main job 
-   */ 
+  /* Main job */ 
 
-FLOAT_TYPE* job_core(
-  int pm,                    // Hemisphere
-  int mm,                    // Grid 'sky position'
-  int nn,                    // Second grid 'sky position'
-  Search_settings *sett,     // Search settings
-  Command_line_opts *opts,   // Search options 
-  Search_range *s_range,     // Range for searching
-  FFTW_plans *plans,         // Plans for fftw
-  FFTW_arrays *fftw_arr,     // Arrays for fftw
-  Aux_arrays *aux,           // Auxiliary arrays
-  double *F,                 // F-statistics array
-  int *sgnlc,                // Candidate trigger parameters 
-  int *FNum) {               // Candidate signal number
+int job_core(int pm,                   // Hemisphere
+	     int mm,                   // Grid 'sky position'
+	     int nn,                   // Second grid 'sky position'
+	     Search_settings *sett,    // Search settings
+	     Command_line_opts *opts,  // Search options 
+	     Search_range *s_range,    // Range for searching
+	     FFTW_plans *plans,        // Plans for fftw
+	     FFTW_arrays *fftw_arr,    // Arrays for fftw
+	     Aux_arrays *aux,          // Auxiliary arrays
+	     double *F,                // F-statistics array
+	     int *sgnlc,               // Candidate trigger parameters 
+	     FLOAT_TYPE *sgnlv,        // Candidate array 
+	     int *FNum) {              // Candidate signal number
 
   int i, j, n;
   int smin = s_range->sst, smax = s_range->spndr[1];
   double al1, al2, sinalt, cosalt, sindelt, cosdelt, sgnlt[NPAR], 
     nSource[3], het0, sgnl0, ft;
   double _tmp1[sett->nifo][sett->N];
-  FLOAT_TYPE *sgnlv;
 
-#undef NORMTOMAX
+#define NORMTOMAX
 #ifdef NORMTOMAX
   double blkavg, threshold = 4.;
   int imax, imax0, iblk, blkstart, ihi;
@@ -217,12 +240,9 @@ FLOAT_TYPE* job_core(
   al1 = nn*sett->M[10] + mm*sett->M[14];
   al2 = nn*sett->M[11] + mm*sett->M[15];
 
-  sgnlv = NULL;
-  *sgnlc = 0;
-
   // check if the search is in an appropriate region of the grid
   // if not, returns NULL
-  if ((sqr(al1)+sqr(al2))/sqr(sett->oms) > 1.) return NULL ;
+  if ((sqr(al1)+sqr(al2))/sqr(sett->oms) > 1.) return 0;
 
   int ss;
   double shft1, phase, cp, sp;
@@ -608,7 +628,7 @@ FLOAT_TYPE* job_core(
 #endif 
 
 #ifndef NORMTOMAX
-#define NAVFSTAT 4096
+      //#define NAVFSTAT 4096
       // Normalize F-statistics 
       if(!(opts->white_flag))  // if the noise is not white noise
         FStat(F + sett->nmin, sett->nmax - sett->nmin, NAVFSTAT, 0);
@@ -621,7 +641,6 @@ FLOAT_TYPE* job_core(
 
       for(i=sett->nmin; i<sett->nmax; i++) {
         if ((Fc = F[i]) > opts->trl) { // if F-stat exceeds trl (critical value)
-	  printf("i=%d\n",i);
           // Find local maximum for neighboring signals 
           ii = i;
 
@@ -632,22 +651,21 @@ FLOAT_TYPE* job_core(
 	    } // if F[i] 
 	  } // while i 
 	  // Candidate signal frequency
-	  sgnlt[0] = 2.*M_PI*ii/((double) sett->fftpad*sett->nfft) + sgnl0;
+	  sgnlt[0] = 2.*M_PI*ii/((FLOAT_TYPE)sett->fftpad*sett->nfft) + sgnl0;
 	  // Signal-to-noise ratio
 	  sgnlt[4] = sqrt(2.*(Fc-sett->nd));
 	  
 	  (*sgnlc)++; // increase found number
-	  
 	  // Add new parameters to output array 
-	  sgnlv = (FLOAT_TYPE *)realloc(sgnlv, NPAR*(*sgnlc)*sizeof(FLOAT_TYPE));
+	  //sgnlv = (FLOAT_TYPE *)realloc(sgnlv, NPAR*(*sgnlc)*sizeof(FLOAT_TYPE));
 	  
-	  for (j=0; j<NPAR; ++j) // save new parameters
+	  for (j=0; j<NPAR; ++j)    // save new parameters
 	    sgnlv[NPAR*(*sgnlc-1)+j] = (FLOAT_TYPE)sgnlt[j];
 
 #ifdef VERBOSE
-	  printf ("\nSignal %d: %d %d %d %d %d \tsnr=%.2f\n", 
+	  printf ("\nSignal %d: %d %d %d %d %d snr=%.2f\n", 
 		  *sgnlc, pm, mm, nn, ss, ii, sgnlt[4]);
-#endif 
+#endif
 	  
 	} // if Fc > trl 
       } // for i
@@ -691,23 +709,21 @@ FLOAT_TYPE* job_core(
       for(i=0; i <= imax; ++i){
 	//if(F[Fmax[i]] > opts->trl) {
 	if(F[Fmax[i]] > threshold) {
-	  sgnlt[0] = 2.*M_PI*i/((double) sett->fftpad*sett->nfft) + sgnl0;
+	  sgnlt[0] = 2.*M_PI*i/((FLOAT_TYPE)sett->fftpad*sett->nfft) + sgnl0;
 	  // Signal-to-noise ratio
 	  sgnlt[4] = sqrt(2.*(F[Fmax[i]] - sett->nd));
-	  (*sgnlc)++; // increase found number
-	  // Add new parameters to output array 
-	  sgnlv = (FLOAT_TYPE *)realloc(sgnlv, NPAR*(*sgnlc)*sizeof(FLOAT_TYPE));
-	  for (j=0; j<NPAR; ++j) // save new parameters
+
+	  (*sgnlc)++; // increase number of found candidates
+	  // Add new parameters to buffer array 
+	  for (j=0; j<NPAR; ++j)
 	    sgnlv[NPAR*(*sgnlc-1)+j] = (FLOAT_TYPE)sgnlt[j];
 #ifdef VERBOSE
-	  printf ("\nSignal %d: %d %d %d %d %d \tsnr=%.2f\n", 
+	  printf ("\nSignal %d: %d %d %d %d %d snr=%.2f\n", 
 		  *sgnlc, pm, mm, nn, ss, Fmax[i], sgnlt[4]);
 #endif 
 	}
       } // i
-      
 #endif // old/new version
-
 
 #if TIMERS>2
       tend = get_current_time();
@@ -727,7 +743,6 @@ FLOAT_TYPE* job_core(
     spindown_timer, spindown_timer/spindown_counter, spindown_counter);
 #endif
 
-  return sgnlv;
+  return 0;
 
 } // jobcore
-
