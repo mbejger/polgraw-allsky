@@ -171,14 +171,24 @@ FLOAT_TYPE* job_core(
   Aux_arrays *aux,           // Auxiliary arrays
   double *F,                 // F-statistics array
   int *sgnlc,                // Candidate trigger parameters 
- int *FNum) {                // Candidate signal number
+  int *FNum) {               // Candidate signal number
 
   int i, j, n;
   int smin = s_range->sst, smax = s_range->spndr[1];
   double al1, al2, sinalt, cosalt, sindelt, cosdelt, sgnlt[NPAR], 
     nSource[3], het0, sgnl0, ft;
   double _tmp1[sett->nifo][sett->N];
-  FLOAT_TYPE *sgnlv; 
+  FLOAT_TYPE *sgnlv;
+
+#undef NORMTOMAX
+#ifdef NORMTOMAX
+  double blkavg, threshold = 4.;
+  int imax, imax0, iblk, blkstart, ihi;
+  int blksize = 1024;
+  int nfft = sett->nmax - sett->nmin;
+  int *Fmax;
+  Fmax = (int *) malloc(2*sett->nfft*sizeof(int));
+#endif
   
   /* Matrix	M(.,.) (defined on page 22 of PolGrawCWAllSkyReview1.pdf file)
      defines the transformation form integers (bin, ss, nn, mm) determining
@@ -583,59 +593,131 @@ FLOAT_TYPE* job_core(
       (*FNum)++;
 
     // Computing F-statistic 
-    for (i=sett->nmin; i<sett->nmax; i++) {
-      F[i] = (sqr(creal(fftw_arr->xa[i])) 
-             + sqr(cimag(fftw_arr->xa[i])))/aa  
-             + (sqr(creal(fftw_arr->xb[i])) 
+      for (i=sett->nmin; i<sett->nmax; i++) {
+	F[i] = (sqr(creal(fftw_arr->xa[i])) 
+		+ sqr(cimag(fftw_arr->xa[i])))/aa  
+	  + (sqr(creal(fftw_arr->xb[i])) 
              + sqr(cimag(fftw_arr->xb[i])))/bb;
       }
 
+#if 0
+      FILE *f1 = fopen("fraw-1.dat", "w");
+      for(i=sett->nmin; i<sett->nmax; i++)
+	fprintf(f1, "%d   %lf   %lf\n", i, F[i], 2.*M_PI*i/((double) sett->fftpad*sett->nfft) + sgnl0);
+      fclose(f1);
+#endif 
+
+#ifndef NORMTOMAX
+#define NAVFSTAT 4096
       // Normalize F-statistics 
       if(!(opts->white_flag))  // if the noise is not white noise
         FStat(F + sett->nmin, sett->nmax - sett->nmin, NAVFSTAT, 0);
 
+      // f1 = fopen("fnorm-4096-1.dat", "w");
+      //for(i=sett->nmin; i<sett->nmax; i++)
+      //fprintf(f1, "%d   %lf   %lf\n", i, F[i], 2.*M_PI*i/((double) sett->fftpad*sett->nfft) + sgnl0);
+      //fclose(f1);
+      //      exit(EXIT_SUCCESS);
+
       for(i=sett->nmin; i<sett->nmax; i++) {
         if ((Fc = F[i]) > opts->trl) { // if F-stat exceeds trl (critical value)
+	  printf("i=%d\n",i);
           // Find local maximum for neighboring signals 
           ii = i;
 
-        while (++i < sett->nmax && F[i] > opts->trl) {
-         if(F[i] >= Fc) {
-           ii = i;
-           Fc = F[i];
-         } // if F[i] 
-        } // while i 
-
-        // Candidate signal frequency
-        sgnlt[0] = 2.*M_PI*ii/((double) sett->fftpad*sett->nfft) + sgnl0;
-	    // Signal-to-noise ratio
-	    sgnlt[4] = sqrt(2.*(Fc-sett->nd));
-
-        (*sgnlc)++; // increase found number
-
-	    // Add new parameters to output array 
-        sgnlv = (FLOAT_TYPE *)realloc(sgnlv, NPAR*(*sgnlc)*sizeof(FLOAT_TYPE));
-
-    for (j=0; j<NPAR; ++j) // save new parameters
-	  sgnlv[NPAR*(*sgnlc-1)+j] = (FLOAT_TYPE)sgnlt[j];
+	  while (++i < sett->nmax && F[i] > opts->trl) {
+	    if(F[i] >= Fc) {
+	      ii = i;
+	      Fc = F[i];
+	    } // if F[i] 
+	  } // while i 
+	  // Candidate signal frequency
+	  sgnlt[0] = 2.*M_PI*ii/((double) sett->fftpad*sett->nfft) + sgnl0;
+	  // Signal-to-noise ratio
+	  sgnlt[4] = sqrt(2.*(Fc-sett->nd));
+	  
+	  (*sgnlc)++; // increase found number
+	  
+	  // Add new parameters to output array 
+	  sgnlv = (FLOAT_TYPE *)realloc(sgnlv, NPAR*(*sgnlc)*sizeof(FLOAT_TYPE));
+	  
+	  for (j=0; j<NPAR; ++j) // save new parameters
+	    sgnlv[NPAR*(*sgnlc-1)+j] = (FLOAT_TYPE)sgnlt[j];
 
 #ifdef VERBOSE
-	    printf ("\nSignal %d: %d %d %d %d %d \tsnr=%.2f\n", 
+	  printf ("\nSignal %d: %d %d %d %d %d \tsnr=%.2f\n", 
 		  *sgnlc, pm, mm, nn, ss, ii, sgnlt[4]);
 #endif 
-
-	    } // if Fc > trl 
+	  
+	} // if Fc > trl 
       } // for i
+      
+#else // new version
+
+      imax = -1;
+      // find local maxima first
+      //printf("nmin=%d   nmax=%d    nfft=%d   nblocks=%d\n", sett->nmin, sett->nmax, nfft, nfft/blksize);
+      for(iblk=0; iblk < nfft/blksize; ++iblk) {
+	blkavg = 0.;
+	blkstart = sett->nmin + iblk*blksize; // block start index in F 
+	// in case the last block is shorter than blksize, include its elements in the previous block
+	if(iblk==(nfft/blksize-1)) {blksize = sett->nmax - blkstart; /*printf("blksize modified to %d\n", blksize);*/}
+	imax0 = imax+1;// index of first maximum in current block
+	//printf("\niblk=%d   blkstart=%d   blksize=%d    imax0=%d\n", iblk, blkstart, blksize, imax0);
+	for(i=1; i <= blksize; ++i) { // include first element of the next block,  1..1024
+	  ii = blkstart + i;                                                   //  1..1025
+	  if(ii < sett->nmax) {ihi=ii+1;} else {ihi = sett->nmax; /*printf("ihi=%d  ii=%d\n", ihi, ii);*/};
+	  if(F[ii] > F[ii-1] && F[ii] > F[ihi]) {
+	    Fmax[++imax] = ii;
+	    blkavg += F[ii];
+	    ++i; // next element can't be maximum - skip it
+	  }
+	} // i
+	// now imax points to the last element of Fmax
+	// normalize in blocks 
+	blkavg /= (double)(imax - imax0 + 1);
+	for(i=imax0; i <= imax; ++i)
+	  F[Fmax[i]] /= blkavg;
+
+      } // iblk
+
+      //f1 = fopen("fmax.dat", "w");
+      //for(i=1; i < imax; i++)
+      //fprintf(f1, "%d   %lf \n", Fmax[i], F[Fmax[i]]);
+      //fclose(f1);
+      //exit(EXIT_SUCCESS);
+
+      // apply threshold limit
+      for(i=0; i <= imax; ++i){
+	//if(F[Fmax[i]] > opts->trl) {
+	if(F[Fmax[i]] > threshold) {
+	  sgnlt[0] = 2.*M_PI*i/((double) sett->fftpad*sett->nfft) + sgnl0;
+	  // Signal-to-noise ratio
+	  sgnlt[4] = sqrt(2.*(F[Fmax[i]] - sett->nd));
+	  (*sgnlc)++; // increase found number
+	  // Add new parameters to output array 
+	  sgnlv = (FLOAT_TYPE *)realloc(sgnlv, NPAR*(*sgnlc)*sizeof(FLOAT_TYPE));
+	  for (j=0; j<NPAR; ++j) // save new parameters
+	    sgnlv[NPAR*(*sgnlc-1)+j] = (FLOAT_TYPE)sgnlt[j];
+#ifdef VERBOSE
+	  printf ("\nSignal %d: %d %d %d %d %d \tsnr=%.2f\n", 
+		  *sgnlc, pm, mm, nn, ss, Fmax[i], sgnlt[4]);
+#endif 
+	}
+      } // i
+      
+#endif // old/new version
+
 
 #if TIMERS>2
-    tend = get_current_time();
-    spindown_timer += get_time_difference(tstart, tend);
-    spindown_counter++;
+      tend = get_current_time();
+      spindown_timer += get_time_difference(tstart, tend);
+      spindown_counter++;
 #endif
 
     } // if sgnlt[1] 
   } // for ss 
-
+  
 #ifndef VERBOSE 
 	    printf("Number of signals found: %d\n", *sgnlc); 
 #endif 
