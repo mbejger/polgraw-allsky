@@ -244,6 +244,8 @@ void rogcvir(Detector_settings *ifo) {
    * (see modvir function in jobcore.c for Eqs. 12 and 13)
    */ 
 
+  //printf("Calculating the amplitude modulation functions for %s...\n", ifo->name); 
+
   ifo->amod.c1 = .25*sin(2.*ifo->egam)*(1+sqr(sin(ifo->ephi)));
   ifo->amod.c2 = -.5*cos(2.*ifo->egam)*sin(ifo->ephi);
   ifo->amod.c3 = .5*sin(2.*ifo->egam)*sin(2.*ifo->ephi);
@@ -253,6 +255,7 @@ void rogcvir(Detector_settings *ifo) {
   ifo->amod.c7 = .5*sin(2.*ifo->egam)*(1.+sqr(sin(ifo->ephi)));
   ifo->amod.c8 = cos(2.*ifo->egam)*cos(ifo->ephi);
   ifo->amod.c9 = .5*sin(2.*ifo->egam)*sin(2.*ifo->ephi);
+
 
 } // rogcvir
 
@@ -365,10 +368,11 @@ int read_lines(
     // based on the broadening modulation 
     // due to the detector movement 
 
-    double dE[3*sett->N]; 
+    double *dE; 
+    dE = (double *)calloc(3*sett->N, sizeof(double));
 
     // First derivative DetSSB (velocity)  
-    for(i=0; i<sett->N; i++) { 
+    for(i=0; i<sett->N-1; i++) { 
 
       for(j=0; j<3; j++)  
         dE[i*3+j] = fabs(ifo->sig.DetSSB[(i+1)*3+j] - ifo->sig.DetSSB[i*3+j]); 
@@ -389,10 +393,11 @@ int read_lines(
 //#mb test printout 
 //    printf("dEmax %f %f %f\n", dEmax[0], dEmax[1], dEmax[2]); 
  
-    double dtE[3*sett->N]; 
+    double *dtE;
+    dtE = (double *)calloc(3*sett->N, sizeof(double));
 
     // First derivative 
-    for(i=0; i<sett->N; i++) { 
+    for(i=0; i<sett->N-1; i++) { 
 
       for(j=0; j<3; j++)  
         dtE[i*3+j] = fabs(ifo->sig.DetSSB[(i+1)*3+j]*(i+1) - ifo->sig.DetSSB[i*3+j]*i)*sett->dt; 
@@ -422,6 +427,10 @@ int read_lines(
       normdEmax  += pow(dEmax[j], 2.);
 
     } 
+
+    // Free auxiliary allocs 
+    free(dE); 
+    free(dtE); 
 
     // Apply line widths 
     //------------------
