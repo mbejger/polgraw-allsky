@@ -203,14 +203,14 @@ int job_core(int pm,                   // Hemisphere
     nSource[3], het0, sgnl0, ft;
   double _tmp1[sett->nifo][sett->N];
 
-#define NORMTOMAX
+#undef NORMTOMAX
 #ifdef NORMTOMAX
   double blkavg, threshold = 4.;
   int imax, imax0, iblk, blkstart, ihi;
   int blksize = 1024;
   int nfft = sett->nmax - sett->nmin;
-  int *Fmax;
-  Fmax = (int *) malloc(2*sett->nfft*sizeof(int));
+  static int *Fmax;
+  if (!Fmax) Fmax = (int *) malloc(nfft*sizeof(int));
 #endif
   
   /* Matrix	M(.,.) (defined on page 22 of PolGrawCWAllSkyReview1.pdf file)
@@ -663,8 +663,7 @@ int job_core(int pm,                   // Hemisphere
 	      break; 
 	    }   
 	  
-	  if(!veto_status) { 
-	    
+	  if(!veto_status) {
 	    (*sgnlc)++; // increase found number
 	    // Add new parameters to output array 
 	    for (j=0; j<NPAR; ++j)    // save new parameters
