@@ -830,8 +830,11 @@ void cleanup(
   free(sett->M);
 	
   fftw_destroy_plan(plans->plan);
+  fftw_destroy_plan(plans->plan2);
   fftw_destroy_plan(plans->pl_int);
+  fftw_destroy_plan(plans->pl_int2);
   fftw_destroy_plan(plans->pl_inv);
+  fftw_destroy_plan(plans->pl_inv2);
 
 } // end of cleanup & memory free 
 
