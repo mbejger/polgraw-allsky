@@ -136,6 +136,7 @@ void detectors_settings(
             //perror (x);
           }
 
+          fclose(data); 
           memset(x, 0, sizeof(x));
       }
     } 
