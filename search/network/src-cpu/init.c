@@ -836,6 +836,10 @@ void cleanup(
   fftw_destroy_plan(plans->pl_inv);
   fftw_destroy_plan(plans->pl_inv2);
 
+  fftw_forget_wisdom();
+  fftw_cleanup();
+
+
 } // end of cleanup & memory free 
 
 
