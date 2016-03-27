@@ -26,8 +26,8 @@ double get_rand() ;
 int main(int argc, char *argv[]) {
 	
   int i, numl=0, freq_line_check, c, pm, gsize=2, band=0 ; 
-  char filename[64], dtaprefix[64], *wd=NULL ; 
-  double freql[32768], linew[32768], sgnlo[8], rrn[2], h0=2.e-3, 
+  char filename[512], dtaprefix[512], *wd=NULL ; 
+  double freql[32768], linew[32768], sgnlo[8], rrn[2], amp, 
 	dvr, fpo_val, be1, be2, fr, lw, freqlp, freqlm, f1, f2,  
 	sepsm, cepsm, sinalt, cosalt, sindelt, cosdelt, 
 	iota, ph_o, psik, hop, hoc ; 
@@ -35,6 +35,15 @@ int main(int argc, char *argv[]) {
   FILE *data ;
 
   Search_settings sett;
+
+  //#mb fftpad value=1 (default for some time now) 
+  sett.fftpad = 1; 
+
+  // Default data sampling time (s)  
+  sett.dt = 0.5; 
+
+  // Default GW amplitude of the injected signal 
+  amp = 2.e-3; 
 
 //  strcpy (dtaprefix, TOSTR(DTAPREFIX));
 
@@ -48,7 +57,7 @@ int main(int argc, char *argv[]) {
     static struct option long_options[] = {
       {"help", no_argument, &help_flag, 1},			
       // GW amplitude 
-      {"h0", required_argument, 0, 'a'},
+      {"amp", required_argument, 0, 'a'},
       // frequency band number 
       {"band", required_argument, 0, 'b'},
       // change directory parameter
@@ -56,11 +65,13 @@ int main(int argc, char *argv[]) {
       // input data directory 
       {"data", required_argument, 0, 'd'},
       // fpo value
-      {"fpo value", required_argument, 0, 'p'},
+      {"fpo", required_argument, 0, 'p'},
       // evade lines 
-//      {"evade-lines", no_argument, &evade_flag, 1},
+      {"evade-lines", no_argument, &evade_flag, 1},
       // grid search range 
-      {"gsize", required_argument, 0, 's'},
+      {"gsize", required_argument, 0, 'g'},
+      // data sampling time 
+      {"dt", required_argument, 0, 's'},
       {0, 0, 0, 0}
     };
 
@@ -69,27 +80,27 @@ int main(int argc, char *argv[]) {
      printf("*** Software injection parameters - cont. GW signal ***\n"); 
      printf("Usage: ./sigen -[switch1] <value1> -[switch2] <value2> ...\n") ;
      printf("Switches are:\n\n"); 
-     printf("-a   GW amplitude (default value: 2.e-3)\n"); 
-     printf("-b   Band number\n"); 
-     printf("-c   Change to directory <dir>\n");     
-     printf("-d   Data directory in case of lines (default is .)\n"); 
-     printf("-p   fpo (starting frequency) value\n");
-     printf("-s   Grid search range (default value: 2)\n");
+     printf("-amp   GW amplitude (default value: 2.e-3)\n"); 
+     printf("-band  Band number\n"); 
+     printf("-cwd   Change to directory <dir>\n");     
+     printf("-data  Data directory in case of lines (default is .)\n"); 
+     printf("-fpo   fpo (starting frequency) value\n");
+     printf("-gsize Grid search range (default value: 2)\n");
+     printf("-dt    Data sampling time dt (default value: 0.5)\n\n");
 
      printf("--help		This help\n"); 		
      exit (0);
      
   }
 
-
     int option_index = 0;
-    c = getopt_long (argc, argv, "a:b:c:d:p:s:", long_options, &option_index);
+    c = getopt_long_only (argc, argv, "a:b:c:d:p:g:s:", long_options, &option_index);
 
    if (c == -1)
       break;
     switch (c) {
     case 'a':
-      h0  = atof (optarg);
+      amp  = atof (optarg);
       break; 
     case 'b':
       band = atoi (optarg);
@@ -101,11 +112,14 @@ int main(int argc, char *argv[]) {
     case 'd':
       strcpy (dtaprefix, optarg);
       break;
-    case 's':
+    case 'g':
       gsize = atoi (optarg);
       break;
     case 'p':
       fpo_val = atof(optarg);
+      break;
+    case 's':
+      sett.dt = atof(optarg);
       break;
     case '?':
       break;
@@ -129,12 +143,14 @@ int main(int argc, char *argv[]) {
       sett.fpo = fpo_val;
   else
   // The usual definition: 
-      sett.fpo = 100. + 0.96875 * band;
-  
-  fprintf(stderr, "Starting band frequency fpo: %lf\n", sett.fpo) ; 
+      sett.fpo = 10. + 0.96875*band*(0.5/sett.dt);
 
   // Search settings
   search_settings(&sett);
+
+  fprintf(stderr, "Band number is %04d\n", band);
+  fprintf(stderr, "The reference frequency fpo is %f\n", sett.fpo);
+  fprintf(stderr, "The data sampling time dt is %f\n", sett.dt);
  
   // If the -d switch is on giving a non-zero-length path 
   // somewhere, the signal will be generated using the 
@@ -210,7 +226,6 @@ int main(int argc, char *argv[]) {
 
   } // end of reading line data in case of -d 
 
-
   rrn[0] = (double)(sett.nmin)/sett.nfft ; 
   rrn[1] = (double)(sett.nmax)/sett.nfft ;  
 
@@ -231,7 +246,9 @@ int main(int argc, char *argv[]) {
 	// frequency shift range in VSR1 data
 	// these values are used to avoid lines
 	f1 = sett.fpo + sgnlo[0] ;
-	f2 = sett.fpo + sgnlo[0] - 2.*sgnlo[1]*(sett.N)*67 ;
+
+  //#mb !!! reference frame !!! Here 31 (VSR1 was 67) 
+	f2 = sett.fpo + sgnlo[0] - 2.*sgnlo[1]*(sett.N)*31 ;
 
 	for(i=0; i<numl; i++) {
 
@@ -250,7 +267,7 @@ int main(int argc, char *argv[]) {
 
   } while (!freq_line_check) ; 
 
-  // Frequency 
+  // Frequency in (0, \pi) range  
   sgnlo[0] *= M_PI ;
 
   // Lines will not be avoided
@@ -305,7 +322,7 @@ int main(int argc, char *argv[]) {
   sgnlo[7] = -sin(2.*psik)*hop*sin(ph_o) + cos(2.*psik)*hoc*cos(ph_o) ;
     
   // Output
-  printf("%le\n%d\n%d\n", h0, gsize, pm) ;   		 
+  printf("%le\n%d\n%d\n", amp, gsize, pm) ;   		 
   printf("%.16le\n%.16le\n%.16le\n%.16le\n%.16le\n%.16le\n%.16le\n%.16le\n", 
 			sgnlo[0], sgnlo[1], sgnlo[2], sgnlo[3], 
 			sgnlo[4], sgnlo[5], sgnlo[6], sgnlo[7]) ;
@@ -316,7 +333,7 @@ int main(int argc, char *argv[]) {
   printf("Random number between 0 and 1: %lf\n", rand1) ; 
   printf("pm, mm, nn, spnd: %d %d %d %d\n", pm, mm, nn, spnd) ;
 
-  printf("%le\n%d\n%d\n", h0, gsize, pm) ;
+  printf("%le\n%d\n%d\n", amp, gsize, pm) ;
   printf("rrn[0], rrn[1]: %.16le %.16le\n", rrn[0], rrn[1]) ; 
   
   printf("sgnlo[0]: %.16le\nsgnlo[1]: %.16le\nsgnlo[2]: %.16le\nsgnlo[3]: %.16le\n",

@@ -81,8 +81,8 @@ uninstall: clean
 
 #----------------------------------------------
 
-#sigen: sigen.o settings.o auxi.o
-#	$(CC) $(LDFLAGS) -o $@ $^ $(LDLIBS)
+sigen: sigen.o settings.o auxi.o
+	$(CC) -o $@ $^ -Wl,-Bdynamic -lc -lrt -lm
 #
 #gridopt.o: gridopt.c 
 #	$(CC) -c -o $@ $< -O3 -Wall
