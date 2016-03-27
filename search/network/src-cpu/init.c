@@ -33,8 +33,9 @@ void handle_opts(
 	
   opts->hemi=0;
   opts->wd=NULL;
+
+  // Default F-statistic threshold 
   opts->trl=20;
-  opts->fftinterp=INT;	
 
   strcpy (opts->prefix, TOSTR(PREFIX));
   strcpy (opts->dtaprefix, TOSTR(DTAPREFIX));
