@@ -400,7 +400,7 @@ void add_signal(
   Aux_arrays *aux_arr,
   Search_range *s_range) {
 
-  int i, j, n, gsize; 
+  int i, j, n, gsize, reffr; 
   double h0, cof; 
   double sinaadd, cosaadd, sindadd, cosdadd, phaseadd, shiftadd, signadd; 
   double nSource[3], sgnlo[10], sgnlol[4];
@@ -410,7 +410,9 @@ void add_signal(
   // Signal parameters are read
   if ((data=fopen (opts->addsig, "r")) != NULL) {
 	
-    fscanf (data, "%le %d %d", &h0, &gsize, s_range->pmr);     
+    // Scanning for the GW amplitude, grid size, hemisphere 
+    // and the reference frame (for which the signal freq. is not spun-down/up)
+    fscanf (data, "%le %d %d %d", &h0, &gsize, s_range->pmr, &reffr);     
 	  for(i=0; i<10; i++)
 			fscanf(data, "%le",i+sgnlo); 	
 		fclose (data);
@@ -419,11 +421,12 @@ void add_signal(
       perror (opts->addsig);
     }
   
- 		// VSR1 search-specific parametrization of freq. 
-		// for the software injection
+ 		// Search-specific parametrization of freq. 
+		// for the software injections
 		// snglo[0]: frequency, sgnlo[1]: frequency. derivative  
-	  //#mb fixme
-	  //sgnlo[0] += - 2.*sgnlo[1]*(sett->N)*(68 - opts->ident); 
+    //#mb For VSR1 reffr=67
+
+	  sgnlo[0] += - 2.*sgnlo[1]*(sett->N)*(reffr - opts->ident); 
 
     cof = sett->oms + sgnlo[0]; 
         			  

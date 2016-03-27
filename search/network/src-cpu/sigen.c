@@ -25,7 +25,7 @@ double get_rand() ;
 
 int main(int argc, char *argv[]) {
 	
-  int i, numl=0, freq_line_check, c, pm, gsize=2, band=0 ; 
+  int i, numl=0, freq_line_check, c, pm, gsize=2, band=0, reffr; 
   char filename[512], dtaprefix[512], *wd=NULL ; 
   double freql[32768], linew[32768], sgnlo[8], rrn[2], amp, 
 	dvr, fpo_val, be1, be2, fr, lw, freqlp, freqlm, f1, f2,  
@@ -44,6 +44,10 @@ int main(int argc, char *argv[]) {
 
   // Default GW amplitude of the injected signal 
   amp = 2.e-3; 
+
+  // Default reference time frame (frame in which the frequency 
+  // of the signal is as selected below, not spun-down/up) is 1
+  reffr = 1; 
 
 //  strcpy (dtaprefix, TOSTR(DTAPREFIX));
 
@@ -72,6 +76,8 @@ int main(int argc, char *argv[]) {
       {"gsize", required_argument, 0, 'g'},
       // data sampling time 
       {"dt", required_argument, 0, 's'},
+      // reference frame () 
+      {"reffr", required_argument, 0, 'r'},
       {0, 0, 0, 0}
     };
 
@@ -86,7 +92,8 @@ int main(int argc, char *argv[]) {
      printf("-data  Data directory in case of lines (default is .)\n"); 
      printf("-fpo   fpo (starting frequency) value\n");
      printf("-gsize Grid search range (default value: 2)\n");
-     printf("-dt    Data sampling time dt (default value: 0.5)\n\n");
+     printf("-dt    Data sampling time dt (default value: 0.5)\n");
+     printf("-reffr Reference frame (default value: 1)\n\n");
 
      printf("--help		This help\n"); 		
      exit (0);
@@ -94,7 +101,7 @@ int main(int argc, char *argv[]) {
   }
 
     int option_index = 0;
-    c = getopt_long_only (argc, argv, "a:b:c:d:p:g:s:", long_options, &option_index);
+    c = getopt_long_only (argc, argv, "a:b:c:d:p:g:s:r:", long_options, &option_index);
 
    if (c == -1)
       break;
@@ -120,6 +127,9 @@ int main(int argc, char *argv[]) {
       break;
     case 's':
       sett.dt = atof(optarg);
+      break;
+    case 'r':
+      reffr = atof(optarg);
       break;
     case '?':
       break;
@@ -151,7 +161,8 @@ int main(int argc, char *argv[]) {
   fprintf(stderr, "Band number is %04d\n", band);
   fprintf(stderr, "The reference frequency fpo is %f\n", sett.fpo);
   fprintf(stderr, "The data sampling time dt is %f\n", sett.dt);
- 
+  fprintf(stderr, "The reference time frame is %d\n", reffr);
+
   // If the -d switch is on giving a non-zero-length path 
   // somewhere, the signal will be generated using the 
   // information about lines there - will avoid known lines, 
@@ -247,8 +258,8 @@ int main(int argc, char *argv[]) {
 	// these values are used to avoid lines
 	f1 = sett.fpo + sgnlo[0] ;
 
-  //#mb !!! reference frame !!! Here 31 (VSR1 was 67) 
-	f2 = sett.fpo + sgnlo[0] - 2.*sgnlo[1]*(sett.N)*31 ;
+  //#mb !!! reference frame !!! Here reffr (VSR1 was 67) 
+	f2 = sett.fpo + sgnlo[0] - 2.*sgnlo[1]*(sett.N)*reffr ;
 
 	for(i=0; i<numl; i++) {
 
@@ -322,11 +333,11 @@ int main(int argc, char *argv[]) {
   sgnlo[7] = -sin(2.*psik)*hop*sin(ph_o) + cos(2.*psik)*hoc*cos(ph_o) ;
     
   // Output
-  printf("%le\n%d\n%d\n", amp, gsize, pm) ;   		 
+  printf("%le\n%d\n%d\n%d\n", amp, gsize, pm, reffr);   		 
   printf("%.16le\n%.16le\n%.16le\n%.16le\n%.16le\n%.16le\n%.16le\n%.16le\n", 
 			sgnlo[0], sgnlo[1], sgnlo[2], sgnlo[3], 
-			sgnlo[4], sgnlo[5], sgnlo[6], sgnlo[7]) ;
-  printf("%.16le\n%.16le\n", be1, be2) ; 			 
+			sgnlo[4], sgnlo[5], sgnlo[6], sgnlo[7]);
+  printf("%.16le\n%.16le\n", be1, be2); 			 
    
   // Testing printouts	
 /*
