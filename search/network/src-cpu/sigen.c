@@ -326,12 +326,19 @@ int main(int argc, char *argv[]) {
   hoc =  2.*get_rand() - 1.;   
   hop = (1. + hoc*hoc)/2.; 
   iota = acos(hoc);
-  
+ 
+  sgnlo[4] = ph_o; 
+  sgnlo[5] = psik; 
+  sgnlo[6] = hoc; 
+  sgnlo[7] = hop; 
+
+/* 
   sgnlo[4] =  cos(2.*psik)*hop*cos(ph_o) - sin(2.*psik)*hoc*sin(ph_o) ;
   sgnlo[5] =  sin(2.*psik)*hop*cos(ph_o) + cos(2.*psik)*hoc*sin(ph_o) ;
   sgnlo[6] = -cos(2.*psik)*hop*sin(ph_o) - sin(2.*psik)*hoc*cos(ph_o) ;
   sgnlo[7] = -sin(2.*psik)*hop*sin(ph_o) + cos(2.*psik)*hoc*cos(ph_o) ;
-    
+*/  
+  
   // Output
   printf("%le\n%d\n%d\n%d\n", amp, gsize, pm, reffr);   		 
   printf("%.16le\n%.16le\n%.16le\n%.16le\n%.16le\n%.16le\n%.16le\n%.16le\n", 

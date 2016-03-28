@@ -404,6 +404,7 @@ void add_signal(
   double h0, cof; 
   double sinaadd, cosaadd, sindadd, cosdadd, phaseadd, shiftadd, signadd; 
   double nSource[3], sgnlo[10], sgnlol[4];
+  double ph_o, psik, hoc, hop; 
 
   FILE *data;
 
@@ -414,16 +415,18 @@ void add_signal(
     // and the reference frame (for which the signal freq. is not spun-down/up)
     fscanf (data, "%le %d %d %d", &h0, &gsize, s_range->pmr, &reffr);     
 	  for(i=0; i<10; i++)
-			fscanf(data, "%le",i+sgnlo); 	
+			fscanf(data, "%le",i+sgnlo); 
+	
 		fclose (data);
-                    
-    } else {
+   
+                 
+  } else {
       perror (opts->addsig);
-    }
+  }
   
  		// Search-specific parametrization of freq. 
 		// for the software injections
-		// snglo[0]: frequency, sgnlo[1]: frequency. derivative  
+		// sgnlo[0]: frequency, sgnlo[1]: frequency. derivative  
     //#mb For VSR1 reffr=67
 
 	  sgnlo[0] += - 2.*sgnlo[1]*(sett->N)*(reffr - opts->ident); 
@@ -434,6 +437,11 @@ void add_signal(
 	  
     sgnlol[2] = sgnlo[8]*cof; 
 	  sgnlol[3] = sgnlo[9]*cof;  
+
+    ph_o = sgnlo[4]; 
+    psik = sgnlo[5]; 
+    hoc  = sgnlo[6]; 
+    hop  = sgnlo[7]; 
 		 	
 		// solving a linear system in order to translate 
 		// sky position, frequency and spindown (sgnlo parameters) 
@@ -471,12 +479,17 @@ void add_signal(
     s_range->mr[0] -= gsize;
 		s_range->pmr[1] = s_range->pmr[0]; 
        	  
-		// sgnlo[2]: declination, snglo[3]: right ascension 
+		// sgnlo[2]: declination, sgnlo[3]: right ascension 
 		sindadd = sin(sgnlo[2]); 
 		cosdadd = cos(sgnlo[2]); 
 		sinaadd = sin(sgnlo[3]);  
 		cosaadd = cos(sgnlo[3]); 
-		
+
+	  sgnlo[4] =  cos(2.*psik)*hop*cos(ph_o) - sin(2.*psik)*hoc*sin(ph_o);
+    sgnlo[5] =  sin(2.*psik)*hop*cos(ph_o) + cos(2.*psik)*hoc*sin(ph_o);
+    sgnlo[6] = -cos(2.*psik)*hop*sin(ph_o) - sin(2.*psik)*hoc*cos(ph_o);
+    sgnlo[7] = -sin(2.*psik)*hop*sin(ph_o) + cos(2.*psik)*hoc*cos(ph_o);
+	
     // Loop for each detector 
     for(n=0; n<sett->nifo; n++) {
 
@@ -501,7 +514,7 @@ void add_signal(
 		  nSource[0] = cosaadd*cosdadd;
 		  nSource[1] = sinaadd*cosdadd;
 		  nSource[2] = sindadd;
-								
+					
       // adding signal to data (point by point)  								
 		  for (i=0; i<sett->N; i++) {
 
@@ -510,13 +523,15 @@ void add_signal(
 				  shiftadd += nSource[j]*ifo[n].sig.DetSSB[i*3+j];		 
 					 
 			  phaseadd = sgnlo[0]*i + sgnlo[1]*aux_arr->t2[i]  
-				  	 + (sett->oms + sgnlo[0] + 2.*sgnlo[1]*i)*shiftadd;
+				  	     + (cof + 2.*sgnlo[1]*i)*shiftadd;
 
 			  signadd = sgnlo[4]*(ifo[n].sig.aa[i])*cos(phaseadd) 
 				        + sgnlo[6]*(ifo[n].sig.aa[i])*sin(phaseadd) 
 				        + sgnlo[5]*(ifo[n].sig.bb[i])*cos(phaseadd) 
 				        + sgnlo[7]*(ifo[n].sig.bb[i])*sin(phaseadd);
-						
+				
+        printf("%d %le\n", i + sett->N*(opts->ident - reffr), h0*signadd); 
+		
 			  if(ifo[n].sig.xDat[i]) { 
 				  ifo[n].sig.xDat[i] += h0*signadd;
 //				  thsnr   += pow(signadd, 2.);
