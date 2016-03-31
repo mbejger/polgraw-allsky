@@ -6,6 +6,9 @@ at the end of final file) and xdatc* with given
 label name. Programm uses list.txt (from data dir), 
 where should exist list of interesting times. Final 
 files are in output_dir/followup_total_data. 
+Ver. 2.0
+The same, but outside followup. Programm takes 
+arguments from command line. Problem with size solved.
 MS
 */
 
@@ -13,16 +16,25 @@ MS
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
-#include "glue.h"
+//#include "glue.h"
 
-int glue(char prfx[512], char dataprfx[512], char band[512], int nod){
+//int glue(char prfx[512], char dataprfx[512], char band[512], int nod){ //Ver. 1.0
+int main(int argc, char **argv){ //Ver 2.0, Arguments: output data label 
+
+	char prfx[512];
+	char dataprfx[512];
+	char band[512];
+	strcpy(prfx, argv[1]);
+	strcpy(dataprfx, argv[2]);
+	strcpy(band, argv[3]);
+
 	FILE *list; 
 	FILE *fp;
 	FILE *output;
-	int i, j, k, l, flag = 0;
+	int i, j, k, l, flag;
 	int data = 1;
 	int line;
-	int base_size = 258493; //size of DetSSB.bin (in bytes) for nod = 1
+	int base_size = 2067952; //size of DetSSB.bin (in bytes)
 	char xdat[200];
 	char listpath[200];
 	char path[200];
@@ -32,15 +44,18 @@ int glue(char prfx[512], char dataprfx[512], char band[512], int nod){
 	char output_L[512];
 	char output_H[512];
 	char output_0[512];
-	float *cand;
-	float *ssb1, *ssb2;
-	cand = (float *) calloc (data, sizeof(float));
-	ssb1 = (float *) calloc (data, sizeof(float));
-	ssb2 = (float *) calloc (data, sizeof(float));
-	sprintf(listpath, "%s/list.txt", dataprfx);
+	double *cand;
+	double *ssb1_l, *ssb2_l, *ssb1_h, *ssb2_h;
+	cand = (double *) calloc (data, sizeof(double));
+	ssb1_l = (double *) calloc (data, sizeof(double));
+	ssb2_l = (double *) calloc (data, sizeof(double));
+	ssb1_h = (double *) calloc (data, sizeof(double));
+	ssb2_h = (double *) calloc (data, sizeof(double));
+	sprintf(listpath, "%s/list.txt", dataprfx); //list.txt should be in data dir
 
 	
 	if ((list = fopen (listpath, "r")) != NULL) {
+		flag = 0;
 		l = 0;
 		while (fscanf(list, "%d\n", &line) == 1){
 			if (l != 0) flag = 1;
@@ -73,32 +88,38 @@ int glue(char prfx[512], char dataprfx[512], char band[512], int nod){
 					sprintf(out, "%s/H1/xdatc_000%s.bin", output_0, band);
 				}
 				sprintf(path, "%s/%02d%s", dataprfx, line, part);
+				k = 1;
 				if ((fp = fopen (path, "rb")) != NULL) {
-					k = 0;
 					if ((output = fopen (out, "ab")) != NULL) {			
 						if((i == 2)||(i == 3)) {
 							while (!feof(fp)) {
-								if((fread ((void *)(cand), sizeof (float), data, fp))==data){
-									for(j = 0; j < data; j++) fwrite((void *)(cand), sizeof (float), data, output);
+								if((fread ((void *)(cand), sizeof (double), data, fp))==data){
+									for(j = 0; j < data; j++) fwrite((void *)(cand), sizeof (double), data, output);
 								}
 							}
 						}
-	
 						else {
 							while (!feof(fp)) {
-								if((fread ((void *)(cand), sizeof (float), data, fp))==data){
-									if(k < (base_size*nod)){ //for nod = 2: k < 516986
-										fwrite((void *)(cand), sizeof (float), data, output);
+								if((fread ((void *)(cand), sizeof (double), data, fp))==data){
+									if(k < ((base_size-8)/8)){ 
+										fwrite((void *)(cand), sizeof (double), data, output);
 									}
-									if((k == base_size*nod)&&(flag == 0)) ssb1[0] = cand[0]; //for nod = 2: k == 516986
-									if((k == (base_size*nod)+1)&&(flag == 0)) ssb2[0] = cand[0]; //for nod = 2: k == 516987
-
+									if((k == ((base_size-8)/8))&&(flag == 0)&&(i == 0)){ 
+										ssb1_l[0] = cand[0]; 									
+									}
+									if((k == (base_size/8))&&(flag == 0)&&(i == 0)){ 
+										ssb2_l[0] = cand[0]; 
+									}	
+									if((k == ((base_size-8)/8))&&(flag == 0)&&(i == 1)){ 
+										ssb1_h[0] = cand[0]; 
+									}
+									if((k == (base_size/8))&&(flag == 0)&&(i == 1)){ 
+										ssb2_h[0] = cand[0]; 
+									}
 									k++;
 								}
 							}
-							fwrite((void *)(ssb1), sizeof (float), data, output);
-							fwrite((void *)(ssb2), sizeof (float), data, output);
-
+							
 						}
 					}
 					else {		
@@ -118,6 +139,22 @@ int glue(char prfx[512], char dataprfx[512], char band[512], int nod){
 		
 		perror (listpath);
 		return 1;
+	}
+	sprintf(out, "%s/DetSSB.bin",output_L);
+	if ((output = fopen (out, "ab")) != NULL) {
+		fwrite((void *)(ssb1_l), sizeof (double), data, output);
+		fwrite((void *)(ssb2_l), sizeof (double), data, output);
+	}
+	else {		
+		printf("Problem with %s file - at the end!\n", out);
+	}
+	sprintf(out, "%s/DetSSB.bin",output_H);
+	if ((output = fopen (out, "ab")) != NULL) {
+		fwrite((void *)(ssb1_h), sizeof (double), data, output);
+		fwrite((void *)(ssb2_h), sizeof (double), data, output);
+	}
+	else {		
+		printf("Problem with %s file - at the end!\n", out);
 	}
 //	puts("END OF GLUE FUNCTION");
 	fclose(list);
