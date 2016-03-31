@@ -9,9 +9,10 @@ Functions glue and neigh added!
 Ver. 3.0
 Mesh adaptive direct search (MADS) added (to find real
 maximum)
-Ver 4.0
+Ver. 4.0
 Simplex added
-
+Ver. 5.0
+Without glue function
 MS
 */
 
@@ -38,7 +39,7 @@ MS
 #include "init.h"
 //#include "timer.h"
 
-#include "glue.h"
+//#include "glue.h"
 #include "neigh.h"
 
 #include <assert.h>
@@ -99,20 +100,21 @@ void free_matrix(double ** matrix, int rows, int cols){
 // Fstat function declaration
 double* Fstatnet(Search_settings *sett, Command_line_opts *opts, Aux_arrays *aux, double *F, double *sgnlo, double *nSource){
 
-
 	double xa_real = 0., xa_imag = 0., xb_real = 0., xb_imag = 0., xasum_real = 0., xasum_imag = 0., xbsum_real = 0., xbsum_imag = 0.;
 	double shft1, cosPH, sinPH, phase[sett->N];
   	double sinalt, cosalt, sindelt, cosdelt;
 	int i = 0, n = 0; 
 	static double fstat_out[10]; //output
 	double aa = 0., bb = 0., aaa = 0., bbb = 0.;
+//HERE IS PROBLEM WITH HUGE VECTORS (YEPPP DOESN'T WORK)
+    	static double _sph[86165]; //603149
+    	static double _cph[86165];
 #ifdef YEPPP
 //#define VLEN 2048
     int VLEN = sett->N;
     yepLibrary_Init();
-
-    Yep64f _sph[VLEN];
-    Yep64f _cph[VLEN];
+//    Yep64f _sph[VLEN];
+//    Yep64f _cph[VLEN];
     enum YepStatus status;
 
 #endif
@@ -240,7 +242,7 @@ double* MADS(Search_settings *sett, Command_line_opts *opts, Aux_arrays *aux, do
 			   		sett->N, &ifo[o], aux);  
 			}
 			res = Fstatnet(sett, opts, aux, F, p, nSource); //Fstat function for mesh points
-//			printf("%le %le %le %le %le %lf %le %le %le %le\n", res[6], res[7], res[8], res[9], res[0], res[1], res[2], res[3], res[4], res[5]);
+//			printf("%lf %le %le %le %le\n", -res[5], res[6], res[7], res[8], res[9]);
 			if (res[5] < extr[5]){
 				for (l = 0; l < 10; l++){ 
 					extr[l] = res[l];
@@ -421,15 +423,10 @@ double * amoeba(Search_settings *sett, Command_line_opts *opts, Aux_arrays *aux,
 	}
 	for (j = 0; j < dim; j++) point[j] = simplex[ilo][j];
 	for (j = 0; j < 10; j++) NM_out[j] = fx[ilo][j];
-/*	puts("a1");
-	free_matrix(fx, dim + 1, 10);
-	puts("a2");
+/*	free_matrix(fx, dim + 1, 10);
 	free_vector(midpoint, dim);
-	puts("a3");
 	free_vector(line, dim);
-	puts("a4");
 	free_matrix(simplex, dim + 1, dim);
-	puts("a5");
 */
 	free(fx);
 	free(midpoint);
@@ -444,13 +441,13 @@ int main (int argc, char *argv[]) {
 	Command_line_opts opts;
   	Search_range s_range; 
   	Aux_arrays aux_arr;
-	int nod = 6;			// Observation time in days
+//	int nod = 2;			// Observation time in days
   	double *F; 			// F-statistic array
   	int i, j, r, c, a, b, g; 	// myrank, num_threads; 
 	int d, o, m;
-	int bins = 40, ROW, dim = 4;		// neighbourhood of point will be divide into defined number of bins
-	double pc = 0.05;		// % define neighbourhood around each parameter
-	double delta = 1e-5;		// initial step in MADS function
+	int bins = 54, ROW, dim = 4;		// neighbourhood of point will be divide into defined number of bins
+	double pc = 0.01;		// % define neighbourhood around each parameter
+	double delta = 1e-4;		// initial step in MADS function
 	double *results;		// Vector with results from Fstatnet function
 	double *maximum;		// True maximum of Fstat
 	double results_max[10];	
@@ -470,15 +467,14 @@ int main (int argc, char *argv[]) {
 
 // Command line options 
 	handle_opts(&sett, &opts, argc, argv);  
-	
-	sprintf(path, "%s/candidates.coi", opts.dtaprefix);
+	sprintf(path, "%s/candidates_inj.coi", opts.dtaprefix);
 
 //Glue function
-	glue(opts.prefix, opts.dtaprefix, opts.label, nod);
+//	glue(opts.prefix, opts.dtaprefix, opts.label, nod);
 
-	sprintf(opts.dtaprefix, "./data_total");
-	sprintf(opts.dtaprefix, "%s/followup_total_data", opts.prefix); 
-	opts.ident = 000;
+//	sprintf(opts.dtaprefix, "./data_total");
+//	sprintf(opts.dtaprefix, "%s/followup_total_data", opts.prefix); 
+//	opts.ident = 000;
 	
 	FILE *coi;
 	int z;
@@ -496,7 +492,6 @@ int main (int argc, char *argv[]) {
 			if((fread(&mean, sizeof(float), 4, coi)) == 4){
 */
 			while(fscanf(coi, "%le %le %le %le", &mean[0], &mean[1], &mean[2], &mean[3]) == 4){
-
 //Time test
 //			tstart = clock();
 			ROW = (bins+1)*(bins+1);
@@ -527,10 +522,8 @@ int main (int argc, char *argv[]) {
 */
 // Search settings
   				search_settings(&sett); 
-
 // Detector network settings
   				detectors_settings(&sett, &opts); 
-
 // Array initialization
   				init_arrays(&sett, &opts, &aux_arr, &F);
 
@@ -565,12 +558,11 @@ int main (int argc, char *argv[]) {
 						modvir(sinalt, cosalt, sindelt, cosdelt, 
 					   		sett.N, &ifo[o], &aux_arr);  
 					}
-
 					for (m = 0; m < ROW; ++m){
 						sgnlo[0] = arr[m][0];
 						sgnlo[1] = arr[m][1];
-
 						results = Fstatnet(&sett, &opts, &aux_arr, F, sgnlo, nSource);
+
 						printf("%lf %le %le %le %le\n", -results[5], results[6], results[7], results[8], results[9]);
 
 // Maximum value in points searching
@@ -586,7 +578,7 @@ int main (int argc, char *argv[]) {
 				for(g = 0; g < 10; g++) results_first[g] = results_max[g];
 // Maximum search using MADS algorithm
 
-				maximum = MADS(&sett, &opts, &aux_arr, F, results_max, mean, delta, pc, bins);
+//				maximum = MADS(&sett, &opts, &aux_arr, F, results_max, mean, delta, pc, bins);
 //				for(g = 0; g < 4; g++) sgnlo[g] = results_max[6+g];
 // Maximum search using simplex algorithm
 //				maximum = amoeba(&sett, &opts, &aux_arr, F, sgnlo, nSource, results_max, dim, 1e-7);
@@ -615,11 +607,11 @@ int main (int argc, char *argv[]) {
 	printf("Amplitudes: %le %le %le %le\n", results_first[0], results_first[1], results_first[2], results_first[3]);
 	printf("Signal-to-noise ratio: %le\n", results_first[4]); 
 	puts("**********************************************************************");
-	printf("***	True maximum is : (-)%le				***\n", -maximum[5]);
-	printf("Sgnlo for true maximum: %le %le %le %le\n", maximum[6], maximum[7], maximum[8], maximum[9]);
-	printf("Amplitudes for true maximum: %le %le %le %le\n", maximum[0], maximum[1], maximum[2], maximum[3]);
-	printf("Signal-to-noise ratio for true maximum: %le\n", maximum[4]); 
-	puts("**********************************************************************");
+//	printf("***	True maximum is : (-)%le				***\n", -maximum[5]);
+//	printf("Sgnlo for true maximum: %le %le %le %le\n", maximum[6], maximum[7], maximum[8], maximum[9]);
+//	printf("Amplitudes for true maximum: %le %le %le %le\n", maximum[0], maximum[1], maximum[2], maximum[3]);
+//	printf("Signal-to-noise ratio for true maximum: %le\n", maximum[4]); 
+//	puts("**********************************************************************");
 
 // Cleanup & memory free 
 //  	cleanup(&sett, &opts, &aux_arr, F);
@@ -635,4 +627,11 @@ int main (int argc, char *argv[]) {
 //time LD_LIBRARY_PATH=/home/msieniawska/tests/polgraw-allsky/search/network/src-cpu/lib/yeppp-1.0.0/binaries/linux/x86_64/ ./followup -data /home/msieniawska/tests/polgraw-allsky/followup/src/testdata/ -output /home/msieniawska/tests/polgraw-allsky/followup/src/output -label J0000+1902 -band 1902
 //test for basic testdata:
 //time LD_LIBRARY_PATH=/home/msieniawska/tests/polgraw-allsky/search/network/src-cpu/lib/yeppp-1.0.0/binaries/linux/x86_64/ ./followup -data /home/msieniawska/tests/polgraw-allsky/followup/src/testdata/ -output /home/msieniawska/tests/polgraw-allsky/followup/src/output -band 100 -ident 10 -fpo 199.21875
+//time LD_LIBRARY_PATH=/home/msieniawska/tests/polgraw-allsky/search/network/src-cpu/lib/yeppp-1.0.0/binaries/linux/x86_64/ ./followup -data /home/msieniawska/tests/bigdogdata/mdc_025/ -output /home/polgraw-allsky/followup/src/output -band 100 -ident 10 -fpo 199.21875
+//
+//time LD_LIBRARY_PATH=/work/psk/msieniawska/test_followup/1/polgraw-allsky/search/network/src-cpu/lib/yeppp-1.0.0/binaries/linux/x86_64/ ./followup -data /work/psk/msieniawska/test_followup/data/ -output /work/psk/msieniawska/test_followup/output -band 103 -label 103_10 -fpo 103.0
+//
+//time LD_LIBRARY_PATH=/home/msieniawska/tests/bin_test/1/polgraw-allsky/search/network/src-cpu/lib/yeppp-1.0.0/binaries/linux/x86_64/ ./followup -data /home/msieniawska/tests/bin_test/data -output /home/msieniawska/tests/bin_test/output1 -fpo 124.9453125 -label 103_10 -fpo 103.0 -dt 2.0>& out1.txt
+//
+//time LD_LIBRARY_PATH=/home/msieniawska/tests/gluetest/polgraw-allsky/search/network/src-cpu/lib/yeppp-1.0.0/binaries/linux/x86_64/ ./followup -data /home/msieniawska/tests/gluetest/d1/followup_total_data -output /home/msieniawska/tests/gluetest/output1 -fpo 124.9453125 -label 103_10 -ident 000 -dt 2.0
 
