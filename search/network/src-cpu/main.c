@@ -20,8 +20,11 @@
 #include "jobcore.h"
 #include "init.h"
 
-// Default output and data directories
+#ifndef CODEVER
+#define CODEVER unknown
+#endif
 
+// Default output and data directories
 #ifndef PREFIX
 #define PREFIX ./candidates
 #endif
@@ -39,6 +42,12 @@ int main (int argc, char* argv[]) {
   Aux_arrays aux_arr;
   double *F; 			  // F-statistic array
   int i; 
+
+#define QUOTE(x) #x
+#define STR(macro) QUOTE(macro)
+#define CVSTR STR(CODEVER)
+
+  printf("Code version : " CVSTR "\n");
 
   // Command line options 
   handle_opts(&sett, &opts, argc, argv);  

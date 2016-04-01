@@ -1,5 +1,7 @@
 TARGET = gwsearch-cpu
 
+VER := $(shell git rev-parse HEAD)
+
 # FFTW_DIR - fftw location, remember to compile it with optimizations (e.g. avx)
 # SINCOS = {YEPPP or SLEEF or GNUSINCOS or NOSINCOS}
 FFTW_DIR = /opt/fftw/3.3.4/gnu
@@ -8,7 +10,7 @@ SINCOS =  YEPPP #YEPPP or SLEEF or GNUSINCOS or NOSINCOS
 CC = gcc
 
 # pre-processor flags: TIMERS, VERBOSE (rich stdout output)
-CFLAGS = -DPREFIX="./candidates" -DTIMERS=3 -D$(SINCOS) -DVERBOSE
+CFLAGS = -DPREFIX="./candidates" -DCODEVER=$(VER) -DTIMERS=3 -D$(SINCOS) -DVERBOSE 
 CFLAGS += -I$(FFTW_DIR)/include 
 CFLAGS += -g -Wall -Wno-unused -fno-omit-frame-pointer \
 	  -O3 -ffast-math -funsafe-loop-optimizations -funroll-loops \
