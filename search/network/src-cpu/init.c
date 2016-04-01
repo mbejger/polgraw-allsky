@@ -438,8 +438,8 @@ void add_signal(
   // for the software injections
   // sgnlo[0]: frequency, sgnlo[1]: frequency. derivative  
   //#mb For VSR1 reffr=67
-
-  sgnlo[0] += - 2.*sgnlo[1]*(sett->N)*(reffr - opts->ident); 
+ 
+  sgnlo[0] += -2.*sgnlo[1]*(sett->N)*(reffr - opts->ident); 
   
   cof = sett->oms + sgnlo[0]; 
   
@@ -489,6 +489,7 @@ void add_signal(
   s_range->mr[0] -= gsize;
   s_range->pmr[1] = s_range->pmr[0]; 
   
+
   // sgnlo[2]: declination, sgnlo[3]: right ascension 
   sindadd = sin(sgnlo[2]); 
   cosdadd = cos(sgnlo[2]); 
@@ -500,6 +501,10 @@ void add_signal(
   sgnlo[6] = -cos(2.*psik)*hop*sin(ph_o) - sin(2.*psik)*hoc*cos(ph_o);
   sgnlo[7] = -sin(2.*psik)*hop*sin(ph_o) + cos(2.*psik)*hoc*cos(ph_o);
 	
+  // To keep coherent phase between time segments  
+  double phaseshift = sgnlo[0]*sett->N*(reffr - opts->ident)   
+    + sgnlo[1]*pow(sett->N*(reffr - opts->ident), 2); 
+
   // Loop for each detector 
   for(n=0; n<sett->nifo; n++) {
     
@@ -530,26 +535,32 @@ void add_signal(
       
       shiftadd = 0.; 					 
       for (j=0; j<3; j++)
-	shiftadd += nSource[j]*ifo[n].sig.DetSSB[i*3+j];		 
+      	shiftadd += nSource[j]*ifo[n].sig.DetSSB[i*3+j];		 
       
-      phaseadd = sgnlo[0]*i + sgnlo[1]*aux_arr->t2[i]  
-	+ (cof + 2.*sgnlo[1]*i)*shiftadd;
-      
+      // Phase 
+      phaseadd = sgnlo[0]*i + sgnlo[1]*aux_arr->t2[i] 
+        + (cof + 2.*sgnlo[1]*i)*shiftadd
+        - phaseshift; 
+
+      // The whole signal with 4 amplitudes and modulations 
       signadd = sgnlo[4]*(ifo[n].sig.aa[i])*cos(phaseadd) 
-	+ sgnlo[6]*(ifo[n].sig.aa[i])*sin(phaseadd) 
-	+ sgnlo[5]*(ifo[n].sig.bb[i])*cos(phaseadd) 
-	+ sgnlo[7]*(ifo[n].sig.bb[i])*sin(phaseadd);
-      
-      printf("%d %le\n", i + sett->N*(opts->ident - reffr), h0*signadd); 
-      
+        + sgnlo[6]*(ifo[n].sig.aa[i])*sin(phaseadd) 
+        + sgnlo[5]*(ifo[n].sig.bb[i])*cos(phaseadd) 
+        + sgnlo[7]*(ifo[n].sig.bb[i])*sin(phaseadd);
+
+      //#mb test printout 
+      //printf("%d %le\n", i + sett->N*(opts->ident-1), phaseadd); 
+
+    
+      // Adding the signal to the data vector 
       if(ifo[n].sig.xDat[i]) { 
-	ifo[n].sig.xDat[i] += h0*signadd;
-	//				  thsnr   += pow(signadd, 2.);
-      }	 
+        ifo[n].sig.xDat[i] += h0*signadd;
+	      // thsnr += pow(signadd, 2.);
+      }
+	 
     }
     
   }
-  
   
 } 
 
