@@ -18,7 +18,7 @@ typedef struct _comm_line_opts {
   int white_flag, 		// white noise flag
       s0_flag,			// no spin-down flag
       checkp_flag,		// checkpointing flag
-      veto_flag,        // veto lines flag 
+      veto_flag,                // veto lines flag 
       help_flag;
   
   int fftinterp;
@@ -27,7 +27,7 @@ typedef struct _comm_line_opts {
   double fpo_val;
   
   char prefix[512], dtaprefix[512], label[512], 
-       range[512], qname[512], addsig[512], *wd;
+    range[512], getrange[512], qname[512], addsig[512], *wd;
   
 } Command_line_opts;
 
