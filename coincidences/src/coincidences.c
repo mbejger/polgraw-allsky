@@ -541,11 +541,21 @@ void read_trigger_files(Search_settings *sett,
  
     // Maximal coincidence (first row of imtr[][])
     //#mb written to stderr 
-    if(!q) 
-    fprintf(stderr, "%s %04d %5f %5hu %5d %15.8le %5.8le %5.8le %5.8le %5le\n", 
+    if(!q) { 
+    fprintf(stderr, "%s %04d %5f %5hu %5d %15.8le %5.8le %5.8le %5.8le %5le ", 
       opts->trigname, opts->shift, sett->fpo, trig->frcount, w,   
-      mean[0], mean[1], mean[2], mean[3], mean[4]);  
+      mean[0], mean[1], mean[2], mean[3], mean[4]);
 
+      // Number of candidates from frames that participated in the coincidence 
+      for(i=0; i<trig->frcount; i++) 
+        for(j=0; j<w; j++)   
+          if(trig->frameinfo[i][0] == fra[j]) {   
+              fprintf(stderr, "%d %d %d ",
+                fra[j], trig->frameinfo[i][1], trig->frameinfo[i][2]); 
+              break; 
+          }    
+          fprintf(stderr, "\n");  
+      }
   }
 
   fclose(data); 
