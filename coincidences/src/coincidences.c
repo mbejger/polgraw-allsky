@@ -546,14 +546,16 @@ void read_trigger_files(Search_settings *sett,
       opts->trigname, opts->shift, sett->fpo, trig->frcount, w,   
       mean[0], mean[1], mean[2], mean[3], mean[4]);
 
+      int ii, jj;
       // Number of candidates from frames that participated in the coincidence 
-      for(i=0; i<trig->frcount; i++) 
-        for(j=0; j<w; j++)   
-          if(trig->frameinfo[i][0] == fra[j]) {   
+      for(ii=0; ii<=trig->frcount; ii++)
+        for(jj=0; jj<w; jj++)
+          if(trig->frameinfo[ii][0] == fra[jj]) {
               fprintf(stderr, "%d %d %d ",
-                fra[j], trig->frameinfo[i][1], trig->frameinfo[i][2]); 
-              break; 
-          }    
+                fra[jj], trig->frameinfo[ii][1], trig->frameinfo[ii][2]);
+              break;
+          }
+
           fprintf(stderr, "\n");  
       }
   }
