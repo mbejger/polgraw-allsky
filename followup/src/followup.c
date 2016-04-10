@@ -12,7 +12,10 @@ maximum)
 Ver. 4.0
 Simplex added
 Ver. 5.0
-Without glue function
+Function neigh moved to followup.c
+All vectors/arrays declarated using yeppp! library 
+ = FASTER!
+
 MS
 */
 
@@ -39,8 +42,8 @@ MS
 #include "init.h"
 //#include "timer.h"
 
-//#include "glue.h"
-#include "neigh.h"
+#include "glue.h"
+//#include "neigh.h"
 
 #include <assert.h>
 #if defined(SLEEF)
@@ -64,15 +67,52 @@ MS
 
 #define ZEPS 1e-10
 
+//Function neigh takes candidate parameters and number of bins (as arguments) and creates grid around it.
+Yep64f** neigh(double s1, double s2, int bins, double perc){ 
+//	double **arr;
+	int rows, cols = 2;
+	rows = (bins+1)*(bins+1);
+	int k;
+// Allocation of memory for martix
+//  	arr = (double **)malloc(rows*sizeof(double *));
+//  	for (k=0; k < rows; k++) arr[k] = (double *)calloc(cols, sizeof(double));
+#ifdef YEPPP
+    yepLibrary_Init();
+	Yep64f **arr = (Yep64f**)malloc(rows*sizeof(Yep64f));
+	for (k=0; k < rows; k++) arr[k] = (Yep64f*)calloc(rows,sizeof(Yep64f));
+    enum YepStatus status;
+
+#endif
+	double beg1, beg2;
+	double width1, width2;
+	double m1, m2;
+	int i1, i2, i;
+	beg1 = s1 - (s1*perc);
+	width1 = 2*perc*s1/bins;
+	width2 = 2*perc*s2/bins;
+	i = 0;
+	for(i1 = 0; i1 < (bins + 1); i1++){
+		beg2 = s2 - (s2*perc);
+		for(i2 = 0; i2 < (bins + 1); i2++, i++){
+			arr[i][0] = beg1;
+			arr[i][1] = beg2;
+			beg2 = beg2 + width2;
+		}
+		beg1 = beg1 + width1;
+	}
+	return arr;
+
+}
+
 // Allocation of memory for martix with given number of rows and columns
-float** matrix(int rows, int cols) {
+double** matrix(int rows, int cols) {
 
   	int k;
-	float **m;
-  	m = (float **)malloc(rows*sizeof(float *));
+	double **m;
+  	m = (double **)malloc(rows*sizeof(double *));
   
   	for (k=0; k < rows; k++)
-    		m[k] = (float *)calloc(cols, sizeof(float));
+    		m[k] = (double *)calloc(cols, sizeof(double));
   
   	return m;
 }
@@ -98,23 +138,28 @@ void free_matrix(double ** matrix, int rows, int cols){
 }
 
 // Fstat function declaration
-double* Fstatnet(Search_settings *sett, Command_line_opts *opts, Aux_arrays *aux, double *F, double *sgnlo, double *nSource){
+Yep64f* Fstatnet(Search_settings *sett, Command_line_opts *opts, Aux_arrays *aux, double *F, Yep64f *sgnlo, Yep64f *nSource){
 
 	double xa_real = 0., xa_imag = 0., xb_real = 0., xb_imag = 0., xasum_real = 0., xasum_imag = 0., xbsum_real = 0., xbsum_imag = 0.;
-	double shft1, cosPH, sinPH, phase[sett->N];
+	double shft1, cosPH, sinPH;//, phase[sett->N];
   	double sinalt, cosalt, sindelt, cosdelt;
 	int i = 0, n = 0; 
-	static double fstat_out[10]; //output
+//	double *fstat_out  = alloc_vector(10);
+//	static double fstat_out[10]; //output
+//    	static double _sph[861641]; //603149
+//    	static double _cph[861641];
 	double aa = 0., bb = 0., aaa = 0., bbb = 0.;
-//HERE IS PROBLEM WITH HUGE VECTORS (YEPPP DOESN'T WORK)
-    	static double _sph[86165]; //603149
-    	static double _cph[86165];
+
+
 #ifdef YEPPP
 //#define VLEN 2048
     int VLEN = sett->N;
     yepLibrary_Init();
-//    Yep64f _sph[VLEN];
-//    Yep64f _cph[VLEN];
+//Yep64f *x = (Yep64f*)calloc(ARRAY_SIZE, sizeof(Yep64f));
+    Yep64f *_sph = (Yep64f*)malloc(sizeof(Yep64f)*VLEN);
+    Yep64f *_cph = (Yep64f*)malloc(sizeof(Yep64f)*VLEN);
+    Yep64f *phase = (Yep64f*)malloc(sizeof(Yep64f)*VLEN); 
+    Yep64f *fstat_out = (Yep64f*)malloc(sizeof(Yep64f)*10); 
     enum YepStatus status;
 
 #endif
@@ -195,22 +240,37 @@ double* Fstatnet(Search_settings *sett, Command_line_opts *opts, Aux_arrays *aux
 	fstat_out[8] = sgnlo[2];
 	fstat_out[9] = sgnlo[3];		
 
+	free(_sph);
+	free(_cph);
+	free(phase);
 
 	return fstat_out;
+
 }
 
 //mesh adaptive direct search (MADS) maximum search declaration
-
-double* MADS(Search_settings *sett, Command_line_opts *opts, Aux_arrays *aux, double *F, double* in, double *start, double delta, double pc, int bins){
-	double p[4];
-	static double out[10]; 		//output
+//double
+Yep64f* MADS(Search_settings *sett, Command_line_opts *opts, Aux_arrays *aux, double *F, double* in, double *start, double delta, double pc, int bins){
+//	double p[4];
+//	static double out[10]; 		//output
 	int i, j, k, l, m, n, o, a = 0;
   	double sinalt, cosalt, sindelt, cosdelt;
-	double nSource[3];
-	double *res;
-	double extr[10];
+//	double nSource[3];
+//	double *res;
+//	double extr[10];
 	double param; 			//initial size of mesh
 	param = pc/bins;
+#ifdef YEPPP
+    yepLibrary_Init();
+    Yep64f *p = (Yep64f*)malloc(sizeof(Yep64f)*4);
+    Yep64f *out = (Yep64f*)malloc(sizeof(Yep64f)*10);
+    Yep64f *nSource = (Yep64f*)malloc(sizeof(Yep64f)*3); 
+    Yep64f *extr = (Yep64f*)malloc(sizeof(Yep64f)*10); 
+    Yep64f *res = (Yep64f*)malloc(sizeof(Yep64f)*10);
+    enum YepStatus status;
+
+#endif
+	puts("MADS");
 
 //	for(i = 0; i < 4; i++) p[i] = in[6+i];
 	for(i = 0; i < 10; i++) extr[i] = in[i];
@@ -242,7 +302,7 @@ double* MADS(Search_settings *sett, Command_line_opts *opts, Aux_arrays *aux, do
 			   		sett->N, &ifo[o], aux);  
 			}
 			res = Fstatnet(sett, opts, aux, F, p, nSource); //Fstat function for mesh points
-//			printf("%lf %le %le %le %le\n", -res[5], res[6], res[7], res[8], res[9]);
+			printf("%.16lf %.16le %.16le %.16le %.16le\n", -res[5], res[6], res[7], res[8], res[9]);
 			if (res[5] < extr[5]){
 				for (l = 0; l < 10; l++){ 
 					extr[l] = res[l];
@@ -423,10 +483,15 @@ double * amoeba(Search_settings *sett, Command_line_opts *opts, Aux_arrays *aux,
 	}
 	for (j = 0; j < dim; j++) point[j] = simplex[ilo][j];
 	for (j = 0; j < 10; j++) NM_out[j] = fx[ilo][j];
-/*	free_matrix(fx, dim + 1, 10);
+/*	puts("a1");
+	free_matrix(fx, dim + 1, 10);
+	puts("a2");
 	free_vector(midpoint, dim);
+	puts("a3");
 	free_vector(line, dim);
+	puts("a4");
 	free_matrix(simplex, dim + 1, dim);
+	puts("a5");
 */
 	free(fx);
 	free(midpoint);
@@ -444,22 +509,36 @@ int main (int argc, char *argv[]) {
 //	int nod = 2;			// Observation time in days
   	double *F; 			// F-statistic array
   	int i, j, r, c, a, b, g; 	// myrank, num_threads; 
-	int d, o, m;
-	int bins = 54, ROW, dim = 4;		// neighbourhood of point will be divide into defined number of bins
-	double pc = 0.01;		// % define neighbourhood around each parameter
-	double delta = 1e-4;		// initial step in MADS function
-	double *results;		// Vector with results from Fstatnet function
-	double *maximum;		// True maximum of Fstat
-	double results_max[10];	
-	double results_first[10];	  
+	int d, o, m, k;
+	int bins = 8, ROW, dim = 4;		// neighbourhood of point will be divide into defined number of bins
+	double pc = 0.1;		// % define neighbourhood around each parameter
+	double delta = 1e-3;		// initial step in MADS function
+//	double *results;		// Vector with results from Fstatnet function
+//	double *maximum;		// True maximum of Fstat
+//	double results_max[10];	
+//	double results_first[10];	  
 	double s1, s2, s3, s4;
-	double sgnlo[4]; 		//  arr[ROW][COL], arrg[ROW][COL]; 
-	float **arr, **arrg;
-	double nSource[3];
+//	double sgnlo[4]; 		//  arr[ROW][COL], arrg[ROW][COL]; 
+//	double **arr, **arrg;
+//	double nSource[3];
   	double sinalt, cosalt, sindelt, cosdelt;
 	double F_min;
 	char path[512];
-//	ROW = (bins+1)*(bins+1);
+	ROW = (bins+1)*(bins+1);
+
+#ifdef YEPPP
+    yepLibrary_Init();
+    Yep64f *results_max = (Yep64f*)malloc(sizeof(Yep64f)*10); 
+    Yep64f *results_first = (Yep64f*)malloc(sizeof(Yep64f)*10);
+    Yep64f *results = (Yep64f*)malloc(sizeof(Yep64f)*10);
+    Yep64f *maximum = (Yep64f*)malloc(sizeof(Yep64f)*10);
+    Yep64f *sgnlo = (Yep64f*)malloc(sizeof(Yep64f)*4);  
+    Yep64f *nSource = (Yep64f*)malloc(sizeof(Yep64f)*3); 
+    Yep64f *mean = (Yep64f*)malloc(sizeof(Yep64f)*4); 
+
+    enum YepStatus status;
+
+#endif
 
 // Time tests
 	double tdiff;
@@ -480,7 +559,7 @@ int main (int argc, char *argv[]) {
 	int z;
 //	int ops[256]; 
 //    	unsigned short int w, fra[256];
-	double mean[4];
+//	double mean[4];
 	if ((coi = fopen(path, "r")) != NULL) {
 //		while(!feof(coi)) {
 
@@ -494,10 +573,13 @@ int main (int argc, char *argv[]) {
 			while(fscanf(coi, "%le %le %le %le", &mean[0], &mean[1], &mean[2], &mean[3]) == 4){
 //Time test
 //			tstart = clock();
-			ROW = (bins+1)*(bins+1);
+//				arr = matrix(ROW, 2);
+//				arrg = matrix(ROW, 2);
 
-				arr = matrix(ROW, 2);
-				arrg = matrix(ROW, 2);
+				Yep64f **arr = (Yep64f**)malloc(ROW*sizeof(Yep64f));
+				for (k=0; k < ROW; k++) arr[k] = (Yep64f*)calloc(ROW,sizeof(Yep64f));
+				Yep64f **arrg = (Yep64f**)malloc(ROW*sizeof(Yep64f));
+				for (k=0; k < ROW; k++) arrg[k] = (Yep64f*)calloc(ROW,sizeof(Yep64f));
 
 //Function neighbourhood - generating grid around point
 				arr = neigh(mean[0], mean[1], bins, pc);
@@ -536,9 +618,9 @@ int main (int argc, char *argv[]) {
 				results_max[5] = 0.;
 
 // F - statistic with parallelisation 
-#pragma omp parallel private(d, sinalt, cosalt, sindelt, cosdelt, m, o, sgnlo, nSource, results) shared(results_max)
-{
-#pragma omp for 
+//#pragma omp parallel private(d, sinalt, cosalt, sindelt, cosdelt, m, o, sgnlo, nSource, results) shared(results_max)
+//{
+//#pragma omp for 
 
 				for (d = 0; d < ROW; ++d){
 
@@ -563,7 +645,7 @@ int main (int argc, char *argv[]) {
 						sgnlo[1] = arr[m][1];
 						results = Fstatnet(&sett, &opts, &aux_arr, F, sgnlo, nSource);
 
-						printf("%lf %le %le %le %le\n", -results[5], results[6], results[7], results[8], results[9]);
+//						printf("%.16lf %.16le %.16le %.16le %.16le\n", -results[5], results[6], results[7], results[8], results[9]);
 
 // Maximum value in points searching
 						if(results[5] < results_max[5]){
@@ -574,7 +656,7 @@ int main (int argc, char *argv[]) {
 						}
 					}
 				}
-}
+//}
 				for(g = 0; g < 10; g++) results_first[g] = results_max[g];
 // Maximum search using MADS algorithm
 
@@ -602,15 +684,15 @@ int main (int argc, char *argv[]) {
 
 // Output information
 	puts("**********************************************************************");
-	printf("***	Maximum value of F-statistic for grid is : (-)%le	***\n", -results_first[5]);
-	printf("Sgnlo: %le %le %le %le\n", results_first[6], results_first[7], results_first[8], results_first[9]);
-	printf("Amplitudes: %le %le %le %le\n", results_first[0], results_first[1], results_first[2], results_first[3]);
-	printf("Signal-to-noise ratio: %le\n", results_first[4]); 
+	printf("***	Maximum value of F-statistic for grid is : (-)%.16le	***\n", -results_first[5]);
+	printf("Sgnlo: %.16le %.16le %.16le %.16le\n", results_first[6], results_first[7], results_first[8], results_first[9]);
+	printf("Amplitudes: %.16le %.16le %.16le %.16le\n", results_first[0], results_first[1], results_first[2], results_first[3]);
+	printf("Signal-to-noise ratio: %.16le\n", results_first[4]); 
 	puts("**********************************************************************");
-//	printf("***	True maximum is : (-)%le				***\n", -maximum[5]);
-//	printf("Sgnlo for true maximum: %le %le %le %le\n", maximum[6], maximum[7], maximum[8], maximum[9]);
-//	printf("Amplitudes for true maximum: %le %le %le %le\n", maximum[0], maximum[1], maximum[2], maximum[3]);
-//	printf("Signal-to-noise ratio for true maximum: %le\n", maximum[4]); 
+//	printf("***	True maximum is : (-)%.16le				***\n", -maximum[5]);
+//	printf("Sgnlo for true maximum: %.16le %.16le %.16le %.16le\n", maximum[6], maximum[7], maximum[8], maximum[9]);
+//	printf("Amplitudes for true maximum: %.16le %.16le %.16le %.16le\n", maximum[0], maximum[1], maximum[2], maximum[3]);
+//	printf("Signal-to-noise ratio for true maximum: %.16le\n", maximum[4]); 
 //	puts("**********************************************************************");
 
 // Cleanup & memory free 
