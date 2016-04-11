@@ -1,0 +1,45 @@
+These bash scripts are setting up the subdirectories in which 
+the search and coincidences runs are performed with injected 
+signals added to the data (in order to establish the sensitivity 
+of the search). 
+
+1/ mcsim.sh - main script (configure the paths and variables inside) 
+Also: 
+2/ prepare.sh - main helper script 
+3/ script_manyframes.sh - dummy script changed by prepare.sh and run by job.sub 
+4/ job.sub - torque pbs job script 
+
+band_h0.list - list with band numbers and amplitudes to test 
+
+How to configure: 
+
+1/ Configure paths and other variables on top of mcsim.sh (these 
+values and passed on to the prepare.sh script in each subdirectory created). 
+
+How to run: 
+
+mcsim.sh requires a location of *band_h0.list* file 
+that contains list of bands and amplitudes, for example 
+
+0165 6.00e-1
+0166 4.60e-1 3.50e-1 2.00e-1
+
+Example call: 
+
+$ ./mcsim.sh /home/michal/polgraw-allsky/scripts/band_h0.list  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
