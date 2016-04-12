@@ -168,6 +168,7 @@ __global__ void compute_Fstat(cufftDoubleComplex *xa, cufftDoubleComplex *xb,
 }
 
 
+/*
 __global__ void reduction_sum(double *in, double *out, int N) {
   extern __shared__ double sd_data[];
 
@@ -187,4 +188,80 @@ __global__ void reduction_sum(double *in, double *out, int N) {
 
   if (tid==0) out[blockIdx.x] = sd_data[0];
 
+}
+*/
+
+__global__ void fstat_norm_simple(FLOAT_TYPE *F_d, int nav) {
+  //  int idx = blockIdx.x * blockDim.x + threadIdx.x;
+  int i;
+  FLOAT_TYPE *fr = F_d + blockIdx.x*nav;
+  FLOAT_TYPE mu = 0.;
+  for (i=0; i<nav; ++i)
+    mu += *fr++;
+  mu /= 2.*nav;
+  fr = F_d + blockIdx.x*nav;
+  for (i=0; i<nav; i++)
+    *fr++ /= mu;
+
+}
+
+
+// parameters are:
+// [frequency, spindown, position1, position2, snr]
+#define ADD_PARAMS_MACRO						\
+  int p = atomicAdd(found, 1);						\
+  params[p*NPAR + 0] = 2.0*M_PI*(idx)*fftpad*nfft+sgnl0;		\
+  params[p*NPAR + 1] = sgnl1;						\
+  params[p*NPAR + 2] = sgnl2;						\
+  params[p*NPAR + 3] = sgnl3;						\
+  params[p*NPAR + 4] = sqrt(2*(F[idx]-ndf));
+
+
+__global__ void find_candidates(FLOAT_TYPE *F, FLOAT_TYPE *params, int *found, FLOAT_TYPE val,
+                                int nmin, int nmax, double fftpad, double nfft, FLOAT_TYPE sgnl0, int ndf,
+                                FLOAT_TYPE sgnl1, FLOAT_TYPE sgnl2, FLOAT_TYPE sgnl3) {
+
+  int idx = blockIdx.x * blockDim.x + threadIdx.x + nmin;
+
+  if (idx > nmin && idx < nmax && F[idx] >= val && F[idx] > F[idx+1] && F[idx] > F[idx-1]) {
+    ADD_PARAMS_MACRO
+      } else if (idx == nmin && F[idx] >= val && F[idx] > F[idx+1]) {
+    ADD_PARAMS_MACRO
+      } else if (idx == nmax-1 && F[idx] >= val && F[idx] > F[idx-1]) {
+    ADD_PARAMS_MACRO
+      }
+}
+
+
+
+//---------------------------------------------------------------
+
+//second reduction used in fstat
+__global__ void reduction_sum(FLOAT_TYPE *in, FLOAT_TYPE *out, int N) {
+  extern __shared__ FLOAT_TYPE sf_data[];
+
+  int tid = threadIdx.x;
+  int i = blockIdx.x * blockDim.x + threadIdx.x;
+
+  sf_data[tid] = (i<N) ? in[i] : 0;
+
+  __syncthreads();
+
+  for (int s = blockDim.x/2; s>0; s>>=1) {
+    if (tid < s) {
+      sf_data[tid] += sf_data[tid + s];
+    }
+    __syncthreads();
+  }
+
+  if (tid==0) out[blockIdx.x] = 1.0f/sf_data[0];
+}
+
+
+__global__ void fstat_norm(FLOAT_TYPE *F, FLOAT_TYPE *mu, int N, int nav) {
+  int i = blockIdx.x * blockDim.x + threadIdx.x;
+  if (i < N) {
+    int block = i/nav; //block index
+    F[i] *= 2*nav * mu[block];
+  }
 }

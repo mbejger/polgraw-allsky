@@ -14,6 +14,7 @@
 #include <time.h>
 #include <dirent.h>
 
+#include "floats.h"
 #include "auxi.h"
 #include "struct.h"
 #include "settings.h"
@@ -38,7 +39,7 @@ int main (int argc, char* argv[]) {
   Search_settings sett;
   Search_range s_range; 
   Aux_arrays aux_arr;
-  double *F_d; 			  // F-statistic array
+  FLOAT_TYPE *F_d; 			  // F-statistic array
   int i; 
 
   /* init CUDA device,

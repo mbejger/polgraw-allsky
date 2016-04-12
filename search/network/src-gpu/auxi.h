@@ -13,22 +13,14 @@
 #define NAVFSTAT 4096
 #define round(x) floor((x)+0.5)
 
-// Define COMP_FLOAT this to change the double/single precision of triggers 
-//
-// #define COMP_FLOAT
-#ifdef COMP_FLOAT // if single-precision
-    #define FLOAT_TYPE float
-#else             // if double-precision
-    #define FLOAT_TYPE double
-#endif
+#include "floats.h"
 
-void lin2ast(double be1, double be2, int pm, double sepsm, double cepsm,	\
-         double *sinal, double *cosal, double *sindel, double *cosdel);
+void lin2ast(double be1, double be2, int pm, double sepsm, double cepsm, \
+	     double *sinal, double *cosal, double *sindel, double *cosdel);
 
 double var (double *, int);
 
 void gridr (double *, int *, int *, int *, double, double);
-double FStat (double *, int, int, int);
 
 int ludcmp (double *, int, int *, double *);
 int lubksb (double *, int, int *, double *);

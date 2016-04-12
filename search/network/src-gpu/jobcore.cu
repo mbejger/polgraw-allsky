@@ -74,6 +74,16 @@ void search(
   copy_amod_coeff(sett->nifo);
   //printf("after copy_amod\n");
 
+  int cand_buffer_count = 0;
+
+  //allocate vector for FStat_gpu
+  int nav_blocks = (sett->nmax - sett->nmin)/NAV;     //number of nav-blocks
+  int blocks = (sett->nmax - sett->nmin)/BLOCK_SIZE;  //number of blocks for Fstat-smoothing
+
+  CudaSafeCall ( cudaMalloc((void**)&aux->mu_t_d, sizeof(FLOAT_TYPE)*blocks) );
+  CudaSafeCall ( cudaMalloc((void**)&aux->mu_d, sizeof(FLOAT_TYPE)*nav_blocks) );
+
+
   state=NULL;
   if(opts->checkp_flag) 
     state = fopen (opts->qname, "w");
@@ -430,17 +440,26 @@ FLOAT_TYPE* job_core(
           sett->nmax - sett->nmin );
       CudaCheckError();
 
-      CudaSafeCall ( cudaMemcpy(F, F_d, 2*sett->nfft*sizeof(double), cudaMemcpyDeviceToHost));
-      
-      //      if(!(opts->white_flag))  // if the noise is not white noise
-		//FStat_gpu(F_d + sett->nmin, sett->nmax - sett->nmin, NAVFSTAT, 0);
-
-      //      exit(0);
-
-
-      // Normalize F-statistics 
+#define GPUFSTAT_NO
+#ifdef GPUFSTAT
       if(!(opts->white_flag))  // if the noise is not white noise
-        FStat(F + sett->nmin, sett->nmax - sett->nmin, NAVFSTAT, 0);
+	FStat_gpu(F_d+sett->nmin, sett->nmax - sett->nmin, NAV, aux->mu_d, aux->mu_t_d);
+      
+#else
+      if(!(opts->white_flag))  // if the noise is not white noise
+	FStat_gpu_simple(F_d + sett->nmin, sett->nmax - sett->nmin, NAVFSTAT);
+#endif
+     
+      CudaSafeCall ( cudaMemcpy(F, F_d, 2*sett->nfft*sizeof(FLOAT_TYPE), cudaMemcpyDeviceToHost));
+      /*      
+      FILE *f1 = fopen("fstat-gpu.dat", "w");
+      for(i=sett->nmin; i<sett->nmax; i++)
+	fprintf(f1, "%d   %lf\n", i, F[i]);
+
+      fclose(f1);
+      printf("wrote fstat-gpu.dat | ss=%d  \n", ss);
+      //exit(EXIT_SUCCESS);
+      */
 
       for(i=sett->nmin; i<sett->nmax; i++) {
         if ((Fc = F[i]) > opts->trl) { // if F-stat exceeds trl (critical value)
@@ -474,6 +493,7 @@ FLOAT_TYPE* job_core(
 
 	} // if Fc > trl 
       } // for i
+
 
 #if TIMERS>2
       tend = get_current_time();
@@ -519,8 +539,17 @@ void modvir_gpu(double sinal, double cosal, double sindel, double cosdel,
 
 }
 
+/* just simple patch - to be replaced */
+void FStat_gpu_simple(FLOAT_TYPE *F_d, int nfft, int nav) {
+  
+  int blocks = nfft/nav;
+  fstat_norm_simple<<<blocks, 1>>>(F_d, nav);
+  CudaCheckError();
 
-#if 0
+}
+
+
+#ifdef GPUFSTAT
 /* WARNING
    This won't necessarily work for other values than:
    NAV = 4096
@@ -529,7 +558,7 @@ void modvir_gpu(double sinal, double cosal, double sindel, double cosdel,
    Reason is the "reduction depth", i.e. number of required \
    reduction kernel calls.
 */
-void FStat_gpu(FLOAT_TYPE *cu_F, int N, int nav, float *cu_mu, float *cu_mu_t) {
+void FStat_gpu(FLOAT_TYPE *F_d, int N, int nav, FLOAT_TYPE *mu_d, FLOAT_TYPE *mu_t_d) {
 
   int nav_blocks = N/nav;           //number of blocks
   int nav_threads = nav/BLOCK_SIZE; //number of blocks computing one nav-block
@@ -539,15 +568,15 @@ void FStat_gpu(FLOAT_TYPE *cu_F, int N, int nav, float *cu_mu, float *cu_mu_t) {
   //    CudaSafeCall ( cudaMalloc((void**)&cu_mu, sizeof(float)*nav_blocks) );
 
   //sum fstat in blocks
-  reduction_sum<BLOCK_SIZE_RED><<<blocks, BLOCK_SIZE_RED, BLOCK_SIZE_RED*sizeof(float)>>>(cu_F, cu_mu_t, N);
+  reduction_sum<BLOCK_SIZE_RED><<<blocks, BLOCK_SIZE_RED, BLOCK_SIZE_RED*sizeof(FLOAT_TYPE)>>>(F_d, mu_t_d, N);
   CudaCheckError();
 
   //sum blocks computed above and return 1/mu (number of divisions: blocks), then fstat_norm doesn't divide (potential number of divisions: N)
-  reduction_sum<<<nav_blocks, nav_threads, nav_threads*sizeof(float)>>>(cu_mu_t, cu_mu, blocks);
+  reduction_sum<<<nav_blocks, nav_threads, nav_threads*sizeof(FLOAT_TYPE)>>>(mu_t_d, mu_d, blocks);
   CudaCheckError();
   
   //divide by mu/(2*NAV)
-  fstat_norm<<<blocks, BLOCK_SIZE>>>(cu_F, cu_mu, N, nav);
+  fstat_norm<<<blocks, BLOCK_SIZE>>>(F_d, mu_d, N, nav);
   CudaCheckError();
   
 }

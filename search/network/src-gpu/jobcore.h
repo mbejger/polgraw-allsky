@@ -5,7 +5,10 @@
 #include "struct.h"
 #include "cublas_v2.h"
 
+#define BLOCK_SIZE 256
+#define BLOCK_SIZE_RED 128
 #define BLOCK_DIM(n, b) ((n)/b + ((n)%b==0 ? 0 : 1))
+#define NAV_THREADS 16
 
 void search(
 	    Search_settings *sett,
@@ -23,7 +26,7 @@ void search(
  * (FLOAT_TYPE defined in struct.h)  
  */ 
 
-FLOAT_TYPE* job_core(
+FLOAT_TYPE *job_core(
 		     int pm,                   // hemisphere
 		     int mm,                   // grid 'sky position'
 		     int nn,                   // other grid 'sky position'
@@ -40,6 +43,8 @@ FLOAT_TYPE* job_core(
 		     int *FNum,               // Candidate signal number
 		     cublasHandle_t scale      //handle for scaling
 		     );
-      
-
 #endif
+
+void FStat_gpu_simple(FLOAT_TYPE *F_d, int nfft, int nav);
+double FStat (double *, int, int, int);
+void FStat_gpu(FLOAT_TYPE *F_d, int N, int nav, FLOAT_TYPE *mu_d, FLOAT_TYPE *mu_t_d);

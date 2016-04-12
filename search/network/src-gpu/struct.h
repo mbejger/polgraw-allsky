@@ -4,6 +4,7 @@
 //#include <fftw3.h>
 #include <complex.h>
 #include <cufft.h>
+#include "floats.h"
 
 #define MAX_DETECTORS 8        // Maximum number of detectors in network 
 #define DETNAME_LENGTH 2       // Detector name length (H1, L1, V1...)
@@ -91,6 +92,7 @@ typedef struct _aux_arrays {
   double *t2_d  ;                // time^2
   double *tshift_d;
   cufftDoubleComplex *diag_d, *ldiag_d, *udiag_d, *B_d; //used in spline interpolation
+  FLOAT_TYPE *mu_d, *mu_t_d; //arrays for smoothing F-stat
 
 } Aux_arrays;
 
