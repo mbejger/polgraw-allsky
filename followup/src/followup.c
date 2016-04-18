@@ -42,7 +42,7 @@ MS
 #include "init.h"
 //#include "timer.h"
 
-#include "glue.h"
+//#include "glue.h"
 //#include "neigh.h"
 
 #include <assert.h>
@@ -65,10 +65,10 @@ MS
 #define DTAPREFIX .
 #endif
 
-#define ZEPS 1e-10
+#define ZEPS 1e-5
 
 //Function neigh takes candidate parameters and number of bins (as arguments) and creates grid around it.
-Yep64f** neigh(double s1, double s2, int bins, double perc){ 
+double** neigh(double s1, double s2, int bins, double perc){ 
 //	double **arr;
 	int rows, cols = 2;
 	rows = (bins+1)*(bins+1);
@@ -76,13 +76,13 @@ Yep64f** neigh(double s1, double s2, int bins, double perc){
 // Allocation of memory for martix
 //  	arr = (double **)malloc(rows*sizeof(double *));
 //  	for (k=0; k < rows; k++) arr[k] = (double *)calloc(cols, sizeof(double));
-#ifdef YEPPP
-    yepLibrary_Init();
-	Yep64f **arr = (Yep64f**)malloc(rows*sizeof(Yep64f));
-	for (k=0; k < rows; k++) arr[k] = (Yep64f*)calloc(rows,sizeof(Yep64f));
-    enum YepStatus status;
+//#ifdef YEPPP
+//    yepLibrary_Init();
+	double **arr = (double**)malloc(rows*sizeof(double));
+	for (k=0; k < rows; k++) arr[k] = (double*)calloc(rows,sizeof(double));
+//    enum YepStatus status;
 
-#endif
+//#endif
 	double beg1, beg2;
 	double width1, width2;
 	double m1, m2;
@@ -116,7 +116,7 @@ double** matrix(int rows, int cols) {
   
   	return m;
 }
-
+	
 // Allocation of memory for vector and martix with given number of rows and columns
 double * alloc_vector(int cols){
 	return (double *) malloc(sizeof(double) * cols);
@@ -138,14 +138,14 @@ void free_matrix(double ** matrix, int rows, int cols){
 }
 
 // Fstat function declaration
-Yep64f* Fstatnet(Search_settings *sett, Command_line_opts *opts, Aux_arrays *aux, double *F, Yep64f *sgnlo, Yep64f *nSource){
+double* Fstatnet(Search_settings *sett, Command_line_opts *opts, Aux_arrays *aux, double *F, double *sgnlo, double *nSource){
 
 	double xa_real = 0., xa_imag = 0., xb_real = 0., xb_imag = 0., xasum_real = 0., xasum_imag = 0., xbsum_real = 0., xbsum_imag = 0.;
 	double shft1, cosPH, sinPH;//, phase[sett->N];
   	double sinalt, cosalt, sindelt, cosdelt;
 	int i = 0, n = 0; 
 //	double *fstat_out  = alloc_vector(10);
-//	static double fstat_out[10]; //output
+	static double fstat_out[10]; //output
 //    	static double _sph[861641]; //603149
 //    	static double _cph[861641];
 	double aa = 0., bb = 0., aaa = 0., bbb = 0.;
@@ -159,7 +159,7 @@ Yep64f* Fstatnet(Search_settings *sett, Command_line_opts *opts, Aux_arrays *aux
     Yep64f *_sph = (Yep64f*)malloc(sizeof(Yep64f)*VLEN);
     Yep64f *_cph = (Yep64f*)malloc(sizeof(Yep64f)*VLEN);
     Yep64f *phase = (Yep64f*)malloc(sizeof(Yep64f)*VLEN); 
-    Yep64f *fstat_out = (Yep64f*)malloc(sizeof(Yep64f)*10); 
+//    Yep64f *fstat_out = (Yep64f*)malloc(sizeof(Yep64f)*10); 
     enum YepStatus status;
 
 #endif
@@ -250,17 +250,17 @@ Yep64f* Fstatnet(Search_settings *sett, Command_line_opts *opts, Aux_arrays *aux
 
 //mesh adaptive direct search (MADS) maximum search declaration
 //double
-Yep64f* MADS(Search_settings *sett, Command_line_opts *opts, Aux_arrays *aux, double *F, double* in, double *start, double delta, double pc, int bins){
-//	double p[4];
-//	static double out[10]; 		//output
+double* MADS(Search_settings *sett, Command_line_opts *opts, Aux_arrays *aux, double *F, double* in, double *start, double delta, double pc, int bins){
+	double p[4];
+	static double out[10]; 		//output
 	int i, j, k, l, m, n, o, a = 0;
   	double sinalt, cosalt, sindelt, cosdelt;
-//	double nSource[3];
-//	double *res;
-//	double extr[10];
+	double nSource[3];
+	double *res;
+	double extr[10];
 	double param; 			//initial size of mesh
 	param = pc/bins;
-#ifdef YEPPP
+/*#ifdef YEPPP
     yepLibrary_Init();
     Yep64f *p = (Yep64f*)malloc(sizeof(Yep64f)*4);
     Yep64f *out = (Yep64f*)malloc(sizeof(Yep64f)*10);
@@ -270,7 +270,8 @@ Yep64f* MADS(Search_settings *sett, Command_line_opts *opts, Aux_arrays *aux, do
     enum YepStatus status;
 
 #endif
-	puts("MADS");
+*/
+//	puts("MADS");
 
 //	for(i = 0; i < 4; i++) p[i] = in[6+i];
 	for(i = 0; i < 10; i++) extr[i] = in[i];
@@ -326,7 +327,7 @@ Yep64f* MADS(Search_settings *sett, Command_line_opts *opts, Aux_arrays *aux, do
 
 // Few functions for Nelder-Mead (simplex) algorithm  
 
-double ** make_simplex(double * point, int dim){
+double ** make_simplex(double * point, int dim, double pc){
 	int i, j;
 	double ** simplex = alloc_matrix(dim + 1, dim);
 	for (i = 0; i < dim + 1; i++){
@@ -335,14 +336,19 @@ double ** make_simplex(double * point, int dim){
 		}
 	}
 	for (i = 0; i < dim; i++){
-		simplex[i][i] += 1.0;
+//		simplex[i][i] += 1.0;
+//		simplex[i][i] = 1.09*simplex[i][i]; 
+		simplex[i][i] = (1 + pc - ZEPS)*simplex[i][i];
 	}
+//for(i = 0; i < dim+1; i++) printf("%.16lf %.16le %.16le %.16le\n", simplex[i][0], simplex[i][1], simplex[i][2], simplex[i][3]);
 	return simplex;
 }
 
 void evaluate_simplex(double ** simplex, int dim, double ** fx, Search_settings *sett, Command_line_opts *opts, Aux_arrays *aux, double *F, double *nSource){
 	double sinalt, cosalt, sindelt, cosdelt;
-	int i, o;
+	double *out;
+	int i, o, j;
+//for(i = 0; i < dim+1; i++) printf("%.16lf %.16le %.16le %.16le\n", simplex[i][0], simplex[i][1], simplex[i][2], simplex[i][3]);
 	for (i = 0; i < dim + 1; i++){
 			sinalt = sin(simplex[i][3]);
 			cosalt = cos(simplex[i][3]);
@@ -357,12 +363,17 @@ void evaluate_simplex(double ** simplex, int dim, double ** fx, Search_settings 
 				modvir(sinalt, cosalt, sindelt, cosdelt, 
 			   		sett->N, &ifo[o], aux);  
 			}
-		fx[i] = Fstatnet(sett, opts, aux, F, simplex[i], nSource);
+			out = Fstatnet(sett, opts, aux, F, simplex[i], nSource);
+			for (j = 0; j < 10; j++) fx[i][j] = out[j];
 	}
+//for (i = 0; i < dim + 1; i++) printf("%.16lf %.16le %.16le %.16le %.16le\n", -fx[i][5], fx[i][6], fx[i][7], fx[i][8], fx[i][9]);
 }
 
-void simplex_extremes(double ** fx, int dim, int ihi, int ilo, int inhi){
+int* simplex_extremes(double ** fx, int dim){
 	int i;
+	int ihi, ilo, inhi;
+	static int ihe[3];
+
 	if (fx[0][5] > fx[1][5]){ 
 		ihi = 0; ilo = inhi = 1; 
 	}
@@ -382,6 +393,11 @@ void simplex_extremes(double ** fx, int dim, int ihi, int ilo, int inhi){
 			inhi = i;
 		}
 	}
+	ihe[0] = ihi;
+	ihe[1] = ilo;
+	ihe[2] = inhi;
+
+	return ihe;
 }
 
 void simplex_bearings(double ** simplex, int dim, double * midpoint, double * line, int ihi){
@@ -396,9 +412,13 @@ void simplex_bearings(double ** simplex, int dim, double * midpoint, double * li
 		midpoint[j] /= dim;
 		line[j] = simplex[ihi][j] - midpoint[j];
 	}
+//	for(j = 0; j <dim; j++) printf("%.16lf %.16lf\n", midpoint[j], line[j]);
+//	printf("\n\n");
 }
-int update_simplex(double * point, int dim, double  fmax, double * midpoint, double * line, double scale, Search_settings *sett, Command_line_opts *opts, Aux_arrays *aux, double *F, double *nSource){
-	int i, o, update = 0; 
+int update_simplex(double ** simplex, int dim, double  fmax, double ** fx, int ihi, double * midpoint, double * line, double scale, Search_settings *sett, Command_line_opts *opts, Aux_arrays *aux, double *F, double *nSource){
+	int i, o, j, update = 0; 
+//	double *point;
+//	for(j = 0; j < dim; j++) point[j] = simplex[ihi][j];
 	double * next = alloc_vector(dim);
 	double * fx2;
 	double sinalt, cosalt, sindelt, cosdelt;
@@ -419,21 +439,24 @@ int update_simplex(double * point, int dim, double  fmax, double * midpoint, dou
 	}
 	fx2 = Fstatnet(sett, opts, aux, F, next, nSource);
 	if (fx2[5] < fmax){
-		for (i = 0; i < dim; i++) point[i] = next[i];
-		fmax = fx2[5];
+		for (i = 0; i < dim; i++) simplex[ihi][i] = next[i];
+		for (j = 0; j < 10; j++) fx[ihi][j] = fx2[j];
+//		fmax = fx2[5];
 		update = 1;
 	}
 	free_vector(next, dim);
+//printf("update = %d : %.16le \n", update, fx[ihi][5]);
 	return update;
 }
 
-void contract_simplex(double ** simplex, int dim, double ** fx, int ilo, Search_settings *sett, Command_line_opts *opts, Aux_arrays *aux, double *F, double *nSource){
+void contract_simplex(double ** simplex, int dim, double ** fx, int ilo, int ihi, Search_settings *sett, Command_line_opts *opts, Aux_arrays *aux, double *F, double *nSource){
   	double sinalt, cosalt, sindelt, cosdelt;
-	int i, j, o;
+	double * fx3;
+	int i, j, k, o;
 	for (i = 0; i < dim + 1; i++){
 		if (i != ilo){
 			for (j = 0; j < dim; j++) simplex[i][j] = (simplex[ilo][j]+simplex[i][j])*0.5;
-
+//printf("%.16le %.16le %.16le %.16le\n\n", simplex[i][0], simplex[i][1], simplex[i][2], simplex[i][3]);
 			sinalt = sin(simplex[i][3]);
 			cosalt = cos(simplex[i][3]);
 			sindelt = sin(simplex[i][2]);
@@ -448,38 +471,62 @@ void contract_simplex(double ** simplex, int dim, double ** fx, int ilo, Search_
 			   		sett->N, &ifo[o], aux);  
 			}
 
-			fx[i] = Fstatnet(sett, opts, aux, F, simplex[i], nSource);
+			fx3 = Fstatnet(sett, opts, aux, F, simplex[i], nSource);
+			for (k = 0; k < 10; k++) fx[i][k] = fx3[k];
 		}
+//printf("%.16lf %.16le %.16le %.16le %.16le\n", -fx[i][5], fx[i][6], fx[i][7], fx[i][8], fx[i][9]);
 	}
 }
 
 int check_tol(double fmax, double fmin, double ftol){
 	double delta = fabs(fmax - fmin);
 	double accuracy = (fabs(fmax) + fabs(fmin)) * ftol;
+//	printf("%.16le, %.16le\n", delta, (accuracy + ZEPS));
 	return (delta < (accuracy + ZEPS));
 }
 
-double * amoeba(Search_settings *sett, Command_line_opts *opts, Aux_arrays *aux, double *F, double *point, double *nSource, double *res_max, int dim, double tol){
-	int ihi, ilo, inhi, j;
-	double fmin;
+double * amoeba(Search_settings *sett, Command_line_opts *opts, Aux_arrays *aux, double *F, double *point, double *nSource, double *res_max, int dim, double tol, double pc){
+	int ihi, ilo, inhi;
+// ihi = ih[0], ilo = ih[1], inhi = ih[2];
+	int *ih;
+	int j, i;
+//	double fmin;
 	static double NM_out[10];
 	double ** fx = alloc_matrix(dim + 1, 10);
 	double * midpoint = alloc_vector(dim);
 	double * line = alloc_vector(dim);
-	double ** simplex = make_simplex(point, dim);
+	double ** simplex = make_simplex(point, dim, pc);
 	evaluate_simplex(simplex, dim, fx, sett, opts, aux, F, nSource);
 	while (true)
 	{
-		simplex_extremes(fx, dim, ihi, ilo, inhi);
+		ih = simplex_extremes(fx, dim);
+//puts("extremes");
+		ihi = ih[0];
+		ilo = ih[1]; 
+		inhi = ih[2];
+//printf("%.16le, %.16le %.16le %.16le %.16le\n", fx[0][5],fx[1][5], fx[2][5], fx[3][5], fx[4][5]);
+//printf("%.16le, %.16le %.16le \n", fx[ihi][5],fx[inhi][5], fx[ilo][5]);
+//for(i = 0; i < dim+1; i++) printf("%.16lf %.16le %.16le %.16le %.16le\n", -fx[i][5], fx[i][6], fx[i][7], fx[i][8], fx[i][9]);
 		simplex_bearings(simplex, dim, midpoint, line, ihi);
-		if (check_tol(fx[ihi][5], fx[ilo][5], tol)) break;
-		update_simplex(simplex[ihi], dim, fx[ihi][5], midpoint, line, -1.0, sett, opts, aux, F, nSource);
-		if (fx[ihi][5] < fx[ilo][5]) update_simplex(simplex[ihi], dim, fx[ihi][5], midpoint, line, -2.0, sett, opts, aux, F, nSource);
-		else if (fx[ihi][5] >= fx[inhi][5]){
-			if (!update_simplex(simplex[ihi], dim, fx[ihi][5], midpoint, line, 0.5, sett, opts, aux, F, nSource)){
-				contract_simplex(simplex, dim, fx, ilo, sett, opts, aux, F, nSource);
+//puts("bearings");
+//		if ((check_tol(fx[ihi][5], fx[ilo][5], tol))||((line[0] < ZEPS)&&(line[1] < ZEPS)&&(line[2] < ZEPS)&&(line[3] < ZEPS))) break;
+		if(check_tol(fx[ihi][5], fx[ilo][5], tol)) break;
+		update_simplex(simplex, dim, fx[ihi][5], fx, ihi, midpoint, line, -1.0, sett, opts, aux, F, nSource);
+//puts("updates");
+
+		if (fx[ihi][5] < fx[ilo][5]){
+			update_simplex(simplex, dim, fx[ihi][5], fx, ihi, midpoint, line, -2.0, sett, opts, aux, F, nSource);
+//puts("if1");
+		}
+		else if (fx[ihi][5] > fx[inhi][5]){
+//puts("if2");
+			if (!update_simplex(simplex, dim, fx[ihi][5], fx, ihi, midpoint, line, 0.5, sett, opts, aux, F, nSource)){
+				contract_simplex(simplex, dim, fx, ilo, ihi, sett, opts, aux, F, nSource);
+//puts("contract");
+//printf("%.16le, %.16le %.16le %.16le %.16le\n", fx[0][5],fx[1][5], fx[2][5], fx[3][5], fx[4][5]);
 			}
 		}
+//puts("end loop");
 	}
 	for (j = 0; j < dim; j++) point[j] = simplex[ilo][j];
 	for (j = 0; j < 10; j++) NM_out[j] = fx[ilo][j];
@@ -510,22 +557,22 @@ int main (int argc, char *argv[]) {
   	double *F; 			// F-statistic array
   	int i, j, r, c, a, b, g; 	// myrank, num_threads; 
 	int d, o, m, k;
-	int bins = 8, ROW, dim = 4;		// neighbourhood of point will be divide into defined number of bins
-	double pc = 0.1;		// % define neighbourhood around each parameter
-	double delta = 1e-3;		// initial step in MADS function
-//	double *results;		// Vector with results from Fstatnet function
-//	double *maximum;		// True maximum of Fstat
-//	double results_max[10];	
-//	double results_first[10];	  
+	int bins = 64, ROW, dim = 4;		// neighbourhood of point will be divide into defined number of bins
+	double pc = 0.15;		// % define neighbourhood around each parameter
+//	double delta = 1e-5;		// initial step in MADS function
+	double *results;		// Vector with results from Fstatnet function
+	double *maximum;		// True maximum of Fstat
+	double results_max[10];	
+	double results_first[10];	  
 	double s1, s2, s3, s4;
-//	double sgnlo[4]; 		//  arr[ROW][COL], arrg[ROW][COL]; 
-//	double **arr, **arrg;
-//	double nSource[3];
+	double sgnlo[4]; 		//  arr[ROW][COL], arrg[ROW][COL]; 
+	double **arr, **arrg;
+	double nSource[3];
   	double sinalt, cosalt, sindelt, cosdelt;
 	double F_min;
 	char path[512];
 	ROW = (bins+1)*(bins+1);
-
+/*
 #ifdef YEPPP
     yepLibrary_Init();
     Yep64f *results_max = (Yep64f*)malloc(sizeof(Yep64f)*10); 
@@ -539,7 +586,7 @@ int main (int argc, char *argv[]) {
     enum YepStatus status;
 
 #endif
-
+*/
 // Time tests
 	double tdiff;
 	clock_t tstart, tend;
@@ -559,7 +606,7 @@ int main (int argc, char *argv[]) {
 	int z;
 //	int ops[256]; 
 //    	unsigned short int w, fra[256];
-//	double mean[4];
+	double mean[4];
 	if ((coi = fopen(path, "r")) != NULL) {
 //		while(!feof(coi)) {
 
@@ -573,14 +620,14 @@ int main (int argc, char *argv[]) {
 			while(fscanf(coi, "%le %le %le %le", &mean[0], &mean[1], &mean[2], &mean[3]) == 4){
 //Time test
 //			tstart = clock();
-//				arr = matrix(ROW, 2);
-//				arrg = matrix(ROW, 2);
-
+				arr = matrix(ROW, 2);
+				arrg = matrix(ROW, 2);
+/*
 				Yep64f **arr = (Yep64f**)malloc(ROW*sizeof(Yep64f));
 				for (k=0; k < ROW; k++) arr[k] = (Yep64f*)calloc(ROW,sizeof(Yep64f));
 				Yep64f **arrg = (Yep64f**)malloc(ROW*sizeof(Yep64f));
 				for (k=0; k < ROW; k++) arrg[k] = (Yep64f*)calloc(ROW,sizeof(Yep64f));
-
+*/
 //Function neighbourhood - generating grid around point
 				arr = neigh(mean[0], mean[1], bins, pc);
 				arrg = neigh(mean[2], mean[3], bins, pc);
@@ -618,9 +665,9 @@ int main (int argc, char *argv[]) {
 				results_max[5] = 0.;
 
 // F - statistic with parallelisation 
-//#pragma omp parallel private(d, sinalt, cosalt, sindelt, cosdelt, m, o, sgnlo, nSource, results) shared(results_max)
-//{
-//#pragma omp for 
+#pragma omp parallel private(d, sinalt, cosalt, sindelt, cosdelt, m, o, sgnlo, nSource, results) shared(results_max)
+{
+#pragma omp for 
 
 				for (d = 0; d < ROW; ++d){
 
@@ -645,7 +692,7 @@ int main (int argc, char *argv[]) {
 						sgnlo[1] = arr[m][1];
 						results = Fstatnet(&sett, &opts, &aux_arr, F, sgnlo, nSource);
 
-//						printf("%.16lf %.16le %.16le %.16le %.16le\n", -results[5], results[6], results[7], results[8], results[9]);
+						printf("%.16lf %.16le %.16le %.16le %.16le\n", -results[5], results[6], results[7], results[8], results[9]);
 
 // Maximum value in points searching
 						if(results[5] < results_max[5]){
@@ -656,21 +703,22 @@ int main (int argc, char *argv[]) {
 						}
 					}
 				}
-//}
+}
 				for(g = 0; g < 10; g++) results_first[g] = results_max[g];
 // Maximum search using MADS algorithm
-
-//				maximum = MADS(&sett, &opts, &aux_arr, F, results_max, mean, delta, pc, bins);
 //				for(g = 0; g < 4; g++) sgnlo[g] = results_max[6+g];
+//				tstart = clock();
+				maximum = MADS(&sett, &opts, &aux_arr, F, results_max, mean, ZEPS, pc, bins);
+
 // Maximum search using simplex algorithm
-//				maximum = amoeba(&sett, &opts, &aux_arr, F, sgnlo, nSource, results_max, dim, 1e-7);
+//				maximum = amoeba(&sett, &opts, &aux_arr, F, sgnlo, nSource, results_max, dim, ZEPS, pc);
 
 
 //Time test
-//				tend = clock();
-//				tdiff = (tend - tstart)/(double)CLOCKS_PER_SEC;
-//				printf("%d %le %lf %le %le %le %le\n", bins, tdiff, -maximum[5], maximum[6], maximum[7], maximum[8], maximum[9]);
-
+/*				tend = clock();
+				tdiff = (tend - tstart)/(double)CLOCKS_PER_SEC;
+				printf("%le\n",tdiff);
+*/
 
 
 			}
@@ -689,11 +737,11 @@ int main (int argc, char *argv[]) {
 	printf("Amplitudes: %.16le %.16le %.16le %.16le\n", results_first[0], results_first[1], results_first[2], results_first[3]);
 	printf("Signal-to-noise ratio: %.16le\n", results_first[4]); 
 	puts("**********************************************************************");
-//	printf("***	True maximum is : (-)%.16le				***\n", -maximum[5]);
-//	printf("Sgnlo for true maximum: %.16le %.16le %.16le %.16le\n", maximum[6], maximum[7], maximum[8], maximum[9]);
-//	printf("Amplitudes for true maximum: %.16le %.16le %.16le %.16le\n", maximum[0], maximum[1], maximum[2], maximum[3]);
-//	printf("Signal-to-noise ratio for true maximum: %.16le\n", maximum[4]); 
-//	puts("**********************************************************************");
+	printf("***	True maximum is : (-)%.16le				***\n", -maximum[5]);
+	printf("Sgnlo for true maximum: %.16le %.16le %.16le %.16le\n", maximum[6], maximum[7], maximum[8], maximum[9]);
+	printf("Amplitudes for true maximum: %.16le %.16le %.16le %.16le\n", maximum[0], maximum[1], maximum[2], maximum[3]);
+	printf("Signal-to-noise ratio for true maximum: %.16le\n", maximum[4]); 
+	puts("**********************************************************************");
 
 // Cleanup & memory free 
 //  	cleanup(&sett, &opts, &aux_arr, F);
