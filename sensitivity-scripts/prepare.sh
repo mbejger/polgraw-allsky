@@ -44,13 +44,11 @@ sed -i 's|LDLP|'$ldlp'|g;s|LZ4PATH|'$lz4path'|g' script.sh
 # removing the contents of an old run.sh
 if [ -e run.sh ]; then >run.sh; fi
 
-for dirs in $(seq -f "%02g" 1 $howmany); do
+for dirs in $(seq -f "%03g" 1 $howmany); do
 
 	if [ ! -d "$dirs" ]; then 
 		mkdir $dirs
 	fi
-
-	echo $howmany $dirs 
 
     # symbolic links to the codes 
 	ln -sf ${code_home}/gwsearch-cpu $dirs/search
@@ -58,11 +56,10 @@ for dirs in $(seq -f "%02g" 1 $howmany); do
     ln -sf ${coin_home}/coincidences $dirs/coincidences 
 
  	ln -sf ../script.sh $dirs/script.sh
-	ln -sf ${script_home}/job.sub $dirs/job.sub
-
-	string=${h0}_${band}__${dirs}
-	echo "cd "${PWD}"/"${dirs}"; qsub -N "${string}" job.sub" >> run.sh
+	ln -sf ${script_home}/job.sub 
 
 done
+
+echo "cd "${PWD}"; qsub -N "${h0}_${band} " job.sub" >> run.sh
 
 exit 0

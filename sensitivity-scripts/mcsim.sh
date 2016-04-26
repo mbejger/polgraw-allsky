@@ -3,7 +3,7 @@
 #--- General settings --------------------------------------------------
 code_home=/home/michal/polgraw-allsky/search/network/src-cpu    # search codes 
 coin_home=/home/michal/polgraw-allsky/coincidences/src          # coincidence codes   
-script_home=/home/michal/polgraw-allsky/scripts                 # scripts 
+script_home=/home/michal/polgraw-allsky/sensitivity-scripts     # scripts 
 data=/storage/mdc/RDC_O1_0.25                                   # input data
 list_of_frames=${data}/good_frames_H1L1                         # file with frame list 
 lz4path=/scratch2/lz4-r131/programs                             # archiver (coincidences) 
@@ -15,7 +15,7 @@ gsize=2                   # +- gsize around the grid
 reffr=031                 # the reference frame (coincidences)
 cell=4444                 # Cell size (coincidences) 
 snrcut=6                  # Signal-to-noise cutoff 
-mincoin=10                # Minimal no. of coincidences to register 
+mincoin=5                 # Minimal no. of coincidences to register 
 #-----------------------------------------------------------------------
 
 # Band number and h0 amplitudes are read from a file 
@@ -24,10 +24,10 @@ while read line; do
 
 	# line contains N+1 columns: band number + N h0 amplitudes 
 	h=($line)           # whole array 
-    b=$h                # band number (first column)  
-    N=$((${#h[@]}-1))   # number of amplitudes 
+  b=$h                # band number (first column)  
+  N=$((${#h[@]}-1))   # number of amplitudes 
 
-    echo $N 
+  echo $N 
 
 	for i in $(seq 1 $N); do
 
@@ -46,9 +46,9 @@ while read line; do
 		bash prepare.sh ${b} ${h[$i]} ${code_home} ${coin_home} ${script_home} ${data} ${list_of_frames} ${lz4path} ${ldlp} ${dt} ${howmany} ${gsize} ${reffr} ${cell} ${snrcut} ${mincoin}  
 		# Execute jobs
 		echo "Sending "$diri" jobs into the queue..."
-		bash run.sh
-		cd ../
- 
+    bash run.sh
+    cd ../
+
 	done  
 
 done < $1

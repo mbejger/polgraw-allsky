@@ -1,2 +1,11 @@
 cd $PBS_O_WORKDIR
- ./script.sh 1> /dev/null 2> $PBS_JOBID.err 
+
+for d in $(ls -d */); do
+
+        cd ./$d
+        ./script.sh 1> /dev/null 2> $PBS_JOBID.err
+        cd ../
+
+done
+
+# ./script.sh 1> /dev/null 2> $PBS_JOBID.err

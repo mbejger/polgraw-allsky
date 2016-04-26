@@ -25,7 +25,7 @@ num_of_frames=0
 
 for frame in $(cat LOF|sort -r); do 
 
-	LD_LIBRARY_PATH=LDLP ./search -data DATA -output . -ident ${frame} -band BAND -dt DT -addsig <(echo $sig_pars) --nocheckpoint 2>> BAND.snr 1>> BAND.out
+	LD_LIBRARY_PATH=LDLP ./search -data DATA -output . -ident ${frame} -band BAND -dt DT -addsig <(echo $sig_pars) --nocheckpoint 2>> /dev/null 1>> BAND.out
 	let "num_of_frames += 1"
 	# ./search exits with exit(137) when the signal goes out of band 
 	if [[ $? -eq 137 ]]; then
@@ -48,7 +48,8 @@ done
 
 # signal-to-noise estimate (mean of the values generated during the search)
 # snr=$(grep "SNR:" BAND.snr | awk '{sum +=$2*$2} END {print sqrt(sum/'$num_of_frames')}')
-# sim_num=${PWD##*/} 
+
+sim_num=${PWD##*/} 
 
 #--------------
 # Coincidences
@@ -57,7 +58,7 @@ done
 mkdir BAND 
 
 # Calculate band frequency from band number
-fpo=$(echo "BAND DT"|awk '{print 10 + 0.96875*$1/(2*$2)}')
+fpo=$(echo "BAND DT"|awk '{print 10 + 0.96875*$1/(2.0*$2)}')
 
 # Searching for coincidences 
 for shi in {0..1}{0..1}{0..1}{0..1}; do
@@ -67,6 +68,7 @@ done
 # Selecting maximal coincidence for each pulsar among all 16 shifts (col. 5) 
 # if many, select the one with highest SNR (col. 10)  
 sort -rgk5 -gk10 BAND/summary | head -1 >> summary 
+sumvar=$(<summary)
 
 # Cleanup (archiving and deleting the coi files) 
 for r in $(ls BAND/*.coi); do 
@@ -76,13 +78,13 @@ for r in $(ls BAND/*.coi); do
     fi 
 done 
 
-## cleanup 
-#cd ../; rm -fr state* candidates/* *.e* *.o*
-#
-## write down the summary with the following info:
-## simulation_number 10_injection_parameters estimated_snr max_num_of_coincidences its_shift_direction total_number_of_frames number_of_cells estimated_injection_parameters
-## (description of the injection parameters in doc/readme_sigen.txt)
-#echo $sim_num $sig_pars $snr $max $dr $num_of_frames CELL $est >> H0_BAND_${sim_num}.sum
+# cleanup 
+rm -fr triggers_* *.e* *.o* BAND
+
+cd ../
+
+# write down the summary with the following info:
+# simulation_number injection_parameters coincidences_summary 
+echo $sim_num $sig_pars $sumvar >> H0_BAND_${sim_num}.sum
 
 exit 0
-
