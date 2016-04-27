@@ -2,9 +2,12 @@
 
 ## `extract_band`
 
-This code converts Short Fourier Transform Database files to time series. 
+This program converts Short Fourier Transformation series to time series. 
+Written by Pia Astone (INFN, Physics Department of University of Rome "La Sapienza").
 
 ### Prerequisites 
+
+C compiller. Uses standard C libraries, `libm`. Links to the PSS library (created by Pia Astone).
 
 ### How to run it? 
 
@@ -17,6 +20,7 @@ where `input_file` is an ASCII file contaning the following rows:
 * The name of the output file
 * The list of SFT files
 * The frequency band in Hz
+* The width of frequency band in Hz
 
 for example: 
 ```
@@ -41,8 +45,10 @@ Example output:
  1.74400486e+02  2.62086552e+02
  2.21804800e+02 -5.20278366e+02
 -3.87826732e+02 -1.55758978e+02
-
 ```
 
+
 ## `gen2day` description 
+
+... 
 
