@@ -27,4 +27,5 @@ In alphabetic order:
 * Andrzej Królak
 * Maciej Piętka
 * Gevorg Poghosyan
+* Magdalena Sieniawska 
 * Rafał Skrzypiec
