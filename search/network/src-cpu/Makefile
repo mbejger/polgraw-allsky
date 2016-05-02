@@ -10,16 +10,16 @@ SINCOS =  YEPPP #YEPPP or SLEEF or GNUSINCOS or NOSINCOS
 CC = gcc
 
 # pre-processor flags: TIMERS, VERBOSE (rich stdout output)
-CFLAGS = -DPREFIX="./candidates" -DCODEVER=$(VER) -DTIMERS=3 -D$(SINCOS) -DVERBOSE 
+CFLAGS = -DPREFIX="./candidates" -DCODEVER=$(VER) -DTIMERS=1 -D$(SINCOS) #-DVERBOSE 
 CFLAGS += -I$(FFTW_DIR)/include 
 CFLAGS += -g -Wall -Wno-unused -fno-omit-frame-pointer \
 	  -O3 -ffast-math -funsafe-loop-optimizations -funroll-loops \
-	  -march=corei7-avx -mtune=corei7-avx -mavx
-#last line contains cpu specific optimizations e.g.: 
+	  -march=sandybridge -mtune=haswell -mavx
+#	  -march=haswell -mtune=haswell -mavx2
 #sandy-bridge (psk)
-	#-march=corei7-avx -mtune=corei7-avx -mavx
+#	-march=corei7-avx -mtune=corei7-avx -mavx
 #westmere (plgrid)
-	#-march=corei7 -mtune=corei7
+#	-march=corei7 -mtune=corei7
 
 LDFLAGS = -L$(FFTW_DIR)/lib
 
