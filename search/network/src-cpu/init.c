@@ -110,7 +110,7 @@ void handle_opts( Search_settings *sett,
       printf("-b, -band         Band number\n");
       printf("-l, -label        Custom label for the input and output files\n");
       printf("-r, -range        Use file with grid range or pulsar position\n");
-      printf("-g, -getrange     Write full grid ranges to file and exit (ignore -r)\n");
+      printf("-g, -getrange     Write grid ranges & save fft wisdom & exit (ignore -r)\n");
       printf("-c, -cwd          Change to directory <dir>\n");
       printf("-t, -threshold    Threshold for the F-statistic (default is 20)\n");
       printf("-h, -hemisphere   Hemisphere (default is 0 - does both)\n");
@@ -715,14 +715,14 @@ void set_search_range(
 		s_range->mr[0], s_range->mr[1],
 		s_range->pmr[0], s_range->pmr[1] );
 	
-	printf("Wrote full grid ranges to %s\n", opts->getrange);
+	printf("Wrote input data grid ranges to %s\n", opts->getrange);
 	fclose (data);
-	exit(EXIT_SUCCESS);
+	//	exit(EXIT_SUCCESS);
 	
       } else {
 	
 	printf("Can't open %s file for writing\n", opts->getrange);
-	exit(EXIT_FAILURE);
+       	exit(EXIT_FAILURE);
 	
       }
     }

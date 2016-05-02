@@ -111,6 +111,7 @@ int main (int argc, char* argv[]) {
   FFTW_plans fftw_plans;
   FFTW_arrays fftw_arr;
   plan_fftw(&sett, &opts, &fftw_plans, &fftw_arr, &aux_arr);
+  if (strlen(opts.getrange)) exit(EXIT_SUCCESS);
 
   // Checkpointing
   int Fnum=0;			        // candidate signal number

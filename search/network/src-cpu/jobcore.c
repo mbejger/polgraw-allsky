@@ -117,7 +117,6 @@ void search(
 	s_range->sst = s_range->spndr[0];
 
 	/* Add trigger parameters to a file */
-
 	// if enough signals found (no. of signals > half length of buffer)
 	if (sgnlc > sett->nfft) {
 	  if((fd = open (outname, 
@@ -142,7 +141,6 @@ void search(
       s_range->nst = s_range->nr[0];
     } // for mm
     s_range->mst = s_range->mr[0]; 
-
 
     // Write the leftover from the last iteration of the buffer 
     if((fd = open(outname, 
@@ -205,7 +203,7 @@ int job_core(int pm,                   // Hemisphere
 
 #undef NORMTOMAX
 #ifdef NORMTOMAX
-  double blkavg, threshold = 4.;
+  double blkavg, threshold = 6.;
   int imax, imax0, iblk, blkstart, ihi;
   int blksize = 1024;
   int nfft = sett->nmax - sett->nmin;
@@ -686,15 +684,18 @@ int job_core(int pm,                   // Hemisphere
 	blkavg = 0.;
 	blkstart = sett->nmin + iblk*blksize; // block start index in F 
 	// in case the last block is shorter than blksize, include its elements in the previous block
-	if(iblk==(nfft/blksize-1)) {blksize = sett->nmax - blkstart; /*printf("blksize modified to %d\n", blksize);*/}
+	if(iblk==(nfft/blksize-1)) {blksize = sett->nmax - blkstart;}
 	imax0 = imax+1;// index of first maximum in current block
 	//printf("\niblk=%d   blkstart=%d   blksize=%d    imax0=%d\n", iblk, blkstart, blksize, imax0);
-	for(i=1; i <= blksize; ++i) { // include first element of the next block,  1..1024
-	  ii = blkstart + i;                                                   //  1..1025
-	  if(ii < sett->nmax) {ihi=ii+1;} else {ihi = sett->nmax; /*printf("ihi=%d  ii=%d\n", ihi, ii);*/};
+	for(i=1; i <= blksize; ++i) { // include first element of the next block
+	  ii = blkstart + i;
+	  if(ii < sett->nmax) 
+	    {ihi=ii+1;} 
+	  else 
+	    {ihi = sett->nmax; /*printf("ihi=%d  ii=%d\n", ihi, ii);*/};
 	  if(F[ii] > F[ii-1] && F[ii] > F[ihi]) {
-	    Fmax[++imax] = ii;
 	    blkavg += F[ii];
+	    Fmax[++imax] = ii;
 	    ++i; // next element can't be maximum - skip it
 	  }
 	} // i
