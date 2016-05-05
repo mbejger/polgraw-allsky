@@ -7,7 +7,7 @@ VER := $(shell git rev-parse HEAD)
 FFTW_DIR = /opt/fftw/3.3.4/gnu
 SINCOS =  YEPPP #YEPPP or SLEEF or GNUSINCOS or NOSINCOS
 
-CC = gcc
+CC = gcc -std=gnu11
 
 # pre-processor flags: TIMERS, VERBOSE (rich stdout output)
 CFLAGS = -DPREFIX="./candidates" -DCODEVER=$(VER) -DTIMERS=1 -D$(SINCOS) #-DVERBOSE 
@@ -68,7 +68,6 @@ init.o: settings.h struct.h init.h auxi.h
 settings.o: settings.h struct.h
 
 auxi.o: auxi.c auxi.h
-	$(CC) -c -O3 -Wall -o $@ $< 
 
 clean:
 	rm -f *.o

@@ -281,19 +281,15 @@ int job_core(int pm,                   // Hemisphere
           + nSource[1]*ifo[n].sig.DetSSB[1]
           + nSource[2]*ifo[n].sig.DetSSB[2];
 
-    //    printf("shft1=%f\n",shft1 );
-    //printf("DetSSB[0]=%f\n",ifo[n].sig.DetSSB[0] );
-
-
     for(i=0; i<sett->N; ++i) {
-
       ifo[n].sig.shft[i] = nSource[0]*ifo[n].sig.DetSSB[i*3]
-	                 + nSource[1]*ifo[n].sig.DetSSB[i*3+1]
+ 	                 + nSource[1]*ifo[n].sig.DetSSB[i*3+1]
 	                 + nSource[2]*ifo[n].sig.DetSSB[i*3+2];
-    
       ifo[n].sig.shftf[i] = ifo[n].sig.shft[i] - shft1;
       _tmp1[n][i] = aux->t2[i] + (double)(2*i)*ifo[n].sig.shft[i];
-
+    }
+    
+    for(i=0; i<sett->N; ++i) {
       // Phase modulation 
       phase = het0*i + sett->oms*ifo[n].sig.shft[i];
 #ifdef NOSINCOS
@@ -333,17 +329,17 @@ int job_core(int pm,                   // Hemisphere
     fftw_execute(plans->pl_int2); //forward fft (len nfft)
 
     // move frequencies from second half of spectrum; 
+    // and zero frequencies higher than nyquist
     // loop length: nfft - nyqst = nfft - nfft/2 - 1 = nfft/2 - 1
-    for(i=nyqst + sett->Ninterp - sett->nfft, j=nyqst; 
-        i<sett->Ninterp; ++i, ++j) {
+
+    for(i=nyqst + sett->Ninterp - sett->nfft, j=nyqst; i<sett->Ninterp; ++i, ++j) {
       fftw_arr->xa[i] = fftw_arr->xa[j];
-      fftw_arr->xb[i] = fftw_arr->xb[j];
+      fftw_arr->xa[j] = 0.;
     }
-	
-    //  zero frequencies higher than nyquist
-    for (i=nyqst; i<nyqst + sett->Ninterp - sett->nfft; ++i) {
-      fftw_arr->xa[i] = 0.;
-      fftw_arr->xb[i] = 0.;
+
+    for(i=nyqst + sett->Ninterp - sett->nfft, j=nyqst; i<sett->Ninterp; ++i, ++j) {
+      fftw_arr->xb[i] = fftw_arr->xb[j];
+      fftw_arr->xb[j] = 0.;
     }
 
     // Backward fft (len Ninterp = nfft*interpftpad)

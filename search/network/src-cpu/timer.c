@@ -1,5 +1,5 @@
 #define NANO_INV 1000000000L
-#include "time.h"
+#include "timer.h"
 
 struct timespec get_current_time() {
   struct timespec t;

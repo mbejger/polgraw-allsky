@@ -1,7 +1,7 @@
 #ifndef __TIMER_H__
 #define __TIMER_H__
 
-#include <sys/time.h>
+#include <time.h>
 
 struct timespec get_current_time();
 

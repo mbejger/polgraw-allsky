@@ -321,6 +321,11 @@ void init_arrays(
     ifo[i].sig.sig2 = (ifo[i].sig.crf0)*var(ifo[i].sig.xDat, sett->N);
 
     ifo[i].sig.DetSSB = (double *) calloc(3*sett->N, sizeof(double));
+    /* 
+    const size_t array_bytes = 3*sett->N*sizeof(double);
+    ifo[i].sig.DetSSB = NULL;
+    if ( posix_memalign((void**)&ifo[i].sig.DetSSB, 32, array_bytes) ) exit (1);
+    */
 
     // Ephemeris file handling
     char filename[512];
