@@ -445,7 +445,11 @@ void add_signal(
   //#mb For VSR1 reffr=67
  
   sgnlo[0] += -2.*sgnlo[1]*(sett->N)*(reffr - opts->ident); 
-  
+ 
+  // Check if the signal is in band 
+  if(sgnlo[0]<0) exit(171);          // &laquo;  
+  else if (sgnlo[0]>M_PI) exit(187); // &raquo;
+
   cof = sett->oms + sgnlo[0]; 
   
   for(i=0; i<2; i++) sgnlol[i] = sgnlo[i]; 
