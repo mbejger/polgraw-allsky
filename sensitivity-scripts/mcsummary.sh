@@ -20,7 +20,7 @@ for b in $(cat $1); do
         if [ -d "$diri" ]; then
 			cd $diri
 			find . -name "${diri}*.sum" -exec cat {} > ${diri}.summary \;
-			n[$i]=$(awk '$19>0.7*$20 {n++;} END {if(n) print n; else print 0}' ${diri}.summary)
+			n[$i]=$(awk '$20>=0.7*$19 {n++;} END {if(n) print n; else print 0}' ${diri}.summary)
 			cd ../
         fi
 

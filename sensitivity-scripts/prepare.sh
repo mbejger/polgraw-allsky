@@ -12,13 +12,14 @@ list_of_frames=${7}     # file with frame list
 lz4path=${8}            # archiver (coincidences) 
 ldlp=${9}               # yeppp library path 
 dt=${10}                # sampling time 
-howmany=${11}           # how many simulations
-gsize=${12}             # +- gsize around the grid
+thresh=${11}            # threshold for F-statistic (default: 20) 
+howmany=${12}           # how many simulations
+gsize=${13}             # +- gsize around the grid
 #--- Coincidences ------------------------------------------------------
-reffr=${13}             # the reference frame (coincidences)
-cell=${14}              # Cell size (coincidences) 
-snrcut=${15}            # Signal-to-noise cutoff 
-mincoin=${16}           # Minimal no. of coincidences to register 
+reffr=${14}             # the reference frame (coincidences)
+cell=${15}              # Cell size (coincidences) 
+snrcut=${16}            # Signal-to-noise cutoff 
+mincoin=${17}           # Minimal no. of coincidences to register 
 #-----------------------------------------------------------------------
 
 cp ${script_home}/script_manyframes.sh script.sh
@@ -31,7 +32,7 @@ next_band=$(printf "%03d\n" ${next_band})
 
 # replacements in script.sh 
 sed -i 's|BAND|'$band'|g;s|GSIZE|'$gsize'|g;s|REFFR|'$reffr'|g' script.sh
-sed -i 's|H0|'$h0'|g;s|CELL|'$cell'|g;s|DT|'$dt'|g' script.sh
+sed -i 's|H0|'$h0'|g;s|CELL|'$cell'|g;s|DT|'$dt'|g;s|THRESH|'$thresh'|g' script.sh
 sed -i 's|SNRCUT|'$snrcut'|g;s|MINCOIN|'$mincoin'|g' script.sh 
 sed -i 's|DATA|'$data'|g;s|LOF|'$list_of_frames'|g' script.sh
 #sed -i 's|NEXTB|'$next_band'|g;s|LONF|'$list_of_frames'/'$next_band'.d|g' script.sh
