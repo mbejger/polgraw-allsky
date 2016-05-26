@@ -339,6 +339,7 @@ void read_trigger_files(Search_settings *sett,
 	    
 	    idx = candi[i][6]; 
 	    
+        // if(!1) that is if(0) which means rows are different   
 	    if(!diff) {
 	      
 	      int k=i, kidx=idx; 
@@ -384,13 +385,17 @@ void read_trigger_files(Search_settings *sett,
 	      }
 	      
 	      
+	    // The candidate is not unique, selecting the one 
+        // with the highest SNR   
 	    } else {
 	      
 	      idx1 = candi[i+1][6];
 	      
 	      if(!maxsnridx) {  
-		maxsnridx = (candf[idx][4] > candf[idx1][4] ? idx : idx1); 
-		maxi = i; 
+		    maxsnridx = (candf[idx][4] > candf[idx1][4] ? idx : idx1); 
+		    //#pci maxi = i;
+            maxi = (candf[idx][4] > candf[idx1][4] ? i : i+1);
+
 		candsnr = candf[maxsnridx][4];    
 	      } else { 
 		if(candf[idx][4] > candsnr) {
@@ -496,7 +501,7 @@ void read_trigger_files(Search_settings *sett,
 
     for(l=0; l<5; l++) mean[l]=0; 
 
-    for(i=0; i<imtr[q][1]; i++) {   
+    for(i=0; i<w; i++) {   
       int l, k = j-i; 
       int f = allcandi[k][6]; 
  
