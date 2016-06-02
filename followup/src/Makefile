@@ -59,10 +59,10 @@ endif
 followup: followup.o settings.o auxi.o init.o 
 	$(CC) $(LDFLAGS) -fopenmp -o $@ $^ $(LOADLIBES)
 
-settings.o: $(SEARCH_DIR)/settings.c
+settings.o: settings.c
 	$(CC) $(CFLAGS) -c -o $@ $<
 
-init.o: $(SEARCH_DIR)/init.c  $(SEARCH_DIR)/settings.h $(SEARCH_DIR)/struct.h $(SEARCH_DIR)/init.h $(SEARCH_DIR)/auxi.h
+init.o: init.c  settings.h struct.h init.h $(SEARCH_DIR)/auxi.h
 	$(CC) $(CFLAGS) -c -o $@ $<
 
 auxi.o: $(SEARCH_DIR)/auxi.c $(SEARCH_DIR)/auxi.h
