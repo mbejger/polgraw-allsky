@@ -15,6 +15,11 @@ Ver. 5.0
 Function neigh moved to followup.c
 All vectors/arrays declarated using yeppp! library 
  = FASTER!
+Ver 6.0
+-followup uses new, dedicated init.h, settings.c, settings.h, init.c, init.h
+-glue function fixed and added to init.c
+-switches for mads, simplex and glue added
+-addsig added
 
 MS
 */
@@ -65,10 +70,10 @@ MS
 #define DTAPREFIX .
 #endif
 
-#define ZEPS 1e-5
+#define ZEPS 1e-4
 
 //Function neigh takes candidate parameters and number of bins (as arguments) and creates grid around it.
-double** neigh(double s1, double s2, int bins, double perc){ 
+Yep64f** neigh(double s1, double s2, int bins, double perc1, double perc2){ 
 //	double **arr;
 	int rows, cols = 2;
 	rows = (bins+1)*(bins+1);
@@ -76,23 +81,23 @@ double** neigh(double s1, double s2, int bins, double perc){
 // Allocation of memory for martix
 //  	arr = (double **)malloc(rows*sizeof(double *));
 //  	for (k=0; k < rows; k++) arr[k] = (double *)calloc(cols, sizeof(double));
-//#ifdef YEPPP
-//    yepLibrary_Init();
-	double **arr = (double**)malloc(rows*sizeof(double));
-	for (k=0; k < rows; k++) arr[k] = (double*)calloc(rows,sizeof(double));
-//    enum YepStatus status;
+#ifdef YEPPP
+    yepLibrary_Init();
+	Yep64f **arr = (Yep64f**)malloc(rows*sizeof(Yep64f));
+	for (k=0; k < rows; k++) arr[k] = (Yep64f*)calloc(rows,sizeof(Yep64f));
+    enum YepStatus status;
 
-//#endif
+#endif
 	double beg1, beg2;
 	double width1, width2;
 	double m1, m2;
 	int i1, i2, i;
-	beg1 = s1 - (s1*perc);
-	width1 = 2*perc*s1/bins;
-	width2 = 2*perc*s2/bins;
+	beg1 = s1 - (s1*perc1);
+	width1 = 2*perc1*s1/bins;
+	width2 = 2*perc2*s2/bins;
 	i = 0;
 	for(i1 = 0; i1 < (bins + 1); i1++){
-		beg2 = s2 - (s2*perc);
+		beg2 = s2 - (s2*perc2);
 		for(i2 = 0; i2 < (bins + 1); i2++, i++){
 			arr[i][0] = beg1;
 			arr[i][1] = beg2;
@@ -116,7 +121,7 @@ double** matrix(int rows, int cols) {
   
   	return m;
 }
-	
+
 // Allocation of memory for vector and martix with given number of rows and columns
 double * alloc_vector(int cols){
 	return (double *) malloc(sizeof(double) * cols);
@@ -138,14 +143,14 @@ void free_matrix(double ** matrix, int rows, int cols){
 }
 
 // Fstat function declaration
-double* Fstatnet(Search_settings *sett, Command_line_opts *opts, Aux_arrays *aux, double *F, double *sgnlo, double *nSource){
+Yep64f* Fstatnet(Search_settings *sett, Command_line_opts *opts, Aux_arrays *aux, double *F, Yep64f *sgnlo, Yep64f *nSource){
 
 	double xa_real = 0., xa_imag = 0., xb_real = 0., xb_imag = 0., xasum_real = 0., xasum_imag = 0., xbsum_real = 0., xbsum_imag = 0.;
 	double shft1, cosPH, sinPH;//, phase[sett->N];
   	double sinalt, cosalt, sindelt, cosdelt;
 	int i = 0, n = 0; 
 //	double *fstat_out  = alloc_vector(10);
-	static double fstat_out[10]; //output
+//	static double fstat_out[10]; //output
 //    	static double _sph[861641]; //603149
 //    	static double _cph[861641];
 	double aa = 0., bb = 0., aaa = 0., bbb = 0.;
@@ -159,7 +164,7 @@ double* Fstatnet(Search_settings *sett, Command_line_opts *opts, Aux_arrays *aux
     Yep64f *_sph = (Yep64f*)malloc(sizeof(Yep64f)*VLEN);
     Yep64f *_cph = (Yep64f*)malloc(sizeof(Yep64f)*VLEN);
     Yep64f *phase = (Yep64f*)malloc(sizeof(Yep64f)*VLEN); 
-//    Yep64f *fstat_out = (Yep64f*)malloc(sizeof(Yep64f)*10); 
+    Yep64f *fstat_out = (Yep64f*)malloc(sizeof(Yep64f)*10); 
     enum YepStatus status;
 
 #endif
@@ -250,17 +255,23 @@ double* Fstatnet(Search_settings *sett, Command_line_opts *opts, Aux_arrays *aux
 
 //mesh adaptive direct search (MADS) maximum search declaration
 //double
-double* MADS(Search_settings *sett, Command_line_opts *opts, Aux_arrays *aux, double *F, double* in, double *start, double delta, double pc, int bins){
-	double p[4];
-	static double out[10]; 		//output
-	int i, j, k, l, m, n, o, a = 0;
+Yep64f* MADS(Search_settings *sett, Command_line_opts *opts, Aux_arrays *aux, double *F, double* in, double *start, double delta, double *pc, int bins){
+//	double p[4];
+//	static double out[10]; 		//output
+	int i, j, k, l, m, n, o, r, a = 0;
   	double sinalt, cosalt, sindelt, cosdelt;
-	double nSource[3];
-	double *res;
-	double extr[10];
-	double param; 			//initial size of mesh
-	param = pc/bins;
-/*#ifdef YEPPP
+//	double nSource[3];
+//	double *res;
+//	double extr[10];
+	double param[4]; 			//initial size of mesh
+	double smallest = 100;
+	for(r = 0; r < 4;r++){
+		param[r] = pc[r]/bins;
+	}
+	for(r = 0; r < 4; r++){
+		if(param[r] < smallest) smallest = param[r];
+	}
+#ifdef YEPPP
     yepLibrary_Init();
     Yep64f *p = (Yep64f*)malloc(sizeof(Yep64f)*4);
     Yep64f *out = (Yep64f*)malloc(sizeof(Yep64f)*10);
@@ -270,24 +281,23 @@ double* MADS(Search_settings *sett, Command_line_opts *opts, Aux_arrays *aux, do
     enum YepStatus status;
 
 #endif
-*/
 //	puts("MADS");
 
 //	for(i = 0; i < 4; i++) p[i] = in[6+i];
 	for(i = 0; i < 10; i++) extr[i] = in[i];
-	while(param >= delta){  	//when to end computations
+	while(smallest >= delta){  	//when to end computations
 		k = 0;
 		for(j = 0; j < 8; j++){
 			for(i = 0; i < 4; i++) p[i] = in[6+i];
 			if(j < 4){
 //				p[k] = in[6+k] + param*in[6+k];
-				p[k] = in[6+k] - start[k]*(param - delta);
+				p[k] = in[6+k] - start[k]*(param[k] - delta);
 				k++;
 			}
 			else { 
 				k--;
 //				p[k] = in[6+k] - param*in[6+k];
-				p[k] = in[6+k] + start[k]*(param - delta);
+				p[k] = in[6+k] + start[k]*(param[k] - delta);
 			}
 			sinalt = sin(p[3]);
 			cosalt = cos(p[3]);
@@ -312,7 +322,10 @@ double* MADS(Search_settings *sett, Command_line_opts *opts, Aux_arrays *aux, do
 
 		}
 		if (extr[5] == in[5]){
-			param = param - delta;
+			smallest = smallest - delta;
+			for(r = 0; r < 4; r++){
+				param[r] = param[r] - delta;
+			}
 		}
 		else{
 			for(m = 0; m < 4; m++) p[m] = extr[6+m];
@@ -327,7 +340,7 @@ double* MADS(Search_settings *sett, Command_line_opts *opts, Aux_arrays *aux, do
 
 // Few functions for Nelder-Mead (simplex) algorithm  
 
-double ** make_simplex(double * point, int dim, double pc){
+double ** make_simplex(double * point, int dim, double *pc){
 	int i, j;
 	double ** simplex = alloc_matrix(dim + 1, dim);
 	for (i = 0; i < dim + 1; i++){
@@ -338,7 +351,7 @@ double ** make_simplex(double * point, int dim, double pc){
 	for (i = 0; i < dim; i++){
 //		simplex[i][i] += 1.0;
 //		simplex[i][i] = 1.09*simplex[i][i]; 
-		simplex[i][i] = (1 + pc - ZEPS)*simplex[i][i];
+		simplex[i][i] = (1 + pc[i] - ZEPS)*simplex[i][i];
 	}
 //for(i = 0; i < dim+1; i++) printf("%.16lf %.16le %.16le %.16le\n", simplex[i][0], simplex[i][1], simplex[i][2], simplex[i][3]);
 	return simplex;
@@ -485,7 +498,7 @@ int check_tol(double fmax, double fmin, double ftol){
 	return (delta < (accuracy + ZEPS));
 }
 
-double * amoeba(Search_settings *sett, Command_line_opts *opts, Aux_arrays *aux, double *F, double *point, double *nSource, double *res_max, int dim, double tol, double pc){
+double * amoeba(Search_settings *sett, Command_line_opts *opts, Aux_arrays *aux, double *F, double *point, double *nSource, double *res_max, int dim, double tol, double *pc){
 	int ihi, ilo, inhi;
 // ihi = ih[0], ilo = ih[1], inhi = ih[2];
 	int *ih;
@@ -549,6 +562,7 @@ double * amoeba(Search_settings *sett, Command_line_opts *opts, Aux_arrays *aux,
 
 // Main programm
 int main (int argc, char *argv[]) {
+
 	Search_settings sett;	
 	Command_line_opts opts;
   	Search_range s_range; 
@@ -557,22 +571,22 @@ int main (int argc, char *argv[]) {
   	double *F; 			// F-statistic array
   	int i, j, r, c, a, b, g; 	// myrank, num_threads; 
 	int d, o, m, k;
-	int bins = 64, ROW, dim = 4;		// neighbourhood of point will be divide into defined number of bins
-	double pc = 0.15;		// % define neighbourhood around each parameter
+	int bins = 8, ROW, dim = 4;		// neighbourhood of point will be divide into defined number of bins
+	double pc[4];			// % define neighbourhood around each parameter
 //	double delta = 1e-5;		// initial step in MADS function
-	double *results;		// Vector with results from Fstatnet function
-	double *maximum;		// True maximum of Fstat
-	double results_max[10];	
-	double results_first[10];	  
+//	double *results;		// Vector with results from Fstatnet function
+//	double *maximum;		// True maximum of Fstat
+//	double results_max[10];	
+//	double results_first[10];	  
 	double s1, s2, s3, s4;
-	double sgnlo[4]; 		//  arr[ROW][COL], arrg[ROW][COL]; 
-	double **arr, **arrg;
-	double nSource[3];
+//	double sgnlo[4]; 		//  arr[ROW][COL], arrg[ROW][COL]; 
+//	double **arr, **arrg;
+//	double nSource[3];
   	double sinalt, cosalt, sindelt, cosdelt;
 	double F_min;
 	char path[512];
 	ROW = (bins+1)*(bins+1);
-/*
+
 #ifdef YEPPP
     yepLibrary_Init();
     Yep64f *results_max = (Yep64f*)malloc(sizeof(Yep64f)*10); 
@@ -581,32 +595,56 @@ int main (int argc, char *argv[]) {
     Yep64f *maximum = (Yep64f*)malloc(sizeof(Yep64f)*10);
     Yep64f *sgnlo = (Yep64f*)malloc(sizeof(Yep64f)*4);  
     Yep64f *nSource = (Yep64f*)malloc(sizeof(Yep64f)*3); 
-    Yep64f *mean = (Yep64f*)malloc(sizeof(Yep64f)*4); 
+    Yep64f *mean = (Yep64f*)malloc(sizeof(Yep64f)*5); 
 
     enum YepStatus status;
 
 #endif
-*/
+
+	pc[0] = 0.005;
+	pc[1] = 0.2;
+	pc[2] = 0.01;
+	pc[3] = 0.1;
 // Time tests
 	double tdiff;
 	clock_t tstart, tend;
 
 // Command line options 
-	handle_opts(&sett, &opts, argc, argv);  
-	sprintf(path, "%s/candidates_inj.coi", opts.dtaprefix);
+	handle_opts(&sett, &opts, argc, argv); 
+  // Output data handling
+
+
+/*  struct stat buffer;
+
+  if (stat(opts.prefix, &buffer) == -1) {
+    if (errno == ENOENT) {
+      // Output directory apparently does not exist, try to create one
+      if(mkdir(opts.prefix, S_IRWXU | S_IRGRP | S_IXGRP 
+          | S_IROTH	| S_IXOTH) == -1) {
+	      perror (opts.prefix);
+	      return 1;
+      }
+    } else { // can't access output directory
+      perror (opts.prefix);
+      return 1;
+    }
+  }
+*/
+	sprintf(path, "%s/candidates.coi", opts.dtaprefix);
 
 //Glue function
-//	glue(opts.prefix, opts.dtaprefix, opts.label, nod);
+if(strlen(opts.glue)) {
+	glue(&opts);
 
-//	sprintf(opts.dtaprefix, "./data_total");
-//	sprintf(opts.dtaprefix, "%s/followup_total_data", opts.prefix); 
-//	opts.ident = 000;
-	
+	sprintf(opts.dtaprefix, "./data_total");
+	sprintf(opts.dtaprefix, "%s/followup_total_data", opts.prefix); 
+	opts.ident = 000;
+}	
 	FILE *coi;
 	int z;
 //	int ops[256]; 
 //    	unsigned short int w, fra[256];
-	double mean[4];
+//	double mean[4];
 	if ((coi = fopen(path, "r")) != NULL) {
 //		while(!feof(coi)) {
 
@@ -617,20 +655,20 @@ int main (int argc, char *argv[]) {
 
 			if((fread(&mean, sizeof(float), 4, coi)) == 4){
 */
-			while(fscanf(coi, "%le %le %le %le", &mean[0], &mean[1], &mean[2], &mean[3]) == 4){
+			while(fscanf(coi, "%le %le %le %le %le", &mean[0], &mean[1], &mean[2], &mean[3], &mean[4]) == 5){
 //Time test
 //			tstart = clock();
-				arr = matrix(ROW, 2);
-				arrg = matrix(ROW, 2);
-/*
+//				arr = matrix(ROW, 2);
+//				arrg = matrix(ROW, 2);
+
 				Yep64f **arr = (Yep64f**)malloc(ROW*sizeof(Yep64f));
 				for (k=0; k < ROW; k++) arr[k] = (Yep64f*)calloc(ROW,sizeof(Yep64f));
 				Yep64f **arrg = (Yep64f**)malloc(ROW*sizeof(Yep64f));
 				for (k=0; k < ROW; k++) arrg[k] = (Yep64f*)calloc(ROW,sizeof(Yep64f));
-*/
+
 //Function neighbourhood - generating grid around point
-				arr = neigh(mean[0], mean[1], bins, pc);
-				arrg = neigh(mean[2], mean[3], bins, pc);
+				arr = neigh(mean[0], mean[1], bins, pc[0], pc[1]);
+				arrg = neigh(mean[2], mean[3], bins, pc[2], pc[3]);
 // Output data handling
 /*  				struct stat buffer;
 
@@ -649,26 +687,38 @@ int main (int argc, char *argv[]) {
 			    		}
   				}
 */
+  if(strlen(opts.addsig)) { 
+// Grid data
+				read_grid(&sett, &opts);
+}
 // Search settings
   				search_settings(&sett); 
 // Detector network settings
   				detectors_settings(&sett, &opts); 
 // Array initialization
   				init_arrays(&sett, &opts, &aux_arr, &F);
-
 // Amplitude modulation functions for each detector  
 				for(i=0; i<sett.nifo; i++) rogcvir(&ifo[i]); 
+  // Grid search range
+  if(strlen(opts.addsig)) { 
+    // If addsig switch used, add signal from file, 
+    // search around this position (+- gsize)
+    add_signal(&sett, &opts, &aux_arr, &s_range);
+  }
+//    exit(0); 
+//  } else 
+    // Set search range from range file  
+//    set_search_range(&sett, &opts, &s_range);
 
 // Setting number of using threads (not required)
-//omp_set_num_threads(32);
+//omp_set_num_threads(2);
 
 				results_max[5] = 0.;
 
 // F - statistic with parallelisation 
-#pragma omp parallel private(d, sinalt, cosalt, sindelt, cosdelt, m, o, sgnlo, nSource, results) shared(results_max)
+//#pragma omp parallel private(d, sinalt, cosalt, sindelt, cosdelt, m, o, sgnlo, nSource, results) shared(results_max)
 {
-#pragma omp for 
-
+//#pragma omp for 
 				for (d = 0; d < ROW; ++d){
 
 					sgnlo[2] = arrg[d][0];
@@ -692,7 +742,7 @@ int main (int argc, char *argv[]) {
 						sgnlo[1] = arr[m][1];
 						results = Fstatnet(&sett, &opts, &aux_arr, F, sgnlo, nSource);
 
-						printf("%.16lf %.16le %.16le %.16le %.16le\n", -results[5], results[6], results[7], results[8], results[9]);
+//						printf("%.16lf %.16le %.16le %.16le %.16le %.16le\n", -results[5], results[6], results[7], results[8], results[9], results[4]);
 
 // Maximum value in points searching
 						if(results[5] < results_max[5]){
@@ -705,20 +755,25 @@ int main (int argc, char *argv[]) {
 				}
 }
 				for(g = 0; g < 10; g++) results_first[g] = results_max[g];
+
 // Maximum search using MADS algorithm
-//				for(g = 0; g < 4; g++) sgnlo[g] = results_max[6+g];
-//				tstart = clock();
+  if(opts.mads_flag) {
+				puts("MADS");
 				maximum = MADS(&sett, &opts, &aux_arr, F, results_max, mean, ZEPS, pc, bins);
+}
 
 // Maximum search using simplex algorithm
-//				maximum = amoeba(&sett, &opts, &aux_arr, F, sgnlo, nSource, results_max, dim, ZEPS, pc);
+if(opts.simplex_flag){
+				for(g = 0; g < 4; g++) sgnlo[g] = results_max[6+g];
+				puts("Simplex");
+				maximum = amoeba(&sett, &opts, &aux_arr, F, sgnlo, nSource, results_max, dim, ZEPS, pc);
 
-
+}
 //Time test
-/*				tend = clock();
-				tdiff = (tend - tstart)/(double)CLOCKS_PER_SEC;
-				printf("%le\n",tdiff);
-*/
+//				tend = clock();
+//				tdiff = (tend - tstart)/(double)CLOCKS_PER_SEC;
+//				printf("%d %le %lf %le %le %le %le\n", bins, tdiff, -maximum[5], maximum[6], maximum[7], maximum[8], maximum[9]);
+
 
 
 			}
@@ -737,12 +792,13 @@ int main (int argc, char *argv[]) {
 	printf("Amplitudes: %.16le %.16le %.16le %.16le\n", results_first[0], results_first[1], results_first[2], results_first[3]);
 	printf("Signal-to-noise ratio: %.16le\n", results_first[4]); 
 	puts("**********************************************************************");
+if((opts.mads_flag)||(opts.simplex_flag)){
 	printf("***	True maximum is : (-)%.16le				***\n", -maximum[5]);
 	printf("Sgnlo for true maximum: %.16le %.16le %.16le %.16le\n", maximum[6], maximum[7], maximum[8], maximum[9]);
 	printf("Amplitudes for true maximum: %.16le %.16le %.16le %.16le\n", maximum[0], maximum[1], maximum[2], maximum[3]);
 	printf("Signal-to-noise ratio for true maximum: %.16le\n", maximum[4]); 
 	puts("**********************************************************************");
-
+}
 // Cleanup & memory free 
 //  	cleanup(&sett, &opts, &aux_arr, F);
 	
@@ -764,4 +820,9 @@ int main (int argc, char *argv[]) {
 //time LD_LIBRARY_PATH=/home/msieniawska/tests/bin_test/1/polgraw-allsky/search/network/src-cpu/lib/yeppp-1.0.0/binaries/linux/x86_64/ ./followup -data /home/msieniawska/tests/bin_test/data -output /home/msieniawska/tests/bin_test/output1 -fpo 124.9453125 -label 103_10 -fpo 103.0 -dt 2.0>& out1.txt
 //
 //time LD_LIBRARY_PATH=/home/msieniawska/tests/gluetest/polgraw-allsky/search/network/src-cpu/lib/yeppp-1.0.0/binaries/linux/x86_64/ ./followup -data /home/msieniawska/tests/gluetest/d1/followup_total_data -output /home/msieniawska/tests/gluetest/output1 -fpo 124.9453125 -label 103_10 -ident 000 -dt 2.0
+
+//time LD_LIBRARY_PATH=/home/msieniawska/tests/addsig/polgraw-allsky/search/network/src-cpu/lib/yeppp-1.0.0/binaries/linux/x86_64 ./followup -data /home/msieniawska/tests/addsig/data -output . -ident 001 -band 0666 -dt 2 -addsig sigfile001 --nocheckpoint
+//time LD_LIBRARY_PATH=/home/msieniawska/tests/addsig/polgraw-allsky/search/network/src-cpu/lib/yeppp-1.0.0/binaries/linux/x86_64 ./followup -data /home/msieniawska/tests/addsig/data -output . -ident 001 -band 0666 -dt 2 -addsig /home/msieniawska/tests/addsig/data/sigfile001 --nocheckpoint
+
+//time LD_LIBRARY_PATH=/home/msieniawska/tests/addsig/polgraw-allsky/search/network/src-cpu/lib/yeppp-1.0.0/binaries/linux/x86_64 ./gwsearch-cpu -data /home/msieniawska/tests/addsig/data -output . -ident 031 -band 0666 -dt 2 -addsig /home/msieniawska/tests/addsig/data/sig1 --nocheckpoint >searchtest.txt
 
