@@ -42,6 +42,7 @@ void handle_opts( Search_settings *sett,
   opts->label[0]    = '\0';
   opts->range[0]    = '\0';
   opts->getrange[0] = '\0';
+  opts->usedet[0]   = '\0';
   opts->addsig[0]   = '\0';
 	
   // Initial value of starting frequency set to a negative quantity. 
@@ -94,6 +95,8 @@ void handle_opts( Search_settings *sett,
       {"fpo", required_argument, 0, 'p'},
       // add signal parameters
       {"addsig", required_argument, 0, 'x'},
+      // which detectors to use
+      {"usedet", required_argument, 0, 'u'}, 
       // data sampling time 
       {"dt", required_argument, 0, 's'},
       {0, 0, 0, 0}
@@ -115,7 +118,8 @@ void handle_opts( Search_settings *sett,
       printf("-t, -threshold    Threshold for the F-statistic (default is 20)\n");
       printf("-h, -hemisphere   Hemisphere (default is 0 - does both)\n");
       printf("-p, -fpo          Reference band frequency fpo value\n");
-      printf("-s, -dt           Data sampling time dt (default value: 0.5)\n");
+      printf("-s, -dt           data sampling time dt (default value: 0.5)\n");
+      printf("-u, -usedet       Use only detectors from string (default is use all available)\n");
       printf("-x, -addsig       Add signal with parameters from <file>\n\n");
 
       printf("Also:\n\n");
@@ -129,7 +133,7 @@ void handle_opts( Search_settings *sett,
     }
 
     int option_index = 0;
-    int c = getopt_long_only(argc, argv, "i:b:o:d:l:r:g:c:t:h:p:x:s:", 
+    int c = getopt_long_only(argc, argv, "i:b:o:d:l:r:g:c:t:h:p:x:s:u:", 
 			     long_options, &option_index);
     if (c == -1)
       break;
@@ -176,6 +180,11 @@ void handle_opts( Search_settings *sett,
     case 's':
       sett->dt = atof(optarg);
       break;
+    case 'u':
+      strcpy(opts->usedet, optarg);
+      break;
+
+
     case '?':
       break;
     default:

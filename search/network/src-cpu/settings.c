@@ -101,10 +101,15 @@ void detectors_settings(
   if (dp != NULL) {
     while ((ep = readdir (dp))) { 
 
-      // Subdirectory names: 2 char long
+      // Subdirectory names checkup: 
+      // check if it's a dir
+      // name is 2 char long
+      // not a directory name of the type "./" or ".."
+      // if usedef is not set (length equal 0), or is set and dir name is substring of it 
       if((ep->d_type == DT_DIR) && 
         (strlen(ep->d_name)==DETNAME_LENGTH) && 
-        strncmp(&ep->d_name[0],".",1)) { 
+        (strncmp(&ep->d_name[0],".",1)) && 
+        (!strlen(opts->usedet) || (strlen(opts->usedet) && (strstr(opts->usedet, ep->d_name))))) { 
 
           FILE *data;
 
