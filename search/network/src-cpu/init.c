@@ -264,10 +264,20 @@ void read_grid(
 
   FILE *data;
   char filename[512];
-  sprintf (filename, "%s/%03d/grid.bin", opts->dtaprefix, opts->ident);
-  if ((data=fopen (filename, "r")) != NULL) {
-    fread ((void *)&sett->fftpad, sizeof (int), 1, data);
 
+  // In case when -usedet option is used for one detector
+  // i.e. opts->usedet has a length of 2 (e.g. H1 or V1), 
+  // read grid.bin from this detector subdirectory 
+  // (see detectors_settings() in settings.c for details) 
+  if(strlen(opts->usedet)==2)
+    sprintf (filename, "%s/%03d/%s/grid.bin", opts->dtaprefix, opts->ident, opts->usedet);
+  else 
+    sprintf (filename, "%s/%03d/grid.bin", opts->dtaprefix, opts->ident);
+
+
+  if ((data=fopen (filename, "r")) != NULL) {
+    printf("Using grid file from %s\n", filename);
+    fread ((void *)&sett->fftpad, sizeof (int), 1, data);
     printf("Using fftpad from the grid file: %d\n", sett->fftpad); 
 	
     // M: vector of 16 components consisting of 4 rows
