@@ -307,10 +307,8 @@ int job_core(int pm,                   // Hemisphere
       exph = cp - I*sp;
 
       // Matched filter 
-      ifo[n].sig.xDatma[i] = 
-        ifo[n].sig.xDat[i]*ifo[n].sig.aa[i]*exph;
-      ifo[n].sig.xDatmb[i] = 
-        ifo[n].sig.xDat[i]*ifo[n].sig.bb[i]*exph;
+      ifo[n].sig.xDatma[i] = ifo[n].sig.xDat[i]*ifo[n].sig.aa[i]*exph;
+      ifo[n].sig.xDatmb[i] = ifo[n].sig.xDat[i]*ifo[n].sig.bb[i]*exph;
   
     }
 
@@ -330,8 +328,8 @@ int job_core(int pm,                   // Hemisphere
       fftw_arr->xb[i] = 0.;
     }
 
-    fftw_execute(plans->pl_int);  //forward fft (len nfft)
-    fftw_execute(plans->pl_int2); //forward fft (len nfft)
+    fftw_execute_dft(plans->pl_int, fftw_arr->xa, fftw_arr->xa);  //forward fft (len nfft)
+    fftw_execute_dft(plans->pl_int, fftw_arr->xb, fftw_arr->xb);  //forward fft (len nfft)
 
     // move frequencies from second half of spectrum; 
     // and zero frequencies higher than nyquist
@@ -348,8 +346,8 @@ int job_core(int pm,                   // Hemisphere
     }
 
     // Backward fft (len Ninterp = nfft*interpftpad)
-    fftw_execute (plans->pl_inv);     
-    fftw_execute (plans->pl_inv2); 
+    fftw_execute_dft(plans->pl_inv, fftw_arr->xa, fftw_arr->xa);
+    fftw_execute_dft(plans->pl_inv, fftw_arr->xb, fftw_arr->xb);
 
     ft = (double)sett->interpftpad / sett->Ninterp; //scale FFT
     for (i=0; i < sett->Ninterp; ++i) {
@@ -361,9 +359,9 @@ int job_core(int pm,                   // Hemisphere
 
     // Spline interpolation to xDatma, xDatmb arrays
     splintpad(fftw_arr->xa, ifo[n].sig.shftf, sett->N, 
-      sett->interpftpad, ifo[n].sig.xDatma);   
+	      sett->interpftpad, ifo[n].sig.xDatma);   
     splintpad(fftw_arr->xb, ifo[n].sig.shftf, sett->N, 
-      sett->interpftpad, ifo[n].sig.xDatmb);
+	      sett->interpftpad, ifo[n].sig.xDatmb);
 
   } // end of detector loop 
 
@@ -608,8 +606,8 @@ int job_core(int pm,                   // Hemisphere
     for(i = sett->fftpad*sett->nfft-1; i != sett->N-1; --i)
       fftw_arr->xa[i] = fftw_arr->xb[i] = 0.; 
     
-    fftw_execute (plans->plan);
-    fftw_execute (plans->plan2);
+    fftw_execute_dft(plans->plan, fftw_arr->xa, fftw_arr->xa);
+    fftw_execute_dft(plans->plan, fftw_arr->xb, fftw_arr->xb);
     
     (*FNum)++;
     
