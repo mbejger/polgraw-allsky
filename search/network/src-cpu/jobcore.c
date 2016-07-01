@@ -21,9 +21,9 @@
 //#include "sleef-2.80/purec/sleef.h"
 #include <sleefsimd.h>
 #elif defined(YEPPP)
-#include <yepLibrary.h>
-#include <yepCore.h>
 #include <yepMath.h>
+#include <yepLibrary.h>
+//#include <yepCore.h>
 #endif
 
 
@@ -68,8 +68,13 @@ void search(
   int fd, status;
   FILE *state;
 
+#ifdef YEPPP
+  status = yepLibrary_Init();
+  assert(status == YepStatusOk);
+#endif
+
 #ifdef TIMERS
-  struct timespec tstart = get_current_time(), tend;
+  struct timespec tstart = get_current_time(CLOCK_REALTIME), tend;
 #endif
   
   // Allocate buffer for triggers
@@ -170,7 +175,7 @@ void search(
   free(sgnlv);
 
 #ifdef TIMERS
-  tend = get_current_time();
+  tend = get_current_time(CLOCK_REALTIME);
   // printf("tstart = %d . %d\ntend = %d . %d\n", tstart.tv_sec, tstart.tv_usec, tend.tv_sec, tend.tv_usec);
   double time_elapsed = get_time_difference(tstart, tend);
   printf("Time elapsed: %e s\n", time_elapsed);
@@ -388,8 +393,6 @@ int job_core(int pm,                   // Hemisphere
 
 #ifdef YEPPP
 #define VLEN 2048
-    yepLibrary_Init();
-    //printf("npoints=%d, size=%d\n", Npoints, Npoints*sizeof(Yep64f));
     Yep64f _p[VLEN];
     Yep64f _s[VLEN];
     Yep64f _c[VLEN];
@@ -415,45 +418,122 @@ int job_core(int pm,                   // Hemisphere
 
   printf ("\n>>%d\t%d\t%d\t[%d..%d]\n", *FNum, mm, nn, smin, smax);
 
+  //#mb !!! Limits put by hand for RDC_O1 !!!  
+  smin = trunc(-(nn*sett->M[9] + mm*sett->M[13] - 1.2566e-8)/sett->M[5]);
+  smax = trunc(-(nn*sett->M[9] + mm*sett->M[13] + 1.2566e-7)/sett->M[5]);
+  
   // No-spindown calculations
   if(opts->s0_flag) smin = smax;
   // if spindown parameter is taken into account, smin != smax
+
+  /* Spindown loop  */
+
   for(ss=smin; ss<=smax; ++ss) {
 
 #if TIMERS>2
-    tstart = get_current_time();
+    tstart = get_current_time(CLOCK_PROCESS_CPUTIME_ID);
 #endif 
 
     // Spindown parameter
     sgnlt[1] = (opts->s0_flag ? 0. : ss*sett->M[5] + nn*sett->M[9] + mm*sett->M[13]);
     
-    // Spindown range
-    //#mb !!! Limits put by hand for RDC_O1 !!!
-    if(sgnlt[1] >= -1.2566e-7 && sgnlt[1] <= 1.2566e-8) { 
-      //    if(sgnlt[1] >= -sett->Smax && sgnlt[1] <= 0) { 
-
-      int ii;
-      double Fc, het1;
+    int ii;
+    double Fc, het1;
       
 #ifdef VERBOSE
-      //print a 'dot' every new spindown
-      printf ("."); fflush (stdout);
+    //print a 'dot' every new spindown
+    printf ("."); fflush (stdout);
 #endif 
       
-      het1 = fmod(ss*sett->M[4], sett->M[0]);
-      if(het1<0) het1 += sett->M[0];
+    het1 = fmod(ss*sett->M[4], sett->M[0]);
+    if(het1<0) het1 += sett->M[0];
 
-      sgnl0 = het0 + het1;
+    sgnl0 = het0 + het1;
 
-      // phase modulation before fft
+    // phase modulation before fft
 
+#if defined(SLEEF)
+    // use simd sincos from the SLEEF library;
+    // VECTLENDP is a simd vector length defined in the SLEEF library
+    // and it depends on selected instruction set e.g. -DENABLE_AVX
+    for (i=0; i<sett->N; i+=VECTLENDP) {
+      for(j=0; j<VECTLENDP; j++)
+	_p[j] =  het1*(i+j) + sgnlt[1]*_tmp1[0][i+j];
+      
+      a = vloadu(_p);
+      v = xsincos(a);
+      vstoreu(_p, v.x); // reuse _p for sin
+      vstoreu(_c, v.y);
+      
+      for(j=0; j<VECTLENDP; ++j){
+	exph = _c[j] - I*_p[j];
+	fftw_arr->xa[i+j] = ifo[0].sig.xDatma[i+j]*exph; ///ifo[0].sig.sig2;
+	fftw_arr->xb[i+j] = ifo[0].sig.xDatmb[i+j]*exph; ///ifo[0].sig.sig2;
+      }
+    } 
+#elif defined(YEPPP)
+    // use yeppp! library;
+    // VLEN is length of vector to be processed
+    // for caches L1/L2 64/256kb optimal value is ~2048
+    for (j=0; j<bnd; j+=VLEN) {
+      for (i=0; i<VLEN; ++i)
+	_p[i] =  het1*(i+j) + sgnlt[1]*_tmp1[0][i+j];
+      
+      status = yepMath_Sin_V64f_V64f(_p, _s, VLEN);
+      assert(status == YepStatusOk);
+      status = yepMath_Cos_V64f_V64f(_p, _c, VLEN);
+      assert(status == YepStatusOk);
+	
+      for (i=0; i<VLEN; ++i) {
+	exph = _c[i] - I*_s[i];
+	fftw_arr->xa[i+j] = ifo[0].sig.xDatma[i+j]*exph; ///ifo[0].sig.sig2;
+	fftw_arr->xb[i+j] = ifo[0].sig.xDatmb[i+j]*exph; ///ifo[0].sig.sig2;
+      }
+    }
+    // remaining part is shorter than VLEN - no need to vectorize
+    for (i=0; i<sett->N-bnd; ++i){
+      j = bnd + i;
+      _p[i] =  het1*j + sgnlt[1]*_tmp1[0][j];
+    }
+    
+    status = yepMath_Sin_V64f_V64f(_p, _s, sett->N-bnd);
+    assert(status == YepStatusOk);
+    status = yepMath_Cos_V64f_V64f(_p, _c, sett->N-bnd);
+    assert(status == YepStatusOk);
+    
+    for (i=0; i<sett->N-bnd; ++i) {
+      j = bnd + i;
+      exph = _c[i] - I*_s[i];
+      fftw_arr->xa[j] = ifo[0].sig.xDatma[j]*exph; ///ifo[0].sig.sig2;
+      fftw_arr->xb[j] = ifo[0].sig.xDatmb[j]*exph; ///ifo[0].sig.sig2;
+    }
+#elif defined(GNUSINCOS)
+    for(i=sett->N-1; i!=-1; --i) {
+      phase = het1*i + sgnlt[1]*_tmp1[0][i];
+      sincos(phase, &sp, &cp);
+      exph = cp - I*sp;
+      fftw_arr->xa[i] = ifo[0].sig.xDatma[i]*exph; ///ifo[0].sig.sig2;
+      fftw_arr->xb[i] = ifo[0].sig.xDatmb[i]*exph; ///ifo[0].sig.sig2;
+    }
+#else
+    for(i=sett->N-1; i!=-1; --i) {
+      phase = het1*i + sgnlt[1]*_tmp1[0][i];
+      cp = cos(phase);
+      sp = sin(phase);
+      exph = cp - I*sp;
+      fftw_arr->xa[i] = ifo[0].sig.xDatma[i]*exph; ///ifo[0].sig.sig2;
+      fftw_arr->xb[i] = ifo[0].sig.xDatmb[i]*exph; ///ifo[0].sig.sig2;
+    }
+#endif
+    
+    for(n=1; n<sett->nifo; ++n) {
 #if defined(SLEEF)
       // use simd sincos from the SLEEF library;
       // VECTLENDP is a simd vector length defined in the SLEEF library
       // and it depends on selected instruction set e.g. -DENABLE_AVX
       for (i=0; i<sett->N; i+=VECTLENDP) {
 	for(j=0; j<VECTLENDP; j++)
-	  _p[j] =  het1*(i+j) + sgnlt[1]*_tmp1[0][i+j];
+	  _p[j] =  het1*(i+j) + sgnlt[1]*_tmp1[n][i+j];
 	
 	a = vloadu(_p);
 	v = xsincos(a);
@@ -462,8 +542,8 @@ int job_core(int pm,                   // Hemisphere
 	
 	for(j=0; j<VECTLENDP; ++j){
 	  exph = _c[j] - I*_p[j];
-	  fftw_arr->xa[i+j] = ifo[0].sig.xDatma[i+j]*exph; ///ifo[0].sig.sig2;
-	  fftw_arr->xb[i+j] = ifo[0].sig.xDatmb[i+j]*exph; ///ifo[0].sig.sig2;
+	  fftw_arr->xa[i+j] = ifo[n].sig.xDatma[i+j]*exph; //*sig2inv;
+	  fftw_arr->xb[i+j] = ifo[n].sig.xDatmb[i+j]*exph; //*sig2inv;
 	}
       } 
 #elif defined(YEPPP)
@@ -472,7 +552,7 @@ int job_core(int pm,                   // Hemisphere
       // for caches L1/L2 64/256kb optimal value is ~2048
       for (j=0; j<bnd; j+=VLEN) {
 	for (i=0; i<VLEN; ++i)
-	  _p[i] =  het1*(i+j) + sgnlt[1]*_tmp1[0][i+j];
+	  _p[i] =  het1*(i+j) + sgnlt[1]*_tmp1[n][i+j];
 	
 	status = yepMath_Sin_V64f_V64f(_p, _s, VLEN);
 	assert(status == YepStatusOk);
@@ -480,152 +560,77 @@ int job_core(int pm,                   // Hemisphere
 	assert(status == YepStatusOk);
 	
 	for (i=0; i<VLEN; ++i) {
-          exph = _c[i] - I*_s[i];
-	  fftw_arr->xa[i+j] = ifo[0].sig.xDatma[i+j]*exph; ///ifo[0].sig.sig2;
-	  fftw_arr->xb[i+j] = ifo[0].sig.xDatmb[i+j]*exph; ///ifo[0].sig.sig2;
+	  exph = _c[i] - I*_s[i];
+	  fftw_arr->xa[i+j] += ifo[n].sig.xDatma[i+j]*exph; //*sig2inv;
+	  fftw_arr->xb[i+j] += ifo[n].sig.xDatmb[i+j]*exph; //*sig2inv;
 	}
       }
       // remaining part is shorter than VLEN - no need to vectorize
       for (i=0; i<sett->N-bnd; ++i){
 	j = bnd + i;
-	_p[i] =  het1*j + sgnlt[1]*_tmp1[0][j];
+	_p[i] =  het1*j + sgnlt[1]*_tmp1[n][j];
       }
 
       status = yepMath_Sin_V64f_V64f(_p, _s, sett->N-bnd);
       assert(status == YepStatusOk);
       status = yepMath_Cos_V64f_V64f(_p, _c, sett->N-bnd);
       assert(status == YepStatusOk);
-
+      
       for (i=0; i<sett->N-bnd; ++i) {
 	j = bnd + i;
 	exph = _c[i] - I*_s[i];
-	fftw_arr->xa[j] = ifo[0].sig.xDatma[j]*exph; ///ifo[0].sig.sig2;
-	fftw_arr->xb[j] = ifo[0].sig.xDatmb[j]*exph; ///ifo[0].sig.sig2;
+	fftw_arr->xa[j] += ifo[n].sig.xDatma[j]*exph; //*sig2inv;
+	fftw_arr->xb[j] += ifo[n].sig.xDatmb[j]*exph; //*sig2inv;
       }
+
 #elif defined(GNUSINCOS)
       for(i=sett->N-1; i!=-1; --i) {
-        phase = het1*i + sgnlt[1]*_tmp1[0][i];
+	phase = het1*i + sgnlt[1]*_tmp1[n][i];
 	sincos(phase, &sp, &cp);
 	exph = cp - I*sp;
-        fftw_arr->xa[i] = ifo[0].sig.xDatma[i]*exph; ///ifo[0].sig.sig2;
-        fftw_arr->xb[i] = ifo[0].sig.xDatmb[i]*exph; ///ifo[0].sig.sig2;
+	fftw_arr->xa[i] += ifo[n].sig.xDatma[i]*exph; //*sig2inv;
+	fftw_arr->xb[i] += ifo[n].sig.xDatmb[i]*exph; //*sig2inv;
       }
 #else
       for(i=sett->N-1; i!=-1; --i) {
-        phase = het1*i + sgnlt[1]*_tmp1[0][i];
+	phase = het1*i + sgnlt[1]*_tmp1[n][i];
 	cp = cos(phase);
-      	sp = sin(phase);
+	sp = sin(phase);
 	exph = cp - I*sp;
-        fftw_arr->xa[i] = ifo[0].sig.xDatma[i]*exph; ///ifo[0].sig.sig2;
-        fftw_arr->xb[i] = ifo[0].sig.xDatmb[i]*exph; ///ifo[0].sig.sig2;
+	fftw_arr->xa[i] += ifo[n].sig.xDatma[i]*exph; //*sig2inv;
+	fftw_arr->xb[i] += ifo[n].sig.xDatmb[i]*exph; //*sig2inv;
       }
 #endif
-
-      for(n=1; n<sett->nifo; ++n) {
-#if defined(SLEEF)
-      // use simd sincos from the SLEEF library;
-      // VECTLENDP is a simd vector length defined in the SLEEF library
-      // and it depends on selected instruction set e.g. -DENABLE_AVX
-	for (i=0; i<sett->N; i+=VECTLENDP) {
-	  for(j=0; j<VECTLENDP; j++)
-	    _p[j] =  het1*(i+j) + sgnlt[1]*_tmp1[n][i+j];
-	
-	  a = vloadu(_p);
-	  v = xsincos(a);
-	  vstoreu(_p, v.x); // reuse _p for sin
-	  vstoreu(_c, v.y);
-	
-	  for(j=0; j<VECTLENDP; ++j){
-	    exph = _c[j] - I*_p[j];
-	    fftw_arr->xa[i+j] = ifo[n].sig.xDatma[i+j]*exph; //*sig2inv;
-	    fftw_arr->xb[i+j] = ifo[n].sig.xDatmb[i+j]*exph; //*sig2inv;
-	  }
-	} 
-#elif defined(YEPPP)
-	// use yeppp! library;
-	// VLEN is length of vector to be processed
-	// for caches L1/L2 64/256kb optimal value is ~2048
-	for (j=0; j<bnd; j+=VLEN) {
-	  for (i=0; i<VLEN; ++i)
-	    _p[i] =  het1*(i+j) + sgnlt[1]*_tmp1[n][i+j];
-	
-	  status = yepMath_Sin_V64f_V64f(_p, _s, VLEN);
-	  assert(status == YepStatusOk);
-	  status = yepMath_Cos_V64f_V64f(_p, _c, VLEN);
-	  assert(status == YepStatusOk);
-	
-	  for (i=0; i<VLEN; ++i) {
-	    exph = _c[i] - I*_s[i];
-	    fftw_arr->xa[i+j] += ifo[n].sig.xDatma[i+j]*exph; //*sig2inv;
-	    fftw_arr->xb[i+j] += ifo[n].sig.xDatmb[i+j]*exph; //*sig2inv;
-	  }
-	}
-	// remaining part is shorter than VLEN - no need to vectorize
-	for (i=0; i<sett->N-bnd; ++i){
-	  j = bnd + i;
-	  _p[i] =  het1*j + sgnlt[1]*_tmp1[n][j];
-	}
-
-	status = yepMath_Sin_V64f_V64f(_p, _s, sett->N-bnd);
-	assert(status == YepStatusOk);
-	status = yepMath_Cos_V64f_V64f(_p, _c, sett->N-bnd);
-	assert(status == YepStatusOk);
-
-	for (i=0; i<sett->N-bnd; ++i) {
-	  j = bnd + i;
-	  exph = _c[i] - I*_s[i];
-	  fftw_arr->xa[j] += ifo[n].sig.xDatma[j]*exph; //*sig2inv;
-	  fftw_arr->xb[j] += ifo[n].sig.xDatmb[j]*exph; //*sig2inv;
-	}
-
-#elif defined(GNUSINCOS)
-	for(i=sett->N-1; i!=-1; --i) {
-	  phase = het1*i + sgnlt[1]*_tmp1[n][i];
-	  sincos(phase, &sp, &cp);
-	  exph = cp - I*sp;
-	  fftw_arr->xa[i] += ifo[n].sig.xDatma[i]*exph; //*sig2inv;
-	  fftw_arr->xb[i] += ifo[n].sig.xDatmb[i]*exph; //*sig2inv;
-	}
-#else
-	for(i=sett->N-1; i!=-1; --i) {
-	  phase = het1*i + sgnlt[1]*_tmp1[n][i];
-	  cp = cos(phase);
-	  sp = sin(phase);
-	  exph = cp - I*sp;
-	  fftw_arr->xa[i] += ifo[n].sig.xDatma[i]*exph; //*sig2inv;
-	  fftw_arr->xb[i] += ifo[n].sig.xDatmb[i]*exph; //*sig2inv;
-	}
-#endif
-
-      } 
+      
+    } // nifo
 
       // Zero-padding 
-      for(i = sett->fftpad*sett->nfft-1; i != sett->N-1; --i)
-	    fftw_arr->xa[i] = fftw_arr->xb[i] = 0.; 
-
-      fftw_execute (plans->plan);
-      fftw_execute (plans->plan2);
-
-      (*FNum)++;
-
-      // Computing F-statistic 
-      for (i=sett->nmin; i<sett->nmax; i++) {
-	F[i] = (sqr(creal(fftw_arr->xa[i])) + sqr(cimag(fftw_arr->xa[i])))/aa +
-	       (sqr(creal(fftw_arr->xb[i])) + sqr(cimag(fftw_arr->xb[i])))/bb;
-      }
-      
+    for(i = sett->fftpad*sett->nfft-1; i != sett->N-1; --i)
+      fftw_arr->xa[i] = fftw_arr->xb[i] = 0.; 
+    
+    fftw_execute (plans->plan);
+    fftw_execute (plans->plan2);
+    
+    (*FNum)++;
+    
+    // Computing F-statistic 
+    for (i=sett->nmin; i<sett->nmax; i++) {
+      F[i] = (sqr(creal(fftw_arr->xa[i])) + sqr(cimag(fftw_arr->xa[i])))/aa +
+	(sqr(creal(fftw_arr->xb[i])) + sqr(cimag(fftw_arr->xb[i])))/bb;
+    }
+    
 #if 0
-      FILE *f1 = fopen("fraw-1.dat", "w");
-      for(i=sett->nmin; i<sett->nmax; i++)
-	fprintf(f1, "%d   %lf   %lf\n", i, F[i], 2.*M_PI*i/((double) sett->fftpad*sett->nfft) + sgnl0);
-      fclose(f1);
+    FILE *f1 = fopen("fraw-1.dat", "w");
+    for(i=sett->nmin; i<sett->nmax; i++)
+      fprintf(f1, "%d   %lf   %lf\n", i, F[i], 2.*M_PI*i/((double) sett->fftpad*sett->nfft) + sgnl0);
+    fclose(f1);
 #endif 
-
+    
 #ifndef NORMTOMAX
-      //#define NAVFSTAT 4096
-      // Normalize F-statistics 
-      if(!(opts->white_flag))  // if the noise is not white noise
-        FStat(F + sett->nmin, sett->nmax - sett->nmin, NAVFSTAT, 0);
+    //#define NAVFSTAT 4096
+    // Normalize F-statistics 
+    if(!(opts->white_flag))  // if the noise is not white noise
+      FStat(F + sett->nmin, sett->nmax - sett->nmin, NAVFSTAT, 0);
 
       // f1 = fopen("fnorm-4096-1.dat", "w");
       //for(i=sett->nmin; i<sett->nmax; i++)
@@ -633,76 +638,76 @@ int job_core(int pm,                   // Hemisphere
       //fclose(f1);
       //      exit(EXIT_SUCCESS);
 
-      for(i=sett->nmin; i<sett->nmax; i++) {
-        if ((Fc = F[i]) > opts->trl) { // if F-stat exceeds trl (critical value)
-          // Find local maximum for neighboring signals 
-          ii = i;
-
-	  while (++i < sett->nmax && F[i] > opts->trl) {
-	    if(F[i] >= Fc) {
-	      ii = i;
-	      Fc = F[i];
-	    } // if F[i] 
-	  } // while i 
+    for(i=sett->nmin; i<sett->nmax; i++) {
+      if ((Fc = F[i]) > opts->trl) { // if F-stat exceeds trl (critical value)
+	// Find local maximum for neighboring signals 
+	ii = i;
+	
+	while (++i < sett->nmax && F[i] > opts->trl) {
+	  if(F[i] >= Fc) {
+	    ii = i;
+	    Fc = F[i];
+	  } // if F[i] 
+	} // while i 
 	  // Candidate signal frequency
-	  sgnlt[0] = 2.*M_PI*ii/((FLOAT_TYPE)sett->fftpad*sett->nfft) + sgnl0;
-	  // Signal-to-noise ratio
-	  sgnlt[4] = sqrt(2.*(Fc-sett->nd));
+	sgnlt[0] = 2.*M_PI*ii/((FLOAT_TYPE)sett->fftpad*sett->nfft) + sgnl0;
+	// Signal-to-noise ratio
+	sgnlt[4] = sqrt(2.*(Fc-sett->nd));
+	
+	// Checking if signal is within a known instrumental line 
+	int k, veto_status = 0; 
+	for(k=0; k<sett->numlines_band; k++)
+	  if(sgnlt[0]>=sett->lines[k][0] && sgnlt[0]<=sett->lines[k][1]) { 
+	    veto_status=1; 
+	    break; 
+	  }   
+	
+	if(!veto_status) {
+	  (*sgnlc)++; // increase found number
+	  // Add new parameters to output array 
+	  for (j=0; j<NPAR; ++j)    // save new parameters
+	    sgnlv[NPAR*(*sgnlc-1)+j] = (FLOAT_TYPE)sgnlt[j];
 	  
-	  // Checking if signal is within a known instrumental line 
-	  int k, veto_status = 0; 
-	  for(k=0; k<sett->numlines_band; k++)
-	    if(sgnlt[0]>=sett->lines[k][0] && sgnlt[0]<=sett->lines[k][1]) { 
-	      veto_status=1; 
-	      break; 
-	    }   
-	  
-	  if(!veto_status) {
-	    (*sgnlc)++; // increase found number
-	    // Add new parameters to output array 
-	    for (j=0; j<NPAR; ++j)    // save new parameters
-	      sgnlv[NPAR*(*sgnlc-1)+j] = (FLOAT_TYPE)sgnlt[j];
-	    
 #ifdef VERBOSE
-	    printf ("\nSignal %d: %d %d %d %d %d snr=%.2f\n", 
+	  printf ("\nSignal %d: %d %d %d %d %d snr=%.2f\n", 
 		  *sgnlc, pm, mm, nn, ss, ii, sgnlt[4]);
 #endif
-	  }
-	} // if Fc > trl 
-      } // for i
-      
+	}
+      } // if Fc > trl 
+    } // for i
+    
 #else // new version
-
-      imax = -1;
-      // find local maxima first
-      //printf("nmin=%d   nmax=%d    nfft=%d   nblocks=%d\n", sett->nmin, sett->nmax, nfft, nfft/blksize);
-      for(iblk=0; iblk < nfft/blksize; ++iblk) {
-	blkavg = 0.;
-	blkstart = sett->nmin + iblk*blksize; // block start index in F 
-	// in case the last block is shorter than blksize, include its elements in the previous block
-	if(iblk==(nfft/blksize-1)) {blksize = sett->nmax - blkstart;}
-	imax0 = imax+1;// index of first maximum in current block
-	//printf("\niblk=%d   blkstart=%d   blksize=%d    imax0=%d\n", iblk, blkstart, blksize, imax0);
-	for(i=1; i <= blksize; ++i) { // include first element of the next block
-	  ii = blkstart + i;
-	  if(ii < sett->nmax) 
-	    {ihi=ii+1;} 
-	  else 
-	    {ihi = sett->nmax; /*printf("ihi=%d  ii=%d\n", ihi, ii);*/};
-	  if(F[ii] > F[ii-1] && F[ii] > F[ihi]) {
-	    blkavg += F[ii];
-	    Fmax[++imax] = ii;
-	    ++i; // next element can't be maximum - skip it
-	  }
-	} // i
+    
+    imax = -1;
+    // find local maxima first
+    //printf("nmin=%d   nmax=%d    nfft=%d   nblocks=%d\n", sett->nmin, sett->nmax, nfft, nfft/blksize);
+    for(iblk=0; iblk < nfft/blksize; ++iblk) {
+      blkavg = 0.;
+      blkstart = sett->nmin + iblk*blksize; // block start index in F 
+      // in case the last block is shorter than blksize, include its elements in the previous block
+      if(iblk==(nfft/blksize-1)) {blksize = sett->nmax - blkstart;}
+      imax0 = imax+1;// index of first maximum in current block
+      //printf("\niblk=%d   blkstart=%d   blksize=%d    imax0=%d\n", iblk, blkstart, blksize, imax0);
+      for(i=1; i <= blksize; ++i) { // include first element of the next block
+	ii = blkstart + i;
+	if(ii < sett->nmax) 
+	  {ihi=ii+1;} 
+	else 
+	  {ihi = sett->nmax; /*printf("ihi=%d  ii=%d\n", ihi, ii);*/};
+	if(F[ii] > F[ii-1] && F[ii] > F[ihi]) {
+	  blkavg += F[ii];
+	  Fmax[++imax] = ii;
+	  ++i; // next element can't be maximum - skip it
+	}
+      } // i
 	// now imax points to the last element of Fmax
 	// normalize in blocks 
-	blkavg /= (double)(imax - imax0 + 1);
-	for(i=imax0; i <= imax; ++i)
-	  F[Fmax[i]] /= blkavg;
-
-      } // iblk
-
+      blkavg /= (double)(imax - imax0 + 1);
+      for(i=imax0; i <= imax; ++i)
+	F[Fmax[i]] /= blkavg;
+      
+    } // iblk
+    
       //f1 = fopen("fmax.dat", "w");
       //for(i=1; i < imax; i++)
       //fprintf(f1, "%d   %lf \n", Fmax[i], F[Fmax[i]]);
@@ -710,43 +715,42 @@ int job_core(int pm,                   // Hemisphere
       //exit(EXIT_SUCCESS);
 
       // apply threshold limit
-      for(i=0; i <= imax; ++i){
-	//if(F[Fmax[i]] > opts->trl) {
-	if(F[Fmax[i]] > threshold) {
-	  sgnlt[0] = 2.*M_PI*i/((FLOAT_TYPE)sett->fftpad*sett->nfft) + sgnl0;
-	  // Signal-to-noise ratio
-	  sgnlt[4] = sqrt(2.*(F[Fmax[i]] - sett->nd));
-
-	  // Checking if signal is within a known instrumental line 
-	  int k, veto_status=0; 
-	  for(k=0; k<sett->numlines_band; k++)
-	    if(sgnlt[0]>=sett->lines[k][0] && sgnlt[0]<=sett->lines[k][1]) { 
-	      veto_status=1; 
-	      break; 
-	    }   
+    for(i=0; i <= imax; ++i){
+      //if(F[Fmax[i]] > opts->trl) {
+      if(F[Fmax[i]] > threshold) {
+	sgnlt[0] = 2.*M_PI*i/((FLOAT_TYPE)sett->fftpad*sett->nfft) + sgnl0;
+	// Signal-to-noise ratio
+	sgnlt[4] = sqrt(2.*(F[Fmax[i]] - sett->nd));
+	
+	// Checking if signal is within a known instrumental line 
+	int k, veto_status=0; 
+	for(k=0; k<sett->numlines_band; k++)
+	  if(sgnlt[0]>=sett->lines[k][0] && sgnlt[0]<=sett->lines[k][1]) { 
+	    veto_status=1; 
+	    break; 
+	  }   
+	
+	if(!veto_status) { 
 	  
-	  if(!veto_status) { 
-	    
-	    (*sgnlc)++; // increase number of found candidates
-	    // Add new parameters to buffer array 
-	    for (j=0; j<NPAR; ++j)
-	      sgnlv[NPAR*(*sgnlc-1)+j] = (FLOAT_TYPE)sgnlt[j];
+	  (*sgnlc)++; // increase number of found candidates
+	  // Add new parameters to buffer array 
+	  for (j=0; j<NPAR; ++j)
+	    sgnlv[NPAR*(*sgnlc-1)+j] = (FLOAT_TYPE)sgnlt[j];
 #ifdef VERBOSE
-	    printf ("\nSignal %d: %d %d %d %d %d snr=%.2f\n", 
-		    *sgnlc, pm, mm, nn, ss, Fmax[i], sgnlt[4]);
+	  printf ("\nSignal %d: %d %d %d %d %d snr=%.2f\n", 
+		  *sgnlc, pm, mm, nn, ss, Fmax[i], sgnlt[4]);
 #endif 
-	  }
 	}
-      } // i
+      }
+    } // i
 #endif // old/new version
-
+    
 #if TIMERS>2
-      tend = get_current_time();
+      tend = get_current_time(CLOCK_PROCESS_CPUTIME_ID);
       spindown_timer += get_time_difference(tstart, tend);
       spindown_counter++;
 #endif
 
-    } // if sgnlt[1] 
   } // for ss 
   
 #ifndef VERBOSE 

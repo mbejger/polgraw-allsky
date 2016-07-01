@@ -1,10 +1,10 @@
-TARGET = gwsearch-cpu
+TARGET = gwsearch-cpu-sb
 
 VER := $(shell git rev-parse HEAD)
 
 # FFTW_DIR - fftw location, remember to compile it with optimizations (e.g. avx)
 # SINCOS = {YEPPP or SLEEF or GNUSINCOS or NOSINCOS}
-FFTW_DIR = /opt/fftw/3.3.4/gnu
+FFTW_DIR = /opt/fftw/3.3.4/gnu-omp-devtoolset3
 SINCOS =  YEPPP #YEPPP or SLEEF or GNUSINCOS or NOSINCOS
 
 CC = gcc -std=gnu11
@@ -13,8 +13,8 @@ CC = gcc -std=gnu11
 CFLAGS = -DPREFIX="./candidates" -DCODEVER=$(VER) -DTIMERS=1 -D$(SINCOS) #-DVERBOSE 
 CFLAGS += -I$(FFTW_DIR)/include 
 CFLAGS += -g -Wall -Wno-unused -fno-omit-frame-pointer \
-	  -O3 -ffast-math -funsafe-loop-optimizations -funroll-loops \
-	  -march=sandybridge -mtune=haswell -mavx
+	  -Ofast -ffast-math -funsafe-loop-optimizations -funroll-loops \
+	  -march=sandybridge -mtune=sandybridge -mavx
 #	  -march=haswell -mtune=haswell -mavx2
 #sandy-bridge (psk)
 #	-march=corei7-avx -mtune=corei7-avx -mavx

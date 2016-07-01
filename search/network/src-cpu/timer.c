@@ -1,9 +1,10 @@
 #define NANO_INV 1000000000L
 #include "timer.h"
 
-struct timespec get_current_time() {
+struct timespec get_current_time(clockid_t cid) {
   struct timespec t;
-  clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &t);
+  // CLOCK_PROCESS_CPUTIME_ID or CLOCK_REALTIME
+  clock_gettime(cid, &t);
   return t;
 }
 
