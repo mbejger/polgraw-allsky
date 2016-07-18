@@ -15,7 +15,7 @@ void
 settings (double fpo,		// Offset frequency fpo
 		char *ifo_choice) { // Detector 
 
-    dt = 0.5;                   // data sampling time 
+    dt = 2;                   // data sampling time 
     B = 0.5/dt;                 // Bandwidth
     oms = 2.*M_PI*fpo*dt;       // Dimensionless angular frequency
     deg = 180./M_PI;            // Rad to deg
@@ -46,11 +46,10 @@ settings (double fpo,		// Offset frequency fpo
     tau_min = 1000.*yr;             // Minimum spindown time in sec.
     Smax = 2.*M_PI*(fpo+B)*dt*dt/(2.*tau_min); // Maximum spindown (1000 years) 
                                                // [angular, dimensionless]
-     
 
     alfa = .01;       // False alarm probability   
     nd = 2;		// Degree of freedom, 2*nd = no. of degrees of freedom for Chi^2
-    fftpad = 2;   // Zero padding (original grid: 2, new grids: 1)
+    fftpad = 1;   // Zero padding (original grid: 2, new grids: 1)
     interpftpad = 2;
 
 	if(!strcmp("V1", ifo_choice)) {  

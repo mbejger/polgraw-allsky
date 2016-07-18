@@ -265,7 +265,11 @@ JobNAllSky (int argc, char *argv[]) {
       fpo = fpo_val; 
   else 
   // The usual definition: 
-      fpo = 100. + 0.96875 * band;
+  //    fpo = 100. + 0.96875 * band;
+
+  //#mb definition of fpo for Advance LIGO/Virgo 0.25Hz bands 
+  //#mb 0.25 = B = 0.5/dt 
+  fpo = 10. + 0.96875*band*(0.25);
 
   printf("The reference frequency (fpo) is %f\n", fpo); 
 
@@ -451,6 +455,11 @@ JobNAllSky (int argc, char *argv[]) {
 	// with the use of the M matrix from grid.bin  
 	gridr (M, spndr, nr, mr);
 
+  printf("The following grid range is used\n");
+  printf("(spndr, nr, mr, pmr pairs): %d %d %d %d %d %d %d %d\n", \
+    spndr[0], spndr[1], nr[0], nr[1], mr[0], mr[1], pmr[0], pmr[1]);
+
+
   } 
 
 
@@ -465,9 +474,16 @@ JobNAllSky (int argc, char *argv[]) {
   }
 
   // Because of frequency-domain filters, we search 
-  // F-statistic in range (nmin+1, nmax) of data points 
-  nmin = fftpad*NAV;
-  nmax = (nfft/2 - NAV)*fftpad;
+  // F-statistic in range (nmin+1, nmax) of data points
+ 
+// nmin = fftpad*NAV;
+// nmax = (nfft/2 - NAV)*fftpad;
+
+  //#mb nmin nmax for dt = 2, B = 0.5/dt
+  //#mb previously B=1 (dt=0.5) 
+
+  nmin = fftpad*NAV*B;
+  nmax = (nfft/2 - NAV*B)*fftpad;
 
   coft = oms; 
 
