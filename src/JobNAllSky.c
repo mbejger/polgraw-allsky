@@ -285,7 +285,7 @@ JobNAllSky (int argc, char *argv[]) {
   F = (double *) calloc (2*nfft, sizeof (double));
 
   // Input time-domain data handling 
-  sprintf (filename, "%s/%03d/xdat_%03d_%03d%s.bin", dtaprefix, ident,	\
+  sprintf (filename, "%s/%03d/xdatg_%03d_%04d%s.bin", dtaprefix, ident,	\
 	   ident, band, label);
   if ((data = fopen (filename, "r")) != NULL) {
     fread ((void *)(xDat), sizeof (double), N, data);
@@ -598,9 +598,9 @@ JobNAllSky (int argc, char *argv[]) {
 
 	// filename of checkpoint state file, depending on the hemisphere 
 	if(hemi)
-		sprintf (qname, "state_%03d_%03d%s_%d.dat", ident, band, label, hemi);
+		sprintf (qname, "state_%03d_%04d%s_%d.dat", ident, band, label, hemi);
 	else 
-		sprintf (qname, "state_%03d_%03d%s.dat", ident, band, label);
+		sprintf (qname, "state_%03d_%04d%s.dat", ident, band, label);
 
 	if ((state = fopen (qname, "r")) != NULL) {
 
@@ -636,7 +636,7 @@ JobNAllSky (int argc, char *argv[]) {
   // Main loops 
 
   for (pm=pst; pm<=pmr[1]; pm++) {	// loop over hemispheres 
-    sprintf (outname, "%s/triggers_%03d_%03d%s_%d.bin", prefix, ident,	\
+    sprintf (outname, "%s/triggers_%03d_%04d%s_%d.bin", prefix, ident,	\
 	     band, label, pm);
 
     for (mm=mst; mm<=mr[1]; mm++) {	// 2 loops over 
