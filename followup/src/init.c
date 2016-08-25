@@ -42,8 +42,9 @@ void handle_opts( Search_settings *sett,
   opts->label[0]    = '\0';
   opts->range[0]    = '\0';
   opts->getrange[0] = '\0';
+  opts->usedet[0]   = '\0';
   opts->addsig[0]   = '\0';
-  opts->glue[0]   = '\0';
+  opts->glue[0]     = '\0';
 	
   // Initial value of starting frequency set to a negative quantity. 
   // If this is not changed by the command line value, fpo is calculated 
@@ -74,7 +75,7 @@ void handle_opts( Search_settings *sett,
       {"nocheckpoint", no_argument, &checkp_flag, 0},
       {"vetolines", no_argument, &veto_flag, 1}, 
       {"simplex", no_argument, &simplex_flag, 1},
-      {"mads", no_argument, &mads_flag, 1},       
+      {"mads", no_argument, &mads_flag, 1},
       // frame number
       {"ident", required_argument, 0, 'i'},
       // frequency band number
@@ -100,7 +101,9 @@ void handle_opts( Search_settings *sett,
       // add signal parameters
       {"addsig", required_argument, 0, 'x'},
       // glue frames together
-      {"glue", required_argument, 0, 'u'},
+      {"glue", required_argument, 0, 'e'},
+      // which detectors to use
+      {"usedet", required_argument, 0, 'u'}, 
       // data sampling time 
       {"dt", required_argument, 0, 's'},
       {0, 0, 0, 0}
@@ -117,12 +120,14 @@ void handle_opts( Search_settings *sett,
       printf("-b, -band         Band number\n");
       printf("-l, -label        Custom label for the input and output files\n");
       printf("-r, -range        Use file with grid range or pulsar position\n");
-      printf("-g, -getrange     Write full grid ranges to file and exit (ignore -r)\n");
+      printf("-g, -getrange     Write grid ranges & save fft wisdom & exit (ignore -r)\n");
       printf("-c, -cwd          Change to directory <dir>\n");
       printf("-t, -threshold    Threshold for the F-statistic (default is 20)\n");
       printf("-h, -hemisphere   Hemisphere (default is 0 - does both)\n");
       printf("-p, -fpo          Reference band frequency fpo value\n");
-      printf("-s, -dt           Data sampling time dt (default value: 0.5)\n");
+      printf("-s, -dt           data sampling time dt (default value: 0.5)\n");
+      printf("-u, -usedet       Use only detectors from string (default is use all available)\n");
+      printf("-e, -glue		Glue chosen frames together. Names of frames from <file>\n");
       printf("-x, -addsig       Add signal with parameters from <file>\n\n");
 
       printf("Also:\n\n");
@@ -138,7 +143,7 @@ void handle_opts( Search_settings *sett,
     }
 
     int option_index = 0;
-    int c = getopt_long_only(argc, argv, "i:b:o:d:l:r:g:c:t:h:p:x:u:s:", 
+    int c = getopt_long_only(argc, argv, "i:b:o:d:l:r:g:c:t:h:p:x:s:e:u:", 
 			     long_options, &option_index);
     if (c == -1)
       break;
@@ -182,12 +187,17 @@ void handle_opts( Search_settings *sett,
     case 'x':
       strcpy(opts->addsig, optarg);
       break;
-    case 'u':
-      strcpy(opts->glue, optarg);
-      break;
     case 's':
       sett->dt = atof(optarg);
       break;
+    case 'e':
+      strcpy(opts->glue, optarg);
+      break;
+    case 'u':
+      strcpy(opts->usedet, optarg);
+      break;
+
+
     case '?':
       break;
     default:
@@ -256,7 +266,6 @@ void handle_opts( Search_settings *sett,
 
   if(opts->veto_flag) 
     printf("Known lines will be vetoed (reading from files in the data directory)\n");
-
   if(opts->mads_flag) 
     printf("MADS direct maximum search\n");
 
@@ -277,10 +286,20 @@ void read_grid(
 
   FILE *data;
   char filename[512];
-  sprintf (filename, "%s/%03d/grid.bin", opts->dtaprefix, opts->ident);
-  if ((data=fopen (filename, "r")) != NULL) {
-    fread ((void *)&sett->fftpad, sizeof (int), 1, data);
 
+  // In case when -usedet option is used for one detector
+  // i.e. opts->usedet has a length of 2 (e.g. H1 or V1), 
+  // read grid.bin from this detector subdirectory 
+  // (see detectors_settings() in settings.c for details) 
+  if(strlen(opts->usedet)==2)
+    sprintf (filename, "%s/%03d/%s/grid.bin", opts->dtaprefix, opts->ident, opts->usedet);
+  else 
+    sprintf (filename, "%s/%03d/grid.bin", opts->dtaprefix, opts->ident);
+
+
+  if ((data=fopen (filename, "r")) != NULL) {
+    printf("Using grid file from %s\n", filename);
+    fread ((void *)&sett->fftpad, sizeof (int), 1, data);
     printf("Using fftpad from the grid file: %d\n", sett->fftpad); 
 	
     // M: vector of 16 components consisting of 4 rows
@@ -343,6 +362,11 @@ void init_arrays(
     ifo[i].sig.sig2 = (ifo[i].sig.crf0)*var(ifo[i].sig.xDat, sett->N);
 
     ifo[i].sig.DetSSB = (double *) calloc(3*sett->N, sizeof(double));
+    /* 
+    const size_t array_bytes = 3*sett->N*sizeof(double);
+    ifo[i].sig.DetSSB = NULL;
+    if ( posix_memalign((void**)&ifo[i].sig.DetSSB, 32, array_bytes) ) exit (1);
+    */
 
     // Ephemeris file handling
     char filename[512];
@@ -424,7 +448,6 @@ void init_arrays(
   
 } // end of init arrays 
 
-
   /* Gluing frames */
 
 void glue(Command_line_opts *opts){
@@ -463,7 +486,6 @@ void glue(Command_line_opts *opts){
 		while (fscanf(list, "%d\n", &line) == 1){
 			if (l != 0) flag = 1;
 			l++;
-;
 			sprintf(xdat, "xdatc_%03d_%04d%s.bin", line, opts->band, opts->label);
 			mkdir(opts->prefix, 0777);
 			sprintf(output_tot, "%s/followup_total_data/", opts->prefix);
@@ -574,6 +596,7 @@ void add_signal(
 		Command_line_opts *opts,
 		Aux_arrays *aux_arr,
 		Search_range *s_range) {
+
   int i, j, n, gsize, reffr; 
   double h0, cof; 
   double sinaadd, cosaadd, sindadd, cosdadd, phaseadd, shiftadd, signadd; 
@@ -591,7 +614,8 @@ void add_signal(
     for(i=0; i<10; i++)
       fscanf(data, "%le",i+sgnlo); 
     
-    fclose (data);             
+    fclose (data);
+                 
   } else {
     perror (opts->addsig);
   }
@@ -602,7 +626,11 @@ void add_signal(
   //#mb For VSR1 reffr=67
  
   sgnlo[0] += -2.*sgnlo[1]*(sett->N)*(reffr - opts->ident); 
- puts("2"); 
+ 
+  // Check if the signal is in band 
+  if(sgnlo[0]<0) exit(171);          // &laquo;  
+  else if (sgnlo[0]>M_PI) exit(187); // &raquo;
+
   cof = sett->oms + sgnlo[0]; 
   
   for(i=0; i<2; i++) sgnlol[i] = sgnlo[i]; 
@@ -641,7 +669,7 @@ void add_signal(
   gsl_permutation_free (p);
   gsl_vector_free (x);
   free (MM);
- 
+  
   // Define the grid range in which the signal will be looked for
   s_range->spndr[1] = s_range->spndr[0] + gsize; 
   s_range->spndr[0] -= gsize;
@@ -651,11 +679,6 @@ void add_signal(
   s_range->mr[0] -= gsize;
   s_range->pmr[1] = s_range->pmr[0]; 
   
-  printf("Grid range from add_signal():\n%d %d\n %d %d\n %d %d\n %d %d\n",  
-  s_range->spndr[0], s_range->spndr[1], 
-  s_range->nr[0], s_range->nr[1],
-  s_range->mr[0], s_range->mr[1],
-  s_range->pmr[0], s_range->pmr[1]); 
 
   // sgnlo[2]: declination, sgnlo[3]: right ascension 
   sindadd = sin(sgnlo[2]); 
@@ -717,26 +740,16 @@ void add_signal(
 
       //#mb test printout 
       //printf("%d %le\n", i + sett->N*(opts->ident-1), phaseadd); 
- 
+
+    
       // Adding the signal to the data vector 
       if(ifo[n].sig.xDat[i]) { 
         ifo[n].sig.xDat[i] += h0*signadd;
 	      // thsnr += pow(signadd, 2.);
       }
-	
+	 
     }
-/*
-    // Write the data+signal to file   
-    FILE *dataout;
-    char xxx[512]; 
-    sprintf(xxx, "%s/%03d/%s/xdatc_%03d_%04d%s.bin",
-          opts->dtaprefix, opts->ident, ifo[n].name, 
-          opts->ident, opts->band, opts->label);
-
-    dataout = fopen(xxx, "wb");
-    fwrite(ifo[n].sig.xDat, sizeof(*ifo[n].sig.xDat), sett->N, dataout);
-    fclose(dataout); 
-*/  
+    
   }
   
 } 
@@ -775,16 +788,13 @@ void set_search_range(
       
       /*
       //#mb commented-out for now - useful for tests 
-
       // the case when range file does not contain 8 integers
       // describing the grid ranges, but other values:
       // the pulsar position, frequency, and spindowns.
       if(range_status!=8) {
-
       rewind(data);
       range_status = fscanf (data, "%le %le %le %le %le %le %d",
       &pepoch, &alpha, &delta, &f0, &f1, &f2, &gsize);
-
       // GPS time of the first sample
       double gps1;
       sprintf (filename, "%s/%03d/starting_date", dtaprefix, ident);
@@ -795,61 +805,44 @@ void set_search_range(
       perror (filename);
       return 1;
       }
-
       // Conversion of mjd to gps time
       double pepoch_gps = (pepoch - 44244)*86400 - 51.184;
       //			 gps1 = (gps1 - 44244)*86400 - 51.184;
-
       // Interpolation of ephemeris parameters to the starting time
       double *sgnlo;
       sgnlo = (double *) calloc (4, sizeof (double));
-
       double *be;
       be = (double *) calloc (2, sizeof (double));
-
       // ast2lin (auxi.c) returns the hemisphere number
       // and the vector be (used for sky position in linear coords.)
       pmr[0] = ast2lin(alpha, delta, epsm, be);
-
       sgnlo[0] = f0 + f1*(gps1 - pepoch_gps) + f2*pow(gps1 - pepoch_gps, 2)/2.;
       sgnlo[0] = 2*M_PI*2*sgnlo[0]*dt - oms;
-
       sgnlo[1] = f1 + f2*(gps1 - pepoch_gps);
       sgnlo[1] = M_PI*2*sgnlo[1]*dt*dt;
-
       sgnlo[2] = be[0]*(oms + sgnlo[0]);
       sgnlo[3] = be[1]*(oms + sgnlo[0]);
-
       // solving a linear system in order to translate
       // sky position, frequency and spindown (sgnlo parameters)
       // into the position in the grid
-
       gsl_vector *x = gsl_vector_alloc (4);
       int s;
-
       gsl_matrix_view m = gsl_matrix_view_array (M, 4, 4);
       gsl_matrix_transpose (&m.matrix) ;
       gsl_vector_view b = gsl_vector_view_array (sgnlo, 4);
       gsl_permutation *p = gsl_permutation_alloc (4);
-
       gsl_linalg_LU_decomp (&m.matrix, p, &s);
       gsl_linalg_LU_solve (&m.matrix, p, &b.vector, x);
-
       spndr[0] = round(gsl_vector_get(x, 1));
       nr[0]		= round(gsl_vector_get(x, 2));
       mr[0]		= round(gsl_vector_get(x, 3));
-
       gsl_permutation_free (p);
       gsl_vector_free (x);
       free (be);
       free (sgnlo);
-
-
       // Warnings and infos
       if(hemi)
-
       printf("Warning: -h switch hemisphere choice (%d) may be altered\nby the choice of -r grid range...\n", hemi);
-
       // Define the grid range in which the signal will be looked for
       spndr[1] = spndr[0] + gsize ;
       spndr[0] -= gsize;
@@ -858,7 +851,6 @@ void set_search_range(
       mr[1] = mr[0] + gsize ;
       mr[0] -= gsize;
       pmr[1] = pmr[0];
-
       }
       */
 
@@ -892,14 +884,14 @@ void set_search_range(
 		s_range->mr[0], s_range->mr[1],
 		s_range->pmr[0], s_range->pmr[1] );
 	
-	printf("Wrote full grid ranges to %s\n", opts->getrange);
+	printf("Wrote input data grid ranges to %s\n", opts->getrange);
 	fclose (data);
-	exit(EXIT_SUCCESS);
+	//	exit(EXIT_SUCCESS);
 	
       } else {
 	
 	printf("Can't open %s file for writing\n", opts->getrange);
-	exit(EXIT_FAILURE);
+       	exit(EXIT_FAILURE);
 	
       }
     }
@@ -956,13 +948,10 @@ void plan_fftw(
   // Change FFTW_MEASURE to FFTW_PATIENT for more optimized plan
   // (takes more time to generate the wisdom file)
   plans->plan = fftw_plan_dft_1d(sett->nfftf, fftw_arr->xa, fftw_arr->xa, FFTW_FORWARD, FFTW_MEASURE);
-  plans->plan2 = fftw_plan_dft_1d(sett->nfftf, fftw_arr->xb, fftw_arr->xb, FFTW_FORWARD, FFTW_MEASURE);
 	                             
   plans->pl_int = fftw_plan_dft_1d(sett->nfft, fftw_arr->xa, fftw_arr->xa, FFTW_FORWARD, FFTW_MEASURE);
-  plans->pl_int2 = fftw_plan_dft_1d(sett->nfft, fftw_arr->xb, fftw_arr->xb, FFTW_FORWARD, FFTW_MEASURE);
 	                             
   plans->pl_inv = fftw_plan_dft_1d(sett->Ninterp, fftw_arr->xa, fftw_arr->xa, FFTW_BACKWARD, FFTW_MEASURE);
-  plans->pl_inv2 = fftw_plan_dft_1d(sett->Ninterp, fftw_arr->xb, fftw_arr->xb, FFTW_BACKWARD, FFTW_MEASURE);
 	                             
   // Generates a wisdom FFT file if there is none
   if((wisdom = fopen(wfilename, "r")) == NULL) {
@@ -1269,7 +1258,6 @@ void manage_grid_matrix(
   
   if ((data=fopen (filename, "r")) != NULL) {
     fscanf(data, "%le", &opts->refgps);
-
     printf("Reading the reference starting_date file at %s The GPS time is %12f\n", opts->refloc, opts->refgps);
     fclose (data);
   } else {
@@ -1319,15 +1307,12 @@ void manage_grid_matrix(
     {1.5497867603229576e-005, 1.9167007413107127e-006, 1.0599051611325639e-008, -5.0379548388381567e-008}, 
     {2.4410008440913992e-005, 3.2886518554938671e-006, -5.7338464150027107e-008, -9.3126913365595100e-009},
   };
-
   { int i,j; 
   for(i=0; i<4; i++) 
     for(j=0; j<4; j++) 
       sett->vedva[i][j]  = _tmp[i][j]; 
   }
-
   printf("\n"); 
-
   { int i, j; 
   for(i=0; i<4; i++) { 
     for(j=0; j<4; j++) {
@@ -1335,13 +1320,10 @@ void manage_grid_matrix(
       }
       printf("\n"); 
   } 
-
  } 
 */ 
 
   gsl_vector_free (eval);
   gsl_matrix_free (evec);
 
-} // end of manage grid matrix  
-
-
+} // end of manage grid matrix
