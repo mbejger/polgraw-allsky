@@ -29,7 +29,8 @@ typedef struct _comm_line_opts {
   double fpo_val;
   
   char prefix[512], dtaprefix[512], label[512], 
-    range[512], getrange[512], qname[512], addsig[512], glue[512], *wd;
+    range[512], getrange[512], qname[512], usedet[32], 
+    addsig[512], glue[512], *wd;
   
 } Command_line_opts;
 
