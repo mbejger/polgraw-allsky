@@ -29,7 +29,7 @@ void search_settings(
 
   omr = C_OMEGA_R*dt;
 
-  nod = 4;                          // Observation time in days
+  nod = 2;                          // Observation time in days
   N = round (nod*C_SIDDAY/dt);      // No. of data points
 
   nfft = 1 << (int)ceil(log(N)/log(2.));    // length of FFT
@@ -101,10 +101,15 @@ void detectors_settings(
   if (dp != NULL) {
     while ((ep = readdir (dp))) { 
 
-      // Subdirectory names: 2 char long
+      // Subdirectory names checkup: 
+      // check if it's a dir
+      // name is 2 char long
+      // not a directory name of the type "./" or ".."
+      // if usedef is not set (length equal 0), or is set and dir name is substring of it 
       if((ep->d_type == DT_DIR) && 
         (strlen(ep->d_name)==DETNAME_LENGTH) && 
-        strncmp(&ep->d_name[0],".",1)) { 
+        (strncmp(&ep->d_name[0],".",1)) && 
+        (!strlen(opts->usedet) || (strlen(opts->usedet) && (strstr(opts->usedet, ep->d_name))))) { 
 
           FILE *data;
 
@@ -117,7 +122,7 @@ void detectors_settings(
           opts->ident, opts->label);
 */
 
-          sprintf(x, "%s/%03d/%s/xdatc_%03d_%04d%s.bin",
+          sprintf(x, "%s/%03d/%s/xdatg_%03d_%04d%s.bin",
           opts->dtaprefix, opts->ident, ep->d_name,
           opts->ident, opts->band, opts->label);
 
