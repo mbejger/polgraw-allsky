@@ -449,9 +449,10 @@ void add_signal(
     // and the reference frame (for which the signal freq. is not spun-down/up)
     fscanf (data, "%le %d %d %d", &h0, &gsize, s_range->pmr, &reffr);    
 
-    // Fscanning signal parameters: f, fdot, delta, alpha,
-    // four amplitudes (see sigen.c and Phys. Rev. D 82, 022005 2010, Eqs. 2.13a-d),
-    // be1, be2 (not used) 
+    // Fscanning signal parameters: f, fdot, delta, alpha (sgnlo[0], ..., sgnlo[3])
+    // four amplitudes sgnlo[4], ..., sgnlo[7] 
+    // (see sigen.c and Phys. Rev. D 82, 022005 2010, Eqs. 2.13a-d) 
+    // be1, be2 (sgnlo[8], sgnlo[9] to translate the sky position into grid position)  
     for(i=0; i<10; i++)
       fscanf(data, "%le",i+sgnlo); 
     
