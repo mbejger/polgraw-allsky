@@ -538,21 +538,6 @@ void add_signal(
     
     modvir(sinaadd, cosaadd, sindadd, cosdadd,
 	   sett->N, &ifo[n], aux_arr);
-    
-    // Normalization of the modulation amplitudes 
-    double as = 0, bs = 0;
-    for (i=0; i<sett->N; i++) {
-      as += sqr(ifo[n].sig.aa[i]); 
-      bs += sqr(ifo[n].sig.bb[i]);
-    }
-    
-    as /= sett->N; bs /= sett->N;
-    as = sqrt (as); bs = sqrt (bs);
-    
-    for (i=0; i<sett->N; i++) {
-      ifo[n].sig.aa[i] /= as;
-      ifo[n].sig.bb[i] /= bs; 
-    }
 
     nSource[0] = cosaadd*cosdadd;
     nSource[1] = sinaadd*cosdadd;
