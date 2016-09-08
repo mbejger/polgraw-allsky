@@ -428,9 +428,13 @@ void add_signal(
   // Signal parameters are read
   if ((data=fopen (opts->addsig, "r")) != NULL) {
 	
-    // Scanning for the GW amplitude, grid size, hemisphere 
+    // Fscanning for the GW amplitude, grid size, hemisphere 
     // and the reference frame (for which the signal freq. is not spun-down/up)
-    fscanf (data, "%le %d %d %d", &h0, &gsize, s_range->pmr, &reffr);     
+    fscanf (data, "%le %d %d %d", &h0, &gsize, s_range->pmr, &reffr);    
+
+    // Fscanning signal parameters: f, fdot, delta, alpha,
+    // four amplitudes (see sigen.c and Phys. Rev. D 82, 022005 2010, Eqs. 2.13a-d),
+    // be1, be2 (not used) 
     for(i=0; i<10; i++)
       fscanf(data, "%le",i+sgnlo); 
     
@@ -457,12 +461,7 @@ void add_signal(
   
   sgnlol[2] = sgnlo[8]*cof; 
   sgnlol[3] = sgnlo[9]*cof;  
-  
-  ph_o = sgnlo[4]; 
-  psik = sgnlo[5]; 
-  hoc  = sgnlo[6]; 
-  hop  = sgnlo[7]; 
-		 	
+ 		 	
   // solving a linear system in order to translate 
   // sky position, frequency and spindown (sgnlo parameters) 
   // into the position in the grid
@@ -505,11 +504,6 @@ void add_signal(
   cosdadd = cos(sgnlo[2]); 
   sinaadd = sin(sgnlo[3]);  
   cosaadd = cos(sgnlo[3]); 
-  
-  sgnlo[4] =  cos(2.*psik)*hop*cos(ph_o) - sin(2.*psik)*hoc*sin(ph_o);
-  sgnlo[5] =  sin(2.*psik)*hop*cos(ph_o) + cos(2.*psik)*hoc*sin(ph_o);
-  sgnlo[6] = -cos(2.*psik)*hop*sin(ph_o) - sin(2.*psik)*hoc*cos(ph_o);
-  sgnlo[7] = -sin(2.*psik)*hop*sin(ph_o) + cos(2.*psik)*hoc*cos(ph_o);
 	
   // To keep coherent phase between time segments  
   double phaseshift = sgnlo[0]*sett->N*(reffr - opts->ident)   
