@@ -35,11 +35,21 @@ void search_settings(
   nfft = 1 << (int)ceil(log(N)/log(2.));    // length of FFT
   s = 1;                                    // No. of spindowns
 
+/* 
   Smin = 1000.*C_YEARSEC;                   // Minimum spindown time 
                                             // [sec.]
 
   // Maximum spindown (1000 years) [angular, dimensionless]
   Smax = 2.*M_PI*(sett->fpo + B)*dt*dt/(2.*Smin);   
+*/ 
+
+  //#mb ranges of spindown (RDC O1) 
+  double fdotmin, fdotmax; 
+  fdotmin = 0.5e-8; 
+  fdotmax = 0.5e-9; 
+
+  Smax = 2.*M_PI*fdotmin*dt*dt; 
+  Smin = 2.*M_PI*fdotmax*dt*dt;
 
   nd = 2;     // Degree of freedom, 
               // (2*nd = deg. no ofrees of freedom for chi^2)
