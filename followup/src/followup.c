@@ -68,39 +68,49 @@ MS
 #define ZEPS 1e-10
 
 //Function neigh takes candidate parameters and number of bins (as arguments) and creates grid around it.
-Yep64f** neigh(double s1, double s2, int bins, double perc1, double perc2){ 
-//	double **arr;
-	int rows, cols = 2;
-	rows = (bins+1)*(bins+1);
+Yep64f** neigh(double *m, double *perc, int b){ 
+//	double **array;
+	int rows, cols = 4;
+	rows = pow((b+1),4);
 	int k;
 // Allocation of memory for martix
 #ifdef YEPPP
-    yepLibrary_Init();
-	Yep64f **arr = (Yep64f**)malloc(rows*sizeof(Yep64f));
-	for (k=0; k < rows; k++) arr[k] = (Yep64f*)calloc(rows,sizeof(Yep64f));
-    enum YepStatus status;
+    	yepLibrary_Init();
+	Yep64f **array = (Yep64f**)malloc(rows*sizeof(Yep64f));
+	for (k=0; k < rows; k++) array[k] = (Yep64f*)calloc(rows,sizeof(Yep64f));
+    	enum YepStatus status;
 #else
-  	arr = (double **)malloc(rows*sizeof(double *));
-  	for (k=0; k < rows; k++) arr[k] = (double *)calloc(cols, sizeof(double));
+  	array = (double **)malloc(rows*sizeof(double *));
+  	for (k=0; k < rows; k++) array[k] = (double *)calloc(cols, sizeof(double));
 #endif
-	double beg1, beg2;
-	double width1, width2;
-	double m1, m2;
-	int i1, i2, i;
-	beg1 = s1 - (s1*perc1);
-	width1 = 2*perc1*s1/bins;
-	width2 = 2*perc2*s2/bins;
-	i = 0;
-	for(i1 = 0; i1 < (bins + 1); i1++){
-		beg2 = s2 - (s2*perc2);
-		for(i2 = 0; i2 < (bins + 1); i2++, i++){
-			arr[i][0] = beg1;
-			arr[i][1] = beg2;
-			beg2 = beg2 + width2;
-		}
-		beg1 = beg1 + width1;
+	double beg[4];
+	double width[4];
+	int i1, i2, i3, i4, j, i;
+	for(j = 0; j < 4; j++) {
+		width[j] = 2*perc[j]*m[j]/b;
 	}
-	return arr;
+	i = 0;
+	beg[0] = m[0]*(1 - perc[0]);
+	for(i1 = 0; i1 < (b + 1); i1++){
+		beg[1] = m[1]*(1 - perc[1]);
+		for(i2 = 0; i2 < (b + 1); i2++){
+			beg[2] = m[2]*(1 - perc[2]);
+			for(i3 = 0; i3 < (b + 1); i3++){
+				beg[3] = m[3]*(1 - perc[3]);
+				for(i4 = 0; i4 < (b + 1); i4++){
+					for(j = 0; j < 4; j++) {
+						array[i][j] = beg[j];
+					}
+					beg[3] = beg[3] + width[3];
+					i++;
+				}
+				beg[2] = beg[2] + width[2];
+			}
+			beg[1] = beg[1] + width[1];
+		}
+		beg[0] = beg[0] + width[0];
+	}
+	return array;
 
 }
 
@@ -138,7 +148,7 @@ void free_matrix(double ** matrix, int rows, int cols){
 }
 
 // Function computes F-statistics in given point
-double* Fstatnet(Search_settings *sett, Command_line_opts *opts, Aux_arrays *aux, double *sgnlo, double *nSource){
+double* Fstatnet(Search_settings *sett, double *sgnlo, double *nSource){
 
 	int i = 0, n = 0; 
 	double aatemp, bbtemp, aa = 0., bb = 0.;
@@ -256,7 +266,7 @@ double* Fstatnet(Search_settings *sett, Command_line_opts *opts, Aux_arrays *aux
 
 //mesh adaptive direct search (MADS) maximum search declaration
 //double
-Yep64f* MADS(Search_settings *sett, Command_line_opts *opts, Aux_arrays *aux, double* in, double *start, double delta, double *pc, int bins){
+Yep64f* MADS(Search_settings *sett, Aux_arrays *aux, double* in, double *start, double delta, double *pc, int bins){
 
 	int i, j, k, l, m, n, o, r, a = 0;
   	double sinalt, cosalt, sindelt, cosdelt;
@@ -306,7 +316,7 @@ Yep64f* MADS(Search_settings *sett, Command_line_opts *opts, Aux_arrays *aux, do
 				modvir(sinalt, cosalt, sindelt, cosdelt, 
 			   		sett->N, &ifo[o], aux);  
 			}
-			res = Fstatnet(sett, opts, aux, p, nSource); //Fstat function for mesh points
+			res = Fstatnet(sett, p, nSource); //Fstat function for mesh points
 
 			if (res[5] < extr[5]){
 				for (l = 0; l < 11; l++){ 
@@ -348,7 +358,7 @@ double ** make_simplex(double * point, int dim, double *pc2){
 	return simplex;
 }
 
-void evaluate_simplex(double ** simplex, int dim, double ** fx, Search_settings *sett, Command_line_opts *opts, Aux_arrays *aux, double *nS){
+void evaluate_simplex(double ** simplex, int dim, double ** fx, Search_settings *sett, Aux_arrays *aux, double *nS){
 	double sinalt, cosalt, sindelt, cosdelt;
 	double *out;
 	int i, o, j;
@@ -366,7 +376,7 @@ void evaluate_simplex(double ** simplex, int dim, double ** fx, Search_settings 
 				modvir(sinalt, cosalt, sindelt, cosdelt, 
 			   		sett->N, &ifo[o], aux);  
 			}
-			out = Fstatnet(sett, opts, aux, simplex[i], nS);
+			out = Fstatnet(sett, simplex[i], nS);
 			for (j = 0; j < 11; j++) fx[i][j] = out[j];
 	}
 }
@@ -415,7 +425,7 @@ void simplex_bearings(double ** simplex, int dim, double * midpoint, double * li
 		line[j] = simplex[ihi][j] - midpoint[j];
 	}
 }
-int update_simplex(double ** simplex, int dim, double  fmax, double ** fx, int ihi, double * midpoint, double * line, double scale, Search_settings *sett, Command_line_opts *opts, Aux_arrays *aux, double *nS){
+int update_simplex(double ** simplex, int dim, double  fmax, double ** fx, int ihi, double * midpoint, double * line, double scale, Search_settings *sett, Aux_arrays *aux, double *nS){
 	int i, o, j, update = 0; 
 	double * next = alloc_vector(dim);
 	double * fx2;
@@ -435,7 +445,7 @@ int update_simplex(double ** simplex, int dim, double  fmax, double ** fx, int i
 		modvir(sinalt, cosalt, sindelt, cosdelt, 
 	   		sett->N, &ifo[o], aux);  
 	}
-	fx2 = Fstatnet(sett, opts, aux, next, nS);
+	fx2 = Fstatnet(sett, next, nS);
 	if (fx2[5] < fmax){
 		for (i = 0; i < dim; i++) simplex[ihi][i] = next[i];
 		for (j = 0; j < 11; j++) fx[ihi][j] = fx2[j];
@@ -445,7 +455,7 @@ int update_simplex(double ** simplex, int dim, double  fmax, double ** fx, int i
 	return update;
 }
 
-void contract_simplex(double ** simplex, int dim, double ** fx, int ilo, int ihi, Search_settings *sett, Command_line_opts *opts, Aux_arrays *aux, double *nS){
+void contract_simplex(double ** simplex, int dim, double ** fx, int ilo, int ihi, Search_settings *sett, Aux_arrays *aux, double *nS){
   	double sinalt, cosalt, sindelt, cosdelt;
 	double * fx3;
 	int i, j, k, o;
@@ -466,7 +476,7 @@ void contract_simplex(double ** simplex, int dim, double ** fx, int ilo, int ihi
 			   		sett->N, &ifo[o], aux);  
 			}
 
-			fx3 = Fstatnet(sett, opts, aux, simplex[i], nS);
+			fx3 = Fstatnet(sett, simplex[i], nS);
 			for (k = 0; k < 11; k++) fx[i][k] = fx3[k];
 		}
 	}
@@ -478,7 +488,7 @@ int check_tol(double fmax, double fmin, double ftol){
 	return (delta < (accuracy + ZEPS));
 }
 
-double * amoeba(Search_settings *sett, Command_line_opts *opts, Aux_arrays *aux, double *point, double *nS, double *res_max, int dim, double tol, double *pc2){
+double * amoeba(Search_settings *sett, Aux_arrays *aux, double *point, double *nS, double *res_max, int dim, double tol, double *pc2){
 	int ihi, ilo, inhi;
 // ihi = ih[0], ilo = ih[1], inhi = ih[2];
 	int *ih;
@@ -488,7 +498,7 @@ double * amoeba(Search_settings *sett, Command_line_opts *opts, Aux_arrays *aux,
 	double * midpoint = alloc_vector(dim);
 	double * line = alloc_vector(dim);
 	double ** simplex = make_simplex(point, dim, pc2);
-	evaluate_simplex(simplex, dim, fx, sett, opts, aux, nS);
+	evaluate_simplex(simplex, dim, fx, sett, aux, nS);
 	while (true)
 	{
 		ih = simplex_extremes(fx, dim);
@@ -498,14 +508,14 @@ double * amoeba(Search_settings *sett, Command_line_opts *opts, Aux_arrays *aux,
 		simplex_bearings(simplex, dim, midpoint, line, ihi);
 
 		if(check_tol(fx[ihi][5], fx[ilo][5], tol)) break;
-		update_simplex(simplex, dim, fx[ihi][5], fx, ihi, midpoint, line, -1.0, sett, opts, aux, nS);
+		update_simplex(simplex, dim, fx[ihi][5], fx, ihi, midpoint, line, -1.0, sett, aux, nS);
 
 		if (fx[ihi][5] < fx[ilo][5]){
-			update_simplex(simplex, dim, fx[ihi][5], fx, ihi, midpoint, line, -2.0, sett, opts, aux, nS);
+			update_simplex(simplex, dim, fx[ihi][5], fx, ihi, midpoint, line, -2.0, sett, aux, nS);
 		}
 		else if (fx[ihi][5] > fx[inhi][5]){
-			if (!update_simplex(simplex, dim, fx[ihi][5], fx, ihi, midpoint, line, 0.5, sett, opts, aux, nS)){
-				contract_simplex(simplex, dim, fx, ilo, ihi, sett, opts, aux, nS);
+			if (!update_simplex(simplex, dim, fx[ihi][5], fx, ihi, midpoint, line, 0.5, sett, aux, nS)){
+				contract_simplex(simplex, dim, fx, ilo, ihi, sett, aux, nS);
 			}
 		}
 	}
@@ -533,30 +543,30 @@ int main (int argc, char *argv[]) {
   	double *F; 			// F-statistic array
   	int i, j, r, c, a, b, g; 	
 	int d, o, m, k;
-	int bins = 2, ROW, dim = 4;	// neighbourhood of point will be divide into defined number of bins
+	int bins = 5, ROW, dim = 4;	// neighbourhood of point will be divide into defined number of bins
 	double pc[4];			// % define neighbourhood around each parameter for initial grid
 	double pc2[4];			// % define neighbourhood around each parameter for direct maximum search (MADS & Simplex)
 	double tol = 1e-10;
 //	double delta = 1e-5;		// initial step in MADS function
-	double *results;		// Vector with results from Fstatnet function
-	double *maximum;		// True maximum of Fstat
-	double results_max[11];	
+//	double *results;		// Vector with results from Fstatnet function
+//	double *maximum;		// True maximum of Fstat
+//	double results_max[11];	
 	double s1, s2, s3, s4;
 	double sgnlo[4]; 		 
-	double **arr, **arrg;		//  arr[ROW][COL], arrg[ROW][COL];
+	double **arr;		//  arr[ROW][COL], arrg[ROW][COL];
 	double nSource[3];
   	double sinalt, cosalt, sindelt, cosdelt;
 	double F_min;
 	char path[512];
 	double x, y;
-	ROW = (bins+1)*(bins+1);
+	ROW = pow((bins+1),4);
 
 #ifdef YEPPP
     yepLibrary_Init();
-//    Yep64f *results_max = (Yep64f*)malloc(sizeof(Yep64f)*11); 
+    Yep64f *results_max = (Yep64f*)malloc(sizeof(Yep64f)*11); 
     Yep64f *results_first = (Yep64f*)malloc(sizeof(Yep64f)*11);
-//    Yep64f *results = (Yep64f*)malloc(sizeof(Yep64f)*11);
-//    Yep64f *maximum = (Yep64f*)malloc(sizeof(Yep64f)*11);
+    Yep64f *results = (Yep64f*)malloc(sizeof(Yep64f)*11);
+    Yep64f *maximum = (Yep64f*)malloc(sizeof(Yep64f)*11);
 //    Yep64f *sgnlo = (Yep64f*)malloc(sizeof(Yep64f)*4);  
 //    Yep64f *nSource = (Yep64f*)malloc(sizeof(Yep64f)*3); 
     Yep64f *mean = (Yep64f*)malloc(sizeof(Yep64f)*4); 
@@ -565,10 +575,10 @@ int main (int argc, char *argv[]) {
 
 #endif
 
-	pc[0] = 0.05;
-	pc[1] = 0.05;
-	pc[2] = 0.05;
-	pc[3] = 0.05;
+	pc[0] = 0.03;
+	pc[1] = 0.03;
+	pc[2] = 0.03;
+	pc[3] = 0.03;
 
 	for (i = 0; i < 4; i++){
 		pc2[i] = 2*pc[i]/bins;
@@ -579,9 +589,7 @@ int main (int argc, char *argv[]) {
 
 // Command line options 
 	handle_opts(&sett, &opts, argc, argv); 
-  // Output data handling
-
-
+// Output data handling
 /*  struct stat buffer;
 
   if (stat(opts.prefix, &buffer) == -1) {
@@ -623,12 +631,10 @@ int main (int argc, char *argv[]) {
 			while(fscanf(coi, "%le %le %le %le", &mean[0], &mean[1], &mean[2], &mean[3]) == 4){
 //Time test
 //			tstart = clock();
-				arr = matrix(ROW, 2);
-				arrg = matrix(ROW, 2);
+				arr = matrix(ROW, 4);
 
 //Function neighbourhood - generating grid around point
-				arr = neigh(mean[0], mean[1], bins, pc[0], pc[1]);
-				arrg = neigh(mean[2], mean[3], bins, pc[2], pc[3]);
+				arr = neigh(mean, pc, bins);
 // Output data handling
 /*  				struct stat buffer;
 
@@ -667,21 +673,20 @@ int main (int argc, char *argv[]) {
   				}
 
 // Setting number of using threads (not required)
-omp_set_num_threads(2);
+//omp_set_num_threads(2);
 
 				results_max[5] = 0.;
-// Main outside loop 
-
+// Main loop - over all parameters + parallelisation
+//#pragma omp parallel default(shared) private(d, m, o, i, sgnlo, sinalt, cosalt, sindelt, cosdelt, nSource, results, maximum)
+//{
+//#pragma omp for  
 				for (d = 0; d < ROW; ++d){
 
-					sgnlo[2] = arrg[d][0];
-					sgnlo[3] = arrg[d][1];	
-	
-					x = sgnlo[2];
-					y = sgnlo[3];
+					for (m = 0; m < 4; m++){
+						sgnlo[m] = arr[d][m];
+					}
  
-//sgnlo[2] = mean[2]; 
-//sgnlo[3] = mean[3];
+//for (m = 0; m < 4; m++) sgnlo[m] = mean[m]; 
 
 					sinalt = sin(sgnlo[3]);
 					cosalt = cos(sgnlo[3]);
@@ -696,55 +701,40 @@ omp_set_num_threads(2);
 						modvir(sinalt, cosalt, sindelt, cosdelt, 
 					   		sett.N, &ifo[o], &aux_arr);  
 					}
-// Parallelisation of inside loop
 
-#pragma omp parallel private(i, g, sgnlo, results, maximum)
-{ 
-
-#pragma omp for lastprivate(x, y, nSource, dim, tol, pc2) firstprivate(x, y, nSource, dim, tol, pc2) 
-					for (m = 0; m < ROW; ++m){
-
-						sgnlo[0] = arr[m][0];
-						sgnlo[1] = arr[m][1];
-						sgnlo[2] = x;
-						sgnlo[3] = y;
 // F-statistic in given point
-#pragma omp critical
-						results = Fstatnet(&sett, &opts, &aux_arr, sgnlo, nSource);
-
-						if(results[5] < results_max[5]){
-							for (i = 0; i < 11; i++){
-								results_max[i] = results[i];
-							}
-
+//#pragma omp critical
+					results = Fstatnet(&sett, sgnlo, nSource);
+//					printf("%le %le %le %le %le %le\n", results[6], results[7], results[8], results[9], -results[5], results[4]);
+//#pragma omp critical
+					if(results[5] < results_max[5]){
+						for (i = 0; i < 11; i++){
+							results_max[i] = results[i];
 						}
+					}
 
 // Maximum search using simplex algorithm
-						if(opts.simplex_flag){
-//							puts("Simplex");
-
-#pragma omp critical
-							maximum = amoeba(&sett, &opts, &aux_arr, sgnlo, nSource, results, dim, tol, pc2);
+					if(opts.simplex_flag){
+//						puts("Simplex");
+						maximum = amoeba(&sett, &aux_arr, sgnlo, nSource, results, dim, tol, pc2);
 // Maximum value in points searching
-							if(maximum[5] < results_max[5]){
-								for (g = 0; g < 11; g++){
-									results_max[g] = maximum[g];
-								}
+//#pragma omp critical
+						if(maximum[5] < results_max[5]){
+							for (i = 0; i < 11; i++){
+								results_max[g] = maximum[g];
 							}
+						}
 
-						} //simplex
-					} // m - inside loop
-
-} //pragma
-
+					} //simplex
 				} // d - main outside loop
-//}
+//} //pragma
+
 				for(g = 0; g < 11; g++) results_first[g] = results_max[g];
 
 // Maximum search using MADS algorithm
   				if(opts.mads_flag) {
 //					puts("MADS");
-					maximum = MADS(&sett, &opts, &aux_arr, results_max, mean, tol, pc2, bins);
+					maximum = MADS(&sett, &aux_arr, results_max, mean, tol, pc2, bins);
 				}
 
 //Time test
