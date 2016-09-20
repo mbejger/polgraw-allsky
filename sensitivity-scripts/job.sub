@@ -1,3 +1,6 @@
+#PBS -m n 
+#PBS -q medium
+
 cd $PBS_O_WORKDIR
 
 for d in $(ls -d */); do

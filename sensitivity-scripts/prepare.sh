@@ -27,7 +27,7 @@ cp ${script_home}/script_manyframes.sh script.sh
 #cp ${script_home}/get_summary.sh .
 
 # for the case when signal enters another band
-next_band=$((${band##+(0)}+1))
+next_band=$((${band#0}+1))
 next_band=$(printf "%03d\n" ${next_band})
 
 # replacements in script.sh 

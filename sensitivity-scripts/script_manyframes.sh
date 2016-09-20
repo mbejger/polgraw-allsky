@@ -71,15 +71,15 @@ sort -rgk5 -gk10 BAND/summary | head -1 >> summary
 sumvar=$(<summary)
 
 # Cleanup (archiving and deleting the coi files) 
-for r in $(ls BAND/*.coi); do 
-	LZ4PATH/lz4 -6 ${r} ${r}.lz4 && gzip ${r}.lz4
-	if [ -f ${r}".lz4.gz" ]; then 
-    	rm $r
-    fi 
-done 
+#for r in $(ls BAND/*.coi); do 
+#	LZ4PATH/lz4 -6 ${r} ${r}.lz4 && gzip ${r}.lz4
+#	if [ -f ${r}".lz4.gz" ]; then 
+#    	rm $r
+#    fi 
+#done 
 
 # cleanup 
-rm -fr triggers_* *.e* *.o* BAND
+rm -fr triggers_* *.e* *.o* BAND wisdom*
 
 cd ../
 
