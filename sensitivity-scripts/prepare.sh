@@ -20,6 +20,7 @@ reffr=${14}             # the reference frame (coincidences)
 cell=${15}              # Cell size (coincidences) 
 snrcut=${16}            # Signal-to-noise cutoff 
 mincoin=${17}           # Minimal no. of coincidences to register 
+usedet=${18}            # Detectors to use (H1V1, L1H1, V1, etc.)
 #-----------------------------------------------------------------------
 
 cp ${script_home}/script_manyframes.sh script.sh
@@ -34,7 +35,7 @@ next_band=$(printf "%03d\n" ${next_band})
 sed -i 's|BAND|'$band'|g;s|GSIZE|'$gsize'|g;s|REFFR|'$reffr'|g' script.sh
 sed -i 's|H0|'$h0'|g;s|CELL|'$cell'|g;s|DT|'$dt'|g;s|THRESH|'$thresh'|g' script.sh
 sed -i 's|SNRCUT|'$snrcut'|g;s|MINCOIN|'$mincoin'|g' script.sh 
-sed -i 's|DATA|'$data'|g;s|LOF|'$list_of_frames'|g' script.sh
+sed -i 's|DATA|'$data'|g;s|LOF|'$list_of_frames'|g;|USEDET|'$usedet'|g' script.sh
 #sed -i 's|NEXTB|'$next_band'|g;s|LONF|'$list_of_frames'/'$next_band'.d|g' script.sh
 sed -i 's|LDLP|'$ldlp'|g;s|LZ4PATH|'$lz4path'|g' script.sh 
 
