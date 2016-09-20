@@ -254,6 +254,7 @@ double* Fstatnet(Search_settings *sett, double *sgnlo, double *nSource){
 // Signal-to-noise ratio from estimated amplitudes (for h0 = 1)
 
 	fstat_out[10] = sqrt(sqr(2*creal(xasum)) + sqr(2*creal(xbsum)) + sqr(2*cimag(xasum)) + sqr(2*cimag(xbsum))); 	
+//printf("Fstatnet: %le %le %le %le %le %le\n", fstat_out[6], fstat_out[7], fstat_out[8], fstat_out[9], fstat_out[5], fstat_out[4]);
 
 	free(_sph);
 	free(_cph);
@@ -543,7 +544,7 @@ int main (int argc, char *argv[]) {
   	double *F; 			// F-statistic array
   	int i, j, r, c, a, b, g; 	
 	int d, o, m, k;
-	int bins = 5, ROW, dim = 4;	// neighbourhood of point will be divide into defined number of bins
+	int bins = 2, ROW, dim = 4;	// neighbourhood of point will be divide into defined number of bins
 	double pc[4];			// % define neighbourhood around each parameter for initial grid
 	double pc2[4];			// % define neighbourhood around each parameter for direct maximum search (MADS & Simplex)
 	double tol = 1e-10;
@@ -575,10 +576,10 @@ int main (int argc, char *argv[]) {
 
 #endif
 
-	pc[0] = 0.03;
-	pc[1] = 0.03;
-	pc[2] = 0.03;
-	pc[3] = 0.03;
+	pc[0] = 0.01;
+	pc[1] = 0.01;
+	pc[2] = 0.01;
+	pc[3] = 0.01;
 
 	for (i = 0; i < 4; i++){
 		pc2[i] = 2*pc[i]/bins;
@@ -634,7 +635,7 @@ int main (int argc, char *argv[]) {
 				arr = matrix(ROW, 4);
 
 //Function neighbourhood - generating grid around point
-				arr = neigh(mean, pc, bins);
+//				arr = neigh(mean, pc, bins);
 // Output data handling
 /*  				struct stat buffer;
 
@@ -683,11 +684,10 @@ int main (int argc, char *argv[]) {
 				for (d = 0; d < ROW; ++d){
 
 					for (m = 0; m < 4; m++){
-						sgnlo[m] = arr[d][m];
+//						sgnlo[m] = arr[d][m];
+						sgnlo[m] = mean[m]; 
 					}
  
-//for (m = 0; m < 4; m++) sgnlo[m] = mean[m]; 
-
 					sinalt = sin(sgnlo[3]);
 					cosalt = cos(sgnlo[3]);
 					sindelt = sin(sgnlo[2]);
@@ -705,7 +705,6 @@ int main (int argc, char *argv[]) {
 // F-statistic in given point
 //#pragma omp critical
 					results = Fstatnet(&sett, sgnlo, nSource);
-//					printf("%le %le %le %le %le %le\n", results[6], results[7], results[8], results[9], -results[5], results[4]);
 //#pragma omp critical
 					if(results[5] < results_max[5]){
 						for (i = 0; i < 11; i++){
@@ -721,7 +720,7 @@ int main (int argc, char *argv[]) {
 //#pragma omp critical
 						if(maximum[5] < results_max[5]){
 							for (i = 0; i < 11; i++){
-								results_max[g] = maximum[g];
+								results_max[i] = maximum[i];
 							}
 						}
 
@@ -740,7 +739,7 @@ int main (int argc, char *argv[]) {
 //Time test
 //				tend = clock();
 //				tdiff = (tend - tstart)/(double)CLOCKS_PER_SEC;
-				printf("Maximum: %le %le %le %le %le %le\n", results_max[6], results_max[7], results_max[8], results_max[9], -results_max[5], results_max[4]);
+				printf("Maximum: %le %le %le %le %le %le\n", results_max[6], results_max[7], results_max[8], results_max[9], results_max[5], results_max[4]);
 
 
 
