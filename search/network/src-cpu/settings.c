@@ -533,12 +533,33 @@ return 0;
 
 }
 
+void narrow_down_band(
+    Search_settings* sett,
+    Command_line_opts *opts) {
+
+    // Adding excluding ranges near the edges 
+    // to the known lines list 
+    sett->lines[0][0] = 0;
+    sett->lines[0][1] = M_PI_2 - opts->narrowdown;
+    sett->lines[1][0] = M_PI_2 + opts->narrowdown;
+    sett->lines[1][1] = M_PI;
+
+    // These ranges added 
+    sett->numlines_band = 2;
+    printf("Band is narrowed-down to [%f, %f]\n", sett->lines[0][1], sett->lines[1][0]);
+
+}
+
 void lines_in_band(
-    Search_settings* sett) {
+    Search_settings* sett,
+    Command_line_opts *opts) {
 
     int i, j, k=0; 
     double bs, be;        // Band start and end  
     double ll, lr, l, r;  // Line left and right side
+
+    // if narrowdown option 
+    if(opts->narrowdown < 0.5*M_PI) k = sett->numlines_band;
 
     bs = sett->fpo; 
     be = sett->fpo + sett->B; 
@@ -564,7 +585,7 @@ void lines_in_band(
            sett->lines[k][0] = (ll-bs)/(sett->B)*M_PI;  
            sett->lines[k][1] = (lr-bs)/(sett->B)*M_PI;
 
-           printf("%f %f %f %f\n", ll, lr, sett->lines[k][0], sett->lines[k][1]);
+           printf("%s: %f %f %f %f\n", ifo[i].name, ll, lr, sett->lines[k][0], sett->lines[k][1]);
            k++; 
 
         }      
@@ -572,6 +593,34 @@ void lines_in_band(
     } 
 
     sett->numlines_band = k;
-    printf("%d known lines in total in band.\n", sett->numlines_band);     
 
-}     
+} 
+
+void check_if_band_is_fully_vetoed(
+    Search_settings* sett) { 
+
+    int i; 
+    double ll=0.; 
+
+    // Sorting the excluded parts of a band (1st then 2nd column) 
+    qsort(sett->lines, sett->numlines_band, 2*sizeof(double), compared2c); 
+
+/*
+    printf("After sorting...\n"); 
+    for(i=0; i<sett->numlines_band; i++) 
+      printf("%f %f\n", sett->lines[i][0], sett->lines[i][1]);
+*/
+
+    for(i=0; i<sett->numlines_band; i++) { 
+ 
+      // Looking for a gap between the excluded regions 
+      if(sett->lines[i][0] > ll) return; 
+      else ll = sett->lines[i][1]; 
+
+    }        
+
+    printf("This band is fully vetoed. My work here is done, exiting...\n"); 
+    exit(EXIT_SUCCESS); 
+
+
+}  

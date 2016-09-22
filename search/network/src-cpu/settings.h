@@ -58,12 +58,22 @@ void modvir(
 
 int lineph (double, double *, double *, char *, char *, int);
 
+// Lines and excluded regions treatment
+void narrow_down_band(
+  Search_settings* sett, 
+  Command_line_opts *opts);  
+
 int read_lines(
      Search_settings *sett,
      Command_line_opts *opts, 
      Detector_settings *ifo);
 
-void lines_in_band(Search_settings* sett);  
+void lines_in_band(
+  Search_settings* sett, 
+  Command_line_opts *opts);  
+
+void check_if_band_is_fully_vetoed(
+  Search_settings* sett); 
 
 // Coincidences 
 void read_trigger_files(
