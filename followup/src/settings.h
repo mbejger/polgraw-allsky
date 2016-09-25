@@ -54,7 +54,9 @@ void modvir(
     double cosdel,	
     int Np, 
     Detector_settings *ifo, 
-    Aux_arrays *aux);
+    Aux_arrays *aux,
+    double *sigaa, 
+    double *sigbb);
 
 int lineph (double, double *, double *, char *, char *, int);
 
