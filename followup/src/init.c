@@ -44,7 +44,7 @@ void handle_opts( Search_settings *sett,
   opts->getrange[0] = '\0';
   opts->usedet[0]   = '\0';
   opts->addsig[0]   = '\0';
-  opts->glue[0]     = '\0';
+  opts->glue[0]   = '\0';
 	
   // Initial value of starting frequency set to a negative quantity. 
   // If this is not changed by the command line value, fpo is calculated 
@@ -486,6 +486,7 @@ void glue(Command_line_opts *opts){
 		while (fscanf(list, "%d\n", &line) == 1){
 			if (l != 0) flag = 1;
 			l++;
+;
 			sprintf(xdat, "xdatc_%03d_%04d%s.bin", line, opts->band, opts->label);
 			mkdir(opts->prefix, 0777);
 			sprintf(output_tot, "%s/followup_total_data/", opts->prefix);
@@ -591,26 +592,36 @@ void glue(Command_line_opts *opts){
 
   /* Add signal to data   */ 
 
+
 void add_signal(
 		Search_settings *sett,
 		Command_line_opts *opts,
 		Aux_arrays *aux_arr,
 		Search_range *s_range) {
 
-  int i, j, n, gsize, reffr; 
+  int i, j, n, gsize, reffr, k; 
   double h0, cof; 
   double sinaadd, cosaadd, sindadd, cosdadd, phaseadd, shiftadd, signadd; 
   double nSource[3], sgnlo[10], sgnlol[4];
-  double ph_o, psik, hoc, hop; 
+  double **sigaa, **sigbb;   // aa[nifo][N]
+  sigaa = (double **)malloc(sett->nifo*sizeof(double *));
+  for (k=0; k < sett->nifo; k++) sigaa[k] = (double *)calloc(sett->N, sizeof(double));
+  sigbb = (double **)malloc(sett->nifo*sizeof(double *));
+  for (k=0; k < sett->nifo; k++) sigbb[k] = (double *)calloc(sett->N, sizeof(double));
   
   FILE *data;
   
   // Signal parameters are read
   if ((data=fopen (opts->addsig, "r")) != NULL) {
 	
-    // Scanning for the GW amplitude, grid size, hemisphere 
+    // Fscanning for the GW amplitude, grid size, hemisphere 
     // and the reference frame (for which the signal freq. is not spun-down/up)
-    fscanf (data, "%le %d %d %d", &h0, &gsize, s_range->pmr, &reffr);     
+    fscanf (data, "%le %d %d %d", &h0, &gsize, s_range->pmr, &reffr);    
+
+    // Fscanning signal parameters: f, fdot, delta, alpha (sgnlo[0], ..., sgnlo[3])
+    // four amplitudes sgnlo[4], ..., sgnlo[7] 
+    // (see sigen.c and Phys. Rev. D 82, 022005 2010, Eqs. 2.13a-d) 
+    // be1, be2 (sgnlo[8], sgnlo[9] to translate the sky position into grid position)  
     for(i=0; i<10; i++)
       fscanf(data, "%le",i+sgnlo); 
     
@@ -637,12 +648,7 @@ void add_signal(
   
   sgnlol[2] = sgnlo[8]*cof; 
   sgnlol[3] = sgnlo[9]*cof;  
-  
-  ph_o = sgnlo[4]; 
-  psik = sgnlo[5]; 
-  hoc  = sgnlo[6]; 
-  hop  = sgnlo[7]; 
-		 	
+ 		 	
   // solving a linear system in order to translate 
   // sky position, frequency and spindown (sgnlo parameters) 
   // into the position in the grid
@@ -679,17 +685,16 @@ void add_signal(
   s_range->mr[0] -= gsize;
   s_range->pmr[1] = s_range->pmr[0]; 
   
+  printf("add_signal() - the following grid range is used\n");
+  printf("(spndr, nr, mr, pmr pairs): %d %d %d %d %d %d %d %d\n", \
+   s_range->spndr[0], s_range->spndr[1], s_range->nr[0], s_range->nr[1],
+   s_range->mr[0], s_range->mr[1], s_range->pmr[0], s_range->pmr[1]);
 
   // sgnlo[2]: declination, sgnlo[3]: right ascension 
   sindadd = sin(sgnlo[2]); 
   cosdadd = cos(sgnlo[2]); 
   sinaadd = sin(sgnlo[3]);  
   cosaadd = cos(sgnlo[3]); 
-  
-  sgnlo[4] =  cos(2.*psik)*hop*cos(ph_o) - sin(2.*psik)*hoc*sin(ph_o);
-  sgnlo[5] =  sin(2.*psik)*hop*cos(ph_o) + cos(2.*psik)*hoc*sin(ph_o);
-  sgnlo[6] = -cos(2.*psik)*hop*sin(ph_o) - sin(2.*psik)*hoc*cos(ph_o);
-  sgnlo[7] = -sin(2.*psik)*hop*sin(ph_o) + cos(2.*psik)*hoc*cos(ph_o);
 	
   // To keep coherent phase between time segments  
   double phaseshift = sgnlo[0]*sett->N*(reffr - opts->ident)   
@@ -699,22 +704,7 @@ void add_signal(
   for(n=0; n<sett->nifo; n++) {
     
     modvir(sinaadd, cosaadd, sindadd, cosdadd,
-	   sett->N, &ifo[n], aux_arr);
-    
-    // Normalization of the modulation amplitudes 
-    double as = 0, bs = 0;
-    for (i=0; i<sett->N; i++) {
-      as += sqr(ifo[n].sig.aa[i]); 
-      bs += sqr(ifo[n].sig.bb[i]);
-    }
-    
-    as /= sett->N; bs /= sett->N;
-    as = sqrt (as); bs = sqrt (bs);
-    
-    for (i=0; i<sett->N; i++) {
-      ifo[n].sig.aa[i] /= as;
-      ifo[n].sig.bb[i] /= bs; 
-    }
+	   sett->N, &ifo[n], aux_arr, sigaa[n], sigbb[n]);
 
     nSource[0] = cosaadd*cosdadd;
     nSource[1] = sinaadd*cosdadd;
@@ -722,7 +712,6 @@ void add_signal(
 					
     // adding signal to data (point by point)  								
     for (i=0; i<sett->N; i++) {
-      
       shiftadd = 0.; 					 
       for (j=0; j<3; j++)
       	shiftadd += nSource[j]*ifo[n].sig.DetSSB[i*3+j];		 
@@ -733,27 +722,28 @@ void add_signal(
         - phaseshift; 
 
       // The whole signal with 4 amplitudes and modulations 
-      signadd = sgnlo[4]*(ifo[n].sig.aa[i])*cos(phaseadd) 
-        + sgnlo[6]*(ifo[n].sig.aa[i])*sin(phaseadd) 
-        + sgnlo[5]*(ifo[n].sig.bb[i])*cos(phaseadd) 
-        + sgnlo[7]*(ifo[n].sig.bb[i])*sin(phaseadd);
+      signadd = sgnlo[4]*(sigaa[n][i])*cos(phaseadd) 
+        + sgnlo[6]*(sigaa[n][i])*sin(phaseadd) 
+        + sgnlo[5]*(sigbb[n][i])*cos(phaseadd) 
+        + sgnlo[7]*(sigbb[n][i])*sin(phaseadd);
 
       //#mb test printout 
       //printf("%d %le\n", i + sett->N*(opts->ident-1), phaseadd); 
 
     
       // Adding the signal to the data vector 
+
       if(ifo[n].sig.xDat[i]) { 
         ifo[n].sig.xDat[i] += h0*signadd;
 	      // thsnr += pow(signadd, 2.);
+
       }
 	 
     }
     
   }
-  
-} 
 
+} 
 
 /* Search range */ 
 
