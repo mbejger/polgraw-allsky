@@ -114,7 +114,7 @@ Yep64f** neigh(double *m, double *perc, int b){
 
 }
 
-// Allocation of memory for martix with given number of rows and columns
+// Allocation of memory for double martix with given number of rows and columns
 double** matrix(int rows, int cols) {
 
   	int k;
@@ -123,6 +123,18 @@ double** matrix(int rows, int cols) {
   
   	for (k=0; k < rows; k++)
     		m[k] = (double *)calloc(cols, sizeof(double));
+  
+  	return m;
+}
+// Allocation of memory for complex double martix with given number of rows and columns
+complex double** matrix_complex(int rows, int cols) {
+
+  	int k;
+	complex double **m;
+  	m = (complex double **)malloc(rows*sizeof(complex double *));
+  
+  	for (k=0; k < rows; k++)
+    		m[k] = (complex double *)calloc(cols, sizeof(complex double));
   
   	return m;
 }
@@ -141,18 +153,28 @@ double ** alloc_matrix(int rows, int cols){
 	for (i = 0; i < rows; i++) matrix[i] = alloc_vector(cols);
 	return matrix;
 }
-void free_matrix(double ** matrix, int rows, int cols){
+void free_matrix(double **matrix, int rows, int cols){
 	int i;
-	for (i = 0; i < rows; i++) free_vector(matrix[i], cols);
+	for (i = 0; i < rows; i++) free(matrix[i]);
+	free(matrix);
+}
+void free_matrix_complex(complex double **matrix, int rows, int cols){
+	int i;
+	for (i = 0; i < rows; i++) free(matrix[i]);
 	free(matrix);
 }
 
 // Function computes F-statistics in given point
-double* Fstatnet(Search_settings *sett, double *sgnlo, double *nSource){
+double* Fstatnet(Search_settings *sett, double *sgnlo, double *nSource, double **sigaa, double **sigbb){
 
 	int i = 0, n = 0; 
 	double aatemp, bbtemp, aa = 0., bb = 0.;
-	complex double exph, xasum, xbsum;	
+	complex double exph, xasum, xbsum;
+	double **shft; 			// old ifo[i].sig.shft[n]
+	complex double **xDatma, **xDatmb;	// old ifo[n].sig.xDatma[i], ifo[n].sig.xDatmb[i]
+        shft = matrix(sett->nifo, sett->N);
+	xDatma = matrix_complex(sett->nifo, sett->N);
+	xDatmb = matrix_complex(sett->nifo, sett->N);		
 
 
 #ifdef YEPPP
@@ -179,16 +201,16 @@ double* Fstatnet(Search_settings *sett, double *sgnlo, double *nSource){
 //shft & phase loop
     		for(i=0; i < sett->N; ++i) {
 
-      			ifo[n].sig.shft[i] = nSource[0]*ifo[n].sig.DetSSB[i*3]
+      			shft[n][i] = nSource[0]*ifo[n].sig.DetSSB[i*3]
 		         	+ nSource[1]*ifo[n].sig.DetSSB[i*3+1]
 		         	+ nSource[2]*ifo[n].sig.DetSSB[i*3+2];
     
 // Phase modulation function
 // Copied from jobcore.c, line 265
 
-			phase[i] = sgnlo[0]*(double)(i + ifo[n].sig.shft[i]) 
+			phase[i] = sgnlo[0]*(double)(i + shft[n][i]) 
 				+ (sgnlo[1]*i*i) + ((sett->oms 
-				+ 2.*sgnlo[1]*i)*ifo[n].sig.shft[i]);
+				+ 2.*sgnlo[1]*i)*shft[n][i]);
 		} //shft & phase			
 
 //Sin & Cos calculations using Yeppp!
@@ -205,9 +227,9 @@ double* Fstatnet(Search_settings *sett, double *sgnlo, double *nSource){
 
 	      		exph = _cph[i] - I * _sph[i];
 
-	      		ifo[n].sig.xDatma[i] = ifo[n].sig.xDat[i]*ifo[n].sig.aa[i]*exph;
-	      		ifo[n].sig.xDatmb[i] = ifo[n].sig.xDat[i]*ifo[n].sig.bb[i]*exph;
-	
+	      		xDatma[n][i] = ifo[n].sig.xDat[i]*sigaa[n][i]*exph;
+	      		xDatmb[n][i] = ifo[n].sig.xDat[i]*sigbb[n][i]*exph;
+
 		}
 	} //End of detector loop 1
 
@@ -218,15 +240,15 @@ double* Fstatnet(Search_settings *sett, double *sgnlo, double *nSource){
 		bbtemp = 0.;
 		for(i = 0; i < sett->N; i++){
 
-			aatemp += sqr(ifo[n].sig.aa[i]);
-			bbtemp += sqr(ifo[n].sig.bb[i]);
+			aatemp += sqr(sigaa[n][i]);
+			bbtemp += sqr(sigbb[n][i]);
 		}
 		for(i=0; i < sett->N; ++i) {
-			ifo[n].sig.xDatma[i] /= ifo[n].sig.sig2;
-			ifo[n].sig.xDatmb[i] /= ifo[n].sig.sig2;
+			xDatma[n][i] /= ifo[n].sig.sig2;
+			xDatmb[n][i] /= ifo[n].sig.sig2;
 
-			xasum += ifo[n].sig.xDatma[i];
-			xbsum += ifo[n].sig.xDatmb[i];
+			xasum += xDatma[n][i];
+			xbsum += xDatmb[n][i];
 		}
 		aa += aatemp/ifo[n].sig.sig2; 
 		bb += bbtemp/ifo[n].sig.sig2;   
@@ -259,6 +281,9 @@ double* Fstatnet(Search_settings *sett, double *sgnlo, double *nSource){
 	free(_sph);
 	free(_cph);
 	free(phase);
+	free_matrix(shft, sett->nifo, sett->N);
+	free_matrix_complex(xDatma, sett->nifo, sett->N);
+	free_matrix_complex(xDatmb, sett->nifo, sett->N);
 
 	return fstat_out;
 }
@@ -273,12 +298,16 @@ Yep64f* MADS(Search_settings *sett, Aux_arrays *aux, double* in, double *start, 
   	double sinalt, cosalt, sindelt, cosdelt;
 	double param[4]; 			//initial size of mesh
 	double smallest = 100;
+        double **sigaa, **sigbb;   // aa[nifo][N]
+        sigaa = matrix(sett->nifo, sett->N);
+	sigbb = matrix(sett->nifo, sett->N);
 	for(r = 0; r < 4;r++){
 		param[r] = pc[r]/bins;
 	}
 	for(r = 0; r < 4; r++){
 		if(param[r] < smallest) smallest = param[r];
 	}
+
 #ifdef YEPPP
     yepLibrary_Init();
     Yep64f *p = (Yep64f*)malloc(sizeof(Yep64f)*4);
@@ -315,9 +344,9 @@ Yep64f* MADS(Search_settings *sett, Aux_arrays *aux, double* in, double *start, 
 
 			for (o = 0; o < sett->nifo; ++o){
 				modvir(sinalt, cosalt, sindelt, cosdelt, 
-			   		sett->N, &ifo[o], aux);  
+			   		sett->N, &ifo[o], aux, sigaa[o], sigbb[o]);  
 			}
-			res = Fstatnet(sett, p, nSource); //Fstat function for mesh points
+			res = Fstatnet(sett, p, nSource, sigaa, sigbb); //Fstat function for mesh points
 
 			if (res[5] < extr[5]){
 				for (l = 0; l < 11; l++){ 
@@ -359,7 +388,7 @@ double ** make_simplex(double * point, int dim, double *pc2){
 	return simplex;
 }
 
-void evaluate_simplex(double ** simplex, int dim, double ** fx, Search_settings *sett, Aux_arrays *aux, double *nS){
+void evaluate_simplex(double ** simplex, int dim, double ** fx, Search_settings *sett, Aux_arrays *aux, double *nS, double **sigaa, double **sigbb){
 	double sinalt, cosalt, sindelt, cosdelt;
 	double *out;
 	int i, o, j;
@@ -375,9 +404,9 @@ void evaluate_simplex(double ** simplex, int dim, double ** fx, Search_settings 
 
 			for (o = 0; o < sett->nifo; ++o){
 				modvir(sinalt, cosalt, sindelt, cosdelt, 
-			   		sett->N, &ifo[o], aux);  
+			   		sett->N, &ifo[o], aux, sigaa[o], sigbb[o]);  
 			}
-			out = Fstatnet(sett, simplex[i], nS);
+			out = Fstatnet(sett, simplex[i], nS, sigaa, sigbb);
 			for (j = 0; j < 11; j++) fx[i][j] = out[j];
 	}
 }
@@ -426,11 +455,12 @@ void simplex_bearings(double ** simplex, int dim, double * midpoint, double * li
 		line[j] = simplex[ihi][j] - midpoint[j];
 	}
 }
-int update_simplex(double ** simplex, int dim, double  fmax, double ** fx, int ihi, double * midpoint, double * line, double scale, Search_settings *sett, Aux_arrays *aux, double *nS){
+int update_simplex(double ** simplex, int dim, double  fmax, double ** fx, int ihi, double * midpoint, double * line, double scale, Search_settings *sett, Aux_arrays *aux, double *nS, double **sigaa, double **sigbb){
 	int i, o, j, update = 0; 
 	double * next = alloc_vector(dim);
 	double * fx2;
 	double sinalt, cosalt, sindelt, cosdelt;
+
 	for (i = 0; i < dim; i++) next[i] = midpoint[i] + scale * line[i];
 
 	sinalt = sin(next[3]);
@@ -444,9 +474,9 @@ int update_simplex(double ** simplex, int dim, double  fmax, double ** fx, int i
 
 	for (o = 0; o < sett->nifo; ++o){
 		modvir(sinalt, cosalt, sindelt, cosdelt, 
-	   		sett->N, &ifo[o], aux);  
+	   		sett->N, &ifo[o], aux, sigaa[o], sigbb[o]);  
 	}
-	fx2 = Fstatnet(sett, next, nS);
+	fx2 = Fstatnet(sett, next, nS, sigaa, sigbb);
 	if (fx2[5] < fmax){
 		for (i = 0; i < dim; i++) simplex[ihi][i] = next[i];
 		for (j = 0; j < 11; j++) fx[ihi][j] = fx2[j];
@@ -456,10 +486,11 @@ int update_simplex(double ** simplex, int dim, double  fmax, double ** fx, int i
 	return update;
 }
 
-void contract_simplex(double ** simplex, int dim, double ** fx, int ilo, int ihi, Search_settings *sett, Aux_arrays *aux, double *nS){
+void contract_simplex(double ** simplex, int dim, double ** fx, int ilo, int ihi, Search_settings *sett, Aux_arrays *aux, double *nS, double **sigaa, double **sigbb){
   	double sinalt, cosalt, sindelt, cosdelt;
 	double * fx3;
 	int i, j, k, o;
+
 	for (i = 0; i < dim + 1; i++){
 		if (i != ilo){
 			for (j = 0; j < dim; j++) simplex[i][j] = (simplex[ilo][j]+simplex[i][j])*0.5;
@@ -474,10 +505,10 @@ void contract_simplex(double ** simplex, int dim, double ** fx, int ilo, int ihi
 
 			for (o = 0; o < sett->nifo; ++o){
 				modvir(sinalt, cosalt, sindelt, cosdelt, 
-			   		sett->N, &ifo[o], aux);  
+			   		sett->N, &ifo[o], aux, sigaa[o], sigbb[o]);  
 			}
 
-			fx3 = Fstatnet(sett, simplex[i], nS);
+			fx3 = Fstatnet(sett, simplex[i], nS, sigaa, sigbb);
 			for (k = 0; k < 11; k++) fx[i][k] = fx3[k];
 		}
 	}
@@ -489,7 +520,7 @@ int check_tol(double fmax, double fmin, double ftol){
 	return (delta < (accuracy + ZEPS));
 }
 
-double * amoeba(Search_settings *sett, Aux_arrays *aux, double *point, double *nS, double *res_max, int dim, double tol, double *pc2){
+double * amoeba(Search_settings *sett, Aux_arrays *aux, double *point, double *nS, double *res_max, int dim, double tol, double *pc2, double **sigaa, double **sigbb){
 	int ihi, ilo, inhi;
 // ihi = ih[0], ilo = ih[1], inhi = ih[2];
 	int *ih;
@@ -499,7 +530,9 @@ double * amoeba(Search_settings *sett, Aux_arrays *aux, double *point, double *n
 	double * midpoint = alloc_vector(dim);
 	double * line = alloc_vector(dim);
 	double ** simplex = make_simplex(point, dim, pc2);
-	evaluate_simplex(simplex, dim, fx, sett, aux, nS);
+
+	evaluate_simplex(simplex, dim, fx, sett, aux, nS, sigaa, sigbb);
+
 	while (true)
 	{
 		ih = simplex_extremes(fx, dim);
@@ -507,30 +540,29 @@ double * amoeba(Search_settings *sett, Aux_arrays *aux, double *point, double *n
 		ilo = ih[1]; 
 		inhi = ih[2];
 		simplex_bearings(simplex, dim, midpoint, line, ihi);
-
 		if(check_tol(fx[ihi][5], fx[ilo][5], tol)) break;
-		update_simplex(simplex, dim, fx[ihi][5], fx, ihi, midpoint, line, -1.0, sett, aux, nS);
-
+		update_simplex(simplex, dim, fx[ihi][5], fx, ihi, midpoint, line, -1.0, sett, aux, nS, sigaa, sigbb);
 		if (fx[ihi][5] < fx[ilo][5]){
-			update_simplex(simplex, dim, fx[ihi][5], fx, ihi, midpoint, line, -2.0, sett, aux, nS);
+			update_simplex(simplex, dim, fx[ihi][5], fx, ihi, midpoint, line, -2.0, sett, aux, nS, sigaa, sigbb);
 		}
 		else if (fx[ihi][5] > fx[inhi][5]){
-			if (!update_simplex(simplex, dim, fx[ihi][5], fx, ihi, midpoint, line, 0.5, sett, aux, nS)){
-				contract_simplex(simplex, dim, fx, ilo, ihi, sett, aux, nS);
+			if (!update_simplex(simplex, dim, fx[ihi][5], fx, ihi, midpoint, line, 0.5, sett, aux, nS, sigaa, sigbb)){
+				contract_simplex(simplex, dim, fx, ilo, ihi, sett, aux, nS, sigaa, sigbb);
 			}
 		}
 	}
+
 	for (j = 0; j < dim; j++) point[j] = simplex[ilo][j];
 	for (j = 0; j < 11; j++) NM_out[j] = fx[ilo][j];
-/*	free_matrix(fx, dim + 1, 10);
+	free_matrix(fx, dim + 1, 10);
 	free_vector(midpoint, dim);
 	free_vector(line, dim);
 	free_matrix(simplex, dim + 1, dim);
-*/
-	free(fx);
+/*	free(fx);
 	free(midpoint);
 	free(line);
 	free(simplex);
+*/
 	return NM_out;
 }
 
@@ -635,7 +667,7 @@ int main (int argc, char *argv[]) {
 				arr = matrix(ROW, 4);
 
 //Function neighbourhood - generating grid around point
-//				arr = neigh(mean, pc, bins);
+				arr = neigh(mean, pc, bins);
 // Output data handling
 /*  				struct stat buffer;
 
@@ -674,18 +706,28 @@ int main (int argc, char *argv[]) {
   				}
 
 // Setting number of using threads (not required)
-//omp_set_num_threads(2);
+//omp_set_num_threads(1);
 
 				results_max[5] = 0.;
+
+// ifo zostaje shared
+// ifo....shft i ifo....xdatm{a,b] prerobić na lokalne tablice w fstatnet
+// w regionie parallel wprowadzić tablice private aa i bb ; alokować i przekazywać je jako argumenty do fstatnet i amoeba
+
 // Main loop - over all parameters + parallelisation
-//#pragma omp parallel default(shared) private(d, m, o, i, sgnlo, sinalt, cosalt, sindelt, cosdelt, nSource, results, maximum)
-//{
-//#pragma omp for  
+#pragma omp parallel default(shared) private(d, m, o, i, sgnlo, sinalt, cosalt, sindelt, cosdelt, nSource, results, maximum)
+{
+
+                       		double **sigaa, **sigbb;   // aa[nifo][N]
+              			sigaa = matrix(sett.nifo, sett.N);
+				sigbb = matrix(sett.nifo, sett.N);
+
+#pragma omp for  
 				for (d = 0; d < ROW; ++d){
 
 					for (m = 0; m < 4; m++){
-//						sgnlo[m] = arr[d][m];
-						sgnlo[m] = mean[m]; 
+						sgnlo[m] = arr[d][m];
+//						sgnlo[m] = mean[m]; 
 					}
  
 					sinalt = sin(sgnlo[3]);
@@ -699,13 +741,14 @@ int main (int argc, char *argv[]) {
 
 					for (o = 0; o < sett.nifo; ++o){
 						modvir(sinalt, cosalt, sindelt, cosdelt, 
-					   		sett.N, &ifo[o], &aux_arr);  
+					   		sett.N, &ifo[o], &aux_arr, sigaa[o], sigbb[o]);  
 					}
 
 // F-statistic in given point
-//#pragma omp critical
-					results = Fstatnet(&sett, sgnlo, nSource);
-//#pragma omp critical
+
+					results = Fstatnet(&sett, sgnlo, nSource, sigaa, sigbb);
+
+#pragma omp critical
 					if(results[5] < results_max[5]){
 						for (i = 0; i < 11; i++){
 							results_max[i] = results[i];
@@ -715,9 +758,10 @@ int main (int argc, char *argv[]) {
 // Maximum search using simplex algorithm
 					if(opts.simplex_flag){
 //						puts("Simplex");
-						maximum = amoeba(&sett, &aux_arr, sgnlo, nSource, results, dim, tol, pc2);
+
+						maximum = amoeba(&sett, &aux_arr, sgnlo, nSource, results, dim, tol, pc2, sigaa, sigbb);
 // Maximum value in points searching
-//#pragma omp critical
+#pragma omp critical
 						if(maximum[5] < results_max[5]){
 							for (i = 0; i < 11; i++){
 								results_max[i] = maximum[i];
@@ -725,8 +769,10 @@ int main (int argc, char *argv[]) {
 						}
 
 					} //simplex
+//printf("%d\n", d);
 				} // d - main outside loop
-//} //pragma
+
+} //pragma
 
 				for(g = 0; g < 11; g++) results_first[g] = results_max[g];
 
@@ -796,4 +842,6 @@ if((opts.mads_flag)||(opts.simplex_flag)){
 //time LD_LIBRARY_PATH=/home/msieniawska/tests/addsig/polgraw-allsky/search/network/src-cpu/lib/yeppp-1.0.0/binaries/linux/x86_64 ./gwsearch-cpu -data /home/msieniawska/tests/addsig/data -output . -ident 031 -band 0666 -dt 2 -addsig /home/msieniawska/tests/addsig/data/sig1 --nocheckpoint >searchtest.txt
 
 //time LD_LIBRARY_PATH=/home/msieniawska/tests/addsig/polgraw-allsky/test/search/network/src-cpu/lib/yeppp-1.0.0/binaries/linux/x86_64 ./followup -data /home/msieniawska/tests/addsig/data -output . -ident 031 -band 0666 -dt 2 -addsig /home/msieniawska/tests/addsig/data/sig1 -usedet H1 --simplex
+//LD_LIBRARY_PATH=/home/msieniawska/tests/addsig/polgraw-allsky/test/search/network/src-cpu/lib/yeppp-1.0.0/binaries/linux/x86_64 ./gwsearch-cpu -data /home/msieniawska/tests/addsig/test/pulsar8 -output . -ident 001 -band 0747 -dt 2 -usedet H1 -threshold 200 --whitenoise 
+//time LD_LIBRARY_PATH=/home/msieniawska/tests/addsig/polgraw-allsky/test/search/network/src-cpu/lib/yeppp-1.0.0/binaries/linux/x86_64 ./followup -data /home/msieniawska/tests/addsig/test/pulsar8 -output . -ident 001 -band 0747 -dt 2 -usedet H1 --simplex
 
