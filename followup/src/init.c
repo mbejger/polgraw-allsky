@@ -600,7 +600,7 @@ void add_signal(
 		Search_range *s_range) {
 
   int i, j, n, gsize, reffr, k; 
-  double h0, cof; 
+  double h0, cof, thsnr = 0; 
   double sinaadd, cosaadd, sindadd, cosdadd, phaseadd, shiftadd, signadd; 
   double nSource[3], sgnlo[10], sgnlol[4];
   double **sigaa, **sigbb;   // aa[nifo][N]
@@ -735,13 +735,15 @@ void add_signal(
 
       if(ifo[n].sig.xDat[i]) { 
         ifo[n].sig.xDat[i] += h0*signadd;
-	      // thsnr += pow(signadd, 2.);
+	       thsnr += pow(signadd, 2.);
 
       }
+
 	 
     }
     
   }
+printf("Signal SNR:%le\n", sqrt(thsnr));
 
 } 
 
