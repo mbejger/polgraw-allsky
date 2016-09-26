@@ -257,7 +257,7 @@ double* Fstatnet(Search_settings *sett, double *sgnlo, double *nSource, double *
 
 // F - statistic
 	fstat_out[5] = - ((( sqr(creal(xasum)) + sqr(cimag(xasum)))/aa)
-			+ ((sqr(creal(xbsum)) + sqr(cimag(xasum)))/bb));
+			+ ((sqr(creal(xbsum)) + sqr(cimag(xbsum)))/bb));
 
 // Amplitude estimates
 	fstat_out[0] = 2*creal(xasum)/aa;
@@ -706,7 +706,7 @@ int main (int argc, char *argv[]) {
   				}
 
 // Setting number of using threads (not required)
-//omp_set_num_threads(1);
+omp_set_num_threads(1);
 
 				results_max[5] = 0.;
 
@@ -715,7 +715,7 @@ int main (int argc, char *argv[]) {
 // w regionie parallel wprowadzić tablice private aa i bb ; alokować i przekazywać je jako argumenty do fstatnet i amoeba
 
 // Main loop - over all parameters + parallelisation
-#pragma omp parallel default(shared) private(d, m, o, i, sgnlo, sinalt, cosalt, sindelt, cosdelt, nSource, results, maximum)
+#pragma omp parallel default(shared) private(d, i, sgnlo, sinalt, cosalt, sindelt, cosdelt, nSource, results, maximum)
 {
 
                        		double **sigaa, **sigbb;   // aa[nifo][N]
@@ -725,9 +725,9 @@ int main (int argc, char *argv[]) {
 #pragma omp for  
 				for (d = 0; d < ROW; ++d){
 
-					for (m = 0; m < 4; m++){
-						sgnlo[m] = arr[d][m];
-//						sgnlo[m] = mean[m]; 
+					for (i = 0; i < 4; i++){
+						sgnlo[i] = arr[d][i];
+//						sgnlo[i] = mean[i]; 
 					}
  
 					sinalt = sin(sgnlo[3]);
@@ -739,14 +739,14 @@ int main (int argc, char *argv[]) {
 					nSource[1] = sinalt*cosdelt;
 					nSource[2] = sindelt;
 
-					for (o = 0; o < sett.nifo; ++o){
+					for (i = 0; i < sett.nifo; ++i){
 						modvir(sinalt, cosalt, sindelt, cosdelt, 
-					   		sett.N, &ifo[o], &aux_arr, sigaa[o], sigbb[o]);  
+					   		sett.N, &ifo[i], &aux_arr, sigaa[i], sigbb[i]);  
 					}
-
 // F-statistic in given point
 
 					results = Fstatnet(&sett, sgnlo, nSource, sigaa, sigbb);
+//printf("Fstatnet: %le %le %le %le %le %le\n", results[6], results[7], results[8], results[9], results[5], results[4]);
 
 #pragma omp critical
 					if(results[5] < results_max[5]){
@@ -760,6 +760,7 @@ int main (int argc, char *argv[]) {
 //						puts("Simplex");
 
 						maximum = amoeba(&sett, &aux_arr, sgnlo, nSource, results, dim, tol, pc2, sigaa, sigbb);
+//printf("Amoeba: %le %le %le %le %le %le\n", maximum[6], maximum[7], maximum[8], maximum[9], maximum[5], maximum[4]);
 // Maximum value in points searching
 #pragma omp critical
 						if(maximum[5] < results_max[5]){
@@ -769,7 +770,6 @@ int main (int argc, char *argv[]) {
 						}
 
 					} //simplex
-//printf("%d\n", d);
 				} // d - main outside loop
 
 } //pragma
@@ -780,6 +780,7 @@ int main (int argc, char *argv[]) {
   				if(opts.mads_flag) {
 //					puts("MADS");
 					maximum = MADS(&sett, &aux_arr, results_max, mean, tol, pc2, bins);
+
 				}
 
 //Time test
