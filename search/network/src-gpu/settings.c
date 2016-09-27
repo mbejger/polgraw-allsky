@@ -34,11 +34,21 @@ void search_settings(
   nfft = 1 << (int)ceil(log(N)/log(2.));    // length of FFT
   s = 1;                                    // No. of spindowns
 
+/* 
   Smin = 1000.*C_YEARSEC;                   // Minimum spindown time 
                                             // [sec.]
 
   // Maximum spindown (1000 years) [angular, dimensionless]
   Smax = 2.*M_PI*(sett->fpo + B)*dt*dt/(2.*Smin);   
+*/ 
+
+  //#mb ranges of spindown (RDC O1) 
+  double fdotmin, fdotmax; 
+  fdotmin = 0.5e-8; 
+  fdotmax = 0.5e-9; 
+
+  Smax = 2.*M_PI*fdotmin*dt*dt; 
+  Smin = 2.*M_PI*fdotmax*dt*dt;
 
   nd = 2;     // Degree of freedom, 
               // (2*nd = deg. no ofrees of freedom for chi^2)
@@ -65,6 +75,9 @@ void search_settings(
 
   sett->nmin = sett->fftpad*NAV*sett->B;
   sett->nmax = (sett->nfft/2 - NAV*sett->B)*sett->fftpad;
+
+  // initial value of number of known instrumental lines in band 
+  sett->numlines_band=0; 
 
 } // search settings  
 
@@ -97,10 +110,15 @@ void detectors_settings(
   if (dp != NULL) {
     while ((ep = readdir (dp))) { 
 
-      // Subdirectory names: 2 char long
+      // Subdirectory names checkup: 
+      // check if it's a dir
+      // name is 2 char long
+      // not a directory name of the type "./" or ".."
+      // if usedef is not set (length equal 0), or is set and dir name is substring of it 
       if((ep->d_type == DT_DIR) && 
         (strlen(ep->d_name)==DETNAME_LENGTH) && 
-        strncmp(&ep->d_name[0],".",1)) { 
+        (strncmp(&ep->d_name[0],".",1)) && 
+        (!strlen(opts->usedet) || (strlen(opts->usedet) && (strstr(opts->usedet, ep->d_name))))) { 
 
           FILE *data;
 
@@ -108,14 +126,15 @@ void detectors_settings(
           // 
           // We assume that in each subdirectory corresponding 
           // to the detector the input data will look as following: 
-          sprintf(x, "%s/%03d/%s/xdatc_%03d%s.bin",
+/*          sprintf(x, "%s/%03d/%s/xdatc_%03d%s.bin",
           opts->dtaprefix, opts->ident, ep->d_name,
           opts->ident, opts->label);
-/*
-          sprintf(x, "%s/%03d/%s/xdatc_%03d_%03d%s.bin",
+*/
+
+          sprintf(x, "%s/%03d/%s/xdatc_%03d_%04d%s.bin",
           opts->dtaprefix, opts->ident, ep->d_name,
           opts->ident, opts->band, opts->label);
-*/
+
           if((data = fopen(x, "r")) != NULL) {
 
             xnames[i]   = (char *)calloc(strlen(x)+1, sizeof(char));
@@ -131,6 +150,7 @@ void detectors_settings(
             //perror (x);
           }
 
+          fclose(data); 
           memset(x, 0, sizeof(x));
       }
     } 

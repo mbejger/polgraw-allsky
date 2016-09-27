@@ -370,6 +370,17 @@ FLOAT_TYPE* job_core(
   int spindown_counter  = 0;
 #endif
 
+  // Check if the signal is added to the data 
+  // or the range file is given:  
+  // if not, proceed with the wide range of spindowns 
+  // if yes, use smin = s_range->sst, smax = s_range->spndr[1]  
+  if(!strcmp(opts->addsig, "") && !strcmp(opts->range, "")) {
+
+      // Spindown range defined using Smin and Smax (settings.c)  
+      smin = trunc((sett->Smin - nn*sett->M[9] - mm*sett->M[13])/sett->M[5]);
+      smax = trunc(-(nn*sett->M[9] + mm*sett->M[13] + sett->Smax)/sett->M[5]);
+  } 
+
   printf ("\n>>%d\t%d\t%d\t[%d..%d]\n", *FNum, mm, nn, smin, smax);
 
   // No-spindown calculations
@@ -385,8 +396,8 @@ FLOAT_TYPE* job_core(
     // Spindown parameter
     sgnlt[1] = ss*sett->M[5] + nn*sett->M[9] + mm*sett->M[13];
     
-    // Spindown range
-    if(sgnlt[1] >= -sett->Smax && sgnlt[1] <= sett->Smax) { 
+//    // Spindown range
+//    if(sgnlt[1] >= -sett->Smax && sgnlt[1] <= sett->Smax) { 
       
       int ii;
       double Fc, het1;
@@ -502,7 +513,7 @@ FLOAT_TYPE* job_core(
 #endif
 
 
-    } // if sgnlt[1] 
+//    } // if sgnlt[1] 
     
   } // for ss 
 
