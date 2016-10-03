@@ -498,7 +498,11 @@ void add_signal(
   s_range->mr[1] = s_range->mr[0] + gsize; 
   s_range->mr[0] -= gsize;
   s_range->pmr[1] = s_range->pmr[0]; 
-  
+
+  printf("add_signal() - the following grid range is used\n");
+  printf("(spndr, nr, mr, pmr pairs): %d %d %d %d %d %d %d %d\n",
+	 s_range->spndr[0], s_range->spndr[1], s_range->nr[0], s_range->nr[1],
+	 s_range->mr[0], s_range->mr[1], s_range->pmr[0], s_range->pmr[1]);
 
   // sgnlo[2]: declination, sgnlo[3]: right ascension 
   sindadd = sin(sgnlo[2]); 
@@ -719,11 +723,13 @@ void set_search_range(
 
   }
 
-  printf("The following grid range is used\n");
+  printf("set_search_range() - the grid ranges are maximally this:\n"); 
   printf("(spndr, nr, mr, pmr pairs): %d %d %d %d %d %d %d %d\n",	\
 	 s_range->spndr[0], s_range->spndr[1], s_range->nr[0], s_range->nr[1],
 	 s_range->mr[0], s_range->mr[1], s_range->pmr[0], s_range->pmr[1]);
-  
+
+  printf("Smin: %le, Smax: %le\n", sett->Smin, sett->Smax);
+
 } // end of set search range 
 
 

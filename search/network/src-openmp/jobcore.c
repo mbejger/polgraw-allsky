@@ -1,6 +1,7 @@
 #define _GNU_SOURCE
 #include <math.h>
 #include <stdio.h>
+#include <string.h> 
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
@@ -412,6 +413,20 @@ int job_core(int pm,                   // Hemisphere
   int bnd = (sett->N/VLEN)*VLEN;
 #endif
 
+  // Check if the signal is added to the data or the range file is given:  
+  // if not, proceed with the wide range of spindowns 
+  // if yes, use smin = s_range->sst, smax = s_range->spndr[1]  
+  if(!strcmp(opts->addsig, "") && !strcmp(opts->range, "")) {
+    // Spindown range defined using Smin and Smax (settings.c)  
+    smin = trunc((sett->Smin - nn*sett->M[9] - mm*sett->M[13])/sett->M[5]);
+    smax = trunc(-(nn*sett->M[9] + mm*sett->M[13] + sett->Smax)/sett->M[5]);
+  } 
+  
+  printf ("\n>>%d\t%d\t%d\t[%d..%d]\n", *FNum, mm, nn, smin, smax);
+  
+  if(opts->s0_flag) smin = smax;
+  // if spindown parameter is taken into account, smin != smax
+  
   printf ("\n>>%d\t%d\t%d\t[%d..%d]\n", *FNum, mm, nn, smin, smax);
 
   static fftw_complex *fxa, *fxb;
@@ -447,15 +462,7 @@ int job_core(int pm,                   // Hemisphere
     if (!F) F = (double *)calloc(2*sett->nfft, sizeof(double));
   
     /* Spindown loop  */
-    //#mb !!! Limits put by hand for RDC_O1 !!!  
-    smin = trunc(-(nn*sett->M[9] + mm*sett->M[13] - 1.2566e-8)/sett->M[5]);
-    smax = trunc(-(nn*sett->M[9] + mm*sett->M[13] + 1.2566e-7)/sett->M[5]);
-    // No-spindown calculations
-    if(opts->s0_flag) smin = smax;
-    
-    //    printf("smin=%d    smax=%d\n", smin, smax);
 
-    // if spindown parameter is taken into account, smin != smax
 #pragma omp for schedule(guided)
     for(ss=smin; ss<=smax; ++ss) {
 
