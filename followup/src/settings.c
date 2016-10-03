@@ -276,7 +276,8 @@ void modvir(
   double cosdel,
   int Np,
   Detector_settings *ifo, 
-  Aux_arrays *aux) {
+  Aux_arrays *aux,
+  double *sigaa, double *sigbb) {
 
   int t;
   double cosalfr, sinalfr, c2d, c2sd, c, s, c2s, cs;
@@ -305,12 +306,10 @@ void modvir(
     cs = c*s;
 
     // modulation factors aa and bb  
-    ifo->sig.aa[t] = c1*(2.-c2d)*c2s + c2*(2.-c2d)*2.*cs +
+    sigaa[t] = c1*(2.-c2d)*c2s + c2*(2.-c2d)*2.*cs +
            c3*c2sd*c + c4*c2sd*s - c1*(2.-c2d) + c5*c2d;
-
-    ifo->sig.bb[t] = c6*sindel*c2s + c7*sindel*2.*cs + 
+    sigbb[t] = c6*sindel*c2s + c7*sindel*2.*cs + 
            c8*cosdel*c + c9*cosdel*s - c6*sindel;
-
   } 
 
 } // modvir

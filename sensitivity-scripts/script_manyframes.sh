@@ -25,7 +25,7 @@ num_of_frames=0
 
 for frame in $(cat LOF|sort -r); do 
 
-	LD_LIBRARY_PATH=LDLP ./search -data DATA -output . -ident ${frame} -band BAND -dt DT -addsig <(echo $sig_pars) --nocheckpoint -threshold THRESH 2>> /dev/null 1>> BAND.out
+	LD_LIBRARY_PATH=LDLP ./search -data DATA -output . -ident ${frame} -band BAND -dt DT -addsig <(echo $sig_pars) --nocheckpoint -threshold THRESH -usedet USEDET 2>> /dev/null 1>> BAND.out
 	let "num_of_frames += 1"
 	# ./search exits with exit(137) when the signal goes out of band 
 	if [[ $? -eq 137 ]]; then
@@ -71,15 +71,15 @@ sort -rgk5 -gk10 BAND/summary | head -1 >> summary
 sumvar=$(<summary)
 
 # Cleanup (archiving and deleting the coi files) 
-for r in $(ls BAND/*.coi); do 
-	LZ4PATH/lz4 -6 ${r} ${r}.lz4 && gzip ${r}.lz4
-	if [ -f ${r}".lz4.gz" ]; then 
-    	rm $r
-    fi 
-done 
+#for r in $(ls BAND/*.coi); do 
+#	LZ4PATH/lz4 -6 ${r} ${r}.lz4 && gzip ${r}.lz4
+#	if [ -f ${r}".lz4.gz" ]; then 
+#    	rm $r
+#    fi 
+#done 
 
 # cleanup 
-rm -fr triggers_* *.e* *.o* BAND
+rm -fr triggers_* *.e* *.o* BAND wisdom*
 
 cd ../
 

@@ -42,4 +42,7 @@ int lubksb (double *, int, int *, double *);
 int invm (const double *, int, double *);
 double det (const double *, int);
 
+// for qsorting the lines 
+int compared2c (const void *, const void *);  
+
 #endif

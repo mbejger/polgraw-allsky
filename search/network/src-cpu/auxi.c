@@ -54,7 +54,6 @@ void ast2lin (FLOAT_TYPE alfa, FLOAT_TYPE delta, double epsm, double *be) {
 
 }
 
-
 inline void
 spline(complex double *y, int n, complex double *y2)
 {
@@ -385,7 +384,7 @@ double
 det (const double *a, int N)
      /* determinant of a real matrix a[0..N-1][0..N-1] */
 {
-  double d, *al;;
+  double d, *al;
   int j, *indx;
 
   al = (double *) calloc (sqr(N), sizeof (double));
@@ -399,5 +398,18 @@ det (const double *a, int N)
   free (al);
   return d;
 } /* det() */
+
+int 
+compared2c(const void *a, const void *b) {
+
+  double* da = (double*)a;
+  double* db = (double*)b;
+
+  int diff1 = (da[0] > db[0]) - (da[0] < db[0]);
+  if (diff1 != 0) return diff1;
+  return (da[1] > db[1]) - (da[1] < db[1]);
+
+}
+
 
 #endif

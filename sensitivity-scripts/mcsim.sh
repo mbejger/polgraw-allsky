@@ -17,6 +17,7 @@ reffr=031                 # the reference frame (coincidences)
 cell=4444                 # Cell size (coincidences) 
 snrcut=4                  # Signal-to-noise cutoff 
 mincoin=10                # Minimal no. of coincidences to register 
+usedet=H1                 # Detectors to use (H1V1, L1H1, V1, etc.)  
 #-----------------------------------------------------------------------
 
 # Band number and h0 amplitudes are read from a file 
@@ -42,7 +43,7 @@ while read line; do
 
 		cd $diri
 		# Prepare subdirectories and links
-		bash prepare.sh ${b} ${h[$i]} ${code_home} ${coin_home} ${script_home} ${data} ${list_of_frames} ${lz4path} ${ldlp} ${dt} ${thresh} ${howmany} ${gsize} ${reffr} ${cell} ${snrcut} ${mincoin}  
+		bash prepare.sh ${b} ${h[$i]} ${code_home} ${coin_home} ${script_home} ${data} ${list_of_frames} ${lz4path} ${ldlp} ${dt} ${thresh} ${howmany} ${gsize} ${reffr} ${cell} ${snrcut} ${mincoin} ${usedet} 
 		# Execute jobs
 		echo "Sending "$diri" jobs into the queue..."
     bash run.sh

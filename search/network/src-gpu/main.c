@@ -16,13 +16,12 @@
 
 #include "floats.h"
 #include "auxi.h"
-#include "struct.h"
 #include "settings.h"
+#include "struct.h"
 #include "jobcore.h"
 #include "init.h"
 
 // Default output and data directories
-
 #ifndef PREFIX
 #define PREFIX ./candidates
 #endif
@@ -79,43 +78,24 @@ int main (int argc, char* argv[]) {
   // Detector network settings
   detectors_settings(&sett, &opts); 
 
-  printf("detectors set!\n");
-
   // Array initialization
   init_arrays(&sett, &opts, &aux_arr, &F_d);
-
-
-  printf("arrays initialized!\n");
 
   // Amplitude modulation functions for each detector  
   for(i=0; i<sett.nifo; i++)   
     rogcvir(&ifo[i]); 
 
-  printf("after rogcvir\n");
-#if 0
-  // Grid search range
-  if(strlen(opts.addsig))
-    // If addsig switch used, add signal from file, 
-    // search around this position (+- gsize)
-    add_signal(&sett, &opts, &aux_arr, &s_range); 
-  else 
-#endif
-
-    // Set search range from range file  
-    set_search_range(&sett, &opts, &s_range);
+  // Set search range from range file  
+  set_search_range(&sett, &opts, &s_range);
 
   // FFT plans 
   FFT_plans fft_plans;
   FFT_arrays fft_arr;
-  //  plan_fft( &sett, &opts, &fft_plans, &fft_arr, &aux_arr );
-  plan_fft( &sett, &fft_plans, &fft_arr );
-  printf("fft plan ready\n");
-
+  plan_fft(&sett, &fft_plans, &fft_arr);
 
   // Checkpointing
   int Fnum=0;			        // candidate signal number
   read_checkpoints(&opts, &s_range, &Fnum);
-
 
   // main search job
   search(&sett, &opts, &s_range, 
@@ -130,7 +110,8 @@ int main (int argc, char* argv[]) {
   }
 	
   // Cleanup & memory free 
-  cleanup( &sett, &opts, &s_range, &fft_plans, &fft_arr, &aux_arr, F_d );
+  cleanup(&sett, &opts, &s_range, 
+          &fft_plans, &fft_arr, &aux_arr, F_d);
 
   return 0; 
 	
