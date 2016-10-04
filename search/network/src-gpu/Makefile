@@ -1,8 +1,5 @@
 TARGET = gwsearch-gpu
 
-# FFTW_DIR - fftw location, remember to compile it with optimizations (e.g. avx)
-# SINCOS = {YEPPP or SLEEF or GNUSINCOS or NOSINCOS}
-FFTW_DIR = /opt/fftw/3.3.4/gnu
 SINCOS =  GNUSINCOS #or NOSINCOS
 
 CC = g++
@@ -19,20 +16,12 @@ CFLAGS += -g -Wall -Wno-unused -fno-omit-frame-pointer \
         #-march=corei7-avx -mtune=corei7-avx -mavx
 #westmere (plgrid)
         #-march=corei7 -mtune=corei7
-#LDFLAGS = -L$(FFTW_DIR)/lib
-#LDLIBS = -Wl,--dynamic-linker=/lib64/ld-linux-x86-64.so.2 \
-#         -static -lfftw3 -lgsl -lgslcblas \
-#         -Wl,-Bdynamic -lc -lrt -lm
 
-#NCFLAGS += -I$(FFTW_DIR)/include 
 NCFLAGS += -DBLOCK_SIZE=256 
-NCFLAGS += -O3 -g --ptxas-options=-v -G -use_fast_math -arch=sm_35
+NCFLAGS += -O3 -g -G -use_fast_math -arch=sm_35 #--ptxas-options=-v 
 
 
 LDFLAGS = -L/usr/local/cuda/lib64
-#LDLIBS = -Wl,--dynamic-linker=/lib64/ld-linux-x86-64.so.2 \
-#	 -static -lgsl -lgslcblas \
-#	 -Wl,-Bdynamic -lcufft -lcuda -lcudart -lcusparse -lcublas -lc -lrt -lm
 
 LDLIBS = -Xlinker --dynamic-linker=/lib64/ld-linux-x86-64.so.2 \
 	 -Xlinker -static -lgsl -lgslcblas \

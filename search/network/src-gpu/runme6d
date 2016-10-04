@@ -1,0 +1,7 @@
+# Sample run, input data from "../../../testdata/test-gpu-cpu6d/"
+# output to the current dir, time segment 001, frequency band 0666, 
+# sampling dt=2 s, grid range from range.dat file, use both detectors H1 and L1
+
+### !!! Change nod from 2 to 6 in settings.c and recompile !!! ### 
+
+./gwsearch-gpu -data ../../../testdata/test-gpu-cpu6d/ -output . -ident 001 -band 0666 -dt 2 --nocheckpoint -range range.dat -usedet H1L1

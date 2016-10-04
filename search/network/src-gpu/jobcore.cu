@@ -1,4 +1,4 @@
-#define _GNU_SOURCE
+//#define _GNU_SOURCE
 #include <math.h>
 #include <stdio.h>
 #include <sys/types.h>
@@ -72,9 +72,6 @@ void search(
 
   /* copy ampl. mod. coef. to device constant memory */
   copy_amod_coeff(sett->nifo);
-  //printf("after copy_amod\n");
-
-  int cand_buffer_count = 0;
 
   //allocate vector for FStat_gpu
   int nav_blocks = (sett->nmax - sett->nmin)/NAV;     //number of nav-blocks
@@ -91,7 +88,7 @@ void search(
   /* Loop over hemispheres  */ 
   for (pm=s_range->pst; pm<=s_range->pmr[1]; ++pm) {
     
-    sprintf (outname, "%s/triggers_%03d_%03d%s_%d.bin", 
+    sprintf (outname, "%s/triggers_%03d_%04d%s_%d.bin", 
 	     opts->prefix, opts->ident, opts->band, opts->label, pm);
     
     /* Two main loops over sky positions */ 
@@ -169,7 +166,8 @@ void search(
 }
 
 
-/* Main job   */ 
+/* Main job 
+ */ 
 
 FLOAT_TYPE* job_core(
 		     int pm,                    // Hemisphere
@@ -178,20 +176,19 @@ FLOAT_TYPE* job_core(
 		     Search_settings *sett,     // Search settings
 		     Command_line_opts *opts,   // Search options 
 		     Search_range *s_range,     // Range for searching
-		     FFT_plans *plans,         // Plans for fftw
-		     FFT_arrays *fft_arr,     // Arrays for fftw
+		     FFT_plans *plans,          // Plans for fftw
+		     FFT_arrays *fft_arr,       // Arrays for fftw
 		     Aux_arrays *aux,           // Auxiliary arrays
-		     double *F_d,                 // F-statistics array
+		     double *F_d,               // F-statistics array
 		     int *sgnlc,                // Candidate trigger parameters 
-		     int *FNum,                // Candidate signal number
-		     cublasHandle_t scale      //handle for scaling
+		     int *FNum,                 // Candidate signal number
+		     cublasHandle_t scale       // handle for scaling
 		     ) {
 
   int i, j, n;
   int smin = s_range->sst, smax = s_range->spndr[1];
   double al1, al2, sinalt, cosalt, sindelt, cosdelt, sgnlt[NPAR], 
     nSource[3], het0, sgnl0, ft;
-  double _tmp1[sett->nifo][sett->N];
   FLOAT_TYPE *sgnlv; 
 
   /// temp for testing  
@@ -233,8 +230,7 @@ FLOAT_TYPE* job_core(
   if ((sqr(al1)+sqr(al2))/sqr(sett->oms) > 1.) return NULL ;
 
   int ss;
-  double shft1, phase, cp, sp;
-  complex double exph;
+  double shft1;
 
   // Change linear (grid) coordinates to real coordinates
   lin2ast(al1/sett->oms, al2/sett->oms, 
@@ -258,7 +254,6 @@ FLOAT_TYPE* job_core(
      * for each detector (in signal sub-struct 
      * of _detector, ifo[n].sig.aa, ifo[n].sig.bb) 
      */
-    //printf("before modvir\n");
     modvir_gpu(sinalt, cosalt, sindelt, cosdelt, 
 	       sett->N, &ifo[n], aux, n);
 
@@ -273,31 +268,28 @@ FLOAT_TYPE* job_core(
 
 
     tshift_pmod_kern<<<(sett->nfft + BLOCK_SIZE - 1)/BLOCK_SIZE, BLOCK_SIZE>>>
-      ( shft1, het0, nSource[0], nSource[1], nSource[2],
-	ifo[n].sig.xDat_d, fft_arr->xa_d, fft_arr->xb_d, 
-	ifo[n].sig.shft_d, ifo[n].sig.shftf_d, 
-	aux->tshift_d,
-	ifo[n].sig.aa_d, ifo[n].sig.bb_d,
-	ifo[n].sig.DetSSB_d,
-	sett->oms, sett->N, sett->nfft, sett->interpftpad );
+      (shft1, het0, nSource[0], nSource[1], nSource[2],
+	     ifo[n].sig.xDat_d, fft_arr->xa_d, fft_arr->xb_d, 
+	     ifo[n].sig.shft_d, ifo[n].sig.shftf_d, 
+	     aux->tshift_d,
+	     ifo[n].sig.aa_d, ifo[n].sig.bb_d,
+	     ifo[n].sig.DetSSB_d,
+	     sett->oms, sett->N, sett->nfft, sett->interpftpad);
     CudaCheckError();
     
     cudaDeviceSynchronize();
     
-    //fftw_execute(plans->pl_int);  //forward fft (len nfft)
-    //fftw_execute(plans->pl_int2); //forward fft (len nfft)
     cufftExecZ2Z(plans->pl_int, fft_arr->xa_d, fft_arr->xa_d, CUFFT_FORWARD);
     cufftExecZ2Z(plans->pl_int, fft_arr->xb_d, fft_arr->xb_d, CUFFT_FORWARD);
 
-
     //shift frequencies and remove those over Nyquist
     resample_postfft<<<(sett->Ninterp + BLOCK_SIZE - 1)/BLOCK_SIZE, BLOCK_SIZE>>>
-      ( fft_arr->xa_d, fft_arr->xb_d, sett->nfft, sett->Ninterp, nyqst );
+      (fft_arr->xa_d, fft_arr->xb_d, 
+       sett->nfft, sett->Ninterp, nyqst);
+
     CudaCheckError();
 
     // Backward fft (len Ninterp = nfft*interpftpad)
-    //fftw_execute (plans->pl_inv);     
-    //fftw_execute (plans->pl_inv2); 
     cufftExecZ2Z(plans->pl_inv, fft_arr->xa_d, fft_arr->xa_d, CUFFT_INVERSE);
     cufftExecZ2Z(plans->pl_inv, fft_arr->xb_d, fft_arr->xb_d, CUFFT_INVERSE);
 
@@ -308,25 +300,25 @@ FLOAT_TYPE* job_core(
     CudaCheckError();
 
     // Spline interpolation to xDatma, xDatmb arrays
-    gpu_interp(fft_arr->xa_d,       //input data
-               sett->Ninterp,       //input data length
-	       aux->tshift_d,       //output time domain
-	       ifo[n].sig.xDatma_d, //output values
-	       sett->N,             //output data length
-	       aux->diag_d,         //diagonal
-	       aux->ldiag_d,        //lower diagonal
-	       aux->udiag_d,        //upper diagonal
-	       aux->B_d);           //coefficient matrix
+    gpu_interp(fft_arr->xa_d,       // input data
+               sett->Ninterp,       // input data length
+	             aux->tshift_d,       // output time domain
+	             ifo[n].sig.xDatma_d, // output values
+	             sett->N,             // output data length
+	             aux->diag_d,         // diagonal
+	             aux->ldiag_d,        // lower diagonal
+	             aux->udiag_d,        // upper diagonal
+	             aux->B_d);           // coefficient matrix
 
-    gpu_interp(fft_arr->xb_d,       //input data
-               sett->Ninterp,       //input data length
-	       aux->tshift_d,       //output time domain
-	       ifo[n].sig.xDatmb_d, //output values
-	       sett->N,             //output data length
-	       aux->diag_d,         //diagonal
-	       aux->ldiag_d,        //lower diagonal
-	       aux->udiag_d,        //upper diagonal
-	       aux->B_d);           //coefficient matrix
+    gpu_interp(fft_arr->xb_d,       // input data
+               sett->Ninterp,       // input data length
+	             aux->tshift_d,       // output time domain
+	             ifo[n].sig.xDatmb_d, // output values
+	             sett->N,             // output data length
+	             aux->diag_d,         // diagonal
+	             aux->ldiag_d,        // lower diagonal
+	             aux->udiag_d,        // upper diagonal
+	             aux->B_d);           // coefficient matrix
 
     ft = 1./ifo[n].sig.sig2;
     cublasZdscal( scale, sett->N, &ft, ifo[n].sig.xDatma_d, 1);
@@ -356,7 +348,6 @@ FLOAT_TYPE* job_core(
   }
   CudaCheckError();
 
-  //  printf("maa_d=%f", _maa);
   cudaMemcpyToSymbol(maa_d, &_maa, sizeof(double), 0, cudaMemcpyHostToDevice);
   cudaMemcpyToSymbol(mbb_d, &_mbb, sizeof(double), 0, cudaMemcpyHostToDevice);
   CudaCheckError();  
@@ -383,9 +374,6 @@ FLOAT_TYPE* job_core(
 
   printf ("\n>>%d\t%d\t%d\t[%d..%d]\n", *FNum, mm, nn, smin, smax);
 
-  // No-spindown calculations
-  if(opts->s0_flag) smin = smax;
-
   // if spindown parameter is taken into account, smin != smax
   for(ss=smin; ss<=smax; ++ss) {
 
@@ -395,9 +383,6 @@ FLOAT_TYPE* job_core(
     
     // Spindown parameter
     sgnlt[1] = ss*sett->M[5] + nn*sett->M[9] + mm*sett->M[13];
-    
-//    // Spindown range
-//    if(sgnlt[1] >= -sett->Smax && sgnlt[1] <= sett->Smax) { 
       
       int ii;
       double Fc, het1;
@@ -411,31 +396,31 @@ FLOAT_TYPE* job_core(
       if(het1<0) het1 += sett->M[0];
       
       sgnl0 = het0 + het1;
-      //      printf("%d  %d\n", BLOCK_SIZE, (sett->N + BLOCK_SIZE - 1)/BLOCK_SIZE );
-      
       
       phase_mod_1<<<(sett->N + BLOCK_SIZE - 1)/BLOCK_SIZE, BLOCK_SIZE>>>
-        ( fft_arr->xa_d, fft_arr->xb_d,
-          ifo[0].sig.xDatma_d, ifo[0].sig.xDatmb_d,
-          het1, sgnlt[1], ifo[0].sig.shft_d,
-          sett->N );
+        (fft_arr->xa_d, fft_arr->xb_d,
+         ifo[0].sig.xDatma_d, ifo[0].sig.xDatmb_d,
+         het1, sgnlt[1], ifo[0].sig.shft_d,
+         sett->N);
       
       cudaDeviceSynchronize();
 
+      // In case of more than one detector 
       for(n=1; n<sett->nifo; ++n) {
-	phase_mod_2<<<(sett->N + BLOCK_SIZE - 1)/BLOCK_SIZE, BLOCK_SIZE>>>
-	  ( fft_arr->xa_d, fft_arr->xb_d,
-	    ifo[n].sig.xDatma_d, ifo[n].sig.xDatmb_d,
-	    het1, sgnlt[1], ifo[n].sig.shft_d,
-	    sett->N );
+
+	      phase_mod_2<<<(sett->N + BLOCK_SIZE - 1)/BLOCK_SIZE, BLOCK_SIZE>>>
+	        (fft_arr->xa_d, fft_arr->xb_d,
+	         ifo[n].sig.xDatma_d, ifo[n].sig.xDatmb_d,
+	         het1, sgnlt[1], ifo[n].sig.shft_d,
+	         sett->N );
       }
 
       // initialize arrays to 0. with integer 0
       // assuming double , remember to change when switching to float
       cuMemsetD32Async((CUdeviceptr) (fft_arr->xa_d + sett->N), 0,
-		       (sett->nfftf - sett->N)*2*(sizeof(double)/4), NULL);
+		       (sett->nfftf - sett->N)*2*(sizeof(FLOAT_TYPE)/4), NULL);
       cuMemsetD32Async((CUdeviceptr) (fft_arr->xb_d + sett->N), 0,
-		       (sett->nfftf - sett->N)*2*(sizeof(double)/4), NULL);
+		       (sett->nfftf - sett->N)*2*(sizeof(FLOAT_TYPE)/4), NULL);
       CudaCheckError();
 
       //fft length fftpad*nfft
@@ -445,13 +430,13 @@ FLOAT_TYPE* job_core(
       (*FNum)++;
       
       compute_Fstat<<<(sett->nmax-sett->nmin + BLOCK_SIZE - 1)/BLOCK_SIZE, BLOCK_SIZE>>>
-        ( fft_arr->xa_d + sett->nmin,
-          fft_arr->xb_d + sett->nmin,
-          F_d + sett->nmin,
-          sett->nmax - sett->nmin );
+        (fft_arr->xa_d + sett->nmin,
+         fft_arr->xb_d + sett->nmin,
+         F_d + sett->nmin,
+         sett->nmax - sett->nmin);
       CudaCheckError();
 
-#define GPUFSTAT_NO
+#define GPUFSTAT
 #ifdef GPUFSTAT
       if(!(opts->white_flag))  // if the noise is not white noise
 	FStat_gpu(F_d+sett->nmin, sett->nmax - sett->nmin, NAV, aux->mu_d, aux->mu_t_d);
@@ -511,10 +496,6 @@ FLOAT_TYPE* job_core(
       spindown_timer += get_time_difference(tstart, tend);
       spindown_counter++;
 #endif
-
-
-//    } // if sgnlt[1] 
-    
   } // for ss 
 
 
@@ -535,7 +516,7 @@ FLOAT_TYPE* job_core(
 void modvir_gpu(double sinal, double cosal, double sindel, double cosdel,
 		int Np, Detector_settings *ifoi, Aux_arrays *aux, int idet){
 
-  double cosalfr, sinalfr, c2d, c2sd, c, s, c2s, cs;
+  double cosalfr, sinalfr, c2d, c2sd;
 
   cosalfr = cosal*(ifoi->sig.cphir) + sinal*(ifoi->sig.sphir);
   sinalfr = sinal*(ifoi->sig.cphir) - cosal*(ifoi->sig.sphir);

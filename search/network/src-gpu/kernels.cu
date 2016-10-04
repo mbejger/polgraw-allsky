@@ -30,10 +30,18 @@ __global__ void modvir_kern(double *aa_d, double *bb_d, double cosalfr, double s
     double c2s = 2.*c*c;
     double cs = c*s;
 
-    aa_d[idx] = amod_d[idet].c1*(2.-c2d)*c2s + amod_d[idet].c2*(2.-c2d)*2.*cs + 
-      amod_d[idet].c3*c2sd*c + amod_d[idet].c4*c2sd*s - amod_d[idet].c1*(2.-c2d) + amod_d[idet].c5*c2d;
-    bb_d[idx] = amod_d[idet].c6*sindel*c2s + amod_d[idet].c7*sindel*2.*cs + 
-      amod_d[idet].c8*cosdel*c + amod_d[idet].c9*cosdel*s - amod_d[idet].c6*sindel;
+    aa_d[idx] = amod_d[idet].c1*(2.-c2d)*c2s 
+              + amod_d[idet].c2*(2.-c2d)*2.*cs 
+              + amod_d[idet].c3*c2sd*c 
+              + amod_d[idet].c4*c2sd*s 
+              - amod_d[idet].c1*(2.-c2d) 
+              + amod_d[idet].c5*c2d;
+
+    bb_d[idx] = amod_d[idet].c6*sindel*c2s 
+              + amod_d[idet].c7*sindel*2.*cs 
+              + amod_d[idet].c8*cosdel*c 
+              + amod_d[idet].c9*cosdel*s 
+              - amod_d[idet].c6*sindel;
   }
 }
 
