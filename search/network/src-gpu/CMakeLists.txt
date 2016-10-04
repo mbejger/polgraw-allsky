@@ -1,0 +1,67 @@
+#########################
+#                       #
+#         CMake         #
+#                       #
+#########################
+
+# The minimum version of CMake necessary to build this project
+cmake_minimum_required (VERSION 3.1.0)
+
+# The name of our project
+project (gwsearch-gpu)
+
+# Adding source code files according to configuration
+set (HDRS)
+set (SRCS)
+set (KRNS)
+
+list (APPEND HDRS ${PROJECT_SOURCE_DIR}/auxi.h)
+list (APPEND HDRS ${PROJECT_SOURCE_DIR}/floats.h)
+list (APPEND HDRS ${PROJECT_SOURCE_DIR}/init.h)
+list (APPEND HDRS ${PROJECT_SOURCE_DIR}/jobcore.h)
+list (APPEND HDRS ${PROJECT_SOURCE_DIR}/kernels.h)
+list (APPEND HDRS ${PROJECT_SOURCE_DIR}/settings.h)
+list (APPEND HDRS ${PROJECT_SOURCE_DIR}/spline_z.h)
+list (APPEND HDRS ${PROJECT_SOURCE_DIR}/struct.h)
+list (APPEND HDRS ${PROJECT_SOURCE_DIR}/timer.h)
+
+list (APPEND SRCS ${PROJECT_SOURCE_DIR}/auxi.c)
+list (APPEND SRCS ${PROJECT_SOURCE_DIR}/main.c)
+list (APPEND SRCS ${PROJECT_SOURCE_DIR}/settings.c)
+list (APPEND SRCS ${PROJECT_SOURCE_DIR}/timer.c)
+
+list (APPEND KRNS ${PROJECT_SOURCE_DIR}/init.cl)
+list (APPEND KRNS ${PROJECT_SOURCE_DIR}/jobcore.cl)
+list (APPEND KRNS ${PROJECT_SOURCE_DIR}/kernels.cl)
+list (APPEND KRNS ${PROJECT_SOURCE_DIR}/spline_z.cl)
+
+# Variable to hold ALL files to build and be visible in IDE
+set (BUILD ${HDRS} ${SRCS} ${KRNS})
+
+# Create filters for IDEs
+source_group ("Headers" FILES ${HDRS})
+source_group ("Sources" FILES ${SRCS})
+source_group ("Kernels" FILES ${KRNS})
+
+# Specify executable sources
+add_executable (${PROJECT_NAME} ${BUILD})
+
+# Append our project's include directory to the "#include <>" paths
+target_include_directories (${PROJECT_NAME} PUBLIC ${PROJECT_SOURCE_DIR})
+
+# Create project groups for IDEs
+set_target_properties (${PROJECT_NAME} PROPERTIES FOLDER "GWSearch\\GPU")
+
+#########################
+#                       #
+#         CTest         #
+#                       #
+#########################
+
+# Add unit test
+if (BUILD_TESTS)
+		
+#  add_test(NAME ${PROJECT_NAME}
+#           COMMAND ${PROJECT_NAME} --input ${CP_MANYBODY_TEST_DATA} --validate ${CP_MANYBODY_TEST_VALIDATE})
+		
+endif (BUILD_TESTS)
