@@ -114,7 +114,7 @@ typedef struct _search_settings {
       nod,        // number of days of observation
       N,          // number of data points
       nfftf,      // nfft * fftpad
-      nmax,	  // first and last point
+      nmax,       // first and last point
       nmin, 	  // of Fstat
       s,          // number of spindowns
       nd,         // degrees of freedom

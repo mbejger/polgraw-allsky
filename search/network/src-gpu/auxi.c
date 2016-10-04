@@ -1,6 +1,10 @@
 #ifndef __SETTINGS_H__
 #define __SETTINGS_H__
 
+// MSVC macro to include constants, such as M_PI
+#define _USE_MATH_DEFINES
+
+// Standard C includes
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdarg.h>
@@ -93,21 +97,22 @@ void gridr (double *M, int *spndr, int *nr, int *mr, double oms, double Smax) {
   spndr[0] = nr[0] = mr[0] = 16384;
   spndr[1] = nr[1] = mr[1] = -16384;
 
+  // Explicit casts from floor/ceil silences warning (programmer states intent)
   for (i=0; i<16; i++) {
     if (floor(smx[4*i+1]) < spndr[0])
-      spndr[0] = floor(smx[4*i+1]);
+      spndr[0] = (int)floor(smx[4*i+1]);
     if (ceil(smx[4*i+1]) > spndr[1])
-      spndr[1] = ceil(smx[4*i+1]);
+      spndr[1] = (int)ceil(smx[4*i+1]);
 
     if (floor(smx[4*i+2]) < nr[0])
-      nr[0] = floor(smx[4*i+2]);
+      nr[0] = (int)floor(smx[4*i+2]);
     if (ceil(smx[4*i+2]) > nr[1])
-      nr[1] = ceil(smx[4*i+2]);
+      nr[1] = (int)ceil(smx[4*i+2]);
 
     if (floor(smx[4*i+3]) < mr[0])
-      mr[0] = floor(smx[4*i+3]);
+      mr[0] = (int)floor(smx[4*i+3]);
     if (ceil(smx[4*i+3]) > mr[1])
-      mr[1] = ceil(smx[4*i+3]);
+      mr[1] = (int)ceil(smx[4*i+3]);
   }
 } /* gridr() */
 

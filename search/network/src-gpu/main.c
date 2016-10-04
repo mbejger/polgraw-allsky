@@ -1,9 +1,9 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <unistd.h>
+//#include <unistd.h>
 #include <math.h>
 #include <complex.h>
-#include <fftw3.h>
+//#include <fftw3.h>
 #include <string.h>
 #include <errno.h>
 #include <sys/types.h>
@@ -41,12 +41,11 @@ int main (int argc, char* argv[]) {
   FLOAT_TYPE *F_d; 			  // F-statistic array
   int i; 
 
-  /* init CUDA device,
-     enable mapped memory mode;
-     CUDA_DEV is set in Makefile */
-  if (cuinit(CUDA_DEV) == -1) {
-    printf("\nGPU device initialization error!\n");
-    exit(EXIT_FAILURE);
+  //
+  // Init OpenCL here
+  //
+  {
+
   }
 
   // Command line options 
