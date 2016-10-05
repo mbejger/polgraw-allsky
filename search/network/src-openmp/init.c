@@ -53,7 +53,10 @@ void handle_opts( Search_settings *sett,
   sett->fpo = -1;
 
   // Default initial value of the data sampling time 
-  sett->dt = 0.5; 
+  sett->dt = 0.5;
+
+  // Default value of the narrow-down parameter 
+  opts->narrowdown=0.5;
 
   opts->help_flag=0;
   opts->white_flag=0;
@@ -99,6 +102,8 @@ void handle_opts( Search_settings *sett,
       {"addsig", required_argument, 0, 'x'},
       // data sampling time 
       {"dt", required_argument, 0, 's'},
+      // Narrow down the frequency band (+- the center of band) 
+      {"narrowdown", required_argument, 0, 'n'},
       {0, 0, 0, 0}
     };
 
@@ -119,8 +124,8 @@ void handle_opts( Search_settings *sett,
       printf("-h, -hemisphere   Hemisphere (default is 0 - does both)\n");
       printf("-p, -fpo          Reference band frequency fpo value\n");
       printf("-s, -dt           Data sampling time dt (default value: 0.5)\n");
-      printf("-x, -addsig       Add signal with parameters from <file>\n\n");
-
+      printf("-x, -addsig       Add signal with parameters from <file>\n");
+      printf("-n, -narrowdown   Narrow-down the frequency band (range [0, 0.5] +- around center)\n\n");
       printf("Also:\n\n");
       printf("--whitenoise      White Gaussian noise assumed\n");
       printf("--nospindown      Spindowns neglected\n");
@@ -132,7 +137,7 @@ void handle_opts( Search_settings *sett,
     }
 
     int option_index = 0;
-    int c = getopt_long_only(argc, argv, "i:b:o:d:l:r:g:c:t:h:p:x:s:", 
+    int c = getopt_long_only(argc, argv, "i:b:o:d:l:r:g:c:t:h:p:x:s:n:", 
 			     long_options, &option_index);
     if (c == -1)
       break;
@@ -179,12 +184,18 @@ void handle_opts( Search_settings *sett,
     case 's':
       sett->dt = atof(optarg);
       break;
+    case 'n':
+      opts->narrowdown = atof(optarg);
+      break;
     case '?':
       break;
     default:
       break ;
     } /* switch c */
   } /* while 1 */
+
+  // Putting the parameter in triggers' frequency range [0, pi] 
+  opts->narrowdown *= M_PI; 
 
   opts->white_flag = white_flag;
   opts->s0_flag = s0_flag;

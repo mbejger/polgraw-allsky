@@ -24,7 +24,7 @@ typedef struct _comm_line_opts {
   int fftinterp;
   int ident, band, hemi;
   double trl;
-  double fpo_val;
+  double fpo_val, narrowdown;
   
   char prefix[512], dtaprefix[512], label[512], 
     range[512], getrange[512], qname[512], addsig[512], *wd;

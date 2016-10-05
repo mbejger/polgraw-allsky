@@ -26,47 +26,46 @@ lin2ast (double be1, double be2, int pm, double sepsm, double cepsm,
 
 } /* lin2ast() */
 
-void ast2lin (FLOAT_TYPE alfa, FLOAT_TYPE delta, double epsm, double *be) {
+void 
+ast2lin (FLOAT_TYPE alfa, FLOAT_TYPE delta, double epsm, double *be) {
 
   /* alfa - right ascension [rad]
      delta - declination [rad]
      Mean obliquity of the equator with respect to the ecliptic at J2000.0:
      epsm =  84381.448*pi/(3600*180)
   */
-
+  
     be[0] = cos(epsm)*sin(alfa)*cos(delta)+sin(epsm)*sin(delta);
     be[1] = cos(alfa)*cos(delta);
 
     //#mb this is not needed at the moment 
-/* 
-    double d1 = asin(be[0]*sin(epsm) 
-            + sqrt(1. - be[0]*be[0] - be[1]*be[1])*cos(epsm)) - delta;
-
-//  double d2 = asin(be[0]*sin(epsm) 
-//          - sqrt(1. - be[0]*be[0] - be[1]*be[1])*cos(epsm)) - delta;
-
-    int pm; 
-
-    if(fabs(d1)  < 10.*DBL_EPSILON)
-        pm = 1;
-    else
-        pm = 2;
-
-    return pm; 
-*/ 
-
+    /* 
+       double d1 = asin(be[0]*sin(epsm) 
+       + sqrt(1. - be[0]*be[0] - be[1]*be[1])*cos(epsm)) - delta;
+       
+       //  double d2 = asin(be[0]*sin(epsm) 
+       //          - sqrt(1. - be[0]*be[0] - be[1]*be[1])*cos(epsm)) - delta;
+       
+       int pm; 
+       
+       if(fabs(d1)  < 10.*DBL_EPSILON)
+       pm = 1;
+       else
+       pm = 2;
+       
+       return pm; 
+    */ 
 }
 
 
 inline void
-spline(complex double *y, int n, complex double *y2)
-{
+spline(complex double *y, int n, complex double *y2) {
+
   int i, k;
   complex double invp, qn, un;
-
   static complex double *u = NULL;
+
   if (!u) u = (complex double *)malloc((n-1)*sizeof(complex double));
-  //  u = (complex double *) calloc (n-1, sizeof (complex double));
   y2[0] = u[0] = 0.;
 
   for (i=1; i<n-1; ++i) {
@@ -83,12 +82,12 @@ spline(complex double *y, int n, complex double *y2)
   y2[n-1] = (un-qn*u[n-2])/(qn*y2[n-2]+1.);
   for (k=n-2; k>=0; --k)
     y2[k] = y2[k]*y2[k+1]+u[k];
-  //free (u);
 } /* spline() */
 
+
 inline complex double
-splint (complex double *ya, complex double *y2a, int n, double x)
-{
+splint (complex double *ya, complex double *y2a, int n, double x) {
+
   int klo, khi;
   double b, a;
 
@@ -101,9 +100,10 @@ splint (complex double *ya, complex double *y2a, int n, double x)
   return a*ya[klo]+b*ya[khi]+((a*a*a-a)*y2a[klo]+(b*b*b-b)*y2a[khi])/6.0;
 } /* splint() */
 
-void
-splintpad (complex double *ya, double *shftf, int N, int interpftpad,	\
-           complex double *out) {
+
+void 
+splintpad (complex double *ya, double *shftf, int N, int interpftpad,
+	   complex double *out) {
   /* Cubic spline with "natural" boundary conditions.
      Input:
      ya[i] - value of the function being interpolated in x_i = i,
@@ -118,15 +118,16 @@ splintpad (complex double *ya, double *shftf, int N, int interpftpad,	\
   complex double *y2;
   double x;
   int i;
+
   y2 = (complex double *) malloc (interpftpad*N*sizeof (complex double)); //vector twice-size of N
   spline (ya, interpftpad*N, y2);
 #pragma omp parallel default(shared) private(x)
   {
 #pragma omp for schedule(static)
-  for (i=0; i<N; ++i) {
-    x = interpftpad*(i-shftf[i]);
-    out[i] = splint (ya, y2, interpftpad*N, x);
-  } /* for i */
+    for (i=0; i<N; ++i) {
+      x = interpftpad*(i-shftf[i]);
+      out[i] = splint (ya, y2, interpftpad*N, x);
+    } /* for i */
   }
   free (y2);
 } /* splintpad */
@@ -136,6 +137,7 @@ var (double *x, int n) {
   /* var(x, n) returns the variance (square of the standard deviation)
      of a given vector x of length n.
   */
+
   int i;
   double mean=0., variance=0.;
 
@@ -152,6 +154,7 @@ var (double *x, int n) {
 
 void
 gridr (double *M, int *spndr, int *nr, int *mr, double oms, double Smax) {
+
   double cof, Mp[16], smx[64], d, Ob;
   int i, j, indx[4];
 
@@ -172,7 +175,6 @@ gridr (double *M, int *spndr, int *nr, int *mr, double oms, double Smax) {
 
   Ob = M_PI;
   cof = oms + Ob;
-
 
   //Mp - macierz transponowana
   for (i=0; i<4; i++)
@@ -250,7 +252,7 @@ double FStat (double *F, int nfft, int nav, int indx) {
 } /* FStat() */
 
 int
-ludcmp (double *a, int n, int *indx, double *d)
+ludcmp (double *a, int n, int *indx, double *d) {
 /*	LU decomposition of a given real matrix a[0..n-1][0..n-1]
 	Input:
 	a		- an array containing elements of matrix a
@@ -261,7 +263,7 @@ ludcmp (double *a, int n, int *indx, double *d)
 	d		- +-1 depending on whether the number of rows
 	interchanged was even or odd, respectively
 */
-{
+
   int i, imax = -1, j, k;
   double big, dum, sum, temp;
   double *vv;
@@ -318,7 +320,7 @@ ludcmp (double *a, int n, int *indx, double *d)
 } /* ludcmp() */
 
 int
-lubksb (double *a, int n, int *indx, double *b)
+lubksb (double *a, int n, int *indx, double *b) {
 /* Solves the set of n linear equations A X=B.
    Input:
    a[0..n-1][0..n-1] - LU decomposition af a matrix A,
@@ -330,7 +332,7 @@ lubksb (double *a, int n, int *indx, double *b)
    Output:
    b[0..n-1]			- solution vector X
 */
-{
+
   int i, ii=-1, ip, j;
   double sum;
 
@@ -355,7 +357,7 @@ lubksb (double *a, int n, int *indx, double *b)
 } /* lubksb() */
 
 int
-invm (const double *a, int N, double *y)
+invm (const double *a, int N, double *y) {
      /* Inverse of a real matrix a[0..N-1][0..N-1].
 	Input:
 		a[0..N-1][0..N-1] - given matrix (saved on exit)
@@ -363,7 +365,7 @@ invm (const double *a, int N, double *y)
         Output:
 		y[0..N-1][0..N-1] - inverse of a
      */
-{
+
   double d, *col, *al;
   int i, j, *indx;
 
@@ -389,10 +391,10 @@ invm (const double *a, int N, double *y)
 } /* invm() */
 
 double
-det (const double *a, int N)
-     /* determinant of a real matrix a[0..N-1][0..N-1] */
-{
-  double d, *al;;
+det (const double *a, int N) {
+  /* determinant of a real matrix a[0..N-1][0..N-1] */
+
+  double d, *al;
   int j, *indx;
 
   al = (double *) calloc (sqr(N), sizeof (double));
@@ -406,5 +408,18 @@ det (const double *a, int N)
   free (al);
   return d;
 } /* det() */
+
+
+int 
+compared2c(const void *a, const void *b) {
+
+  double* da = (double*)a;
+  double* db = (double*)b;
+  
+  int diff1 = (da[0] > db[0]) - (da[0] < db[0]);
+  if (diff1 != 0) return diff1;
+  return (da[1] > db[1]) - (da[1] < db[1]);
+}
+
 
 #endif

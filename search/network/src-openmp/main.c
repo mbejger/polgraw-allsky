@@ -80,7 +80,11 @@ int main (int argc, char* argv[]) {
   // Array initialization and reading the ephemerids 
   init_arrays(&sett, &opts, &aux_arr);
 
-
+  // Narrowing-down the band (excluding the edges 
+  // according to the opts.narrowdown parameter) 
+  if(opts.narrowdown < 0.5*M_PI)
+    narrow_down_band(&sett, &opts);
+  
   // Reading known lines data from external files 
   if(opts.veto_flag) { 
     for(i=0; i<sett.nifo; i++) {
@@ -89,9 +93,19 @@ int main (int argc, char* argv[]) {
     }
 
     // Vetoing known lines in band 
-    lines_in_band(&sett); 
+    lines_in_band(&sett, &opts); 
   } 
 
+  // If excluded parts of band, list them
+  // and check if the band isn't fully vetoed 
+  if(sett.numlines_band) {     
+    int k; 
+    printf("list of excluded frequencies in band (in radians):\n"); 
+    for(k=0; k<sett.numlines_band; k++) 
+      printf("%f %f\n", sett.lines[k][0], sett.lines[k][1]);
+    
+    check_if_band_is_fully_vetoed(&sett); 
+  } 
 
   // Amplitude modulation functions for each detector  
   for(i=0; i<sett.nifo; i++)   
