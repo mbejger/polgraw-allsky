@@ -422,8 +422,6 @@ int job_core(int pm,                   // Hemisphere
     smax = trunc(-(nn*sett->M[9] + mm*sett->M[13] + sett->Smax)/sett->M[5]);
   } 
   
-  printf ("\n>>%d\t%d\t%d\t[%d..%d]\n", *FNum, mm, nn, smin, smax);
-  
   if(opts->s0_flag) smin = smax;
   // if spindown parameter is taken into account, smin != smax
   
