@@ -11,7 +11,7 @@
 #define NINTERP 3			 /* degree of the interpolation polynomial */
 					 /* Do not change this value!!! */
 #define NAVFSTAT 4096
-#define round(x) floor((x)+0.5)
+//#define round(x) floor((x)+0.5)
 
 #include "floats.h"
 

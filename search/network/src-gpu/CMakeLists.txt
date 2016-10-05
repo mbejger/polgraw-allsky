@@ -19,7 +19,6 @@ list (APPEND HDRS ${PROJECT_SOURCE_DIR}/auxi.h)
 list (APPEND HDRS ${PROJECT_SOURCE_DIR}/floats.h)
 list (APPEND HDRS ${PROJECT_SOURCE_DIR}/init.h)
 list (APPEND HDRS ${PROJECT_SOURCE_DIR}/jobcore.h)
-list (APPEND HDRS ${PROJECT_SOURCE_DIR}/kernels.h)
 list (APPEND HDRS ${PROJECT_SOURCE_DIR}/settings.h)
 list (APPEND HDRS ${PROJECT_SOURCE_DIR}/spline_z.h)
 list (APPEND HDRS ${PROJECT_SOURCE_DIR}/struct.h)
@@ -30,10 +29,13 @@ list (APPEND SRCS ${PROJECT_SOURCE_DIR}/main.c)
 list (APPEND SRCS ${PROJECT_SOURCE_DIR}/settings.c)
 list (APPEND SRCS ${PROJECT_SOURCE_DIR}/timer.c)
 list (APPEND SRCS ${PROJECT_SOURCE_DIR}/init.c)
+list (APPEND SRCS ${PROJECT_SOURCE_DIR}/jobcore.c)
+list (APPEND SRCS ${PROJECT_SOURCE_DIR}/spline_z.c)
 
-list (APPEND KRNS ${PROJECT_SOURCE_DIR}/jobcore.cl)
+list (APPEND SRCS ${PROJECT_SOURCE_DIR}/getopt.c)
+
+list (APPEND KRNS ${PROJECT_SOURCE_DIR}/kernels.h)
 list (APPEND KRNS ${PROJECT_SOURCE_DIR}/kernels.cl)
-list (APPEND KRNS ${PROJECT_SOURCE_DIR}/spline_z.cl)
 
 # Variable to hold ALL files to build and be visible in IDE
 set (BUILD ${HDRS} ${SRCS} ${KRNS})
@@ -48,6 +50,15 @@ add_executable (${PROJECT_NAME} ${BUILD})
 
 # Append our project's include directory to the "#include <>" paths
 target_include_directories (${PROJECT_NAME} PUBLIC ${PROJECT_SOURCE_DIR})
+target_include_directories (${PROJECT_NAME} PUBLIC ${OpenCL_INCLUDE_DIRS})
+target_include_directories (${PROJECT_NAME} PUBLIC ${CLFFT_INCLUDE_DIRS})
+target_include_directories (${PROJECT_NAME} PUBLIC ${CLBLAS_INCLUDE_DIRS})
+
+target_include_directories (${PROJECT_NAME} PUBLIC ${PROJECT_SOURCE_DIR}/posix)
+
+# Link dependant libraries
+target_link_libraries(${PROJECT_NAME} PUBLIC clFFT)
+target_link_libraries(${PROJECT_NAME} PUBLIC clBLAS)
 
 # Create project groups for IDEs
 set_target_properties (${PROJECT_NAME} PROPERTIES FOLDER "GWSearch\\GPU")

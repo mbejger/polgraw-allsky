@@ -1,4 +1,8 @@
-#include <stdio.h>
+// ISO C behavioral defines
+#define __STDC_WANT_LIB_EXT1__ 1
+
+// Standard C includes
+#include <stdio.h>      // fopen_s
 #include <stdlib.h>
 //#include <unistd.h>
 #include <math.h>
@@ -6,13 +10,18 @@
 //#include <fftw3.h>
 #include <string.h>
 #include <errno.h>
+
 #include <sys/types.h>
 #include <sys/stat.h>
-#include <fcntl.h>
-#include <getopt.h>
-#include <gsl/gsl_linalg.h>
-#include <time.h>
 #include <dirent.h>
+#if defined _MSC_VER
+#include <direct.h>
+#endif
+
+#include <fcntl.h>
+#include <XGetopt.h>
+//#include <gsl/gsl_linalg.h>
+#include <time.h>
 
 #include "floats.h"
 #include "auxi.h"
@@ -53,12 +62,18 @@ int main (int argc, char* argv[]) {
 	
   // Output data handling
   struct stat buffer;
-
-  if (stat(opts.prefix, &buffer) == -1) {
-    if (errno == ENOENT) {
+  
+  if (stat(opts.prefix, &buffer) == -1)
+  {
+      if (errno == ENOENT)
+    {
       // Output directory apparently does not exist, try to create one
-      if(mkdir(opts.prefix, S_IRWXU | S_IRGRP | S_IXGRP 
-          | S_IROTH	| S_IXOTH) == -1) {
+#ifdef WIN32
+        if (_mkdir(opts.prefix) == -1)
+#else
+        if (mkdir(opts.prefix, S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH) == -1)
+#endif
+      {
 	      perror (opts.prefix);
 	      return 1;
       }
@@ -104,8 +119,10 @@ int main (int argc, char* argv[]) {
   // state file zeroed at the end of the run
   FILE *state;
   if(opts.checkp_flag) {
-    state = fopen (opts.qname, "w");
-    fclose (state);
+    errno_t err = fopen_s(&state, opts.qname, "w");
+    if (err)
+        perror("Error zeroing out state file.");
+    fclose(state);
   }
 	
   // Cleanup & memory free 

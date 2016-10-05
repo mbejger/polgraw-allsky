@@ -1,6 +1,10 @@
+// MSVC macro to include constants, such as M_PI (include before math.h)
+#define _USE_MATH_DEFINES
+
+// Standard C includes
 #include <stdio.h>
 #include <stdlib.h>
-#include <unistd.h>
+//#include <unistd.h>
 #include <math.h>
 #include <complex.h>
 #include <string.h>
@@ -11,16 +15,19 @@
 #include <getopt.h>
 #include <time.h>
 
-#include "cuda_error.h"
+#include <direct.h>
+
+
+//#include "cuda_error.h"
 #include "init.h"
 #include "struct.h"
 #include "settings.h"
 #include "auxi.h"
-#include "kernels.h"
+//#include "kernels.h"
 #include "spline_z.h"
 
-#include <cuda_runtime_api.h>
-#include <cufft.h>
+//#include <cuda_runtime_api.h>
+//#include <cufft.h>
 
 /*  Command line options handling: search  
 */ 
@@ -239,7 +246,11 @@ void handle_opts( Search_settings *sett,
     printf ("Adding signal from '%s'\n", opts->addsig);
   if (opts->wd) {
     printf ("Changing working directory to %s\n", opts->wd);
+#ifdef WIN32
+    if (_chdir(opts->wd)) { perror(opts->wd); abort(); }
+#else
     if (chdir(opts->wd)) { perror (opts->wd); abort (); }
+#endif
   }
 
 } // end of command line options handling 
@@ -305,10 +316,10 @@ void init_arrays( Search_settings *sett,
     /// ifo[i].sig.xDat = (double *) calloc(sett->N, sizeof(double));
     /// mapped memory works for CUDART_VERSION >= 2020
     /// we should test if it's available, if not copy data explicitly to device
-    CudaSafeCall( cudaHostAlloc((void **)&(ifo[i].sig.xDat), sett->N*sizeof(double), 
-				cudaHostAllocMapped) );
-    CudaSafeCall( cudaHostGetDevicePointer((void **)&(ifo[i].sig.xDat_d), 
-					   (void *)ifo[i].sig.xDat, 0) );
+    //CudaSafeCall( cudaHostAlloc((void **)&(ifo[i].sig.xDat), sett->N*sizeof(double), 
+	//			cudaHostAllocMapped) );
+    //CudaSafeCall( cudaHostGetDevicePointer((void **)&(ifo[i].sig.xDat_d), 
+	//				   (void *)ifo[i].sig.xDat, 0) );
 
     // Input time-domain data handling
     // 
@@ -339,10 +350,10 @@ void init_arrays( Search_settings *sett,
     // Estimation of the variance for each detector 
     ifo[i].sig.sig2 = (ifo[i].sig.crf0)*var(ifo[i].sig.xDat, sett->N);
 
-    CudaSafeCall( cudaHostAlloc((void **)&(ifo[i].sig.DetSSB), 3*sett->N*sizeof(double), 
-				cudaHostAllocMapped) );
-    CudaSafeCall( cudaHostGetDevicePointer((void **)&(ifo[i].sig.DetSSB_d), 
-					   (void *)ifo[i].sig.DetSSB, 0) );
+    //CudaSafeCall( cudaHostAlloc((void **)&(ifo[i].sig.DetSSB), 3*sett->N*sizeof(double), 
+	//			cudaHostAllocMapped) );
+    //CudaSafeCall( cudaHostGetDevicePointer((void **)&(ifo[i].sig.DetSSB_d), 
+	//				   (void *)ifo[i].sig.DetSSB, 0) );
 
 
     // Ephemeris file handling
@@ -382,20 +393,20 @@ void init_arrays( Search_settings *sett,
     sett->sepsm = ifo[i].sig.sepsm; 
     sett->cepsm = ifo[i].sig.cepsm; 
 
-    CudaSafeCall( cudaMalloc((void**)&ifo[i].sig.xDatma_d,
-				 sizeof(cufftDoubleComplex)*sett->N) );
-    CudaSafeCall( cudaMalloc((void**)&ifo[i].sig.xDatmb_d, 
-				 sizeof(cufftDoubleComplex)*sett->N) );
-
-    CudaSafeCall( cudaMalloc((void**)&(ifo[i].sig.aa_d), 
-				 sizeof(double)*sett->N) );
-    CudaSafeCall( cudaMalloc((void**)&(ifo[i].sig.bb_d), 
-				 sizeof(double)*sett->N) );
-
-    CudaSafeCall( cudaMalloc((void**)&(ifo[i].sig.shft_d), 
-				 sizeof(double)*sett->N) );
-    CudaSafeCall( cudaMalloc((void**)&(ifo[i].sig.shftf_d), 
-				 sizeof(double)*sett->N) );
+    //CudaSafeCall( cudaMalloc((void**)&ifo[i].sig.xDatma_d,
+	//			 sizeof(cufftDoubleComplex)*sett->N) );
+    //CudaSafeCall( cudaMalloc((void**)&ifo[i].sig.xDatmb_d, 
+	//			 sizeof(cufftDoubleComplex)*sett->N) );
+    //
+    //CudaSafeCall( cudaMalloc((void**)&(ifo[i].sig.aa_d), 
+	//			 sizeof(double)*sett->N) );
+    //CudaSafeCall( cudaMalloc((void**)&(ifo[i].sig.bb_d), 
+	//			 sizeof(double)*sett->N) );
+    //
+    //CudaSafeCall( cudaMalloc((void**)&(ifo[i].sig.shft_d), 
+	//			 sizeof(double)*sett->N) );
+    //CudaSafeCall( cudaMalloc((void**)&(ifo[i].sig.shftf_d), 
+	//			 sizeof(double)*sett->N) );
 
   } // end loop for detectors 
 
@@ -413,25 +424,25 @@ void init_arrays( Search_settings *sett,
   sett->cepsm = ifo[0].sig.cepsm;
 
   //  *F = (double *) calloc(2*sett->nfft, sizeof(double));
-  CudaSafeCall ( cudaMalloc((void **)F_d, 2*sett->nfft*sizeof(double)));
+  //CudaSafeCall ( cudaMalloc((void **)F_d, 2*sett->nfft*sizeof(double)));
 
   // Auxiliary arrays, Earth's rotation
  
-  CudaSafeCall( cudaMalloc((void**)&(aux_arr->t2_d),
-			   sizeof(double)*sett->N) );
-  CudaSafeCall( cudaMalloc((void**)&(aux_arr->cosmodf_d), 
-			   sizeof(double)*sett->N) );
-  CudaSafeCall( cudaMalloc((void**)&(aux_arr->sinmodf_d), 
-			   sizeof(double)*sett->N) );
-
-  CudaSafeCall( cudaMalloc((void**)&(aux_arr->tshift_d),
-			   sizeof(double)*sett->N) );
-
-  init_spline_matrices(&aux_arr->diag_d, &aux_arr->ldiag_d, &aux_arr->udiag_d, 
-		       &aux_arr->B_d, sett->Ninterp);
-
-  compute_sincosmodf<<<sett->N/256+1,256>>>(aux_arr->sinmodf_d, aux_arr->cosmodf_d, 
-					    sett->omr, sett->N);
+//  CudaSafeCall( cudaMalloc((void**)&(aux_arr->t2_d),
+//			   sizeof(double)*sett->N) );
+//  CudaSafeCall( cudaMalloc((void**)&(aux_arr->cosmodf_d), 
+//			   sizeof(double)*sett->N) );
+//  CudaSafeCall( cudaMalloc((void**)&(aux_arr->sinmodf_d), 
+//			   sizeof(double)*sett->N) );
+//
+//  CudaSafeCall( cudaMalloc((void**)&(aux_arr->tshift_d),
+//			   sizeof(double)*sett->N) );
+//
+//  init_spline_matrices(&aux_arr->diag_d, &aux_arr->ldiag_d, &aux_arr->udiag_d, 
+//		       &aux_arr->B_d, sett->Ninterp);
+//
+//  compute_sincosmodf<<<sett->N/256+1,256>>>(aux_arr->sinmodf_d, aux_arr->cosmodf_d, 
+//					    sett->omr, sett->N);
 
 } // end of init arrays 
 
@@ -539,17 +550,17 @@ void plan_fft (Search_settings *sett,
   fft_arr->arr_len = (sett->fftpad*sett->nfft > sett->Ninterp 
 		       ? sett->fftpad*sett->nfft : sett->Ninterp);
 
-  CudaSafeCall ( cudaMalloc((void **)&fft_arr->xa_d, 2*fft_arr->arr_len*sizeof(cufftDoubleComplex)) );
+  //CudaSafeCall ( cudaMalloc((void **)&fft_arr->xa_d, 2*fft_arr->arr_len*sizeof(cufftDoubleComplex)) );
   fft_arr->xb_d = fft_arr->xa_d + fft_arr->arr_len;
 
   //  sett->nfftf = sett->fftpad*sett->nfft; // moved to init_arrays
 
   // no need for plans '2' - dimaensions are the same
-  cufftPlan1d( &(plans->plan), sett->nfftf, CUFFT_Z2Z, 1);
-  cufftPlan1d( &(plans->pl_int), sett->nfft, CUFFT_Z2Z, 1);
-  cufftPlan1d( &(plans->pl_inv), sett->Ninterp, CUFFT_Z2Z, 1);
-
-  CudaSafeCall ( cudaMalloc((void **)&fft_arr->xa_d, 2*fft_arr->arr_len*sizeof(cufftDoubleComplex)) );
+  //cufftPlan1d( &(plans->plan), sett->nfftf, CUFFT_Z2Z, 1);
+  //cufftPlan1d( &(plans->pl_int), sett->nfft, CUFFT_Z2Z, 1);
+  //cufftPlan1d( &(plans->pl_inv), sett->Ninterp, CUFFT_Z2Z, 1);
+  //
+  //CudaSafeCall ( cudaMalloc((void **)&fft_arr->xa_d, 2*fft_arr->arr_len*sizeof(cufftDoubleComplex)) );
 
 }
 
@@ -620,32 +631,32 @@ void cleanup(
   int i; 
   
   for(i=0; i<sett->nifo; i++) {
-    CudaSafeCall( cudaFreeHost(ifo[i].sig.xDat) );
-    CudaSafeCall( cudaFreeHost(ifo[i].sig.DetSSB) );
-
-    CudaSafeCall( cudaFree(ifo[i].sig.xDatma_d) );
-    CudaSafeCall( cudaFree(ifo[i].sig.xDatmb_d) );
-
-    CudaSafeCall( cudaFree(ifo[i].sig.aa_d) );
-    CudaSafeCall( cudaFree(ifo[i].sig.bb_d) );
-
-    CudaSafeCall( cudaFree(ifo[i].sig.shft_d) );
-    CudaSafeCall( cudaFree(ifo[i].sig.shftf_d) );
+    //CudaSafeCall( cudaFreeHost(ifo[i].sig.xDat) );
+    //CudaSafeCall( cudaFreeHost(ifo[i].sig.DetSSB) );
+    //
+    //CudaSafeCall( cudaFree(ifo[i].sig.xDatma_d) );
+    //CudaSafeCall( cudaFree(ifo[i].sig.xDatmb_d) );
+    //
+    //CudaSafeCall( cudaFree(ifo[i].sig.aa_d) );
+    //CudaSafeCall( cudaFree(ifo[i].sig.bb_d) );
+    //
+    //CudaSafeCall( cudaFree(ifo[i].sig.shft_d) );
+    //CudaSafeCall( cudaFree(ifo[i].sig.shftf_d) );
   } 
 
-  CudaSafeCall( cudaFree(aux->cosmodf_d) );
-  CudaSafeCall( cudaFree(aux->sinmodf_d) );
-  CudaSafeCall( cudaFree(aux->t2_d) );
-
-  CudaSafeCall( cudaFree(F_d) );
-
-  CudaSafeCall( cudaFree(fft_arr->xa_d) );
+  //CudaSafeCall( cudaFree(aux->cosmodf_d) );
+  //CudaSafeCall( cudaFree(aux->sinmodf_d) );
+  //CudaSafeCall( cudaFree(aux->t2_d) );
+  //
+  //CudaSafeCall( cudaFree(F_d) );
+  //
+  //CudaSafeCall( cudaFree(fft_arr->xa_d) );
 
   free(sett->M);
 
-  cufftDestroy(plans->plan);
-  cufftDestroy(plans->pl_int);
-  cufftDestroy(plans->pl_inv);
+  //cufftDestroy(plans->plan);
+  //cufftDestroy(plans->pl_int);
+  //cufftDestroy(plans->pl_inv);
 
 } // end of cleanup & memory free 
 
@@ -926,50 +937,50 @@ void manage_grid_matrix(
 */
 int cuinit(int cdev)
 {
-  int dev, deviceCount = 0;
-  cudaDeviceProp deviceProp;
+  //int dev, deviceCount = 0;
+  //cudaDeviceProp deviceProp;
   
-  if (cudaGetDeviceCount(&deviceCount) != cudaSuccess) {
-    printf("ERROR: cudaGetDeviceCount FAILED CUDA Driver and Runtime version may be mismatched.\n");
-    return(-1);
-  }
-  if (deviceCount == 0) {
-    printf("ERROR: There is no device supporting CUDA\n");
-    return(-1);
-  }
-  if (cdev < 0 && cdev >= deviceCount) {
-    printf("\nWARNING: Device %d is not available! Trying device 0\n", cdev);
-    cdev = 0;
-  }
-
-  printf("__________________________________CUDA devices___________________________________\n");
-  printf("Set | ID |        Name        |   Gmem(B)   | Smem(B) | Cmem(B) | C.Cap. | Thr/bl |\n");
-  
-  for (dev = 0; dev < deviceCount; ++dev) {
-    cudaGetDeviceProperties(&deviceProp, dev);
-    if (deviceProp.major == 9999 && deviceProp.minor == 9999) {
-      printf("- | %1d | %16s | Error | Error | Error | Error | Error |\n", dev, deviceProp.name );
-      if ( dev==cdev ) {
-	printf("ERROR: Can't set device %d\n", cdev);
-	return(-1);
-      }
-    }
-    if (dev==cdev) {
-      printf(" *  |");
-      cudaSetDevice(cdev);
-    } else {
-      printf("    |");
-    }
-    printf(" %1d  | %18.18s | %11Zu | %7Zu | %7Zu |   %d.%d  | %6d |\n", 
-	   dev, deviceProp.name, deviceProp.totalGlobalMem, deviceProp.sharedMemPerBlock, 
-	   deviceProp.totalConstMem, deviceProp.major, deviceProp.minor, deviceProp.maxThreadsPerBlock );
-  }
-  printf("---------------------------------------------------------------------------------\n");
-  
-  /* enable mapped memory */
-  cudaSetDeviceFlags(cudaDeviceMapHost);
-
-  /* force initialization */
-  cudaThreadSynchronize();
+//  if (cudaGetDeviceCount(&deviceCount) != cudaSuccess) {
+//    printf("ERROR: cudaGetDeviceCount FAILED CUDA Driver and Runtime version may be mismatched.\n");
+//    return(-1);
+//  }
+//  if (deviceCount == 0) {
+//    printf("ERROR: There is no device supporting CUDA\n");
+//    return(-1);
+//  }
+//  if (cdev < 0 && cdev >= deviceCount) {
+//    printf("\nWARNING: Device %d is not available! Trying device 0\n", cdev);
+//    cdev = 0;
+//  }
+//
+//  printf("__________________________________CUDA devices___________________________________\n");
+//  printf("Set | ID |        Name        |   Gmem(B)   | Smem(B) | Cmem(B) | C.Cap. | Thr/bl |\n");
+//  
+//  for (dev = 0; dev < deviceCount; ++dev) {
+//    cudaGetDeviceProperties(&deviceProp, dev);
+//    if (deviceProp.major == 9999 && deviceProp.minor == 9999) {
+//      printf("- | %1d | %16s | Error | Error | Error | Error | Error |\n", dev, deviceProp.name );
+//      if ( dev==cdev ) {
+//	printf("ERROR: Can't set device %d\n", cdev);
+//	return(-1);
+//      }
+//    }
+//    if (dev==cdev) {
+//      printf(" *  |");
+//      cudaSetDevice(cdev);
+//    } else {
+//      printf("    |");
+//    }
+//    printf(" %1d  | %18.18s | %11Zu | %7Zu | %7Zu |   %d.%d  | %6d |\n", 
+//	   dev, deviceProp.name, deviceProp.totalGlobalMem, deviceProp.sharedMemPerBlock, 
+//	   deviceProp.totalConstMem, deviceProp.major, deviceProp.minor, deviceProp.maxThreadsPerBlock );
+//  }
+//  printf("---------------------------------------------------------------------------------\n");
+//  
+//  /* enable mapped memory */
+//  cudaSetDeviceFlags(cudaDeviceMapHost);
+//
+//  /* force initialization */
+//  cudaThreadSynchronize();
   return(cdev);
 }

@@ -1,9 +1,12 @@
 #ifndef __STRUCT_H__
 #define __STRUCT_H__
 
+// Standard C includes
 #include <complex.h>
-#include <cufft.h>
-#include "floats.h"
+#include <floats.h>
+
+// clFFT includes
+#include <clFFT.h>
 
 #define MAX_DETECTORS 8        // Maximum number of detectors in network 
 #define DETNAME_LENGTH 2       // Detector name length (H1, L1, V1...)
@@ -50,7 +53,7 @@ typedef struct _signals {
          sig2; 	  // variance of signal
 
   int Nzeros;
-  cufftDoubleComplex *xDatma_d, *xDatmb_d;
+  COMPLEX_TYPE *xDatma_d, *xDatmb_d;
 
 } Signals;
 
@@ -58,7 +61,7 @@ typedef struct _signals {
 /* fftw arrays */
 typedef struct _fft_arrays {
 
-  cufftDoubleComplex *xa_d, *xb_d;
+  COMPLEX_TYPE *xa_d, *xb_d;
   int arr_len;
 
 } FFT_arrays;
@@ -74,12 +77,12 @@ typedef struct _search_range {
 /* FFTW plans  */ 
 typedef struct _fft_plans {
 
-  cufftHandle plan,    // main plan
-              pl_int,  // interpolation forward
-              pl_inv;  // interpolation backward
-  cufftHandle plan2,   // main plan
-              pl_int2, // interpolation forward
-              pl_inv2; // interpolation backward
+  clfftPlanHandle plan,    // main plan
+                  pl_int,  // interpolation forward
+                  pl_inv;  // interpolation backward
+  clfftPlanHandle plan2,   // main plan
+                  pl_int2, // interpolation forward
+                  pl_inv2; // interpolation backward
 
 } FFT_plans;
 
@@ -90,7 +93,7 @@ typedef struct _aux_arrays {
   double *sinmodf_d, *cosmodf_d; // Earth position
   double *t2_d  ;                // time^2
   double *tshift_d;
-  cufftDoubleComplex *diag_d, *ldiag_d, *udiag_d, *B_d; //used in spline interpolation
+  COMPLEX_TYPE *diag_d, *ldiag_d, *udiag_d, *B_d; //used in spline interpolation
   FLOAT_TYPE *mu_d, *mu_t_d; //arrays for smoothing F-stat
 
 } Aux_arrays;

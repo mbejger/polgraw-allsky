@@ -1,10 +1,14 @@
-#define _GNU_SOURCE
+// MSVC macro to include constants, such as M_PI (include before math.h)
+#define _USE_MATH_DEFINES
+
+// Standard C includes
+//#define _GNU_SOURCE
 #include <math.h>
 #include <stdio.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
-#include <unistd.h>
+//#include <unistd.h>
 #include <malloc.h>
 #include <complex.h>
 
@@ -14,20 +18,21 @@
 #include "auxi.h"
 #include "settings.h"
 #include "timer.h"
-#include "kernels.h"
+//#include "kernels.h"
 #include "spline_z.h"
-#include "cuda_error.h"
+//#include "cuda_error.h"
 #include <assert.h>
+#include <floats.h>
 
-__constant__ double maa_d, mbb_d;  // mean Amplitude modulation functions
+// __constant__ double maa_d, mbb_d;  // mean Amplitude modulation functions
 
-void save_array(complex double *arr, int N, const char* file) {
-  int i;
-  FILE *fc = fopen(file, "w");
-  for (i=0; i<N; i++) {
-    fprintf(fc, "%d %e + i %e\n", i, creal(arr[i]), cimag(arr[i]));
-  }
-  fclose(fc);
+void save_array(HOST_COMPLEX_TYPE *arr, int N, const char* file)
+{
+    int i;
+    FILE *fc = fopen(file, "w");
+    for (i=0; i<N; i++)
+        fprintf(fc, "%d %e + i %e\n", i, creal(arr[i]), cimag(arr[i]));
+    fclose(fc);
 }
 
 void save_array_double(double *arr, int N, const char* file) {
@@ -52,7 +57,7 @@ void search(
   double *F_d) {
 
   // struct stat buffer;
-  struct flock lck;
+  //struct flock lck;
 
   int pm, mm, nn;    // hemisphere, sky positions 
   int sgnlc;         // number of candidates
@@ -62,9 +67,9 @@ void search(
   int fd;
   FILE *state;
 
-  //cublas handle for scaling
-  cublasHandle_t scale;
-  cublasCreate (&scale);
+  // cublas handle for scaling
+  //cublasHandle_t scale;
+  //cublasCreate (&scale);
 
 #if TIMERS>0
   struct timespec tstart = get_current_time(), tend;
@@ -80,8 +85,8 @@ void search(
   int nav_blocks = (sett->nmax - sett->nmin)/NAV;     //number of nav-blocks
   int blocks = (sett->nmax - sett->nmin)/BLOCK_SIZE;  //number of blocks for Fstat-smoothing
 
-  CudaSafeCall ( cudaMalloc((void**)&aux->mu_t_d, sizeof(FLOAT_TYPE)*blocks) );
-  CudaSafeCall ( cudaMalloc((void**)&aux->mu_d, sizeof(FLOAT_TYPE)*nav_blocks) );
+  // CudaSafeCall ( cudaMalloc((void**)&aux->mu_t_d, sizeof(FLOAT_TYPE)*blocks) );
+  // CudaSafeCall ( cudaMalloc((void**)&aux->mu_d, sizeof(FLOAT_TYPE)*nav_blocks) );
 
 
   state=NULL;
@@ -120,8 +125,8 @@ void search(
 			 &sgnlc,       // reference to array with the parameters
 			 // of the candidate signal
 			 // (used below to write to the file)
-			 FNum,        // Candidate signal number
-			 scale         //handle for scaling
+			 FNum        // Candidate signal number
+			 //scale         //handle for scaling
 			 );
 	
 	// Get back to regular spin-down range
@@ -130,23 +135,18 @@ void search(
 	/* Add trigger parameters to a file */
 
 	// if any signals found (Fstat>Fc)
-	if (sgnlc) {
-	  if((fd = open (outname, O_WRONLY|O_CREAT|O_APPEND,
-			 S_IRUSR|S_IWUSR|S_IRGRP|S_IROTH)) < 0) {
-	    perror (outname);
-	    return;
-	  }
+	if (sgnlc)
+    {
+        FILE* fc = fopen(outname, "w");
+        if (fc == NULL) perror("Failed to open output file.");
 
-	  lck.l_type = F_WRLCK;
-	  lck.l_whence = 0;
-	  lck.l_start = 0L;
-	  lck.l_len = 0L;
-	  
-          if (fcntl (fd, F_SETLKW, &lck) < 0) perror ("fcntl()");
-          write (fd, (void *)(sgnlv), sgnlc*NPAR*sizeof(FLOAT_TYPE));
-          if (close (fd) < 0) perror ("close()");
+        size_t count = fwrite((void *)(sgnlv), sizeof(FLOAT_TYPE), sgnlc*NPAR, fc);
+        if (count < sgnlc*NPAR) perror("Failed to write output file.");
 
-	} /* if sgnlc */
+        int close = fclose(fc);
+        if (close == EOF) perror("Failed to close output file.");
+
+	} // if sgnlc
 	free (sgnlv);
       } // for nn
       s_range->nst = s_range->nr[0];
@@ -157,7 +157,7 @@ void search(
   if(opts->checkp_flag) 
     fclose(state); 
 
-  cublasDestroy(scale);
+  // cublasDestroy(scale);
 
 #if TIMERS>0
   tend = get_current_time();
@@ -183,15 +183,24 @@ FLOAT_TYPE* job_core(
 		     Aux_arrays *aux,           // Auxiliary arrays
 		     double *F_d,                 // F-statistics array
 		     int *sgnlc,                // Candidate trigger parameters 
-		     int *FNum,                // Candidate signal number
-		     cublasHandle_t scale      //handle for scaling
-		     ) {
+		     int *FNum                // Candidate signal number
+		     //cublasHandle_t scale      //handle for scaling
+		     )
+{
 
   int i, j, n;
   int smin = s_range->sst, smax = s_range->spndr[1];
-  double al1, al2, sinalt, cosalt, sindelt, cosdelt, sgnlt[NPAR], 
-    nSource[3], het0, sgnl0, ft;
-  double _tmp1[sett->nifo][sett->N];
+  double al1, al2, sinalt, cosalt, sindelt, cosdelt, sgnlt[NPAR], nSource[3], het0, sgnl0, ft;
+  // VLA version
+  //double _tmp1[sett->nifo][sett->N];
+
+  // Non-VLA version
+  double** _tmp1;
+  _tmp1 = (double**)malloc(sett->nifo * sizeof(double*));
+  for (int x = 0; x < sett->nifo; ++x)
+      _tmp1[x] = (double*)malloc(sett->N * sizeof(double));
+
+
   FLOAT_TYPE *sgnlv; 
 
   /// temp for testing  
@@ -234,7 +243,7 @@ FLOAT_TYPE* job_core(
 
   int ss;
   double shft1, phase, cp, sp;
-  complex double exph;
+  HOST_COMPLEX_TYPE exph;
 
   // Change linear (grid) coordinates to real coordinates
   lin2ast(al1/sett->oms, al2/sett->oms, 
@@ -272,40 +281,40 @@ FLOAT_TYPE* job_core(
           + nSource[2]*ifo[n].sig.DetSSB[2];
 
 
-    tshift_pmod_kern<<<(sett->nfft + BLOCK_SIZE - 1)/BLOCK_SIZE, BLOCK_SIZE>>>
-      ( shft1, het0, nSource[0], nSource[1], nSource[2],
-	ifo[n].sig.xDat_d, fft_arr->xa_d, fft_arr->xb_d, 
-	ifo[n].sig.shft_d, ifo[n].sig.shftf_d, 
-	aux->tshift_d,
-	ifo[n].sig.aa_d, ifo[n].sig.bb_d,
-	ifo[n].sig.DetSSB_d,
-	sett->oms, sett->N, sett->nfft, sett->interpftpad );
-    CudaCheckError();
-    
-    cudaDeviceSynchronize();
+//    tshift_pmod_kern<<<(sett->nfft + BLOCK_SIZE - 1)/BLOCK_SIZE, BLOCK_SIZE>>>
+//      ( shft1, het0, nSource[0], nSource[1], nSource[2],
+//	ifo[n].sig.xDat_d, fft_arr->xa_d, fft_arr->xb_d, 
+//	ifo[n].sig.shft_d, ifo[n].sig.shftf_d, 
+//	aux->tshift_d,
+//	ifo[n].sig.aa_d, ifo[n].sig.bb_d,
+//	ifo[n].sig.DetSSB_d,
+//	sett->oms, sett->N, sett->nfft, sett->interpftpad );
+//    CudaCheckError();
+//    
+//    cudaDeviceSynchronize();
     
     //fftw_execute(plans->pl_int);  //forward fft (len nfft)
     //fftw_execute(plans->pl_int2); //forward fft (len nfft)
-    cufftExecZ2Z(plans->pl_int, fft_arr->xa_d, fft_arr->xa_d, CUFFT_FORWARD);
-    cufftExecZ2Z(plans->pl_int, fft_arr->xb_d, fft_arr->xb_d, CUFFT_FORWARD);
+//    cufftExecZ2Z(plans->pl_int, fft_arr->xa_d, fft_arr->xa_d, CUFFT_FORWARD);
+//    cufftExecZ2Z(plans->pl_int, fft_arr->xb_d, fft_arr->xb_d, CUFFT_FORWARD);
 
 
     //shift frequencies and remove those over Nyquist
-    resample_postfft<<<(sett->Ninterp + BLOCK_SIZE - 1)/BLOCK_SIZE, BLOCK_SIZE>>>
-      ( fft_arr->xa_d, fft_arr->xb_d, sett->nfft, sett->Ninterp, nyqst );
-    CudaCheckError();
+//    resample_postfft<<<(sett->Ninterp + BLOCK_SIZE - 1)/BLOCK_SIZE, BLOCK_SIZE>>>
+//      ( fft_arr->xa_d, fft_arr->xb_d, sett->nfft, sett->Ninterp, nyqst );
+//    CudaCheckError();
 
     // Backward fft (len Ninterp = nfft*interpftpad)
     //fftw_execute (plans->pl_inv);     
     //fftw_execute (plans->pl_inv2); 
-    cufftExecZ2Z(plans->pl_inv, fft_arr->xa_d, fft_arr->xa_d, CUFFT_INVERSE);
-    cufftExecZ2Z(plans->pl_inv, fft_arr->xb_d, fft_arr->xb_d, CUFFT_INVERSE);
+//    cufftExecZ2Z(plans->pl_inv, fft_arr->xa_d, fft_arr->xa_d, CUFFT_INVERSE);
+//    cufftExecZ2Z(plans->pl_inv, fft_arr->xb_d, fft_arr->xb_d, CUFFT_INVERSE);
 
     //scale fft with cublas
     ft = (double)sett->interpftpad / sett->Ninterp;
-    cublasZdscal( scale, sett->Ninterp, &ft, fft_arr->xa_d, 1);
-    cublasZdscal( scale, sett->Ninterp, &ft, fft_arr->xb_d, 1);
-    CudaCheckError();
+//    cublasZdscal( scale, sett->Ninterp, &ft, fft_arr->xa_d, 1);
+//    cublasZdscal( scale, sett->Ninterp, &ft, fft_arr->xb_d, 1);
+//    CudaCheckError();
 
     // Spline interpolation to xDatma, xDatmb arrays
     gpu_interp(fft_arr->xa_d,       //input data
@@ -329,9 +338,9 @@ FLOAT_TYPE* job_core(
 	       aux->B_d);           //coefficient matrix
 
     ft = 1./ifo[n].sig.sig2;
-    cublasZdscal( scale, sett->N, &ft, ifo[n].sig.xDatma_d, 1);
-    cublasZdscal( scale, sett->N, &ft, ifo[n].sig.xDatmb_d, 1);
-    CudaCheckError();
+//    cublasZdscal( scale, sett->N, &ft, ifo[n].sig.xDatma_d, 1);
+//    cublasZdscal( scale, sett->N, &ft, ifo[n].sig.xDatmb_d, 1);
+//    CudaCheckError();
 
   } // end of detector loop 
 
@@ -339,27 +348,27 @@ FLOAT_TYPE* job_core(
   double _mbb = 0.;
     
   for(n=0; n<sett->nifo; ++n) {
-    double aatemp = 0., bbtemp = 0.;
-    // square sums of modulation factors
-    cublasDdot (scale, sett->N , 
-      (const double *)ifo[n].sig.aa_d, 1,
-      (const double *)ifo[n].sig.aa_d, 1,
-      &aatemp);
-    cublasDdot (scale, sett->N , 
-      (const double *)ifo[n].sig.bb_d, 1,
-      (const double *)ifo[n].sig.bb_d, 1,
-      &bbtemp);
-    
-    /* or use sqr( cublasSnrm2()) */
-    _maa += aatemp/ifo[n].sig.sig2;
-    _mbb += bbtemp/ifo[n].sig.sig2;
+//    double aatemp = 0., bbtemp = 0.;
+//    // square sums of modulation factors
+//    cublasDdot (scale, sett->N , 
+//      (const double *)ifo[n].sig.aa_d, 1,
+//      (const double *)ifo[n].sig.aa_d, 1,
+//      &aatemp);
+//    cublasDdot (scale, sett->N , 
+//      (const double *)ifo[n].sig.bb_d, 1,
+//      (const double *)ifo[n].sig.bb_d, 1,
+//      &bbtemp);
+//    
+//    /* or use sqr( cublasSnrm2()) */
+//    _maa += aatemp/ifo[n].sig.sig2;
+//    _mbb += bbtemp/ifo[n].sig.sig2;
   }
-  CudaCheckError();
+//  CudaCheckError();
 
   //  printf("maa_d=%f", _maa);
-  cudaMemcpyToSymbol(maa_d, &_maa, sizeof(double), 0, cudaMemcpyHostToDevice);
-  cudaMemcpyToSymbol(mbb_d, &_mbb, sizeof(double), 0, cudaMemcpyHostToDevice);
-  CudaCheckError();  
+//  cudaMemcpyToSymbol(maa_d, &_maa, sizeof(double), 0, cudaMemcpyHostToDevice);
+//  cudaMemcpyToSymbol(mbb_d, &_mbb, sizeof(double), 0, cudaMemcpyHostToDevice);
+//  CudaCheckError();  
 
   
   /* Spindown loop */
@@ -414,42 +423,42 @@ FLOAT_TYPE* job_core(
       //      printf("%d  %d\n", BLOCK_SIZE, (sett->N + BLOCK_SIZE - 1)/BLOCK_SIZE );
       
       
-      phase_mod_1<<<(sett->N + BLOCK_SIZE - 1)/BLOCK_SIZE, BLOCK_SIZE>>>
-        ( fft_arr->xa_d, fft_arr->xb_d,
-          ifo[0].sig.xDatma_d, ifo[0].sig.xDatmb_d,
-          het1, sgnlt[1], ifo[0].sig.shft_d,
-          sett->N );
-      
-      cudaDeviceSynchronize();
+//      phase_mod_1<<<(sett->N + BLOCK_SIZE - 1)/BLOCK_SIZE, BLOCK_SIZE>>>
+//        ( fft_arr->xa_d, fft_arr->xb_d,
+//          ifo[0].sig.xDatma_d, ifo[0].sig.xDatmb_d,
+//          het1, sgnlt[1], ifo[0].sig.shft_d,
+//          sett->N );
+//      
+//      cudaDeviceSynchronize();
 
       for(n=1; n<sett->nifo; ++n) {
-	phase_mod_2<<<(sett->N + BLOCK_SIZE - 1)/BLOCK_SIZE, BLOCK_SIZE>>>
-	  ( fft_arr->xa_d, fft_arr->xb_d,
-	    ifo[n].sig.xDatma_d, ifo[n].sig.xDatmb_d,
-	    het1, sgnlt[1], ifo[n].sig.shft_d,
-	    sett->N );
+//	phase_mod_2<<<(sett->N + BLOCK_SIZE - 1)/BLOCK_SIZE, BLOCK_SIZE>>>
+//	  ( fft_arr->xa_d, fft_arr->xb_d,
+//	    ifo[n].sig.xDatma_d, ifo[n].sig.xDatmb_d,
+//	    het1, sgnlt[1], ifo[n].sig.shft_d,
+//	    sett->N );
       }
 
       // initialize arrays to 0. with integer 0
       // assuming double , remember to change when switching to float
-      cuMemsetD32Async((CUdeviceptr) (fft_arr->xa_d + sett->N), 0,
-		       (sett->nfftf - sett->N)*2*(sizeof(double)/4), NULL);
-      cuMemsetD32Async((CUdeviceptr) (fft_arr->xb_d + sett->N), 0,
-		       (sett->nfftf - sett->N)*2*(sizeof(double)/4), NULL);
-      CudaCheckError();
+      // cuMemsetD32Async((CUdeviceptr) (fft_arr->xa_d + sett->N), 0,
+		 //       (sett->nfftf - sett->N)*2*(sizeof(double)/4), NULL);
+      // cuMemsetD32Async((CUdeviceptr) (fft_arr->xb_d + sett->N), 0,
+		 //       (sett->nfftf - sett->N)*2*(sizeof(double)/4), NULL);
+      // CudaCheckError();
 
-      //fft length fftpad*nfft
-      cufftExecZ2Z(plans->plan, fft_arr->xa_d, fft_arr->xa_d, CUFFT_FORWARD);
-      cufftExecZ2Z(plans->plan, fft_arr->xb_d, fft_arr->xb_d, CUFFT_FORWARD);
+      // fft length fftpad*nfft
+      //cufftExecZ2Z(plans->plan, fft_arr->xa_d, fft_arr->xa_d, CUFFT_FORWARD);
+      //cufftExecZ2Z(plans->plan, fft_arr->xb_d, fft_arr->xb_d, CUFFT_FORWARD);
 
       (*FNum)++;
       
-      compute_Fstat<<<(sett->nmax-sett->nmin + BLOCK_SIZE - 1)/BLOCK_SIZE, BLOCK_SIZE>>>
-        ( fft_arr->xa_d + sett->nmin,
-          fft_arr->xb_d + sett->nmin,
-          F_d + sett->nmin,
-          sett->nmax - sett->nmin );
-      CudaCheckError();
+      // compute_Fstat<<<(sett->nmax-sett->nmin + BLOCK_SIZE - 1)/BLOCK_SIZE, BLOCK_SIZE>>>
+      //   ( fft_arr->xa_d + sett->nmin,
+      //     fft_arr->xb_d + sett->nmin,
+      //     F_d + sett->nmin,
+      //     sett->nmax - sett->nmin );
+      // CudaCheckError();
 
 #define GPUFSTAT_NO
 #ifdef GPUFSTAT
@@ -461,7 +470,7 @@ FLOAT_TYPE* job_core(
 	FStat_gpu_simple(F_d + sett->nmin, sett->nmax - sett->nmin, NAVFSTAT);
 #endif
      
-      CudaSafeCall ( cudaMemcpy(F, F_d, 2*sett->nfft*sizeof(FLOAT_TYPE), cudaMemcpyDeviceToHost));
+      // CudaSafeCall ( cudaMemcpy(F, F_d, 2*sett->nfft*sizeof(FLOAT_TYPE), cudaMemcpyDeviceToHost));
       /*      
       FILE *f1 = fopen("fstat-gpu.dat", "w");
       for(i=sett->nmin; i<sett->nmax; i++)
@@ -526,6 +535,11 @@ FLOAT_TYPE* job_core(
   printf("\nTotal spindown loop time: %e s, mean spindown time: %e s (%d runs)\n",
 	 spindown_timer, spindown_timer/spindown_counter, spindown_counter);
 #endif
+
+  // Non-VLA free _tmp1
+  for (int x = 0; x < sett->nifo; ++x)
+      free(_tmp1[x]);
+  free(_tmp1);
   
   return sgnlv;
 
@@ -542,9 +556,9 @@ void modvir_gpu(double sinal, double cosal, double sindel, double cosdel,
   c2d = sqr(cosdel);
   c2sd = sindel*cosdel;
 
-  modvir_kern<<<BLOCK_DIM(Np, BLOCK_SIZE), BLOCK_SIZE>>>
-    ( ifoi->sig.aa_d, ifoi->sig.bb_d, cosalfr, sinalfr, c2d, c2sd, 
-      aux->sinmodf_d, aux->cosmodf_d, sindel, cosdel, Np, idet );
+  // modvir_kern<<<BLOCK_DIM(Np, BLOCK_SIZE), BLOCK_SIZE>>>
+  //   ( ifoi->sig.aa_d, ifoi->sig.bb_d, cosalfr, sinalfr, c2d, c2sd, 
+  //     aux->sinmodf_d, aux->cosmodf_d, sindel, cosdel, Np, idet );
 
   return;
 
@@ -553,9 +567,9 @@ void modvir_gpu(double sinal, double cosal, double sindel, double cosdel,
 /* just simple patch - to be replaced */
 void FStat_gpu_simple(FLOAT_TYPE *F_d, int nfft, int nav) {
   
-  int blocks = nfft/nav;
-  fstat_norm_simple<<<blocks, 1>>>(F_d, nav);
-  CudaCheckError();
+  // int blocks = nfft/nav;
+  // fstat_norm_simple<<<blocks, 1>>>(F_d, nav);
+  // CudaCheckError();
 
 }
 

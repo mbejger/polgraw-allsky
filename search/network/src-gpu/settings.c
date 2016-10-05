@@ -1,19 +1,24 @@
+// MSVC macro to include constants, such as M_PI (include before math.h)
+#define _USE_MATH_DEFINES
+
+// Standard C includes
 #include <math.h>
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <dirent.h>
 
-#include "settings.h"
-#include "auxi.h"
+// Polgraw includes
+#include <settings.h>
+#include <auxi.h>
 
 
 /* Search settings: 
  * FFT lenghts & other details, bandwidth and Earth parameters
  */
 
-void search_settings(
-  Search_settings* sett) {
+void search_settings(Search_settings* sett)
+{
 
   double dt, B, oms, omr, Smin, Smax;
   int nod, N, nfft, s, nd, interpftpad;
@@ -29,7 +34,7 @@ void search_settings(
   omr = C_OMEGA_R*dt;
 
   nod = 2;                          // Observation time in days
-  N = round (nod*C_SIDDAY/dt);      // No. of data points
+  N = lround(nod*C_SIDDAY/dt);      // No. of data points
 
   nfft = 1 << (int)ceil(log(N)/log(2.));    // length of FFT
   s = 1;                                    // No. of spindowns
@@ -90,15 +95,18 @@ void search_settings(
  * writes appropriate detector-related data into structs. 
  */ 
 
+#define buf_size 512
+
 void detectors_settings(
   Search_settings* sett, 
   Command_line_opts *opts) {
 
   int i=0; 
-
-  char dirname[512], x[512];
+  char dirname[buf_size], x[buf_size];
   // Main input directory name 
-  sprintf (dirname, "%s/%03d", opts->dtaprefix, opts->ident); 
+  int err = sprintf_s (dirname, 512, "%s/%03d", opts->dtaprefix, opts->ident); 
+  if (err <= 0)
+      perror("Directory name assembly failed.");
 
   DIR *dp;
   struct dirent *ep;
@@ -131,9 +139,17 @@ void detectors_settings(
           opts->ident, opts->label);
 */
 
-          sprintf(x, "%s/%03d/%s/xdatc_%03d_%04d%s.bin",
-          opts->dtaprefix, opts->ident, ep->d_name,
-          opts->ident, opts->band, opts->label);
+          int err = sprintf_s(x,
+                              buf_size,
+                              "%s/%03d/%s/xdatc_%03d_%04d%s.bin",
+                              opts->dtaprefix,
+                              opts->ident,
+                              ep->d_name,
+                              opts->ident,
+                              opts->band,
+                              opts->label);
+          if (err <= 0)
+              perror("Error assembling string.");
 
           if((data = fopen(x, "r")) != NULL) {
 

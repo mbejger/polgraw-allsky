@@ -1,7 +1,7 @@
 #ifndef __SETTINGS_H__
 #define __SETTINGS_H__
 
-#include <fftw3.h>
+//#include <fftw3.h>
 #include "struct.h"
 
 #define NPAR 5 		/* no. of trigger parameters */
