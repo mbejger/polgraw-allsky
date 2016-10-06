@@ -1,12 +1,17 @@
 #ifndef __STRUCT_H__
 #define __STRUCT_H__
 
-// Standard C includes
-#include <complex.h>
-#include <floats.h>
+// Polgraw includes
+#include <floats.h>     // COMPLEX_FLOAT
 
 // clFFT includes
 #include <clFFT.h>
+
+// OpenCL includes
+#include <CL/cl.h>
+
+// Standard C includes
+#include <complex.h>
 
 #define MAX_DETECTORS 8        // Maximum number of detectors in network 
 #define DETNAME_LENGTH 2       // Detector name length (H1, L1, V1...)
@@ -14,7 +19,7 @@
 #define INICANDSIZE 1024       // 1048576? Initial size for array candidates storage; 
                                // realloc called if needed (in coincidences)  
 
-#define MAXL 2048              // Max number of known lines for a detector  
+#define MAXL 2048              // Max number of known lines for a detector
 
 // Command line option struct for search 
 typedef struct _comm_line_opts {
@@ -73,6 +78,37 @@ typedef struct _search_range {
   int pst, mst, nst, sst;
 } Search_range;
 
+/// <summary>Struct holding OpenCL-related user preferences.</summary>
+///
+typedef struct _opencl_settings
+{
+    cl_uint plat_id;
+    cl_device_type dev_type;
+
+} OpenCL_settings;
+
+/// <summary>Struct holding OpenCL device information.</summary>
+///
+typedef struct _opencl_handles
+{
+    cl_platform_id plat;
+    cl_uint dev_count;
+    cl_device_id* devs;
+    cl_context ctx;
+    cl_command_queue* write_queues,
+                      exec_queues,
+                      read_queues;
+    cl_program prog;
+    cl_kernel* kernels;
+
+} OpenCL_handles;
+
+/// <summary>Enum for human readable kernel indicies.</summary>
+///
+enum Kernel
+{
+    Akarmi = 0
+};
 
 /* FFTW plans  */ 
 typedef struct _fft_plans {
@@ -205,4 +241,4 @@ typedef struct _triggers {
 
 } Candidate_triggers; 
 
-#endif
+#endif // __STRUCT_H__

@@ -1,13 +1,66 @@
 #ifndef __INIT_H__
 #define __INIT_H__
 
-#include "struct.h"
+// Polgraw includes
+#include <struct.h>
 
-void handle_opts(
-		 Search_settings *sett,
-		 Command_line_opts *opts,
-		 int argc,  
-		 char* argv[]);  
+
+void handle_opts(Search_settings* sett,
+                 OpenCL_settings* cl_sett,
+		         Command_line_opts* opts,
+		         int argc,  
+		         char* argv[]);
+
+/// <summary>OpenCL error handling function.</summary>
+/// <remarks>If an error occurs, prints it to standard error and exits.</remarks>
+///
+void checkErr(cl_int err, const char * name);
+
+/// <summary>Initialize OpenCL devices based on user preference.</summary>
+/// <remarks>Currently, only a sinle platform can be selected.</remarks>
+///
+void init_opencl(OpenCL_handles* cl_handles,
+                 OpenCL_settings* cl_sett);
+
+/// <summary>Tries selecting the platform with the specified index.</summary>
+///
+cl_platform_id select_platform(cl_uint plat_id);
+
+/// <summary>Selects all devices of the specified type.</summary>
+///
+cl_device_id* select_devices(cl_platform_id platform,
+                             cl_device_type dev_type,
+                             cl_uint* count);
+
+/// <summary>Create a contet that holds all specified devices.</summary>
+///
+cl_context create_standard_context(cl_device_id* devices,
+                                   cl_uint count);
+
+/// <summary>Create a set of command queues to all the devices in the context.</summary>
+///
+cl_command_queue* create_command_queue_set(cl_context context);
+
+/// <summary>Load kernel file from disk.</summary>
+///
+char* load_program_file(const char* filename);
+
+/// <summary>Build program file</summary>
+///
+cl_program build_program_source(cl_context context,
+                                const char* source);
+
+/// <summary>Create a kernel for all entry points in the program.</summary>
+///
+cl_kernel* create_kernels(cl_program program);
+
+/// <summary>Obtain the name of the kernel of a given index.</summary>
+///
+const char* obtain_kernel_name(cl_uint i);
+
+/// <summary>Obtain kernel with the specified index.</summary>
+///
+cl_kernel obtain_kernel(cl_program program, cl_uint i);
 
 void init_arrays(
 		 Search_settings *sett,
@@ -70,4 +123,4 @@ void convert_to_linear(
 
 int cuinit(int cdev);
 
-#endif
+#endif // __INIT_H__

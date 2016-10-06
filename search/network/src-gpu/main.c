@@ -44,21 +44,18 @@ Detector_settings ifo[MAX_DETECTORS];
 int main (int argc, char* argv[]) {
 
   Command_line_opts opts;
+  OpenCL_handles cl_handles;
   Search_settings sett;
   Search_range s_range; 
   Aux_arrays aux_arr;
   FLOAT_TYPE *F_d; 			  // F-statistic array
   int i; 
 
-  //
-  // Init OpenCL here
-  //
-  {
-
-  }
-
   // Command line options 
-  handle_opts(&sett, &opts, argc, argv);  
+  handle_opts(&sett, &opts, argc, argv);
+
+  // Initialize OpenCL
+  init_opencl(&cl_handles, &opts);
 	
   // Output data handling
   struct stat buffer;

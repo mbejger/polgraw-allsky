@@ -53,12 +53,14 @@ target_include_directories (${PROJECT_NAME} PUBLIC ${PROJECT_SOURCE_DIR})
 target_include_directories (${PROJECT_NAME} PUBLIC ${OpenCL_INCLUDE_DIRS})
 target_include_directories (${PROJECT_NAME} PUBLIC ${CLFFT_INCLUDE_DIRS})
 target_include_directories (${PROJECT_NAME} PUBLIC ${CLBLAS_INCLUDE_DIRS})
+target_include_directories (${PROJECT_NAME} PUBLIC ${CLSPARSE_INCLUDE_DIRS})
 
 target_include_directories (${PROJECT_NAME} PUBLIC ${PROJECT_SOURCE_DIR}/posix)
 
 # Link dependant libraries
 target_link_libraries(${PROJECT_NAME} PUBLIC clFFT)
 target_link_libraries(${PROJECT_NAME} PUBLIC clBLAS)
+target_link_libraries(${PROJECT_NAME} PUBLIC clSPARSE)
 
 # Create project groups for IDEs
 set_target_properties (${PROJECT_NAME} PROPERTIES FOLDER "GWSearch\\GPU")

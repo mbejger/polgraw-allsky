@@ -1,6 +1,16 @@
 // MSVC macro to include constants, such as M_PI (include before math.h)
 #define _USE_MATH_DEFINES
 
+// Polgraw includes
+#include <init.h>       // all function declarations
+#include <struct.h>     // Search_settings, Command_line_opts, OpenCL_handles, ...
+#include <settings.h>
+#include <auxi.h>
+#include <spline_z.h>
+
+// OpenCL includes
+#include <CL/cl.h>
+
 // Standard C includes
 #include <stdio.h>
 #include <stdlib.h>
@@ -18,24 +28,13 @@
 #include <direct.h>
 
 
-//#include "cuda_error.h"
-#include "init.h"
-#include "struct.h"
-#include "settings.h"
-#include "auxi.h"
-//#include "kernels.h"
-#include "spline_z.h"
-
-//#include <cuda_runtime_api.h>
-//#include <cufft.h>
-
-/*  Command line options handling: search  
-*/ 
-
-void handle_opts( Search_settings *sett, 
-		  Command_line_opts *opts,
-		  int argc, 
-		  char* argv[]) {
+/// <summary>Command line options handling: search</summary>
+///
+void handle_opts(Search_settings* sett,
+                 OpenCL_settings* cl_sett,
+		         Command_line_opts* opts,
+		         int argc, 
+		         char* argv[]) {
   
   opts->hemi=0;
   opts->wd=NULL;
@@ -255,6 +254,307 @@ void handle_opts( Search_settings *sett,
 
 } // end of command line options handling 
 
+/// <summary>OpenCL error handling function.</summary>
+/// <remarks>If an error occurs, prints it to standard error and exits.</remarks>
+///
+void checkErr(cl_int err,
+              const char * name)
+{
+    if (err != CL_SUCCESS)
+    {
+        perror("ERROR: %s (%i)\n", name, err);
+        exit(err);
+    }
+}
+
+/// <summary>Initialize OpenCL devices based on user preference.</summary>
+/// <remarks>Currently, only a sinle platform can be selected.</remarks>
+///
+void init_opencl(OpenCL_handles* cl_handles,
+                 OpenCL_settings* cl_sett)
+{
+    cl_handles->plat = select_platform(cl_sett->plat_id);
+
+    cl_handles->devs = select_devices(cl_handles->plat,
+                                      cl_sett->dev_type,
+                                      &cl_handles->dev_count);
+
+    cl_handles->ctx = create_standard_context(cl_handles->devs,
+                                              cl_handles->dev_count);
+
+    cl_handles->write_queues = create_command_queue_set(cl_handles->ctx);
+    cl_handles->exec_queues  = create_command_queue_set(cl_handles->ctx);
+    cl_handles->read_queues  = create_command_queue_set(cl_handles->ctx);
+
+    const char* source = load_program_file(NULL);
+
+    cl_handles->prog = build_program_source(cl_handles->ctx, source);
+
+    cl_handles->kernels = create_kernels(cl_handles->prog);
+
+    free(source);
+}
+
+/// <summary>Tries selecting the platform with the specified index.</summary>
+///
+cl_platform_id select_platform(cl_uint plat_id)
+{
+    cl_int CL_err = CL_SUCCESS;
+    cl_platform_id result = NULL;
+    cl_uint numPlatforms = 0;
+
+    CL_err = clGetPlatformIDs(0, NULL, &numPlatforms);
+    checkErr(CL_err, "clGetPlatformIDs(numPlatforms)");
+
+    if (plat_id > (numPlatforms - 1))
+    {
+        perror("Platform of the specified index does not exist.");
+        exit(-1);
+    }
+    else
+    {
+        cl_platform_id* platforms = (cl_platform_id*)malloc(numPlatforms * sizeof(cl_platform_id));
+        CL_err = clGetPlatformIDs(numPlatforms, platforms, NULL);
+        checkErr(CL_err, "clGetPlatformIDs(platforms)");
+
+        result = platforms[plat_id];
+        
+        free(platforms);
+    }
+
+    return result;
+}
+
+/// <summary>Selects all devices of the specified type.</summary>
+///
+cl_device_id* select_devices(cl_platform_id platform,
+                             cl_device_type dev_type,
+                             cl_uint* count)
+{
+    cl_int CL_err = CL_SUCCESS;
+    cl_device_id* result = NULL;
+
+    CL_err = clGetDeviceIDs(platform, dev_type, 0, 0, count);
+    checkErr(CL_err, "clGetDeviceIDs(numDevices)");
+
+    if (*count == 0u)
+    {
+        perror("No devices of the specified type are found on the specified platform.");
+        exit(-1);
+    }
+
+    result = (cl_device_id*)malloc(*count * sizeof(cl_device_id));
+    CL_err = clGetDeviceIDs(platform, dev_type, *count, result, 0);
+    checkErr(CL_err, "clGetDeviceIDs(devices)");
+
+    return result;
+}
+
+/// <summary>Create a contet that holds all specified devices.</summary>
+///
+cl_context create_standard_context(cl_device_id* devices, cl_uint count)
+{
+    cl_int CL_err = CL_SUCCESS;
+    cl_uint count = 0;
+    cl_context result = NULL;
+    cl_platform_id platform = NULL;
+
+    CL_err = clGetDeviceInfo(devices[0],
+                             CL_DEVICE_PLATFORM,
+                             sizeof(cl_platform_id),
+                             &platform,
+                             NULL);
+    checkErr(CL_err, "clGetDeviceInfo(CL_DEVICE_PLATFORM)");
+
+    cl_context_properties cps[3] = { CL_CONTEXT_PLATFORM, (cl_context_properties)platform, 0 };
+
+    result = clCreateContext(cps, count, devices, NULL, NULL, &CL_err);
+    checkErr(CL_err, "clCreateContext()");
+
+    return result;
+}
+
+/// <summary>Create a set of command queues to all the devices in the context.</summary>
+///
+cl_command_queue* create_command_queue_set(cl_context context)
+{
+    cl_int CL_err = CL_SUCCESS;
+    cl_uint count = 0;
+    cl_device_id* devices = NULL;
+    cl_command_queue* result = NULL;
+
+    CL_err = clGetContextInfo(context, CL_CONTEXT_NUM_DEVICES, sizeof(cl_uint), &count, NULL);
+    checkErr(CL_err, "clGetContextInfo(CL_CONTEXT_NUM_DEVICES)");
+
+    CL_err = clGetContextInfo(context, CL_CONTEXT_DEVICES, sizeof(cl_device_id*), devices, NULL);
+    checkErr(CL_err, "clGetContextInfo(CL_CONTEXT_DEVICES)");
+
+    result = (cl_command_queue*)malloc(count * sizeof(cl_command_queue));
+
+    for (cl_uint i = 0; i < count; ++i)
+    {
+        result[i] = clCreateCommandQueue(context, devices[i], CL_QUEUE_PROFILING_ENABLE, &CL_err);
+        checkErr(CL_err, "clCreateCommandQueue()");
+
+        CL_err = clReleaseDevice(devices[i]);
+        checkErr(CL_err, "clReleaseDevice()");
+    }
+
+    free(devices);
+
+    return result;
+}
+
+/// <summary>Load kernel file from disk.</summary>
+///
+char* load_program_file(const char* filename)
+{
+    long int size = 0;
+    size_t res = 0;
+    char* src = NULL;
+    FILE* file = NULL;
+    errno_t err = 0;
+
+    err = fopen_s(&file, filename, "rb");
+
+    if (!file)
+    {
+        printf_s("Failed to open file %s\n", filename);
+        exit(EXIT_FAILURE);
+    }
+
+    if (fseek(file, 0, SEEK_END))
+    {
+        fclose(file);
+        return NULL;
+    }
+
+    size = ftell(file);
+    if (size == 0)
+    {
+        fclose(file);
+        return NULL;
+    }
+
+    rewind(file);
+
+    src = (char *)calloc(size + 1, sizeof(char));
+    if (!src)
+    {
+        src = NULL;
+        fclose(file);
+        return src;
+    }
+
+    res = fread(src, 1u, sizeof(char) * size, file);
+    if (res != sizeof(char) * size)
+    {
+        fclose(file);
+        free(src);
+
+        return src;
+    }
+
+    src[size] = '\0'; /* NULL terminated */
+    fclose(file);
+
+    return src;
+}
+
+/// <summary>Build program file.</summary>
+///
+cl_program build_program_source(cl_context context,
+                                const char* source)
+{
+    cl_int CL_err = CL_SUCCESS;
+    cl_program result = NULL;
+
+    cl_uint numDevices = 0;
+    cl_device_id* devices = NULL;
+
+    const size_t length = strnlen_s(source, UINT_MAX);
+
+    result = clCreateProgramWithSource(context, 1, &source, &length, &CL_err);
+    checkErr(CL_err, "clCreateProgramWithSource()");
+
+    CL_err = clGetContextInfo(context, CL_CONTEXT_NUM_DEVICES, sizeof(cl_uint), &numDevices, NULL);
+    checkErr(CL_err, "clGetContextInfo(CL_CONTEXT_NUM_DEVICES)");
+    devices = (cl_device_id*)malloc(numDevices * sizeof(cl_device_id));
+    CL_err = clGetContextInfo(context, CL_CONTEXT_DEVICES, numDevices * sizeof(cl_device_id), devices, NULL);
+    checkErr(CL_err, "clGetContextInfo(CL_CONTEXT_DEVICES)");
+
+    // Warnings will be treated like errors, this is useful for debug
+    char build_params[] = { "-Werror" };
+    CL_err = clBuildProgram(result, numDevices, devices, build_params, NULL, NULL);
+
+    if (CL_err != CL_SUCCESS)
+    {
+        size_t len = 0;
+        char *buffer;
+
+        CL_err = clGetProgramBuildInfo(result, devices[0], CL_PROGRAM_BUILD_LOG, 0, NULL, &len);
+        checkErr(CL_err, "clGetProgramBuildInfo(CL_PROGRAM_BUILD_LOG)");
+
+        buffer = calloc(len, sizeof(char));
+
+        clGetProgramBuildInfo(result, devices[0], CL_PROGRAM_BUILD_LOG, len, buffer, NULL);
+
+        fprintf(stderr, "%s\n", buffer);
+
+        free(buffer);
+
+        exit(CL_err);
+    }
+
+    return result;
+}
+
+/// <summary>Create a kernel for all entry points in the program.</summary>
+///
+cl_kernel* create_kernels(cl_program program)
+{
+    cl_int CL_err = CL_SUCCESS;
+    cl_uint kernel_count = 1;
+    cl_kernel* result = (cl_kernel*)malloc(kernel_count * sizeof(cl_kernel));
+
+    for (cl_uint i = 0; i < kernel_count; ++i)
+        result = obtain_kernel(program, i);
+
+    return result;
+}
+
+/// <summary>Obtain the name of the kernel of a given index.</summary>
+///
+const char* obtain_kernel_name(cl_uint i)
+{
+    const char* result = NULL;
+
+    switch (i)
+    {
+    case Akarmi:
+        result = "akarmi";
+        break;
+    default:
+        perror("Unkown kernel index");
+        exit(-1);
+        break;
+    }
+
+    return result;
+}
+
+/// <summary>Obtain kernel with the specified index.</summary>
+///
+cl_kernel obtain_kernel(cl_program program, cl_uint i)
+{
+    cl_int CL_err = CL_SUCCESS;
+    cl_kernel result = NULL;
+
+    result = clCreateKernel(program, obtain_kernel_name(i), &CL_err);
+    checkErr(CL_err, "clCreateKernel()");
+
+    return result;
+}
 
 /* Generate grid from the M matrix (grid.bin) 
  */ 
@@ -664,10 +964,11 @@ void cleanup(
 
  /* Command line options handling: coincidences  */ 
 
-void handle_opts_coinc( Search_settings *sett, 
-			Command_line_opts_coinc *opts,
-			int argc, 
-			char* argv[]) {
+void handle_opts_coinc(Search_settings *sett,
+                       Command_line_opts_coinc *opts,
+                       int argc, 
+                       char* argv[])
+{
 
   opts->wd=NULL;
 
