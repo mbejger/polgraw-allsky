@@ -13,254 +13,248 @@
 #include <auxi.h>
 
 
-/* Search settings: 
- * FFT lenghts & other details, bandwidth and Earth parameters
- */
-
+/// <summary>Search settings: FFT lenghts & other details, bandwidth and Earth parameters.</summary>
+///
 void search_settings(Search_settings* sett)
 {
+    double dt, B, oms, omr, Smin, Smax;
+    int nod, N, nfft, s, nd, interpftpad;
 
-  double dt, B, oms, omr, Smin, Smax;
-  int nod, N, nfft, s, nd, interpftpad;
+    dt = sett->dt;                      // data sampling time:  
+                                        // set in handle_opts() from the command line
+                                        // (the default value is dt=0.5)
 
+    B = 0.5 / dt;                       // Bandwidth
+    oms = 2.*M_PI*(sett->fpo)*dt;       // Dimensionless angular frequency
 
-  dt = sett->dt;                    // data sampling time:  
-                                    // set in handle_opts() from the command line
-                                    // (the default value is dt=0.5)
+    omr = C_OMEGA_R*dt;
 
-  B = 0.5/dt;                       // Bandwidth
-  oms = 2.*M_PI*(sett->fpo)*dt;     // Dimensionless angular frequency
+    nod = 2;                            // Observation time in days
+    N = lround(nod*C_SIDDAY / dt);      // No. of data points
 
-  omr = C_OMEGA_R*dt;
+    nfft = 1 << (int)ceil(log(N) / log(2.));    // length of FFT
+    s = 1;                                      // No. of spindowns
 
-  nod = 2;                          // Observation time in days
-  N = lround(nod*C_SIDDAY/dt);      // No. of data points
+//  Smin = 1000.*C_YEARSEC;                     // Minimum spindown time
+                                                // [sec.]
 
-  nfft = 1 << (int)ceil(log(N)/log(2.));    // length of FFT
-  s = 1;                                    // No. of spindowns
+//  Smax = 2.*M_PI*(sett->fpo + B)*dt*dt / (2.*Smin); // Maximum spindown (1000 years) [angular, dimensionless]
 
-/* 
-  Smin = 1000.*C_YEARSEC;                   // Minimum spindown time 
-                                            // [sec.]
+    //#mb ranges of spindown (RDC O1) 
+    double fdotmin, fdotmax;
+    fdotmin = 0.5e-8;
+    fdotmax = 0.5e-9;
 
-  // Maximum spindown (1000 years) [angular, dimensionless]
-  Smax = 2.*M_PI*(sett->fpo + B)*dt*dt/(2.*Smin);   
-*/ 
+    Smax = 2.*M_PI*fdotmin*dt*dt;
+    Smin = 2.*M_PI*fdotmax*dt*dt;
 
-  //#mb ranges of spindown (RDC O1) 
-  double fdotmin, fdotmax; 
-  fdotmin = 0.5e-8; 
-  fdotmax = 0.5e-9; 
+    nd = 2;     // Degree of freedom, 
+                // (2*nd = deg. no ofrees of freedom for chi^2)
 
-  Smax = 2.*M_PI*fdotmin*dt*dt; 
-  Smin = 2.*M_PI*fdotmax*dt*dt;
+    interpftpad = 2;
 
-  nd = 2;     // Degree of freedom, 
-              // (2*nd = deg. no ofrees of freedom for chi^2)
+    sett->B = B;          	// bandwidth
+    sett->oms = oms;      	// dimensionless angular frequency
+    sett->omr = omr;      	// C_OMEGA_R * dt
+    sett->nod = nod;      	// number of days of observation
+    sett->N = N;          	// number of data points
+    sett->nfft = nfft;    	// length of fft
+    sett->s = s;          	// number of spindowns
+    sett->Smin = Smin;    	// minimum spindown
+    sett->Smax = Smax;    	// maximum spindown
+    sett->nd = nd;        	// degrees of freedom
+    sett->interpftpad = interpftpad;
 
-  interpftpad = 2;
+    // Because of frequency-domain filters, we search
+    // F-statistic in range (nmin+1, nmax) of data points
+    // 
+    // The value of sett->fftpad (zero padding - original grids: 2, new grids: 1) 
+    // is read from the grid.bin file in read_grid() (see init.c) 
 
-  sett->B=B;          	// bandwidth
-  sett->oms=oms;      	// dimensionless angular frequency
-  sett->omr=omr;      	// C_OMEGA_R * dt
-  sett->nod=nod;      	// number of days of observation
-  sett->N=N;          	// number of data points
-  sett->nfft=nfft;    	// length of fft
-  sett->s=s;          	// number of spindowns
-  sett->Smin=Smin;    	// minimum spindown
-  sett->Smax=Smax;    	// maximum spindown
-  sett->nd=nd;        	// degrees of freedom
-  sett->interpftpad=interpftpad;
+    sett->nmin = sett->fftpad*NAV*sett->B;
+    sett->nmax = (sett->nfft / 2 - NAV*sett->B)*sett->fftpad;
 
-  // Because of frequency-domain filters, we search
-  // F-statistic in range (nmin+1, nmax) of data points
-  // 
-  // The value of sett->fftpad (zero padding - original grids: 2, new grids: 1) 
-  // is read from the grid.bin file in read_grid() (see init.c) 
+    // initial value of number of known instrumental lines in band 
+    sett->numlines_band = 0;
 
-  sett->nmin = sett->fftpad*NAV*sett->B;
-  sett->nmax = (sett->nfft/2 - NAV*sett->B)*sett->fftpad;
-
-  // initial value of number of known instrumental lines in band 
-  sett->numlines_band=0; 
-
-} // search settings  
-
-
-
-/* Network of detectors' discovery: 
- * finds subdirectories in the main input directory, 
- * which by convention should be named like V1, L1, H1 
- * and which contain input data and ephemerids; 
- * writes appropriate detector-related data into structs. 
- */ 
+} // search settings
 
 #define buf_size 512
 
-void detectors_settings(
-  Search_settings* sett, 
-  Command_line_opts *opts) {
+/// <summary>Reads the settings of the detectors.</summary>
+/// <remarks>Network of detectors' discovery: finds subdirectories in the main input directory, which by convention should be named like V1, L1, H1 and which contain input data and ephemerids; writes appropriate detector-related data into structs.</remarks>
+///
+void detectors_settings(Search_settings* sett,
+                        Command_line_opts *opts)
+{
+    int i = 0;
+    char dirname[buf_size], x[buf_size];
 
-  int i=0; 
-  char dirname[buf_size], x[buf_size];
-  // Main input directory name 
-  int err = sprintf_s (dirname, 512, "%s/%03d", opts->dtaprefix, opts->ident); 
-  if (err <= 0)
-      perror("Directory name assembly failed.");
+    // Main input directory name 
+    int err = sprintf_s(dirname, 512, "%s/%03d", opts->dtaprefix, opts->ident);
+    if (err <= 0)
+        perror("Directory name assembly failed.");
 
-  DIR *dp;
-  struct dirent *ep;
+    DIR *dp;
+    struct dirent *ep;
 
-  char **detnames = (char **)malloc(MAX_DETECTORS*sizeof(char *));   
-  char **xnames = (char **)malloc(MAX_DETECTORS*sizeof(char *));
+    char **detnames = (char **)malloc(MAX_DETECTORS * sizeof(char *));
+    char **xnames = (char **)malloc(MAX_DETECTORS * sizeof(char *));
 
-  dp = opendir (dirname);
-  if (dp != NULL) {
-    while ((ep = readdir (dp))) { 
+    dp = opendir(dirname);
+    if (dp != NULL)
+    {
+        while ((ep = readdir(dp)))
+        {
+            // Subdirectory names checkup: 
+            // check if it's a dir
+            // name is 2 char long
+            // not a directory name of the type "./" or ".."
+            // if usedef is not set (length equal 0), or is set and dir name is substring of it 
+            if ((ep->d_type == DT_DIR) &&
+                (strlen(ep->d_name) == DETNAME_LENGTH) &&
+                (strncmp(&ep->d_name[0], ".", 1)) &&
+                (!strlen(opts->usedet) || (strlen(opts->usedet) && (strstr(opts->usedet, ep->d_name)))))
+            {
+                FILE *data;
 
-      // Subdirectory names checkup: 
-      // check if it's a dir
-      // name is 2 char long
-      // not a directory name of the type "./" or ".."
-      // if usedef is not set (length equal 0), or is set and dir name is substring of it 
-      if((ep->d_type == DT_DIR) && 
-        (strlen(ep->d_name)==DETNAME_LENGTH) && 
-        (strncmp(&ep->d_name[0],".",1)) && 
-        (!strlen(opts->usedet) || (strlen(opts->usedet) && (strstr(opts->usedet, ep->d_name))))) { 
+                // Input time-domain data handling
+                // 
+                // We assume that in each subdirectory corresponding 
+                // to the detector the input data will look as following:
+                // sprintf(x, "%s/%03d/%s/xdatc_%03d%s.bin",
+                //         opts->dtaprefix, opts->ident, ep->d_name,
+                //         opts->ident, opts->label);
 
-          FILE *data;
+                int err = sprintf_s(x,
+                    buf_size,
+                    "%s/%03d/%s/xdatc_%03d_%04d%s.bin",
+                    opts->dtaprefix,
+                    opts->ident,
+                    ep->d_name,
+                    opts->ident,
+                    opts->band,
+                    opts->label);
+                if (err <= 0)
+                    perror("Error assembling string.");
 
-          // Input time-domain data handling
-          // 
-          // We assume that in each subdirectory corresponding 
-          // to the detector the input data will look as following: 
-/*          sprintf(x, "%s/%03d/%s/xdatc_%03d%s.bin",
-          opts->dtaprefix, opts->ident, ep->d_name,
-          opts->ident, opts->label);
-*/
+                if ((data = fopen(x, "r")) != NULL) {
 
-          int err = sprintf_s(x,
-                              buf_size,
-                              "%s/%03d/%s/xdatc_%03d_%04d%s.bin",
-                              opts->dtaprefix,
-                              opts->ident,
-                              ep->d_name,
-                              opts->ident,
-                              opts->band,
-                              opts->label);
-          if (err <= 0)
-              perror("Error assembling string.");
+                    xnames[i] = (char *)calloc(strlen(x) + 1, sizeof(char));
+                    detnames[i] = (char *)calloc(DETNAME_LENGTH + 1, sizeof(char));
 
-          if((data = fopen(x, "r")) != NULL) {
+                    strncpy(xnames[i], x, strlen(x));
+                    strncpy(detnames[i], ep->d_name, DETNAME_LENGTH);
+                    i++;
 
-            xnames[i]   = (char *)calloc(strlen(x)+1, sizeof(char));
-            detnames[i] = (char *)calloc(DETNAME_LENGTH+1, sizeof(char));
+                }
+                else {
+                    printf("Directory %s exists, but no input file found:\n%s missing...\n",
+                        ep->d_name, x);
+                    //perror (x);
+                }
 
-            strncpy(xnames[i], x, strlen(x));
-            strncpy(detnames[i], ep->d_name, DETNAME_LENGTH);
-            i++;
+                fclose(data);
+                memset(x, 0, sizeof(x));
+            }
+        }
 
-          } else { 
-            printf("Directory %s exists, but no input file found:\n%s missing...\n", 
-              ep->d_name, x);  
-            //perror (x);
-          }
+        (void)closedir(dp);
 
-          fclose(data); 
-          memset(x, 0, sizeof(x));
-      }
-    } 
-      
-    (void) closedir(dp);
+    }
+    else perror("Couldn't open the input directory...");
 
-  } else perror ("Couldn't open the input directory...");
-
-  sett->nifo=i;      // number of detectors  
-  if(sett->nifo) { 
-    printf("Settings - number of detectors: %d\n", sett->nifo); 
-
-  } else { 
-    printf("No subdirectories with detector data found. Exiting...\n"); 
-    exit(EXIT_FAILURE);
-  }  
-
-  for(i=0; i<sett->nifo; i++) { 
-
-    // Virgo detector
-    if(!strcmp("V1", detnames[i])) {
-
-      strncpy(ifo[i].xdatname, xnames[i], strlen(xnames[i]));
-      strncpy(ifo[i].name, detnames[i], DETNAME_LENGTH);
-
-      // Geographical latitude phi in radians
-      ifo[i].ephi = (43.+37./60.+53.0880/3600.)/RAD_TO_DEG;
-      // Geographical longitude in radians
-      ifo[i].elam = (10.+30./60.+16.1885/3600.)/RAD_TO_DEG;
-      // Height h above the Earth ellipsoid in meters
-      ifo[i].eheight = 53.238;
-      // Orientation of the detector gamma
-      ifo[i].egam = (135. - (19.0+25./60.0+57.96/3600.))/RAD_TO_DEG;
-
-      printf("Using %s IFO as detector #%d... %s as input time series data\n", 
-        ifo[i].name, i, ifo[i].xdatname);
-
-    // Hanford H1 detector
-    } else if(!strcmp("H1", detnames[i])) {
-
-      strncpy(ifo[i].xdatname, xnames[i], strlen(xnames[i]));
-      strncpy(ifo[i].name, detnames[i], DETNAME_LENGTH);
-
-      // Geographical latitude phi in radians
-      ifo[i].ephi = (46+(27+18.528/60.)/60.)/RAD_TO_DEG;
-      // Geographical longitude in radians
-      ifo[i].elam = -(119+(24+27.5657/60.)/60.)/RAD_TO_DEG;
-      // Height h above the Earth ellipsoid in meters
-      ifo[i].eheight = 142.554;
-      // Orientation of the detector gamma
-      ifo[i].egam = 170.9994/RAD_TO_DEG;
-
-      printf("Using %s IFO as detector #%d... %s as input time series data\n", 
-        ifo[i].name, i, ifo[i].xdatname);
- 
-    // Livingston L1 detector
-    } else if(!strcmp("L1", detnames[i])) {
-
-      strncpy(ifo[i].xdatname, xnames[i], strlen(xnames[i]));
-      strncpy(ifo[i].name, detnames[i], DETNAME_LENGTH);
-
-      // Geographical latitude phi in radians
-      ifo[i].ephi = (30+(33+46.4196/60.)/60.)/RAD_TO_DEG;
-      // Geographical longitude in radians
-      ifo[i].elam = -(90+(46+27.2654/60.)/60.)/RAD_TO_DEG;
-      // Height h above the Earth ellipsoid in meters
-      ifo[i].eheight = -6.574;
-      // Orientation of the detector gamma
-      ifo[i].egam = 242.7165/RAD_TO_DEG;
-
-      printf("Using %s IFO as detector #%d... %s as input time series data\n", 
-        ifo[i].name, i, ifo[i].xdatname);
-
-    } else {
-
-      printf("Meh, unknown detector %s (see settings.c) Exiting...\n", 
-              detnames[i]);
-      exit(EXIT_FAILURE);
+    sett->nifo = i;      // number of detectors  
+    if (sett->nifo)
+    {
+        printf("Settings - number of detectors: %d\n", sett->nifo);
+    }
+    else
+    {
+        printf("No subdirectories with detector data found. Exiting...\n");
+        exit(EXIT_FAILURE);
     }
 
-  } 
+    for (i = 0; i<sett->nifo; i++)
+    {
+        // Virgo detector
+        if (!strcmp("V1", detnames[i]))
+        {
+            strncpy(ifo[i].xdatname, xnames[i], strlen(xnames[i]));
+            strncpy(ifo[i].name, detnames[i], DETNAME_LENGTH);
 
-  // memory free for detnames and xdatnames
-  for(i=0; i<sett->nifo; i++) { 
-    free(detnames[i]);
-    free(xnames[i]); 
-  } 
-   
+            // Geographical latitude phi in radians
+            ifo[i].ephi = (43. + 37. / 60. + 53.0880 / 3600.) / RAD_TO_DEG;
+            // Geographical longitude in radians
+            ifo[i].elam = (10. + 30. / 60. + 16.1885 / 3600.) / RAD_TO_DEG;
+            // Height h above the Earth ellipsoid in meters
+            ifo[i].eheight = 53.238;
+            // Orientation of the detector gamma
+            ifo[i].egam = (135. - (19.0 + 25. / 60.0 + 57.96 / 3600.)) / RAD_TO_DEG;
 
-  free(detnames); 
-  free(xnames); 
+            printf("Using %s IFO as detector #%d... %s as input time series data\n",
+                ifo[i].name, i, ifo[i].xdatname);
+
+            // Hanford H1 detector
+        }
+        else if (!strcmp("H1", detnames[i]))
+        {
+            strncpy(ifo[i].xdatname, xnames[i], strlen(xnames[i]));
+            strncpy(ifo[i].name, detnames[i], DETNAME_LENGTH);
+
+            // Geographical latitude phi in radians
+            ifo[i].ephi = (46 + (27 + 18.528 / 60.) / 60.) / RAD_TO_DEG;
+            // Geographical longitude in radians
+            ifo[i].elam = -(119 + (24 + 27.5657 / 60.) / 60.) / RAD_TO_DEG;
+            // Height h above the Earth ellipsoid in meters
+            ifo[i].eheight = 142.554;
+            // Orientation of the detector gamma
+            ifo[i].egam = 170.9994 / RAD_TO_DEG;
+
+            printf("Using %s IFO as detector #%d... %s as input time series data\n",
+                   ifo[i].name, i, ifo[i].xdatname);
+
+            // Livingston L1 detector
+        }
+        else if (!strcmp("L1", detnames[i]))
+        {
+            strncpy(ifo[i].xdatname, xnames[i], strlen(xnames[i]));
+            strncpy(ifo[i].name, detnames[i], DETNAME_LENGTH);
+
+            // Geographical latitude phi in radians
+            ifo[i].ephi = (30 + (33 + 46.4196 / 60.) / 60.) / RAD_TO_DEG;
+            // Geographical longitude in radians
+            ifo[i].elam = -(90 + (46 + 27.2654 / 60.) / 60.) / RAD_TO_DEG;
+            // Height h above the Earth ellipsoid in meters
+            ifo[i].eheight = -6.574;
+            // Orientation of the detector gamma
+            ifo[i].egam = 242.7165 / RAD_TO_DEG;
+
+            printf("Using %s IFO as detector #%d... %s as input time series data\n",
+                   ifo[i].name, i, ifo[i].xdatname);
+        }
+        else
+        {
+
+            printf("Meh, unknown detector %s (see settings.c) Exiting...\n",
+                   detnames[i]);
+            exit(EXIT_FAILURE);
+        }
+    }
+
+    // memory free for detnames and xdatnames
+    for (i = 0; i<sett->nifo; i++)
+    {
+        free(detnames[i]);
+        free(xnames[i]);
+    }
+
+    free(detnames);
+    free(xnames);
 
 } // detectors settings
 
+#undef buf_size
 
   /* Coefficients of the amplitude modulation functions
    * of the Virgo detector

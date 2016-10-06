@@ -1,8 +1,9 @@
 #ifndef __SETTINGS_H__
 #define __SETTINGS_H__
 
-//#include <fftw3.h>
-#include "struct.h"
+// Polgraw includes
+#include <struct.h>
+
 
 #define NPAR 5 		/* no. of trigger parameters */
 
@@ -37,12 +38,15 @@
 //31557600.0          // year in seconds = 365.25 * 86400
 
 
-void search_settings(
-    Search_settings *sett);
+/// <summary>Search settings: FFT lenghts & other details, bandwidth and Earth parameters.</summary>
+///
+void search_settings(Search_settings *sett);
 
-void detectors_settings(
-    Search_settings *sett, 
-    Command_line_opts *opts);
+/// <summary>Reads the settings of the detectors.</summary>
+/// <remarks>Network of detectors' discovery: finds subdirectories in the main input directory, which by convention should be named like V1, L1, H1 and which contain input data and ephemerids; writes appropriate detector-related data into structs.</remarks>
+///
+void detectors_settings(Search_settings *sett,
+                        Command_line_opts *opts);
 
 void rogcvir(
     Detector_settings *ifoi); 
@@ -65,4 +69,4 @@ void read_trigger_files(
     Command_line_opts_coinc *opts, 
     Candidate_triggers *trig);
 
-#endif
+#endif // __SETTINGS_H__

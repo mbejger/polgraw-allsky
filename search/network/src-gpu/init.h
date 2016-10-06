@@ -5,6 +5,8 @@
 #include <struct.h>
 
 
+/// <summary>Command line options handling: search</summary>
+///
 void handle_opts(Search_settings* sett,
                  OpenCL_settings* cl_sett,
 		         Command_line_opts* opts,
@@ -62,6 +64,12 @@ const char* obtain_kernel_name(cl_uint i);
 ///
 cl_kernel obtain_kernel(cl_program program, cl_uint i);
 
+/// <summary>Generate grid from the M matrix.</summary>
+/// <remarks>Processes the file 'grid.bin'</remarks>
+///
+void read_grid(Search_settings *sett,
+               Command_line_opts *opts);
+
 void init_arrays(
 		 Search_settings *sett,
 		 Command_line_opts *opts, 
@@ -78,10 +86,6 @@ void set_search_range(
 		      Search_settings *sett, 
 		      Command_line_opts *opts, 
 		      Search_range *s_range);
-
-void read_grid(
-	       Search_settings *sett, 
-	       Command_line_opts *opts);
 
 void plan_fft(
 	      Search_settings *sett, 
