@@ -29,7 +29,7 @@ void search_settings(
 
   omr = C_OMEGA_R*dt;
 
-  nod = 2;                          // Observation time in days
+  nod = 6;                          // Observation time in days
   N = round (nod*C_SIDDAY/dt);      // No. of data points
 
   nfft = 1 << (int)ceil(log(N)/log(2.));    // length of FFT
@@ -619,8 +619,9 @@ void check_if_band_is_fully_vetoed(
 
     }        
 
-    printf("This band is fully vetoed. My work here is done, exiting...\n"); 
-    exit(EXIT_SUCCESS); 
-
-
+    if(!(ll < M_PI)) {  
+      printf("This band is fully vetoed. My work here is done, exiting...\n"); 
+      exit(EXIT_SUCCESS); 
+    } 
+    
 }  
