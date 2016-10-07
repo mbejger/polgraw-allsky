@@ -1,12 +1,12 @@
+// Polgraw includes
+#include <spline_z.h>
+
 // Standard C includes
 #include <stdio.h>
 //#include <cuda.h>
 //#include <cuda_runtime_api.h>
 //#include "cusparse_v2.h"
 //#include <cufft.h>
-
-// Polgraw includes
-#include <spline_z.h>
 
 //__global__ void computeB(cufftDoubleComplex *cu_y, cufftDoubleComplex *cu_B, int N);
 
@@ -123,57 +123,77 @@ void gpu_interp(COMPLEX_TYPE* cu_y,
 
 
 
-/* !!!pci make this a kernel, write directly to the device memory */
-void init_spline_matrices(cl_mem cu_d,  // buffer of COMPLEX_TYPE
-    cl_mem cu_dl, // buffer of COMPLEX_TYPE
-    cl_mem cu_du, // buffer of COMPLEX_TYPE
-    cl_mem cu_B,  // buffer of COMPLEX_TYPE
-    int Np)
+/// <summary>Initialize the spline matrices.</summary>
+/// <remarks>PCI Should replace it with kernels that initialize on the device.</remarks>
+///
+void init_spline_matrices(OpenCL_handles* cl_handles, 
+                          cl_mem cu_d,  // buffer of complex_devt
+                          cl_mem cu_dl, // buffer of complex_devt
+                          cl_mem cu_du, // buffer of complex_devt
+                          cl_mem cu_B,  // buffer of complex_devt
+                          int N)
 {
-//  printf("init spline %d\n",N);
-  
-//  N-=1; //N is number of intervals here
-  
-  //cufftDoubleComplex *d, *du, *dl;
-  //CudaSafeCall( cudaMallocHost((void**)&d, sizeof(cufftDoubleComplex)*(N-1)) );
-  //CudaSafeCall( cudaMallocHost((void**)&du, sizeof(cufftDoubleComplex)*(N-1)) );
-  //CudaSafeCall( cudaMallocHost((void**)&dl, sizeof(cufftDoubleComplex)*(N-1)) );
-  
-  
-  //dl[0] is 0 and du[N-2]=0
-  
-//  for (int i=0; i<N-2; i++) {
-//    dl[i+1].x=1;
-//    du[i].x=1;
-//    d[i].x=4;
-//    
-//    dl[i].y=0;
-//    du[i].y=0;
-//    d[i].y=0;
-//  }
-//  dl[0].x=0;
-//  du[N-2].x=0;
-//  d[N-2].x=4;
-//  
-//  dl[N-2].y=0;
-//  du[N-2].y=0;
-//  d[N-2].y=0;
-  
-  //copy to gpu
-  //CudaSafeCall( cudaMalloc((void**)cu_d, sizeof(cufftDoubleComplex)*(N-1)));
-  //CudaSafeCall( cudaMemcpy(*cu_d, d, sizeof(cufftDoubleComplex)*(N-1), cudaMemcpyHostToDevice));
-  //
-  //CudaSafeCall( cudaMalloc((void**)cu_dl, sizeof(cufftDoubleComplex)*(N-1)));
-  //CudaSafeCall( cudaMemcpy(*cu_dl, dl, sizeof(cufftDoubleComplex)*(N-1), cudaMemcpyHostToDevice));
-  //
-  //CudaSafeCall( cudaMalloc((void**)cu_du, sizeof(cufftDoubleComplex)*(N-1)));
-  //CudaSafeCall( cudaMemcpy(*cu_du, du, sizeof(cufftDoubleComplex)*(N-1), cudaMemcpyHostToDevice));
-  
-  //allocate B (or z) vector
-  //CudaSafeCall( cudaMalloc((void**)cu_B, sizeof(cufftDoubleComplex)*(N+1)));
-  
-  //clean up
-  //CudaSafeCall( cudaFreeHost(d) );
-  //CudaSafeCall( cudaFreeHost(du) );
-  //CudaSafeCall( cudaFreeHost(dl) );
+    cl_int CL_err = CL_SUCCESS;
+    N -= 1; // N is number of intervals here
+
+    complex_devt *d, *du, *dl;
+
+    d  = (complex_devt*)calloc(N - 1, sizeof(complex_devt));
+    du = (complex_devt*)calloc(N - 1, sizeof(complex_devt));
+    dl = (complex_devt*)calloc(N - 1, sizeof(complex_devt));
+
+    for (int i = 0; i<N - 2; i++)
+    {
+        dl[i + 1].s[0] = 1;
+        du[i].s[0] = 1;
+        d[i].s[0] = 4;
+
+        dl[i].s[1] = 0;
+        du[i].s[1] = 0;
+        d[i].s[1] = 0;
+    }
+
+    // dl[0] is 0 and du[N-2]=0
+    dl[0].s[0] = 0;
+    du[N - 2].s[0] = 0;
+    d[N - 2].s[0] = 4;
+
+    dl[N - 2].s[1] = 0;
+    du[N - 2].s[1] = 0;
+    d[N - 2].s[1] = 0;
+
+    // copy to gpu
+    cu_d = clCreateBuffer(cl_handles->ctx,
+                          CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR,
+                          (N - 1) * sizeof(complex_devt),
+                          d,
+                          &CL_err);
+    checkErr(CL_err, "clCreateBuffer(cu_d)");
+
+    cu_dl = clCreateBuffer(cl_handles->ctx,
+                           CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR,
+                           (N - 1) * sizeof(complex_devt),
+                           d,
+                           &CL_err);
+    checkErr(CL_err, "clCreateBuffer(cu_dl)");
+
+    cu_du = clCreateBuffer(cl_handles->ctx,
+                           CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR,
+                           (N - 1) * sizeof(complex_devt),
+                           d,
+                           &CL_err);
+    checkErr(CL_err, "clCreateBuffer(cu_du)");
+
+    // allocate B (or z) vector
+    cu_B = clCreateBuffer(cl_handles->ctx,
+                          CL_MEM_READ_WRITE | CL_MEM_ALLOC_HOST_PTR,
+                          (N + 1) * sizeof(complex_devt),
+                          NULL,
+                          &CL_err);
+    checkErr(CL_err, "clCreateBuffer(cu_B)");
+
+    //clean up
+    free(d);
+    free(du);
+    free(dl);
 }

@@ -1,6 +1,10 @@
 // MSVC macro to include constants, such as M_PI (include before math.h)
 #define _USE_MATH_DEFINES
 
+// Polgraw includes
+#include <settings.h>
+#include <auxi.h>
+
 // Standard C includes
 #include <math.h>
 #include <string.h>
@@ -8,10 +12,34 @@
 #include <stdlib.h>
 #include <dirent.h>
 
-// Polgraw includes
-#include <settings.h>
-#include <auxi.h>
 
+/// <summary>Create directory for disk output.</summary>
+///
+void setup_output(struct stat* buff,
+                  Command_line_opts* opts)
+{
+    if (stat(opts->prefix, buff) == -1)
+    {
+        if (errno == ENOENT)
+        {
+            // Output directory apparently does not exist, try to create one
+#ifdef WIN32
+            if (_mkdir(opts->prefix) == -1)
+#else
+            if (mkdir(opts.prefix, S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH) == -1)
+#endif
+            {
+                perror(opts->prefix);
+                exit(EXIT_FAILURE);
+            }
+        }
+        else // can't access output directory
+        {
+            perror(opts->prefix);
+            exit(EXIT_FAILURE);
+        }
+    }
+}
 
 /// <summary>Search settings: FFT lenghts & other details, bandwidth and Earth parameters.</summary>
 ///
@@ -256,18 +284,15 @@ void detectors_settings(Search_settings* sett,
 
 #undef buf_size
 
-  /* Coefficients of the amplitude modulation functions
-   * of the Virgo detector
-   */ 
-
-void rogcvir(Detector_settings *ifoi) {
-
-  /* In the notation of Phys. Rev. D 58, 063001 (1998):
-   * ephi = lambda (geographical latitude phi in radians)
-   * egam = gamma (orientation of the detector)
-   * 
-   * (see modvir function in jobcore.c for Eqs. 12 and 13)
-   */ 
+/// <summary>Coefficients of the amplitude modulation functions of the Virgo detector.</summary>
+///
+void rogcvir(Detector_settings* ifoi)
+{
+  // In the notation of Phys. Rev. D 58, 063001 (1998):
+  // ephi = lambda (geographical latitude phi in radians)
+  // egam = gamma (orientation of the detector)
+  // 
+  // (see modvir function in jobcore.c for Eqs. 12 and 13)
 
   ifoi->amod.c1 = .25*sin(2.*ifoi->egam)*(1+sqr(sin(ifoi->ephi)));
   ifoi->amod.c2 = -.5*cos(2.*ifoi->egam)*sin(ifoi->ephi);
@@ -281,55 +306,4 @@ void rogcvir(Detector_settings *ifoi) {
 
 } // rogcvir
 
-
-  /* Amplitude modulation of the signal
-   */ 
-
-// replaced by modvir_gpu in jobcore.cu
-#if 0
-void modvir(
-  double sinal, 
-  double cosal, 
-  double sindel, 
-  double cosdel,
-  int Np,
-  Detector_settings *ifo, 
-  Aux_arrays *aux) {
-
-  int t;
-  double cosalfr, sinalfr, c2d, c2sd, c, s, c2s, cs;
-
-  double c1 = ifo->amod.c1,
-         c2 = ifo->amod.c2,
-         c3 = ifo->amod.c3,
-         c4 = ifo->amod.c4,
-         c5 = ifo->amod.c5,
-         c6 = ifo->amod.c6,
-         c7 = ifo->amod.c7,
-         c8 = ifo->amod.c8,
-         c9 = ifo->amod.c9;
-
-  cosalfr = cosal*(ifo->sig.cphir) + sinal*(ifo->sig.sphir);
-  sinalfr = sinal*(ifo->sig.cphir) - cosal*(ifo->sig.sphir);
-  c2d = sqr(cosdel);
-  c2sd = sindel*cosdel;
-
-  // Modulation factor for every data point 
-  for (t=0; t<Np; t++) { 
-
-    c = cosalfr*aux->cosmodf[t] + sinalfr*aux->sinmodf[t];
-    s = sinalfr*aux->cosmodf[t] - cosalfr*aux->sinmodf[t];
-    c2s = 2.*sqr(c);
-    cs = c*s;
-
-    // modulation factors aa and bb  
-    ifo->sig.aa[t] = c1*(2.-c2d)*c2s + c2*(2.-c2d)*2.*cs +
-           c3*c2sd*c + c4*c2sd*s - c1*(2.-c2d) + c5*c2d;
-
-    ifo->sig.bb[t] = c6*sindel*c2s + c7*sindel*2.*cs + 
-           c8*cosdel*c + c9*cosdel*s - c6*sindel;
-
-  } 
-
-} // modvir
 #endif

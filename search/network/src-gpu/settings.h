@@ -38,9 +38,14 @@
 //31557600.0          // year in seconds = 365.25 * 86400
 
 
+/// <summary>Create directory for disk output.</summary>
+///
+void setup_output(struct stat* buff,
+                  Command_line_opts* opts);
+
 /// <summary>Search settings: FFT lenghts & other details, bandwidth and Earth parameters.</summary>
 ///
-void search_settings(Search_settings *sett);
+void search_settings(Search_settings* sett);
 
 /// <summary>Reads the settings of the detectors.</summary>
 /// <remarks>Network of detectors' discovery: finds subdirectories in the main input directory, which by convention should be named like V1, L1, H1 and which contain input data and ephemerids; writes appropriate detector-related data into structs.</remarks>
@@ -48,8 +53,9 @@ void search_settings(Search_settings *sett);
 void detectors_settings(Search_settings *sett,
                         Command_line_opts *opts);
 
-void rogcvir(
-    Detector_settings *ifoi); 
+/// <summary>Coefficients of the amplitude modulation functions of the Virgo detector.</summary>
+///
+void rogcvir(Detector_settings* ifoi);
 
 void modvir_gpu(
     double sinal, 

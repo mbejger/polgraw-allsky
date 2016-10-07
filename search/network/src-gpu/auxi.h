@@ -1,6 +1,9 @@
 #ifndef __AUXI_H__
 #define __AUXI_H__
 
+// Polgraw includes
+#include <floats.h>
+
 #include <complex.h>
 
 #define sqr(x) ((x)*(x))
@@ -13,16 +16,32 @@
 #define NAVFSTAT 4096
 //#define round(x) floor((x)+0.5)
 
-#include "floats.h"
-
 void lin2ast(double be1, double be2, int pm, double sepsm, double cepsm, \
 	     double *sinal, double *cosal, double *sindel, double *cosdel);
 
 double var (double *, int);
 
-void gridr (double *, int *, int *, int *, double, double);
+/// <summary>Establish the grid range in which the search will be performed with the use of the M matrix from grid.bin</summary>
+/// 
+void gridr(double *M,
+           int *spndr,
+           int *nr,
+           int *mr,
+           double oms,
+           double Smax);
 
-int ludcmp (double *, int, int *, double *);
+/// <summary>LU decomposition of a given real matrix <c>a[0..n-1][0..n-1]</c>.</summary>
+/// <param name="a">An array containing elements of matrix <c>a</c> (changed on exit).</param>
+/// <param name="n">Number of rows and columns of <c>a</c>.</param>
+/// <param name="indx">Output row permutation effected by the partial pivoting.</param>
+/// <param name="d">Output +-1 depending on whether the number of rows interchanged was even or odd, respectively.</param>
+/// <returns>0 on success, 1 on error.</returns>
+///
+int ludcmp(double *a,
+           int n,
+           int *indx,
+           double *d);
+
 int lubksb (double *, int, int *, double *);
 
 // gridopt 

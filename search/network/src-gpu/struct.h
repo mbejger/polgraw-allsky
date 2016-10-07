@@ -41,24 +41,26 @@ typedef struct _comm_line_opts {
 
 
 /* input signal arrays */
-typedef struct _signals {
-	
-  double *xDat, *xDat_d;
-  double *DetSSB, *DetSSB_d;   // Ephemeris of the detector
-  double *aa_d, *bb_d;         // Amplitude modulation functions
-  double *shftf_d, *shft_d;    // Resampling and time-shifting
+typedef struct _signals
+{	
+    real_t* xDat;
+    cl_mem xDat_d;
+    real_t* DetSSB;
+    cl_mem DetSSB_d;        // Ephemeris of the detector
+    cl_mem aa_d, bb_d;      // Amplitude modulation functions
+    cl_mem shftf_d, shft_d; // Resampling and time-shifting
   
-  double epsm, 
-         phir, 
-         sepsm,	  // sin(epsm)
-         cepsm,	  // cos(epsm)
-         sphir,	  // sin(phi_r)
-         cphir,	  // cos(phi_r)
-         crf0,    // number of 0s as: N/(N-Nzeros)
-         sig2; 	  // variance of signal
+    real_t epsm,
+           phir,
+           sepsm,           // sin(epsm)
+           cepsm,           // cos(epsm)
+           sphir,           // sin(phi_r)
+           cphir,           // cos(phi_r)
+           crf0,            // number of 0s as: N/(N-Nzeros)
+           sig2;            // variance of signal
 
   int Nzeros;
-  COMPLEX_TYPE *xDatma_d, *xDatmb_d;
+  cl_mem xDatma_d, xDatmb_d;
 
 } Signals;
 
@@ -66,7 +68,7 @@ typedef struct _signals {
 /* fftw arrays */
 typedef struct _fft_arrays {
 
-  COMPLEX_TYPE *xa_d, *xb_d;
+  cl_mem xa_d, xb_d;
   int arr_len;
 
 } FFT_arrays;
@@ -95,9 +97,9 @@ typedef struct _opencl_handles
     cl_uint dev_count;
     cl_device_id* devs;
     cl_context ctx;
-    cl_command_queue* write_queues,
-                      exec_queues,
-                      read_queues;
+    cl_command_queue *write_queues,
+                     *exec_queues,
+                     *read_queues;
     cl_program prog;
     cl_kernel* kernels;
 
@@ -107,7 +109,7 @@ typedef struct _opencl_handles
 ///
 enum Kernel
 {
-    Akarmi = 0
+    ComputeSinCosModF = 0
 };
 
 /* FFTW plans  */ 
@@ -135,7 +137,7 @@ typedef struct _aux_arrays {
 } Aux_arrays;
 
 
-/* Search settings */ 
+// Search settings //
 typedef struct _search_settings {
 
   double fpo,    // Band frequency
@@ -162,7 +164,7 @@ typedef struct _search_settings {
       Ninterp, 	  // for resampling (set in plan_fftw() init.c)
       nifo;       // number of detectors
 
-  double *M;      // Grid-generating matrix (or Fisher matrix, 
+  double* M;      // Grid-generating matrix (or Fisher matrix, 
                   // in case of coincidences) 
 
   double vedva[4][4];   // transformation matrix: its columns are 

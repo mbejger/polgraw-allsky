@@ -531,8 +531,8 @@ const char* obtain_kernel_name(cl_uint i)
 
     switch (i)
     {
-    case Akarmi:
-        result = "akarmi";
+    case ComputeSinCosModF:
+        result = "compute_sincosmodf";
         break;
     default:
         perror("Unkown kernel index");
@@ -595,276 +595,392 @@ void read_grid(Search_settings *sett,
 
 } // end of read grid 
 
+/// <summary>Initialize auxiliary and F-statistics arrays.</summary>
+///
+void init_arrays(Search_settings* sett,
+                 OpenCL_handles* cl_handles,
+                 Command_line_opts* opts,
+                 Aux_arrays *aux_arr,
+                 cl_mem* F_d)
+{
+    cl_int CL_err = CL_SUCCESS;
+    int i, status;
 
- /* Array initialization */ 
+    // Allocates and initializes to zero the data, detector ephemeris
+    // and the F-statistic arrays
 
-void init_arrays( Search_settings *sett, 
-		  Command_line_opts *opts,
-		  Aux_arrays *aux_arr,
-		  double **F_d) {
+    FILE *data;
 
-  int i, status; 
-  // Allocates and initializes to zero the data, detector ephemeris
-  // and the F-statistic arrays
+    sett->Ninterp = sett->interpftpad*sett->nfft;
+    sett->nfftf = sett->fftpad*sett->nfft;
 
-  FILE *data;
+    for (i = 0; i<sett->nifo; i++)
+    {
+        ifo[i].sig.xDat = (real_t*)calloc(sett->N, sizeof(real_t));
 
-  sett->Ninterp = sett->interpftpad*sett->nfft;
-  sett->nfftf = sett->fftpad*sett->nfft;
+        ifo[i].sig.xDat_d = clCreateBuffer(cl_handles->ctx,
+                                           CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR,
+                                           sett->N * sizeof(real_t),
+                                           ifo[i].sig.xDat,
+                                           &CL_err);
+        checkErr(CL_err, "clCreateBuffer(ifo[i].sig.xDat_d)");
 
+        // Input time-domain data handling
+        // 
+        // The file name ifo[i].xdatname is constructed 
+        // in settings.c, while looking for the detector 
+        // subdirectories
+        if ((data = fopen(ifo[i].xdatname, "r")) != NULL)
+        {
+            status = fread((void *)(ifo[i].sig.xDat),
+                           sizeof(real_t),
+                           sett->N,
+                           data);
+            fclose(data);
+        }
+        else
+        {
+            perror(ifo[i].xdatname);
+            exit(EXIT_FAILURE);
+        }
 
-  for(i=0; i<sett->nifo; i++) { 
+        int j, Nzeros = 0;
+        // Checking for null values in the data
+        for (j = 0; j < sett->N; j++)
+            if (!ifo[i].sig.xDat[j]) Nzeros++;
 
-    /// ifo[i].sig.xDat = (double *) calloc(sett->N, sizeof(double));
-    /// mapped memory works for CUDART_VERSION >= 2020
-    /// we should test if it's available, if not copy data explicitly to device
-    //CudaSafeCall( cudaHostAlloc((void **)&(ifo[i].sig.xDat), sett->N*sizeof(double), 
-	//			cudaHostAllocMapped) );
-    //CudaSafeCall( cudaHostGetDevicePointer((void **)&(ifo[i].sig.xDat_d), 
-	//				   (void *)ifo[i].sig.xDat, 0) );
+        ifo[i].sig.Nzeros = Nzeros;
 
-    // Input time-domain data handling
-    // 
-    // The file name ifo[i].xdatname is constructed 
-    // in settings.c, while looking for the detector 
-    // subdirectories
+        // factor N/(N - Nzeros) to account for null values in the data
+        ifo[i].sig.crf0 = (real_t)sett->N / (sett->N - ifo[i].sig.Nzeros);
 
-    if((data = fopen(ifo[i].xdatname, "r")) != NULL) {
-      status = fread((void *)(ifo[i].sig.xDat), 
-		     sizeof(double), sett->N, data);
-      fclose (data);
+        // Estimation of the variance for each detector 
+        ifo[i].sig.sig2 = (ifo[i].sig.crf0)*var(ifo[i].sig.xDat, sett->N);
 
-    } else {
-      perror (ifo[i].xdatname);
-      exit(EXIT_FAILURE); 
+        ifo[i].sig.DetSSB = (real_t*)calloc(3 * sett->N, sizeof(real_t));
+
+        ifo[i].sig.DetSSB_d = clCreateBuffer(cl_handles->ctx,
+                                             CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR,
+                                             3 * sett->N * sizeof(real_t),
+                                             ifo[i].sig.DetSSB,
+                                             &CL_err);
+        checkErr(CL_err, "clCreateBuffer(ifo[i].sig.DetSSB_d)");
+
+        // Ephemeris file handling
+        char filename[512];
+
+        sprintf(filename,
+                "%s/%03d/%s/DetSSB.bin",
+                opts->dtaprefix,
+                opts->ident,
+                ifo[i].name);
+
+        if ((data = fopen(filename, "r")) != NULL)
+        {
+            // Detector position w.r.t Solar System Baricenter
+            // for every datapoint
+            status = fread((void *)(ifo[i].sig.DetSSB),
+                           sizeof(real_t),
+                           3 * sett->N,
+                           data);
+
+            // Deterministic phase defining the position of the Earth
+            // in its diurnal motion at t=0 
+            status = fread((void *)(&ifo[i].sig.phir),
+                           sizeof(real_t),
+                           1,
+                           data);
+
+            // Earth's axis inclination to the ecliptic at t=0
+            status = fread((void *)(&ifo[i].sig.epsm),
+                           sizeof(real_t),
+                           1,
+                           data);
+            fclose(data);
+
+            printf("Using %s as detector %s ephemerids...\n", filename, ifo[i].name);
+
+        }
+        else
+        {
+            perror(filename);
+            return;
+        }
+
+        // sincos 
+        ifo[i].sig.sphir = sin(ifo[i].sig.phir);
+        ifo[i].sig.cphir = cos(ifo[i].sig.phir);
+        ifo[i].sig.sepsm = sin(ifo[i].sig.epsm);
+        ifo[i].sig.cepsm = cos(ifo[i].sig.epsm);
+
+        sett->sepsm = ifo[i].sig.sepsm;
+        sett->cepsm = ifo[i].sig.cepsm;
+
+        ifo[i].sig.xDatma_d = clCreateBuffer(cl_handles->ctx,
+                                             CL_MEM_READ_WRITE | CL_MEM_ALLOC_HOST_PTR,
+                                             sett->N * sizeof(complex_devt),
+                                             NULL,
+                                             &CL_err);
+        checkErr(CL_err, "clCreateBuffer(ifo[i].sig.xDatma_d)");
+
+        ifo[i].sig.xDatmb_d = clCreateBuffer(cl_handles->ctx,
+                                             CL_MEM_READ_WRITE | CL_MEM_ALLOC_HOST_PTR,
+                                             sett->N * sizeof(complex_devt),
+                                             NULL,
+                                             &CL_err);
+        checkErr(CL_err, "clCreateBuffer(ifo[i].sig.xDatmb_d)");
+
+        ifo[i].sig.aa_d = clCreateBuffer(cl_handles->ctx,
+                                         CL_MEM_READ_WRITE | CL_MEM_ALLOC_HOST_PTR,
+                                         sett->N * sizeof(real_t),
+                                         NULL,
+                                         &CL_err);
+        checkErr(CL_err, "clCreateBuffer(ifo[i].sig.aa_d)");
+
+        ifo[i].sig.bb_d = clCreateBuffer(cl_handles->ctx,
+                                         CL_MEM_READ_WRITE | CL_MEM_ALLOC_HOST_PTR,
+                                         sett->N * sizeof(real_t),
+                                         NULL,
+                                         &CL_err);
+        checkErr(CL_err, "clCreateBuffer(ifo[i].sig.bb_d)");
+
+        ifo[i].sig.shft_d = clCreateBuffer(cl_handles->ctx,
+                                           CL_MEM_READ_WRITE | CL_MEM_ALLOC_HOST_PTR,
+                                           sett->N * sizeof(real_t),
+                                           NULL,
+                                           &CL_err);
+        checkErr(CL_err, "clCreateBuffer(ifo[i].sig.shft_d)");
+
+        ifo[i].sig.shftf_d = clCreateBuffer(cl_handles->ctx,
+                                            CL_MEM_READ_WRITE | CL_MEM_ALLOC_HOST_PTR,
+                                            sett->N * sizeof(real_t),
+                                            NULL,
+                                            &CL_err);
+        checkErr(CL_err, "clCreateBuffer(ifo[i].sig.shftf_d)");
+
+    } // end loop for detectors 
+
+      // Check if the ephemerids have the same epsm parameter
+    for (i = 1; i<sett->nifo; i++)
+    {
+        if (!(ifo[i - 1].sig.sepsm == ifo[i].sig.sepsm))
+        {
+            printf("The parameter epsm (DetSSB.bin) differs for detectors %s and %s. Aborting...\n",
+                   ifo[i - 1].name,
+                   ifo[i].name);
+            exit(EXIT_FAILURE);
+        }
+
     }
 
-    int j, Nzeros=0;
-    // Checking for null values in the data
-    for(j=0; j < sett->N; j++)
-      if(!ifo[i].sig.xDat[j]) Nzeros++;
+    // if all is well with epsm, take the first value 
+    sett->sepsm = ifo[0].sig.sepsm;
+    sett->cepsm = ifo[0].sig.cepsm;
 
-    ifo[i].sig.Nzeros = Nzeros; 
+    *F_d = clCreateBuffer(cl_handles->ctx,
+                          CL_MEM_READ_WRITE | CL_MEM_ALLOC_HOST_PTR,
+                          2 * sett->nfft * sizeof(real_t),
+                          NULL,
+                          &CL_err);
+    checkErr(CL_err, "clCreateBuffer(F_d)");
 
-    // factor N/(N - Nzeros) to account for null values in the data
-    ifo[i].sig.crf0 = (double)sett->N/(sett->N - ifo[i].sig.Nzeros);
+    // Auxiliary arrays, Earth's rotation
 
-    // Estimation of the variance for each detector 
-    ifo[i].sig.sig2 = (ifo[i].sig.crf0)*var(ifo[i].sig.xDat, sett->N);
+    aux_arr->t2_d = clCreateBuffer(cl_handles->ctx,
+                                   CL_MEM_READ_WRITE | CL_MEM_ALLOC_HOST_PTR,
+                                   sett->N * sizeof(real_t),
+                                   NULL,
+                                   &CL_err);
+    checkErr(CL_err, "clCreateBuffer(aux_arr->t2_d)");
 
-    //CudaSafeCall( cudaHostAlloc((void **)&(ifo[i].sig.DetSSB), 3*sett->N*sizeof(double), 
-	//			cudaHostAllocMapped) );
-    //CudaSafeCall( cudaHostGetDevicePointer((void **)&(ifo[i].sig.DetSSB_d), 
-	//				   (void *)ifo[i].sig.DetSSB, 0) );
+    aux_arr->cosmodf_d = clCreateBuffer(cl_handles->ctx,
+                                        CL_MEM_READ_WRITE | CL_MEM_ALLOC_HOST_PTR,
+                                        sett->N * sizeof(real_t),
+                                        NULL,
+                                        &CL_err);
+    checkErr(CL_err, "clCreateBuffer(aux_arr->cosmodf_d)");
 
+    aux_arr->sinmodf_d = clCreateBuffer(cl_handles->ctx,
+                                        CL_MEM_READ_WRITE | CL_MEM_ALLOC_HOST_PTR,
+                                        sett->N * sizeof(real_t),
+                                        NULL,
+                                        &CL_err);
+    checkErr(CL_err, "clCreateBuffer(aux_arr->sinmodf_d)");
 
-    // Ephemeris file handling
-    char filename[512];
-    sprintf (filename, "%s/%03d/%s/DetSSB.bin", 
-	     opts->dtaprefix, opts->ident, ifo[i].name);
+    aux_arr->tshift_d = clCreateBuffer(cl_handles->ctx,
+                                       CL_MEM_READ_WRITE | CL_MEM_ALLOC_HOST_PTR,
+                                       sett->N * sizeof(real_t),
+                                       NULL,
+                                       &CL_err);
+    checkErr(CL_err, "clCreateBuffer(aux_arr->tshift_d)");
 
-    if((data = fopen(filename, "r")) != NULL) {
-      // Detector position w.r.t Solar System Baricenter
-      // for every datapoint
-      status = fread((void *)(ifo[i].sig.DetSSB), 
-		     sizeof(double), 3*sett->N, data);
+    init_spline_matrices(cl_handles,
+                         &aux_arr->diag_d,
+                         &aux_arr->ldiag_d,
+                         &aux_arr->udiag_d,
+                         &aux_arr->B_d,
+                         sett->Ninterp);
 
-      // Deterministic phase defining the position of the Earth
-      // in its diurnal motion at t=0 
-      status = fread((void *)(&ifo[i].sig.phir), 
-		     sizeof(double), 1, data);
+    CL_err = clSetKernelArg(cl_handles->kernels[ComputeSinCosModF], 0, sizeof(cl_mem), &aux_arr->sinmodf_d);
+    checkErr(CL_err, "clSetKernelArg(0)");
+    CL_err = clSetKernelArg(cl_handles->kernels[ComputeSinCosModF], 1, sizeof(cl_mem), &aux_arr->cosmodf_d);
+    checkErr(CL_err, "clSetKernelArg(1)");
+    CL_err = clSetKernelArg(cl_handles->kernels[ComputeSinCosModF], 2, sizeof(real_t), &sett->omr);
+    checkErr(CL_err, "clSetKernelArg(2)");
+    CL_err = clSetKernelArg(cl_handles->kernels[ComputeSinCosModF], 3, sizeof(cl_int), &sett->N);
+    checkErr(CL_err, "clSetKernelArg(3)");
 
-      // Earth's axis inclination to the ecliptic at t=0
-      status = fread((void *)(&ifo[i].sig.epsm), 
-		     sizeof(double), 1, data);
-      fclose (data);
+    cl_event exec;
+    CL_err = clEnqueueNDRangeKernel(cl_handles->exec_queues[0],
+                                    cl_handles->kernels[ComputeSinCosModF],
+                                    1,
+                                    NULL,
+                                    &sett->N,
+                                    NULL,
+                                    0,
+                                    NULL,
+                                    &exec);
+    checkErr(CL_err, "clEnqueueNDRangeKernel(ComputeSinCosModF)");
 
-      printf("Using %s as detector %s ephemerids...\n", filename, ifo[i].name);
+    CL_err = clWaitForEvents(1, &exec);
+    checkErr(CL_err, "clWaitForEvents(exec)");
 
-    } else {
-      perror (filename);
-      return ;
-    }
-
-    // sincos 
-    ifo[i].sig.sphir = sin(ifo[i].sig.phir);
-    ifo[i].sig.cphir = cos(ifo[i].sig.phir);
-    ifo[i].sig.sepsm = sin(ifo[i].sig.epsm);
-    ifo[i].sig.cepsm = cos(ifo[i].sig.epsm);
-
-    sett->sepsm = ifo[i].sig.sepsm; 
-    sett->cepsm = ifo[i].sig.cepsm; 
-
-    //CudaSafeCall( cudaMalloc((void**)&ifo[i].sig.xDatma_d,
-	//			 sizeof(cufftDoubleComplex)*sett->N) );
-    //CudaSafeCall( cudaMalloc((void**)&ifo[i].sig.xDatmb_d, 
-	//			 sizeof(cufftDoubleComplex)*sett->N) );
-    //
-    //CudaSafeCall( cudaMalloc((void**)&(ifo[i].sig.aa_d), 
-	//			 sizeof(double)*sett->N) );
-    //CudaSafeCall( cudaMalloc((void**)&(ifo[i].sig.bb_d), 
-	//			 sizeof(double)*sett->N) );
-    //
-    //CudaSafeCall( cudaMalloc((void**)&(ifo[i].sig.shft_d), 
-	//			 sizeof(double)*sett->N) );
-    //CudaSafeCall( cudaMalloc((void**)&(ifo[i].sig.shftf_d), 
-	//			 sizeof(double)*sett->N) );
-
-  } // end loop for detectors 
-
-  // Check if the ephemerids have the same epsm parameter
-  for(i=1; i<sett->nifo; i++) {  
-    if(!(ifo[i-1].sig.sepsm == ifo[i].sig.sepsm)) { 
-      printf("The parameter epsm (DetSSB.bin) differs for detectors %s and %s. Aborting...\n", ifo[i-1].name, ifo[i].name); 
-      exit(EXIT_FAILURE);
-    } 
-
-  } 
-
-  // if all is well with epsm, take the first value 
-  sett->sepsm = ifo[0].sig.sepsm;
-  sett->cepsm = ifo[0].sig.cepsm;
-
-  //  *F = (double *) calloc(2*sett->nfft, sizeof(double));
-  //CudaSafeCall ( cudaMalloc((void **)F_d, 2*sett->nfft*sizeof(double)));
-
-  // Auxiliary arrays, Earth's rotation
- 
-//  CudaSafeCall( cudaMalloc((void**)&(aux_arr->t2_d),
-//			   sizeof(double)*sett->N) );
-//  CudaSafeCall( cudaMalloc((void**)&(aux_arr->cosmodf_d), 
-//			   sizeof(double)*sett->N) );
-//  CudaSafeCall( cudaMalloc((void**)&(aux_arr->sinmodf_d), 
-//			   sizeof(double)*sett->N) );
-//
-//  CudaSafeCall( cudaMalloc((void**)&(aux_arr->tshift_d),
-//			   sizeof(double)*sett->N) );
-//
-//  init_spline_matrices(&aux_arr->diag_d, &aux_arr->ldiag_d, &aux_arr->udiag_d, 
-//		       &aux_arr->B_d, sett->Ninterp);
-//
-//  compute_sincosmodf<<<sett->N/256+1,256>>>(aux_arr->sinmodf_d, aux_arr->cosmodf_d, 
-//					    sett->omr, sett->N);
+    // OpenCL cleanup
+    clReleaseEvent(exec);
 
 } // end of init arrays 
 
-
-/* Search range */ 
-
-void set_search_range( Search_settings *sett, 
-		       Command_line_opts *opts, 
-		       Search_range *s_range) { 
-
-  // Hemispheres (with respect to the ecliptic)
-  if(opts->hemi) {
-    s_range->pmr[0] = opts->hemi;
-    s_range->pmr[1] = opts->hemi;
-    
-  } else {
-    s_range->pmr[0] = 1;
-    s_range->pmr[1] = 2;
-  }
-  
-  // If the parameter range is invoked, the search is performed
-  // within the range of grid parameters from an ascii file
-  // ("-r range_file" from the command line)
-  FILE *data;
-  if (strlen (opts->range)) {
-    
-    if ((data=fopen (opts->range, "r")) != NULL) {
-      
-      int aqq = fscanf (data, "%d %d %d %d %d %d %d %d",
-			s_range->spndr, 1+s_range->spndr, s_range->nr,
-			1+s_range->nr, s_range->mr, 1+s_range->mr,
-			s_range->pmr, 1+s_range->pmr);
-      
-      if (aqq != 8) {
-	printf("Error when reading range file!\n");
-	exit(EXIT_FAILURE);
-      }
-      
-      fclose (data);
-      
-    } else {
-      perror (opts->range);
-      exit(EXIT_FAILURE);
+/// <summary>Set search ranges based on user preference.</summary>
+///
+void set_search_range(Search_settings *sett,
+                      Command_line_opts *opts,
+                      Search_range *s_range)
+{
+    // Hemispheres (with respect to the ecliptic)
+    if (opts->hemi)
+    {
+        s_range->pmr[0] = opts->hemi;
+        s_range->pmr[1] = opts->hemi;
     }
-    
-
-  } else {
-
-    // Establish the grid range in which the search will be performed
-    // with the use of the M matrix from grid.bin
-    gridr(
-	  sett->M, 
-	  s_range->spndr,
-	  s_range->nr,
-	  s_range->mr,
-	  sett->oms,
-	  sett->Smax);
-    
-    if (strlen(opts->getrange)) {
-
-      FILE *data;
-      if ((data=fopen (opts->getrange, "w")) != NULL) {
-	fprintf(data, "%d %d\n%d %d\n%d %d\n%d %d\n",
-		s_range->spndr[0], s_range->spndr[1],
-		s_range->nr[0], s_range->nr[1],
-		s_range->mr[0], s_range->mr[1],
-		s_range->pmr[0], s_range->pmr[1] );
-	
-	printf("Wrote input data grid ranges to %s\n", opts->getrange);
-	fclose (data);
-	//	exit(EXIT_SUCCESS);
-	
-      } else {
-	
-	printf("Can't open %s file for writing\n", opts->getrange);
-       	exit(EXIT_FAILURE);
-	
-      }
+    else
+    {
+        s_range->pmr[0] = 1;
+        s_range->pmr[1] = 2;
     }
 
-  }
+    // If the parameter range is invoked, the search is performed
+    // within the range of grid parameters from an ascii file
+    // ("-r range_file" from the command line)
+    FILE *data;
 
-  printf("set_search_range() - the grid ranges are maximally this:\n");
-  printf("(spndr, nr, mr, pmr pairs): %d %d %d %d %d %d %d %d\n",	\
-	 s_range->spndr[0], s_range->spndr[1], s_range->nr[0], s_range->nr[1],
-	 s_range->mr[0], s_range->mr[1], s_range->pmr[0], s_range->pmr[1]);
-  
-  printf("Smin: %le, -Smax: %le\n", sett->Smin, sett->Smax); 
+    if (strlen(opts->range))
+    {
+        if ((data = fopen(opts->range, "r")) != NULL)
+        {
+            int aqq = fscanf(data, "%d %d %d %d %d %d %d %d",
+                             s_range->spndr, 1 + s_range->spndr, s_range->nr,
+                             1 + s_range->nr, s_range->mr, 1 + s_range->mr,
+                             s_range->pmr, 1 + s_range->pmr);
+
+            if (aqq != 8)
+            {
+                printf("Error when reading range file!\n");
+                exit(EXIT_FAILURE);
+            }
+
+            fclose(data);
+        }
+        else
+        {
+            perror(opts->range);
+            exit(EXIT_FAILURE);
+        }
+    }
+    else
+    {
+        // Establish the grid range in which the search will be performed
+        // with the use of the M matrix from grid.bin
+        gridr(sett->M,
+              s_range->spndr,
+              s_range->nr,
+              s_range->mr,
+              sett->oms,
+              sett->Smax);
+
+        if (strlen(opts->getrange))
+        {
+            FILE *data;
+            if ((data = fopen(opts->getrange, "w")) != NULL)
+            {
+                fprintf(data, "%d %d\n%d %d\n%d %d\n%d %d\n",
+                        s_range->spndr[0], s_range->spndr[1],
+                        s_range->nr[0], s_range->nr[1],
+                        s_range->mr[0], s_range->mr[1],
+                        s_range->pmr[0], s_range->pmr[1]);
+
+                printf("Wrote input data grid ranges to %s\n", opts->getrange);
+                fclose(data);
+                //exit(EXIT_SUCCESS);
+            }
+            else
+            {
+                printf("Can't open %s file for writing\n", opts->getrange);
+                exit(EXIT_FAILURE);
+            }
+        }
+    }
+
+    printf("set_search_range() - the grid ranges are maximally this:\n");
+    printf("(spndr, nr, mr, pmr pairs): %d %d %d %d %d %d %d %d\n",
+           s_range->spndr[0], s_range->spndr[1], s_range->nr[0], s_range->nr[1],
+           s_range->mr[0], s_range->mr[1], s_range->pmr[0], s_range->pmr[1]);
+
+    printf("Smin: %le, -Smax: %le\n", sett->Smin, sett->Smax);
 
 } // end of set search range 
 
+/// <summary>Sets up FFT plans.</summary>
+///
+void plan_fft(Search_settings* sett,
+              OpenCL_handles* cl_handles,
+              FFT_plans* plans,
+              FFT_arrays* fft_arr)
+{
+    cl_int CL_err = CL_SUCCESS;
 
-/* FFT Plans 
- */
+    fft_arr->arr_len = (sett->fftpad*sett->nfft > sett->Ninterp ?
+        sett->fftpad*sett->nfft :
+        sett->Ninterp);
 
-void plan_fft (Search_settings *sett, 
-	       // Command_line_opts *opts,
-	       FFT_plans *plans, 
-	       FFT_arrays *fft_arr
-	       // Aux_arrays *aux_arr
-	       ) {
+    fft_arr->xa_d = clCreateBuffer(cl_handles->ctx,
+                                   CL_MEM_READ_WRITE | CL_MEM_ALLOC_HOST_PTR,
+                                   fft_arr->arr_len * sizeof(complex_devt),
+                                   NULL,
+                                   &CL_err);
+    checkErr(CL_err, "clCreateBuffer(fft_arr->xa_d)");
 
-  //  sett->Ninterp = sett->interpftpad*sett->nfft; //moved to init_arrays
+    fft_arr->xb_d = clCreateBuffer(cl_handles->ctx,
+                                   CL_MEM_READ_WRITE | CL_MEM_ALLOC_HOST_PTR,
+                                   fft_arr->arr_len * sizeof(complex_devt),
+                                   NULL,
+                                   &CL_err);
+    checkErr(CL_err, "clCreateBuffer(fft_arr->xb_d)");
 
-  fft_arr->arr_len = (sett->fftpad*sett->nfft > sett->Ninterp 
-		       ? sett->fftpad*sett->nfft : sett->Ninterp);
+    CL_err = clfftSetPlanPrecision(plans->plan, CLFFT_TRANSFORM_PRECISION);
+    checkErr(CL_err, "clfftSetPlanPrecision(CLFFT_SINGLE)");
+    CL_err = clfftSetLayout(plans->plan, CLFFT_TRANSFORM_LAYOUT, CLFFT_TRANSFORM_LAYOUT);
+    checkErr(CL_err, "clfftSetLayout(CLFFT_COMPLEX_INTERLEAVED, CLFFT_COMPLEX_INTERLEAVED)");
+    CL_err = clfftSetResultLocation(plans->plan, CLFFT_INPLACE);
+    checkErr(CL_err, "clfftSetResultLocation(CLFFT_INPLACE)");
 
-  //CudaSafeCall ( cudaMalloc((void **)&fft_arr->xa_d, 2*fft_arr->arr_len*sizeof(cufftDoubleComplex)) );
-  fft_arr->xb_d = fft_arr->xa_d + fft_arr->arr_len;
+    CL_err = clfftBakePlan(plans->plan,
+                           cl_handles->dev_count,
+                           cl_handles->exec_queues,
+                           NULL,
+                           NULL);
+    checkErr(CL_err, "clfftBakePlan()");
 
-  //  sett->nfftf = sett->fftpad*sett->nfft; // moved to init_arrays
-
-  // no need for plans '2' - dimaensions are the same
-  //cufftPlan1d( &(plans->plan), sett->nfftf, CUFFT_Z2Z, 1);
-  //cufftPlan1d( &(plans->pl_int), sett->nfft, CUFFT_Z2Z, 1);
-  //cufftPlan1d( &(plans->pl_inv), sett->Ninterp, CUFFT_Z2Z, 1);
-  //
-  //CudaSafeCall ( cudaMalloc((void **)&fft_arr->xa_d, 2*fft_arr->arr_len*sizeof(cufftDoubleComplex)) );
-
-}
+} // plan_fft
 
 
 /* Checkpointing */

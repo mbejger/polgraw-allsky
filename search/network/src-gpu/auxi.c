@@ -44,77 +44,90 @@ double var (double *x, int n) {
 } /* var() */
 
 
+/// <summary>Establish the grid range in which the search will be performed with the use of the M matrix from grid.bin</summary>
+/// 
+void gridr(double *M,
+           int *spndr,
+           int *nr,
+           int *mr,
+           double oms,
+           double Smax)
+{
+    double cof, Mp[16], smx[64], d, Ob;
+    int i, j, indx[4];
 
-void gridr (double *M, int *spndr, int *nr, int *mr, double oms, double Smax) {
-  double cof, Mp[16], smx[64], d, Ob;
-  int i, j, indx[4];
-  
-  /* Grid range */
+    // Grid range //
 
-  // input:
-  // *M - pointer to the array that generates the grid
-  // *spndr - pointer to the range of spindowns in grid units
-  // i.e., integer numbers
-  // *nr and *mr - pointers to the range of sky positions
-  // in grid units i.e., integer numbers
+    // input:
+    // *M - pointer to the array that generates the grid
+    // *spndr - pointer to the range of spindowns in grid units
+    // i.e., integer numbers
+    // *nr and *mr - pointers to the range of sky positions
+    // in grid units i.e., integer numbers
 
-  // from settings() :
-  // maximal value of the spindown:
-  // Smax = 2.*M_PI*(fpo+B)*dt*dt/(2.*tau_min)
-  //
-  // oms equals 2.*M_PI*fpo*dt
+    // from settings() :
+    // maximal value of the spindown:
+    // Smax = 2.*M_PI*(fpo+B)*dt*dt/(2.*tau_min)
+    //
+    // oms equals 2.*M_PI*fpo*dt
 
-  Ob = M_PI;
-  cof = oms + Ob;
+    Ob = M_PI;
+    cof = oms + Ob;
 
+    //Mp - macierz transponowana
+    for (i = 0; i<4; i++)
+        for (j = 0; j<4; j++)
+            Mp[4 * i + j] = M[4 * j + i];
 
-  //Mp - macierz transponowana
-  for (i=0; i<4; i++)
-    for (j=0; j<4; j++)
-      Mp[4*i+j] = M[4*j+i];
-  ludcmp (Mp, 4, indx, &d);
+    ludcmp(Mp, 4, indx, &d);
 
-  for (i=0; i<8; i++) {
-    smx[8*i+2] = cof;
-    smx[8*i+6] = -cof;
-  }
-  for (i=0; i<4; i++) {
-    smx[16*i+3] = smx[16*i+7] = cof;
-    smx[16*i+11] = smx[16*i+15] = -cof;
-  }
-  for (i=0; i<8; i++) {
-    smx[4*i] = Ob;
-    smx[4*i+32] = -Ob;
-  }
-  for (i=0; i<2; i++)
-    for (j=0; j<4; j++) {
-      smx[32*i+4*j+1] = -Smax;
-      smx[32*i+4*j+17] = 0.;
+    for (i = 0; i<8; i++)
+    {
+        smx[8 * i + 2] = cof;
+        smx[8 * i + 6] = -cof;
     }
-  for (i=0; i<16; i++)
-    lubksb (Mp, 4, indx, smx+4*i);
+    for (i = 0; i<4; i++)
+    {
+        smx[16 * i + 3] = smx[16 * i + 7] = cof;
+        smx[16 * i + 11] = smx[16 * i + 15] = -cof;
+    }
+    for (i = 0; i<8; i++)
+    {
+        smx[4 * i] = Ob;
+        smx[4 * i + 32] = -Ob;
+    }
+    for (i = 0; i<2; i++)
+        for (j = 0; j<4; j++)
+        {
+            smx[32 * i + 4 * j + 1] = -Smax;
+            smx[32 * i + 4 * j + 17] = 0.;
+        }
+    for (i = 0; i<16; i++)
+        lubksb(Mp, 4, indx, smx + 4 * i);
 
-  spndr[0] = nr[0] = mr[0] = 16384;
-  spndr[1] = nr[1] = mr[1] = -16384;
+    spndr[0] = nr[0] = mr[0] = 16384;
+    spndr[1] = nr[1] = mr[1] = -16384;
 
-  // Explicit casts from floor/ceil silences warning (programmer states intent)
-  for (i=0; i<16; i++) {
-    if (floor(smx[4*i+1]) < spndr[0])
-      spndr[0] = (int)floor(smx[4*i+1]);
-    if (ceil(smx[4*i+1]) > spndr[1])
-      spndr[1] = (int)ceil(smx[4*i+1]);
+    // Explicit casts from floor/ceil silences warning (programmer states intent)
+    for (i = 0; i<16; i++)
+    {
+        if (floor(smx[4 * i + 1]) < spndr[0])
+            spndr[0] = (int)floor(smx[4 * i + 1]);
+        if (ceil(smx[4 * i + 1]) > spndr[1])
+            spndr[1] = (int)ceil(smx[4 * i + 1]);
 
-    if (floor(smx[4*i+2]) < nr[0])
-      nr[0] = (int)floor(smx[4*i+2]);
-    if (ceil(smx[4*i+2]) > nr[1])
-      nr[1] = (int)ceil(smx[4*i+2]);
+        if (floor(smx[4 * i + 2]) < nr[0])
+            nr[0] = (int)floor(smx[4 * i + 2]);
+        if (ceil(smx[4 * i + 2]) > nr[1])
+            nr[1] = (int)ceil(smx[4 * i + 2]);
 
-    if (floor(smx[4*i+3]) < mr[0])
-      mr[0] = (int)floor(smx[4*i+3]);
-    if (ceil(smx[4*i+3]) > mr[1])
-      mr[1] = (int)ceil(smx[4*i+3]);
-  }
-} /* gridr() */
+        if (floor(smx[4 * i + 3]) < mr[0])
+            mr[0] = (int)floor(smx[4 * i + 3]);
+        if (ceil(smx[4 * i + 3]) > mr[1])
+            mr[1] = (int)ceil(smx[4 * i + 3]);
+    }
+
+} // gridr()
 
 double FStat (double *F, int nfft, int nav, int indx) {
   /* FStat Smoothed F-statistic */
@@ -144,71 +157,82 @@ double FStat (double *F, int nfft, int nav, int indx) {
   return pxout;
 } /* FStat() */
 
-int ludcmp (double *a, int n, int *indx, double *d)
-/*	LU decomposition of a given real matrix a[0..n-1][0..n-1]
-	Input:
-	a		- an array containing elements of matrix a
-	(changed on exit)
-	n		- number of rows and columns of a
-	Output:
-	indx - row permutation effected by the partial pivoting
-	d		- +-1 depending on whether the number of rows
-	interchanged was even or odd, respectively
-*/
+/// <summary>LU decomposition of a given real matrix <c>a[0..n-1][0..n-1]</c>.</summary>
+/// <param name="a">An array containing elements of matrix <c>a</c> (changed on exit).</param>
+/// <param name="n">Number of rows and columns of <c>a</c>.</param>
+/// <param name="indx">Output row permutation effected by the partial pivoting.</param>
+/// <param name="d">Output +-1 depending on whether the number of rows interchanged was even or odd, respectively.</param>
+/// <returns>0 on success, 1 on error.</returns>
+///
+int ludcmp(double *a,
+           int n,
+           int *indx,
+           double *d)
 {
-  int i, imax = -1, j, k;
-  double big, dum, sum, temp;
-  double *vv;
+    int i, imax = -1, j, k;
+    double big, dum, sum, temp;
+    double *vv;
 
-  vv = (double *) calloc (n, sizeof (double));
-  *d = 1.0;
-  for (i=0; i<n; i++) {
-    big = 0.0;
-    for (j=0; j<n; j++)
-      if ((temp=fabs (a[n*i+j])) > big)
-	big = temp;
-    if (big == 0.0)
-      return 1;
-    vv[i] = 1.0/big;
-  }
-  for (j=0; j<n; j++) {
-    for (i=0; i<j; i++) {
-      sum = a[n*i+j];
-      for (k=0; k<i; k++)
-	sum -= a[n*i+k]*a[n*k+j];
-      a[n*i+j] = sum;
+    vv = (double*)calloc(n, sizeof(double));
+    *d = 1.0;
+
+    for (i = 0; i<n; i++)
+    {
+        big = 0.0;
+        for (j = 0; j<n; j++)
+            if ((temp = fabs(a[n*i + j])) > big)
+                big = temp;
+        if (big == 0.0)
+            return 1;
+        vv[i] = 1.0 / big;
     }
-    big = 0.0;
-    for (i=j; i<n; i++) {
-      sum = a[n*i+j];
-      for (k=0; k<j; k++)
-	sum -= a[n*i+k]*a[n*k+j];
-      a[n*i+j] = sum;
-      if ((dum = vv[i]*fabs (sum)) >= big) {
-	big = dum;
-	imax = i;
-      }
+    for (j = 0; j<n; j++)
+    {
+        for (i = 0; i<j; i++)
+        {
+            sum = a[n*i + j];
+            for (k = 0; k<i; k++)
+                sum -= a[n*i + k] * a[n*k + j];
+            a[n*i + j] = sum;
+        }
+        big = 0.0;
+        for (i = j; i<n; i++)
+        {
+            sum = a[n*i + j];
+            for (k = 0; k<j; k++)
+                sum -= a[n*i + k] * a[n*k + j];
+            a[n*i + j] = sum;
+            if ((dum = vv[i] * fabs(sum)) >= big)
+            {
+                big = dum;
+                imax = i;
+            }
+        }
+        if (j != imax)
+        {
+            for (k = 0; k<n; k++)
+            {
+                dum = a[n*imax + k];
+                a[n*imax + k] = a[n*j + k];
+                a[n*j + k] = dum;
+            }
+            *d = -(*d);
+            vv[imax] = vv[j];
+        }
+        indx[j] = imax;
+        if (a[n*j + j] == 0.0)
+            a[n*j + j] = TINY;
+        if (j != n)
+        {
+            dum = 1.0 / (a[n*j + j]);
+            for (i = j + 1; i<n; i++)
+                a[n*i + j] *= dum;
+        }
     }
-    if (j != imax) {
-      for (k=0; k<n; k++) {
-	dum = a[n*imax+k];
-	a[n*imax+k] = a[n*j+k];
-	a[n*j+k] = dum;
-      }
-      *d = -(*d);
-      vv[imax] = vv[j];
-    }
-    indx[j] = imax;
-    if (a[n*j+j] == 0.0)
-      a[n*j+j] = TINY;
-    if (j != n) {
-      dum = 1.0/(a[n*j+j]);
-      for (i=j+1; i<n; i++)
-	a[n*i+j] *= dum;
-    }
-  }
-  free (vv);
-  return 0;
+
+    free(vv);
+    return 0;
+
 } /* ludcmp() */
 
 int lubksb (double *a, int n, int *indx, double *b)

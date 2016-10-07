@@ -13,6 +13,8 @@
 #else //if double-precision
 #define CLFFT_TRANSFORM_PRECISION CLFFT_DOUBLE
 #define CLFFT_TRANSFORM_LAYOUT CLFFT_COMPLEX_INTERLEAVED
+typedef cl_double real_t;
+typedef cl_double2 complex_devt;
 #define FLOAT_TYPE cl_double
 #define COMPLEX_TYPE cl_double2
 #ifdef WIN32

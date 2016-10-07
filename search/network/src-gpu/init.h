@@ -70,11 +70,13 @@ cl_kernel obtain_kernel(cl_program program, cl_uint i);
 void read_grid(Search_settings *sett,
                Command_line_opts *opts);
 
-void init_arrays(
-		 Search_settings *sett,
-		 Command_line_opts *opts, 
-		 Aux_arrays *aux_arr, 
-		 double** F);
+/// <summary>Initialize auxiliary and F-statistics arrays.</summary>
+///
+void init_arrays(Search_settings* sett,
+                 OpenCL_handles* cl_handles,
+		         Command_line_opts* opts, 
+		         Aux_arrays* aux_arr, 
+		         cl_mem* F_d);
 
 void add_signal(
 		Search_settings *sett,
@@ -82,18 +84,18 @@ void add_signal(
 		Aux_arrays *aux_arr,
 		Search_range *s_range);
 
-void set_search_range(
-		      Search_settings *sett, 
-		      Command_line_opts *opts, 
-		      Search_range *s_range);
+/// <summary>Set search ranges based on user preference.</summary>
+///
+void set_search_range(Search_settings *sett, 
+                      Command_line_opts *opts, 
+                      Search_range *s_range);
 
-void plan_fft(
-	      Search_settings *sett, 
-	      //Command_line_opts *opts, 
-	      FFT_plans *plans, 
-	      FFT_arrays *fft_arr
-	      //Aux_arrays *aux_arr
-	      );
+/// <summary>Sets up FFT plans.</summary>
+///
+void plan_fft(Search_settings* sett,
+              OpenCL_handles* cl_handles,
+	          FFT_plans* plans, 
+	          FFT_arrays* fft_arr);
 
 void read_checkpoints(
 		      Command_line_opts *opts, 
