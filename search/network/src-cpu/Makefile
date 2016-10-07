@@ -1,4 +1,4 @@
-TARGET = gwsearch-cpu-sb
+TARGET = gwsearch-cpu
 
 VER := $(shell git rev-parse HEAD)
 
