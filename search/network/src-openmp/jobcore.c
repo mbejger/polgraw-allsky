@@ -24,13 +24,10 @@
 #elif defined(YEPPP)
 #include <yepMath.h>
 #include <yepLibrary.h>
-//#include <yepCore.h>
 
 #endif
 
-#if defined(_OPENMP)
 #include <omp.h>
-#endif
 
 void save_array(complex double *arr, int N, const char* file) {
   int i;
@@ -59,8 +56,7 @@ void search(
 	    FFTW_plans *plans,
 	    FFTW_arrays *fftw_arr,
 	    Aux_arrays *aux,
-	    int *FNum
-	    ) {
+	    int *FNum ) {
 
   // struct stat buffer;
   struct flock lck;
@@ -180,7 +176,6 @@ void search(
 
 #ifdef TIMERS
   tend = get_current_time(CLOCK_REALTIME);
-  // printf("tstart = %d . %d\ntend = %d . %d\n", tstart.tv_sec, tstart.tv_usec, tend.tv_sec, tend.tv_usec);
   double time_elapsed = get_time_difference(tstart, tend);
   printf("Time elapsed: %e s\n", time_elapsed);
 #endif
@@ -297,52 +292,50 @@ int job_core(int pm,                   // Hemisphere
 #pragma omp parallel default(shared) private(phase,cp,sp,exph)
     {
 #pragma omp for schedule(static,CHUNK)
-    for(i=0; i<sett->N; ++i) {
-      ifo[n].sig.shft[i] = nSource[0]*ifo[n].sig.DetSSB[i*3]
- 	                 + nSource[1]*ifo[n].sig.DetSSB[i*3+1]
-	                 + nSource[2]*ifo[n].sig.DetSSB[i*3+2];
-      ifo[n].sig.shftf[i] = ifo[n].sig.shft[i] - shft1;
-      _tmp1[n][i] = aux->t2[i] + (double)(2*i)*ifo[n].sig.shft[i];
-    }
+      for(i=0; i<sett->N; ++i) {
+	ifo[n].sig.shft[i] = nSource[0]*ifo[n].sig.DetSSB[i*3]
+	                   + nSource[1]*ifo[n].sig.DetSSB[i*3+1]
+	                   + nSource[2]*ifo[n].sig.DetSSB[i*3+2];
+	ifo[n].sig.shftf[i] = ifo[n].sig.shft[i] - shft1;
+	_tmp1[n][i] = aux->t2[i] + (double)(2*i)*ifo[n].sig.shft[i];
+      }
 
 #pragma omp for schedule(static,CHUNK) 
-    for(i=0; i<sett->N; ++i) {
-      // Phase modulation 
-      phase = het0*i + sett->oms*ifo[n].sig.shft[i];
+      for(i=0; i<sett->N; ++i) {
+	// Phase modulation 
+	phase = het0*i + sett->oms*ifo[n].sig.shft[i];
 #ifdef NOSINCOS
-      cp = cos(phase);
-      sp = sin(phase);
+	cp = cos(phase);
+	sp = sin(phase);
 #else
-      sincos(phase, &sp, &cp);
+	sincos(phase, &sp, &cp);
 #endif
 
-      exph = cp - I*sp;
+	exph = cp - I*sp;
 
-      // Matched filter 
-      ifo[n].sig.xDatma[i] = 
-        ifo[n].sig.xDat[i]*ifo[n].sig.aa[i]*exph;
-      ifo[n].sig.xDatmb[i] = 
-        ifo[n].sig.xDat[i]*ifo[n].sig.bb[i]*exph;
-    }
+	// Matched filter 
+	ifo[n].sig.xDatma[i] = ifo[n].sig.xDat[i]*ifo[n].sig.aa[i]*exph;
+	ifo[n].sig.xDatmb[i] = ifo[n].sig.xDat[i]*ifo[n].sig.bb[i]*exph;
+      }
 
-    /* Resampling using spline interpolation:
-     * This will double the sampling rate 
-     */ 
+      /* Resampling using spline interpolation:
+       * This will double the sampling rate 
+       */ 
 #pragma omp for schedule(static,CHUNK)  
-    for(i=0; i < sett->N; ++i) {
-      fftw_arr->xa[i] = ifo[n].sig.xDatma[i];
-      fftw_arr->xb[i] = ifo[n].sig.xDatmb[i];
-    }
+      for(i=0; i < sett->N; ++i) {
+	fftw_arr->xa[i] = ifo[n].sig.xDatma[i];
+	fftw_arr->xb[i] = ifo[n].sig.xDatmb[i];
+      }
  
-    // Zero-padding (filling with 0s up to sett->nfft, 
-    // the nearest power of 2)
+      // Zero-padding (filling with 0s up to sett->nfft, 
+      // the nearest power of 2)
 #pragma omp for schedule(static,CHUNK)
-    for (i=sett->N; i<sett->nfft; ++i) {
-      fftw_arr->xa[i] = 0.;
-      fftw_arr->xb[i] = 0.;
-    }
-
-  } //omp parallel
+      for (i=sett->N; i<sett->nfft; ++i) {
+	fftw_arr->xa[i] = 0.;
+	fftw_arr->xb[i] = 0.;
+      }
+      
+    } //omp parallel
 
     fftw_execute_dft(plans->pl_int,fftw_arr->xa,fftw_arr->xa);  //forward fft (len nfft)
     fftw_execute_dft(plans->pl_int,fftw_arr->xb,fftw_arr->xb);  //forward fft (len nfft)
@@ -402,14 +395,8 @@ int job_core(int pm,                   // Hemisphere
     bb += bbtemp/ifo[n].sig.sig2;   
   }
 
-  //  tend = get_current_time(CLOCK_REALTIME);
-  //double time_elapsed = get_time_difference(tstart, tend);
-  //printf("Serial part: %e s\n", time_elapsed);
-  //tstart = tend;
-
 #ifdef YEPPP
 #define VLEN 128
-  //    yepLibrary_Init();
   int bnd = (sett->N/VLEN)*VLEN;
 #endif
 
@@ -436,7 +423,7 @@ int job_core(int pm,                   // Hemisphere
   //private (declared inside): ii,Fc,het1,k,veto_status,a,v,_p,_c,_s,status
   //shared default: nn,mm,sett,_tmp1,ifo,het0,bnd,plans,opts,aa,bb,
   //                fftw_arr (zostawiamy i robimy nowe), FNum (atomic!)
-  // robimy shared plans in wołanie fftw_execute z 'new-array'
+  //we use shared plans and  fftw_execute with 'new-array' interface
 #pragma omp parallel default(shared)				\
   private(i, j, n, sgnl0, exph, phase, cp, sp, tstart, tend)	\
   firstprivate(sgnlt)						\
@@ -444,9 +431,7 @@ int job_core(int pm,                   // Hemisphere
 
   {
 #ifdef YEPPP
-    Yep64f _p[VLEN];
-    Yep64f _s[VLEN];
-    Yep64f _c[VLEN];
+    Yep64f _p[VLEN], _s[VLEN], _c[VLEN];
     enum YepStatus status;
 #endif
 #ifdef SLEEF
@@ -714,7 +699,7 @@ int job_core(int pm,                   // Hemisphere
 	  int _sgnlc;
 	  if(!veto_status) {
 
-	    /*
+	    /* 
 #pragma omp critical
 	    {
 	      (*sgnlc)++; // increase found number

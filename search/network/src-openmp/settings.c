@@ -13,7 +13,7 @@
  * FFT lenghts & other details, bandwidth and Earth parameters
  */
 
-void search_settings( Search_settings* sett) {
+void search_settings(Search_settings* sett) {
 
   double dt, B, oms, omr, Smin, Smax;
   int nod, N, nfft, s, nd, interpftpad;
@@ -40,7 +40,8 @@ void search_settings( Search_settings* sett) {
   // Maximum spindown (1000 years) [angular, dimensionless]
   Smax = 2.*M_PI*(sett->fpo + B)*dt*dt/(2.*Smin);   
   */
-  //#mb ranges of spindown (RDC O1) 
+
+  //#mb ranges of spindown (RDC O1)
   double fdotmin, fdotmax; 
   fdotmin = 0.5e-8; 
   fdotmax = 0.5e-9; 
@@ -88,9 +89,8 @@ void search_settings( Search_settings* sett) {
  * writes appropriate detector-related data into structs. 
  */ 
 
-void detectors_settings(
-  Search_settings* sett, 
-  Command_line_opts *opts) {
+void detectors_settings(Search_settings* sett, 
+			Command_line_opts *opts) {
 
   int i=0; 
 
@@ -271,14 +271,8 @@ void rogcvir(Detector_settings *ifo) {
   /* Amplitude modulation of the signal
    */ 
 
-void modvir(
-  double sinal, 
-  double cosal, 
-  double sindel, 
-  double cosdel,
-  int Np,
-  Detector_settings *ifo, 
-  Aux_arrays *aux) {
+void modvir(double sinal, double cosal, double sindel, double cosdel,
+	    int Np, Detector_settings *ifo, Aux_arrays *aux) {
 
   int t;
   double cosalfr, sinalfr, c2d, c2sd, c, s, c2s, cs;
@@ -317,10 +311,9 @@ void modvir(
 
 } // modvir
 
-int read_lines(
-    Search_settings *sett, 
-    Command_line_opts *opts, 
-    Detector_settings *ifo) { 
+int read_lines(Search_settings *sett, 
+	       Command_line_opts *opts, 
+	       Detector_settings *ifo) { 
 
     int i=0, lnum, alllines, j; 
     double l[MAXL][7]; 
@@ -526,8 +519,7 @@ return 0;
 }
 
 
-void narrow_down_band(
-		      Search_settings* sett,
+void narrow_down_band(Search_settings* sett,
 		      Command_line_opts *opts) {
   
   // Adding excluding ranges near the edges 
@@ -544,8 +536,7 @@ void narrow_down_band(
 }
 
 
-void lines_in_band(
-		   Search_settings* sett, 
+void lines_in_band(Search_settings* sett, 
 		   Command_line_opts *opts) {
 
     int i, j, k=0; 
@@ -591,8 +582,7 @@ void lines_in_band(
 }     
 
 
-void check_if_band_is_fully_vetoed(
-				   Search_settings* sett) { 
+void check_if_band_is_fully_vetoed(Search_settings* sett) { 
   
   int i; 
   double ll=0.; 

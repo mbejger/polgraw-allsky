@@ -10,14 +10,12 @@
 
 #include "auxi.h"
 
-#if defined(_OPENMP)
 #include <omp.h>
-#endif
+
 
 // lin2ast described in Phys. Rev. D 82, 022005 (2010) (arXiv:1003.0844)
-void
-lin2ast (double be1, double be2, int pm, double sepsm, double cepsm, 
-         double *sinal, double *cosal, double *sindel, double *cosdel) {
+void lin2ast (double be1, double be2, int pm, double sepsm, double cepsm, 
+	      double *sinal, double *cosal, double *sindel, double *cosdel) {
 
   *sindel = be1*sepsm-(2*pm-3)*sqrt(1.-sqr(be1)-sqr(be2))*cepsm;
   *cosdel = sqrt(1.-sqr(*sindel));
@@ -26,8 +24,7 @@ lin2ast (double be1, double be2, int pm, double sepsm, double cepsm,
 
 } /* lin2ast() */
 
-void 
-ast2lin (FLOAT_TYPE alfa, FLOAT_TYPE delta, double epsm, double *be) {
+void ast2lin (FLOAT_TYPE alfa, FLOAT_TYPE delta, double epsm, double *be) {
 
   /* alfa - right ascension [rad]
      delta - declination [rad]
@@ -58,8 +55,7 @@ ast2lin (FLOAT_TYPE alfa, FLOAT_TYPE delta, double epsm, double *be) {
 }
 
 
-inline void
-spline(complex double *y, int n, complex double *y2) {
+inline void spline(complex double *y, int n, complex double *y2) {
 
   int i, k;
   complex double invp, qn, un;
@@ -85,8 +81,7 @@ spline(complex double *y, int n, complex double *y2) {
 } /* spline() */
 
 
-inline complex double
-splint (complex double *ya, complex double *y2a, int n, double x) {
+inline complex double splint (complex double *ya, complex double *y2a, int n, double x) {
 
   int klo, khi;
   double b, a;
@@ -101,8 +96,7 @@ splint (complex double *ya, complex double *y2a, int n, double x) {
 } /* splint() */
 
 
-void 
-splintpad (complex double *ya, double *shftf, int N, int interpftpad,
+void splintpad (complex double *ya, double *shftf, int N, int interpftpad,
 	   complex double *out) {
   /* Cubic spline with "natural" boundary conditions.
      Input:
@@ -132,8 +126,8 @@ splintpad (complex double *ya, double *shftf, int N, int interpftpad,
   free (y2);
 } /* splintpad */
 
-double
-var (double *x, int n) {
+
+double var (double *x, int n) {
   /* var(x, n) returns the variance (square of the standard deviation)
      of a given vector x of length n.
   */
@@ -152,8 +146,7 @@ var (double *x, int n) {
 
 
 
-void
-gridr (double *M, int *spndr, int *nr, int *mr, double oms, double Smax) {
+void gridr (double *M, int *spndr, int *nr, int *mr, double oms, double Smax) {
 
   double cof, Mp[16], smx[64], d, Ob;
   int i, j, indx[4];
@@ -223,6 +216,7 @@ gridr (double *M, int *spndr, int *nr, int *mr, double oms, double Smax) {
   }
 } /* gridr() */
 
+
 double FStat (double *F, int nfft, int nav, int indx) {
   /* FStat Smoothed F-statistic */
 
@@ -251,8 +245,8 @@ double FStat (double *F, int nfft, int nav, int indx) {
   return pxout;
 } /* FStat() */
 
-int
-ludcmp (double *a, int n, int *indx, double *d) {
+
+int ludcmp (double *a, int n, int *indx, double *d) {
 /*	LU decomposition of a given real matrix a[0..n-1][0..n-1]
 	Input:
 	a		- an array containing elements of matrix a
@@ -319,8 +313,7 @@ ludcmp (double *a, int n, int *indx, double *d) {
   return 0;
 } /* ludcmp() */
 
-int
-lubksb (double *a, int n, int *indx, double *b) {
+int lubksb (double *a, int n, int *indx, double *b) {
 /* Solves the set of n linear equations A X=B.
    Input:
    a[0..n-1][0..n-1] - LU decomposition af a matrix A,
@@ -356,8 +349,8 @@ lubksb (double *a, int n, int *indx, double *b) {
   return 0;
 } /* lubksb() */
 
-int
-invm (const double *a, int N, double *y) {
+
+int invm (const double *a, int N, double *y) {
      /* Inverse of a real matrix a[0..N-1][0..N-1].
 	Input:
 		a[0..N-1][0..N-1] - given matrix (saved on exit)
@@ -390,8 +383,8 @@ invm (const double *a, int N, double *y) {
   return 0;
 } /* invm() */
 
-double
-det (const double *a, int N) {
+
+double det (const double *a, int N) {
   /* determinant of a real matrix a[0..N-1][0..N-1] */
 
   double d, *al;
@@ -410,8 +403,7 @@ det (const double *a, int N) {
 } /* det() */
 
 
-int 
-compared2c(const void *a, const void *b) {
+int compared2c(const void *a, const void *b) {
 
   double* da = (double*)a;
   double* db = (double*)b;
