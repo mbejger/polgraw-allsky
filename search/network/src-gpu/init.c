@@ -814,6 +814,13 @@ void init_arrays(Search_settings* sett,
                                        &CL_err);
     checkErr(CL_err, "clCreateBuffer(aux_arr->tshift_d)");
 
+    aux_arr->ifo_amod_d = clCreateBuffer(cl_handles->ctx,
+                                         CL_MEM_READ_ONLY | CL_MEM_ALLOC_HOST_PTR,
+                                         sett->nifo * sizeof(Ampl_mod_coeff),
+                                         NULL,
+                                         &CL_err);
+    checkErr(CL_err, "clCreateBuffer(aux_arr->ifo_amod_d)");
+
     init_spline_matrices(cl_handles,
                          &aux_arr->diag_d,
                          &aux_arr->ldiag_d,
@@ -937,7 +944,17 @@ void set_search_range(Search_settings *sett,
 
     printf("Smin: %le, -Smax: %le\n", sett->Smin, sett->Smax);
 
-} // end of set search range 
+} // end of set search range
+
+/// <summary>Sets up BLAS plans.</summary>
+///
+void init_blas(Search_settings* sett,
+               OpenCL_handles* cl_handles,
+               BLAS_handles* blas_handles)
+{
+    blas_handles->BLAS_err = clblasSetup();
+    checkErr(blas_handles->BLAS_err, "clblasSetup()");
+}
 
 /// <summary>Sets up FFT plans.</summary>
 ///

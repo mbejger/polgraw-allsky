@@ -34,7 +34,8 @@ list (APPEND SRCS ${PROJECT_SOURCE_DIR}/spline_z.c)
 
 list (APPEND SRCS ${PROJECT_SOURCE_DIR}/getopt.c)
 
-list (APPEND KRNS ${PROJECT_SOURCE_DIR}/kernels.h)
+list (APPEND KRNS ${PROJECT_SOURCE_DIR}/floats.hcl)
+list (APPEND KRNS ${PROJECT_SOURCE_DIR}/kernels.hcl)
 list (APPEND KRNS ${PROJECT_SOURCE_DIR}/kernels.cl)
 
 # Variable to hold ALL files to build and be visible in IDE
@@ -51,16 +52,18 @@ add_executable (${PROJECT_NAME} ${BUILD})
 # Append our project's include directory to the "#include <>" paths
 target_include_directories (${PROJECT_NAME} PUBLIC ${PROJECT_SOURCE_DIR})
 target_include_directories (${PROJECT_NAME} PUBLIC ${OpenCL_INCLUDE_DIRS})
-target_include_directories (${PROJECT_NAME} PUBLIC ${CLFFT_INCLUDE_DIRS})
-target_include_directories (${PROJECT_NAME} PUBLIC ${CLBLAS_INCLUDE_DIRS})
-target_include_directories (${PROJECT_NAME} PUBLIC ${CLSPARSE_INCLUDE_DIRS})
+#target_include_directories (${PROJECT_NAME} ${CLFFT_INCLUDE_DIRS})
+#target_include_directories (${PROJECT_NAME} ${CLBLAS_INCLUDE_DIRS})
+#target_include_directories (${PROJECT_NAME} ${clSPARSE_INCLUDE_DIRS})
+
+MESSAGE (STATUS "clSPARSE include dir: ${clSPARSE_INCLUDE_DIRS}")
 
 target_include_directories (${PROJECT_NAME} PUBLIC ${PROJECT_SOURCE_DIR}/posix)
 
 # Link dependant libraries
-target_link_libraries(${PROJECT_NAME} PUBLIC clFFT)
-target_link_libraries(${PROJECT_NAME} PUBLIC clBLAS)
-target_link_libraries(${PROJECT_NAME} PUBLIC clSPARSE)
+target_link_libraries(${PROJECT_NAME} clFFT)
+target_link_libraries(${PROJECT_NAME} clBLAS)
+target_link_libraries(${PROJECT_NAME} clSPARSE)
 
 # Create project groups for IDEs
 set_target_properties (${PROJECT_NAME} PROPERTIES FOLDER "GWSearch\\GPU")

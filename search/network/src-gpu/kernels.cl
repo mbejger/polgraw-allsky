@@ -1,106 +1,122 @@
 // Polgraw includes
-#include <kernels.hcl>
+#include <floats.hcl>       // real_t, complex_t
+#include <kernels.hcl>      // function declarations
 
 
-// maybe it should be dynamic...
-//__constant__ Ampl_mod_coeff amod_d[MAX_DETECTORS];
-//
-//
-//void copy_amod_coeff(int nifo) {
-//  int i;
-//  Ampl_mod_coeff amod_coeff_tmp[nifo];
-//  for(i=0; i<nifo; ++i){
-//    amod_coeff_tmp[i] = ifo[i].amod;
-//  }
-//  cudaMemcpyToSymbol(amod_d, amod_coeff_tmp, sizeof(Ampl_mod_coeff)*nifo, 
-//		     0, cudaMemcpyHostToDevice);
-//}
-//
-//
-//__global__ void modvir_kern(double *aa_d, double *bb_d, double cosalfr, double sinalfr,
-//			    double c2d, double c2sd, 
-//			    double *sinmodf_d, double *cosmodf_d, 
-//			    double sindel, double cosdel, int Np, int idet) {
-//
-//  int idx = blockIdx.x*blockDim.x + threadIdx.x;
-//  if (idx<Np) {
-//    double c = cosalfr * cosmodf_d[idx] + sinalfr * sinmodf_d[idx];
-//    double s = sinalfr * cosmodf_d[idx] - cosalfr * sinmodf_d[idx];
-//    double c2s = 2.*c*c;
-//    double cs = c*s;
-//
-//    aa_d[idx] = amod_d[idet].c1*(2.-c2d)*c2s + amod_d[idet].c2*(2.-c2d)*2.*cs + 
-//      amod_d[idet].c3*c2sd*c + amod_d[idet].c4*c2sd*s - amod_d[idet].c1*(2.-c2d) + amod_d[idet].c5*c2d;
-//    bb_d[idx] = amod_d[idet].c6*sindel*c2s + amod_d[idet].c7*sindel*2.*cs + 
-//      amod_d[idet].c8*cosdel*c + amod_d[idet].c9*cosdel*s - amod_d[idet].c6*sindel;
-//  }
-//}
-//
-//
-//__global__ void tshift_pmod_kern(double shft1, double het0, 
-//				 double ns0, double ns1, double ns2,  
-//				 double *xDat_d, 
-//				 cufftDoubleComplex *xa_d, cufftDoubleComplex *xb_d, 
-//				 FLOAT_TYPE *shft_d, double *shftf_d, 
-//				 double *tshift_d, 
-//				 double *aa_d, double *bb_d,
-//				 double *DetSSB_d, 
-//				 double oms, int N, int nfft, int interpftpad) {
-//
-//  int i = blockIdx.x * blockDim.x + threadIdx.x;
-//  if (i < N) {
-//    double S = ns0 * DetSSB_d[i*3]
-//             + ns1 * DetSSB_d[i*3+1] 
-//             + ns2 * DetSSB_d[i*3+2];
-//    shft_d[i] = S;
-//    shftf_d[i]= S - shft1;
-//
-//    /* phase mod */
-//    // dlaczego - ?
-//    double phase = -het0*i - oms * S;
-//    double c = cos(phase), s = sin(phase);
-//    xa_d[i].x = xDat_d[i] * aa_d[i] * c;
-//    xa_d[i].y = xDat_d[i] * aa_d[i] * s;
-//    xb_d[i].x = xDat_d[i] * bb_d[i] * c;
-//    xb_d[i].y = xDat_d[i] * bb_d[i] * s;
-//
-//    //calculate time positions for spline interpolation
-//    tshift_d[i] = interpftpad * ( i - shftf_d[i] );
-//    // no need for this on gpu
-//    //_tmp1[n][i] = aux->t2[i] + (double)(2*i)*ifo[n].sig.shft[i]; 
-//  } else if (i < nfft) {
-//    xa_d[i].x = xa_d[i].y = xb_d[i].x = xb_d[i].y = 0.;
-//  }
-//}
-//
-//
-//__global__ void resample_postfft(cufftDoubleComplex *xa_d, cufftDoubleComplex *xb_d,
-//                                 int nfft, int Ninterp, int nyqst) {
-//  int idx = blockIdx.x * blockDim.x + threadIdx.x;
-//
-//  //move frequencies from second half of spectrum; loop length: nfft - nyqst =
-//  // = nfft - nfft/2 - 1 = nfft/2 - 1
-//  if (idx < nfft/2 - 1) {
-//    int i = nyqst + Ninterp - nfft + idx;
-//    int j = nyqst + idx;
-//    xa_d[i].x=xa_d[j].x;
-//    xa_d[i].y=xa_d[j].y;
-//    xb_d[i].x=xb_d[j].x;
-//    xb_d[i].y=xb_d[j].y;
-//  }
-//
-//  //zero frequencies higher than nyquist, length: Ninterp - nfft
-//  //loop length: Ninterp - nfft ~ nfft
-//  if (idx < Ninterp - nfft) {
-//    xa_d[nyqst+idx].x = xa_d[nyqst+idx].y = 0.;
-//    xb_d[nyqst+idx].x = xb_d[nyqst+idx].y = 0.;
-//  }
-//}
+/// <summary>The purpose of this function was undocumented.</summary>
+///
+__kernel void modvir_kern(__global real_t* aa_d,
+                          __global real_t* bb_d,
+                          real_t cosalfr,
+                          real_t sinalfr,
+                          real_t c2d,
+                          real_t c2sd,
+                          __global real_t* sinmodf_d,
+                          __global real_t* cosmodf_d,
+                          real_t sindel,
+                          real_t cosdel,
+                          int Np,
+                          int idet,
+                          __constant Ampl_mod_coeff* amod_d)
+{
+    size_t idx = get_global_id(0);
 
+    real_t c = cosalfr * cosmodf_d[idx] + sinalfr * sinmodf_d[idx];
+    real_t s = sinalfr * cosmodf_d[idx] - cosalfr * sinmodf_d[idx];
+    real_t c2s = 2.*c*c;
+    real_t cs = c*s;
 
+    aa_d[idx] = amod_d[idet].c1*(2. - c2d)*c2s + amod_d[idet].c2*(2. - c2d)*2.*cs +
+        amod_d[idet].c3*c2sd*c + amod_d[idet].c4*c2sd*s - amod_d[idet].c1*(2. - c2d) + amod_d[idet].c5*c2d;
+    bb_d[idx] = amod_d[idet].c6*sindel*c2s + amod_d[idet].c7*sindel*2.*cs +
+        amod_d[idet].c8*cosdel*c + amod_d[idet].c9*cosdel*s - amod_d[idet].c6*sindel;
+}
 
-__kernel void compute_sincosmodf(__global double *s,
-                                 __global double *c,
+/// <summary>The purpose of this function was undocumented.</summary>
+///
+__kernel void tshift_pmod_kern(real_t shft1,
+                               real_t het0,
+                               real_t ns0,
+                               real_t ns1,
+                               real_t ns2,
+                               __global real_t* xDat_d,
+                               __global complex_t* xa_d,
+                               __global complex_t* xb_d,
+                               __global real_t* shft_d,
+                               __global real_t* shftf_d,
+                               __global real_t* tshift_d,
+                               __global real_t* aa_d,
+                               __global real_t* bb_d,
+                               __global real_t* DetSSB_d,
+                               real_t oms,
+                               int N,
+                               int nfft,
+                               int interpftpad)
+{
+    size_t i = get_global_id(0);
+
+    if (i < N)
+    {
+        real_t S = ns0 * DetSSB_d[i * 3]
+            + ns1 * DetSSB_d[i * 3 + 1]
+            + ns2 * DetSSB_d[i * 3 + 2];
+        shft_d[i] = S;
+        shftf_d[i] = S - shft1;
+
+        /* phase mod */
+        // dlaczego - ?
+        real_t phase = -het0*i - oms * S;
+        real_t c = cos(phase), s = sin(phase);
+        xa_d[i].x = xDat_d[i] * aa_d[i] * c;
+        xa_d[i].y = xDat_d[i] * aa_d[i] * s;
+        xb_d[i].x = xDat_d[i] * bb_d[i] * c;
+        xb_d[i].y = xDat_d[i] * bb_d[i] * s;
+
+        //calculate time positions for spline interpolation
+        tshift_d[i] = interpftpad * (i - shftf_d[i]);
+    }
+    else if (i < nfft)
+    {
+        xa_d[i].x = xa_d[i].y = xb_d[i].x = xb_d[i].y = 0.;
+    }
+}
+
+/// <summary>Shifts frequencies and remove those over Nyquist.</summary>
+///
+__kernel void resample_postfft(complex_t *xa_d,
+                               complex_t *xb_d,
+                               int nfft,
+                               int Ninterp,
+                               int nyqst)
+{
+    size_t idx = get_global_id(0);
+
+    // move frequencies from second half of spectrum; loop length: nfft - nyqst =
+    // = nfft - nfft/2 - 1 = nfft/2 - 1
+    if (idx < nfft / 2 - 1)
+    {
+        int i = nyqst + Ninterp - nfft + idx;
+        int j = nyqst + idx;
+        xa_d[i].x = xa_d[j].x;
+        xa_d[i].y = xa_d[j].y;
+        xb_d[i].x = xb_d[j].x;
+        xb_d[i].y = xb_d[j].y;
+    }
+
+    // zero frequencies higher than nyquist, length: Ninterp - nfft
+    // loop length: Ninterp - nfft ~ nfft
+    if (idx < Ninterp - nfft)
+    {
+        xa_d[nyqst + idx].x = xa_d[nyqst + idx].y = 0.;
+        xb_d[nyqst + idx].x = xb_d[nyqst + idx].y = 0.;
+    }
+}
+
+/// <summary>Computes sin and cos values and stores them in an array.</summary>
+/// <remarks>Most likely a very bad idea. Results are used in modvir and should be computed there in place.</remarks>
+///
+__kernel void compute_sincosmodf(__global real_t* s,
+                                 __global real_t* c,
                                  real_t omr,
                                  int N)
 {
@@ -113,7 +129,20 @@ __kernel void compute_sincosmodf(__global double *s,
     }
 }
 
+/// <summary>The purpose of this function was undocumented.</summary>
+///
+__kernel void computeB(__global complex_t* y,
+                       __global complex_t* B,
+                       int N)
+{
+    size_t idx = get_global_id(0);
 
+    if (idx < N - 1)
+    {
+        B[idx].x = 6 * (y[idx + 2].x - 2 * y[idx + 1].x + y[idx].x);
+        B[idx].y = 6 * (y[idx + 2].y - 2 * y[idx + 1].y + y[idx].y);
+    }
+}
 
 //__global__ void phase_mod_1(cufftDoubleComplex *xa, cufftDoubleComplex *xb,
 //                            cufftDoubleComplex *xar, cufftDoubleComplex *xbr,

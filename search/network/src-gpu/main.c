@@ -49,6 +49,7 @@ int main (int argc, char* argv[])
     Search_settings sett;       // User settings of the search algorithm
     Search_range s_range;       // User provided range information
     Aux_arrays aux_arr;         // Auxiliary arrays used by the application
+    BLAS_handles blas_handles;  // Optimized BLAS plans
     FFT_plans fft_plans;        // Optimized FFT plans
     FFT_arrays fft_arr;         // FFT arrays
     cl_mem F_d;                 // F-statistic array
@@ -83,7 +84,10 @@ int main (int argc, char* argv[])
     // Set search range from range file  
     set_search_range(&sett, &opts, &s_range);
 
-    // FFT plans 
+    // BLAS init
+    init_blas(&sett, &cl_handles, &blas_handles);
+
+    // FFT init 
     plan_fft(&sett, &cl_handles, &fft_plans, &fft_arr);
 
     // Checkpointing

@@ -1,30 +1,67 @@
-#ifndef __KERNELS_H__
-#define __KERNELS_H__
+#ifndef __KERNELS_HCL__
+#define __KERNELS_HCL__
 
-//void copy_amod_coeff(int nifo);
-//
-//__global__ void modvir_kern(double *aa_d, double *bb_d, double cosalfr, double sinalfr,
-//			    double c2d, double c2sd, 
-//			    double *sinmodf_d, double *cosmodf_d, 
-//			    double sindel, double cosdel, int Np, int idet);
-//
-//__global__ void tshift_pmod_kern(double shft1, double het0, 
-//				 double ns0, double ns1, double ns2,  
-//				 double *xDat_d, 
-//				 cufftDoubleComplex *xa_d, cufftDoubleComplex *xb_d, 
-//				 double *shft_d, double *shftf_d, 
-//				 double *tshift_d, 
-//				 double *aa_d, double *bb_d,
-//				 double *DetSSB_d, 
-//				 double oms, int N, int nfft, int interpftpad);
-//
-//__global__ void resample_postfft(cufftDoubleComplex *xa_d, cufftDoubleComplex *xb_d,
-//                                 int nfft, int Ninterp, int nyqst);
+#include <floats.hcl>
 
-__kernel void compute_sincosmodf(__global double *s,
-                                 __global double *c,
-                                 double omr,
+
+/// <summary>The purpose of this function was undocumented.</summary>
+///
+__kernel void modvir_kern(__global real_t* aa_d,
+                          __global real_t* bb_d,
+                          real_t cosalfr,
+                          real_t sinalfr,
+                          real_t c2d,
+                          real_t c2sd,
+                          __global real_t* sinmodf_d,
+                          __global real_t* cosmodf_d,
+                          real_t sindel,
+                          real_t cosdel,
+                          int Np,
+                          int idet,
+                          __constant Ampl_mod_coeff* amod_d);
+
+/// <summary>The purpose of this function was undocumented.</summary>
+///
+__kernel void tshift_pmod_kern(real_t shft1,
+                               real_t het0,
+                               real_t ns0,
+                               real_t ns1,
+                               real_t ns2,
+                               __global real_t* xDat_d,
+                               __global complex_t* xa_d,
+                               __global complex_t* xb_d,
+                               __global real_t* shft_d,
+                               __global real_t* shftf_d,
+                               __global real_t* tshift_d,
+                               __global real_t* aa_d,
+                               __global real_t* bb_d,
+                               __global real_t* DetSSB_d,
+                               real_t oms,
+                               int N,
+                               int nfft,
+                               int interpftpad);
+
+/// <summary>Shifts frequencies and remove those over Nyquist.</summary>
+///
+__kernel void resample_postfft(complex_t *xa_d,
+                               complex_t *xb_d,
+                               int nfft,
+                               int Ninterp,
+                               int nyqst);
+
+/// <summary>Computes sin and cos values and stores them in an array.</summary>
+/// <remarks>Most likely a very bad idea. Results are used in modvir and should be computed there in place.</remarks>
+///
+__kernel void compute_sincosmodf(__global real_t* s,
+                                 __global real_t* c,
+                                 real_t omr,
                                  int N);
+
+/// <summary>The purpose of this function was undocumented.</summary>
+///
+__kernel void computeB(__global complex_t* y,
+                       __global complex_t* B,
+                       int N);
 
 //__global__ void phase_mod_1(cufftDoubleComplex *xa, cufftDoubleComplex *xb,
 //                            cufftDoubleComplex *xar, cufftDoubleComplex *xbr,
@@ -74,4 +111,4 @@ __kernel void compute_sincosmodf(__global double *s,
 //__global__ void reduction_sum(double *in, double *out, int N);
 
 
-#endif
+#endif // __KERNELS_HCL__

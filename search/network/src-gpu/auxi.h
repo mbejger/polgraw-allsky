@@ -16,8 +16,11 @@
 #define NAVFSTAT 4096
 //#define round(x) floor((x)+0.5)
 
-void lin2ast(double be1, double be2, int pm, double sepsm, double cepsm, \
-	     double *sinal, double *cosal, double *sindel, double *cosdel);
+/// <summary>Change linear (grid) coordinates to real coordinates</summary>
+/// <remarks>lin2ast described in Phys. Rev. D 82, 022005 (2010) (arXiv:1003.0844)</remarks>
+///
+void lin2ast(real_t be1, real_t be2, int pm, real_t sepsm, real_t cepsm,
+	         real_t *sinal, real_t *cosal, real_t *sindel, real_t *cosdel);
 
 double var (double *, int);
 

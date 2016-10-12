@@ -4,6 +4,9 @@
 // Polgraw includes
 #include <floats.h>     // COMPLEX_FLOAT
 
+// clBLAS includes
+#include <clBLAS.h>
+
 // clFFT includes
 #include <clFFT.h>
 
@@ -74,6 +77,13 @@ typedef struct _fft_arrays {
 } FFT_arrays;
 
 
+typedef struct _blas_handles {
+
+    cl_int BLAS_err;    // clBLAS has global state only :(
+
+} BLAS_handles;
+
+
 /* Search range  */ 
 typedef struct _search_range {
   int pmr[2], mr[2], nr[2], spndr[2];
@@ -109,7 +119,11 @@ typedef struct _opencl_handles
 ///
 enum Kernel
 {
-    ComputeSinCosModF = 0
+    ComputeSinCosModF = 0,
+    Modvir = 1,
+    TShiftPMod = 2,
+    ResamplePostFFT = 3,
+    ComputeB = 4
 };
 
 /* FFTW plans  */ 
@@ -128,9 +142,10 @@ typedef struct _fft_plans {
 /* Auxiluary arrays  */ 
 typedef struct _aux_arrays {
 
-  double *sinmodf_d, *cosmodf_d; // Earth position
-  double *t2_d  ;                // time^2
-  double *tshift_d;
+  cl_mem sinmodf_d, cosmodf_d; // Earth position
+  cl_mem t2_d  ;                // time^2
+  cl_mem tshift_d;
+  cl_mem ifo_amod_d;             // constant buffer of detector settings
   COMPLEX_TYPE *diag_d, *ldiag_d, *udiag_d, *B_d; //used in spline interpolation
   FLOAT_TYPE *mu_d, *mu_t_d; //arrays for smoothing F-stat
 
@@ -177,12 +192,12 @@ typedef struct _search_settings {
 
 } Search_settings;
 
-
-  /* Amplitude modulation function coefficients 
-   */ 
-
-typedef struct _ampl_mod_coeff {
+/// <summar>Amplitude modulation function coefficients</summary>
+///
+typedef struct _ampl_mod_coeff
+{
   double c1, c2, c3, c4, c5, c6, c7, c8, c9;
+
 } Ampl_mod_coeff;
 
 

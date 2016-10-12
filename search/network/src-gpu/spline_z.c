@@ -1,132 +1,17 @@
 // Polgraw includes
 #include <spline_z.h>
 
+// clSPARSE includes
+#include <clSPARSE.h>
+
 // Standard C includes
-#include <stdio.h>
-//#include <cuda.h>
-//#include <cuda_runtime_api.h>
-//#include "cusparse_v2.h"
-//#include <cufft.h>
-
-//__global__ void computeB(cufftDoubleComplex *cu_y, cufftDoubleComplex *cu_B, int N);
-
-//__global__ void test_vector(cufftDoubleComplex *a, int len, char id);
-
-//__global__ void interpolate(double *new_x, cufftDoubleComplex *new_y, cufftDoubleComplex *z, cufftDoubleComplex *y,
-//									 int N, int new_N);
-
-
-void gpu_interp(COMPLEX_TYPE* cu_y,
-                int Np,
-                double *cu_new_x,
-                COMPLEX_TYPE *cu_new_y,
-                int new_N,
-                COMPLEX_TYPE *cu_d,
-                COMPLEX_TYPE *cu_dl,
-                COMPLEX_TYPE *cu_du,
-                COMPLEX_TYPE *cu_B) {
-
-
-//  N-=1; //N is number of intervals here
-  
-	//allocate and compute vector B=z (replaced on gtsv)
-	// z has size N+1 (i=0..N), but we solve only for (i=1..N-1)
-	// (z[0] = z[N] = 0) because of `natural conditions` of spline
-  //CudaSafeCall( cudaMemset(cu_B, 0, sizeof(cufftDoubleComplex)*(N+1))); //set values to zero
-  //computeB<<< (N-1)/SPLINE_BLOCK_SIZE + 1 , SPLINE_BLOCK_SIZE >>>(cu_y, cu_B+1, N);
-  //CudaCheckError();
-
-  //create handle for sparse
-  //cusparseHandle_t handle=0;
-  //cusparseCreate(&handle);
-  
-  //compute vector Z
-//  cusparseStatus_t status = cusparseZgtsv(
-//					  handle,
-//					  N-1,			//size of linear system (N+1 points - 2 = N-1)
-//					  1,				//number of right-hand sides
-//					  cu_dl,			//lower diagonal
-//					  cu_d,			//diagonal
-//					  cu_du,			//upper diagonal
-//					  cu_B+1,		//right-hand-side vector
-//					  N-1);			//leading dimension
-//  if (status != CUSPARSE_STATUS_SUCCESS) {
-//    printf("sparse status: %d\n", status);
-//    printf("Blad cusparse!\n");
-//  }
-//  CudaCheckError();
-
-  //here, vector cu_z=cu_B is computed
-  //time to interpolate
-//  interpolate<<< new_N/SPLINE_BLOCK_SIZE + 1 , SPLINE_BLOCK_SIZE >>>(
-//								     cu_new_x,
-//								     cu_new_y,
-//								     cu_B,
-//								     cu_y,
-//								     N,
-//								     new_N);
-//  CudaCheckError();
-
-}
-
-
-//__global__ void test_vector(cufftDoubleComplex *a, int len, char id) {
-//  int idx = threadIdx.x + blockIdx.x * blockDim.x;
-//  if (idx < len) {
-//    printf("%c %d(%d.%d): %lf\n", id, idx,  blockIdx.x, threadIdx.x, a[idx]);
-//  }
-//}
-//
-//
-//__global__ void computeB(cufftDoubleComplex *y, cufftDoubleComplex *B, int N) {
-//  int idx = threadIdx.x + blockIdx.x * blockDim.x;
-//  if (idx < N-1) {
-//    B[idx].x = 6*(y[idx+2].x - 2*y[idx+1].x + y[idx].x);
-//    B[idx].y = 6*(y[idx+2].y - 2*y[idx+1].y + y[idx].y);
-//  }
-//}
-
-
-//__global__ void interpolate(double *new_x, cufftDoubleComplex *new_y, 
-//			    cufftDoubleComplex *z, cufftDoubleComplex *y,
-//			    int N, int new_N) {
-//  double alpha = 1./6.;
-//  int idx = threadIdx.x + blockIdx.x * blockDim.x;
-//  if (idx < new_N) {
-//    double x = new_x[idx];
-//    
-//    //get index of interval
-//    int i = floor(x);
-//    //compute value:
-//    // S[i](x) = z[i+1]/6 * (x-x[i])**3 + z[i]/6 *	(x[i+1]-x)**3 + C[i]*(x-x[i]) + D[i]*(x[i+1]-x)
-//    // C[i] = y[i+1] - z[i+1]/6
-//    // D[i] = y[i] - z[i]/6
-//    // x[i] = i
-//    // x = new_x
-//    double dist1 = x-i;
-//    double dist2 = i+1-x;
-//    
-//    new_y[idx].x = dist1*( z[i+1].x*alpha*(dist1*dist1 - 1) + y[i+1].x ) +
-//      dist2*( z[i].x*alpha*(dist2*dist2 - 1) + y[i].x );
-//    new_y[idx].y = dist1*( z[i+1].y*alpha*(dist1*dist1 - 1) + y[i+1].y ) +
-//      dist2*( z[i].y*alpha*(dist2*dist2 - 1) + y[i].y );
-//    
-//    // that change makes kernel ~2.3x faster
-//    /*
-//      new_y[idx].x = dist1*( z[i+1].x/6*dist1*dist1 +  (y[i+1].x-z[i+1].x/6) ) +
-//      dist2*( z[i].x/6*dist2*dist2 + (y[i].x-z[i].x/6) );
-//      new_y[idx].y = dist1*( z[i+1].y/6*dist1*dist1 +  (y[i+1].y-z[i+1].y/6) ) +
-//      dist2*( z[i].y/6*dist2*dist2 + (y[i].y-z[i].y/6) );
-//    */
-//  }
-//}
-
+#include <stdlib.h>          // calloc, free
 
 
 /// <summary>Initialize the spline matrices.</summary>
 /// <remarks>PCI Should replace it with kernels that initialize on the device.</remarks>
 ///
-void init_spline_matrices(OpenCL_handles* cl_handles, 
+void init_spline_matrices(OpenCL_handles* cl_handles,
                           cl_mem cu_d,  // buffer of complex_devt
                           cl_mem cu_dl, // buffer of complex_devt
                           cl_mem cu_du, // buffer of complex_devt
@@ -138,7 +23,7 @@ void init_spline_matrices(OpenCL_handles* cl_handles,
 
     complex_devt *d, *du, *dl;
 
-    d  = (complex_devt*)calloc(N - 1, sizeof(complex_devt));
+    d = (complex_devt*)calloc(N - 1, sizeof(complex_devt));
     du = (complex_devt*)calloc(N - 1, sizeof(complex_devt));
     dl = (complex_devt*)calloc(N - 1, sizeof(complex_devt));
 
@@ -197,3 +82,139 @@ void init_spline_matrices(OpenCL_handles* cl_handles,
     free(du);
     free(dl);
 }
+
+/// <summary>Spline interpolation to xDatma, xDatmb arrays.</summary>
+///
+void gpu_interp(cl_mem cu_y,                // buffer of complex_t
+                cl_int N,
+                cl_mem cu_new_x,            // buffer of real_t
+                cl_mem cu_new_y,            // buffer of complex_t
+                cl_int new_N,
+                cl_mem cu_d,                // buffer of complex_t
+                cl_mem cu_dl,               // buffer of complex_t
+                cl_mem cu_du,               // buffer of complex_t
+                cl_mem cu_B,                // buffer of complex_t
+                OpenCL_handles* cl_handles) // handles to OpenCL resources
+{
+    N-=1; // N is number of intervals here
+  
+	// allocate and compute vector B=z (replaced on gtsv)
+	// z has size N+1 (i=0..N), but we solve only for (i=1..N-1)
+	// (z[0] = z[N] = 0) because of `natural conditions` of spline
+
+    complex_t pattern = {(real_t)0, (real_t)0};
+    cl_event fill_event;
+
+    clEnqueueFillBuffer(cl_handles->write_queues[0], cu_B, &pattern, sizeof(complex_t), 0, (N + 1) * sizeof(complex_t), 0, NULL, &fill_event);
+
+    clWaitForEvents(1, &fill_event);
+    clReleaseEvent(fill_event);
+
+    computeB_gpu(cu_y, cu_B, N, cl_handles); // TODO almost certainly wrong indexing
+
+
+
+  //create handle for sparse
+  //cusparseHandle_t handle=0;
+  //cusparseCreate(&handle);
+  
+  //compute vector Z
+//  cusparseStatus_t status = cusparseZgtsv(
+//					  handle,
+//					  N-1,			//size of linear system (N+1 points - 2 = N-1)
+//					  1,				//number of right-hand sides
+//					  cu_dl,			//lower diagonal
+//					  cu_d,			//diagonal
+//					  cu_du,			//upper diagonal
+//					  cu_B+1,		//right-hand-side vector
+//					  N-1);			//leading dimension
+//  if (status != CUSPARSE_STATUS_SUCCESS) {
+//    printf("sparse status: %d\n", status);
+//    printf("Blad cusparse!\n");
+//  }
+//  CudaCheckError();
+
+  //here, vector cu_z=cu_B is computed
+  //time to interpolate
+//  interpolate<<< new_N/SPLINE_BLOCK_SIZE + 1 , SPLINE_BLOCK_SIZE >>>(
+//								     cu_new_x,
+//								     cu_new_y,
+//								     cu_B,
+//								     cu_y,
+//								     N,
+//								     new_N);
+//  CudaCheckError();
+
+}
+
+//__global__ void computeB(cufftDoubleComplex *cu_y, cufftDoubleComplex *cu_B, int N);
+
+//__global__ void test_vector(cufftDoubleComplex *a, int len, char id);
+
+//__global__ void interpolate(double *new_x, cufftDoubleComplex *new_y, cufftDoubleComplex *z, cufftDoubleComplex *y,
+//									 int N, int new_N);
+
+//__global__ void test_vector(cufftDoubleComplex *a, int len, char id) {
+//  int idx = threadIdx.x + blockIdx.x * blockDim.x;
+//  if (idx < len) {
+//    printf("%c %d(%d.%d): %lf\n", id, idx,  blockIdx.x, threadIdx.x, a[idx]);
+//  }
+//}
+//
+
+/// <summary>The purpose of this function was undocumented.</summary>
+///
+void computeB_gpu(cl_mem y,
+                  cl_mem B,
+                  cl_int N,
+                  OpenCL_handles* cl_handles)
+{
+    cl_int CL_err = CL_SUCCESS;
+
+    clSetKernelArg(cl_handles->kernels[ComputeB], 0, sizeof(cl_mem), &y);
+    clSetKernelArg(cl_handles->kernels[ComputeB], 1, sizeof(cl_mem), &B);
+    clSetKernelArg(cl_handles->kernels[ComputeB], 2, sizeof(cl_int), &N);
+
+    cl_event exec;
+    CL_err = clEnqueueNDRangeKernel(cl_handles->exec_queues[0], cl_handles->kernels[ComputeB], 1, NULL, &N, NULL, 0, NULL, &exec);
+
+    clWaitForEvents(1, &exec);
+
+    clReleaseEvent(exec);
+}
+
+
+//__global__ void interpolate(double *new_x, cufftDoubleComplex *new_y, 
+//			    cufftDoubleComplex *z, cufftDoubleComplex *y,
+//			    int N, int new_N) {
+//  double alpha = 1./6.;
+//  int idx = threadIdx.x + blockIdx.x * blockDim.x;
+//  if (idx < new_N) {
+//    double x = new_x[idx];
+//    
+//    //get index of interval
+//    int i = floor(x);
+//    //compute value:
+//    // S[i](x) = z[i+1]/6 * (x-x[i])**3 + z[i]/6 *	(x[i+1]-x)**3 + C[i]*(x-x[i]) + D[i]*(x[i+1]-x)
+//    // C[i] = y[i+1] - z[i+1]/6
+//    // D[i] = y[i] - z[i]/6
+//    // x[i] = i
+//    // x = new_x
+//    double dist1 = x-i;
+//    double dist2 = i+1-x;
+//    
+//    new_y[idx].x = dist1*( z[i+1].x*alpha*(dist1*dist1 - 1) + y[i+1].x ) +
+//      dist2*( z[i].x*alpha*(dist2*dist2 - 1) + y[i].x );
+//    new_y[idx].y = dist1*( z[i+1].y*alpha*(dist1*dist1 - 1) + y[i+1].y ) +
+//      dist2*( z[i].y*alpha*(dist2*dist2 - 1) + y[i].y );
+//    
+//    // that change makes kernel ~2.3x faster
+//    /*
+//      new_y[idx].x = dist1*( z[i+1].x/6*dist1*dist1 +  (y[i+1].x-z[i+1].x/6) ) +
+//      dist2*( z[i].x/6*dist2*dist2 + (y[i].x-z[i].x/6) );
+//      new_y[idx].y = dist1*( z[i+1].y/6*dist1*dist1 +  (y[i+1].y-z[i+1].y/6) ) +
+//      dist2*( z[i].y/6*dist2*dist2 + (y[i].y-z[i].y/6) );
+//    */
+//  }
+//}
+

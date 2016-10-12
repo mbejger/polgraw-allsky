@@ -57,16 +57,6 @@ void detectors_settings(Search_settings *sett,
 ///
 void rogcvir(Detector_settings* ifoi);
 
-void modvir_gpu(
-    double sinal, 
-    double cosal, 
-    double sindel, 
-    double cosdel,	
-    int Np, 
-    Detector_settings *ifoi, 
-    Aux_arrays *aux,
-    int idet );
-
 int lineph (double, double *, double *, char *, char *, int);
 
 // Coincidences 

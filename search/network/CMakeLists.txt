@@ -1,4 +1,4 @@
-###############################################################################
+﻿###############################################################################
 #
 # Top level CMakeLists.txt file for the polgraw-allsky repo's search/network
 # Hacker: Máté Ferenc Nagy-Egri
@@ -30,8 +30,9 @@ option (BUILD_TESTS "Build unit tests" OFF)
   # Find delpendencies		
   if (${USE_OPENCL})
     find_package(OpenCL REQUIRED)
-    find_package(clFFT REQUIRED)
-    find_package(clBLAS REQUIRED)
+    find_package(clFFT REQUIRED CONFIG)
+    find_package(clBLAS REQUIRED CONFIG)
+    find_package(clSPARSE REQUIRED CONFIG)
   endif (${USE_OPENCL})
   
   if (${USE_CUDA})

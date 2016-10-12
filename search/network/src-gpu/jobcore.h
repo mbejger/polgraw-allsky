@@ -17,32 +17,92 @@
 /// <summary>Main searching function.</summary>
 /// <remarks>This function loops over hemispheres, sky positions and spin-downs.</remarks>
 ///
-void search(Search_settings *sett,
-            Command_line_opts *opts,
-            Search_range *s_range,
-            FFT_plans *plans,
-            FFT_arrays *fft_arr,
-            Aux_arrays *aux,
-            int *Fnum,
-            double *F);
+void search(Search_settings* sett,
+            Command_line_opts* opts,
+            Search_range* s_range,
+            OpenCL_handles* cl_handles,
+            BLAS_handles* blas_handles,
+            FFT_plans* plans,
+            FFT_arrays* fft_arr,
+            Aux_arrays* aux,
+            int* Fnum,
+            cl_mem F_d);
 
 /// <summary>Main job function.</summary>
-/// <remarks>The output is stored in single or double precision. (<c>FLOAT_TYPE</c> defined in struct.h)</remarks>
+/// <remarks>The output is stored in single or double precision. (<c>real_t</c> defined in struct.h)</remarks>
 ///
-FLOAT_TYPE *job_core(int pm,                   // hemisphere
-                     int mm,                   // grid 'sky position'
-                     int nn,                   // other grid 'sky position'
-                     Search_settings *sett,    // search settings
-                     Command_line_opts *opts,  // cmd opts
-                     Search_range *s_range,    // range for searching
-                     FFT_plans *plans,         // plans for fftw
-                     FFT_arrays *fft_arr,      // arrays for fftw
-                     Aux_arrays *aux,          // auxiliary arrays
-                     double *F,                // F-statistics array
-                     int *sgnlc,               // reference to array with the parameters of the candidate signal
-                                               // (used below to write to the file)
-                     int *FNum);               // candidate signal number
-                     //cublasHandle_t scale    // handle for scaling
+real_t* job_core(int pm,                        // hemisphere
+                 int mm,                        // grid 'sky position'
+                 int nn,                        // other grid 'sky position'
+                 Search_settings *sett,         // search settings
+                 Command_line_opts *opts,       // cmd opts
+                 Search_range *s_range,         // range for searching
+                 FFT_plans *plans,              // plans for fftw
+                 FFT_arrays *fft_arr,           // arrays for fftw
+                 Aux_arrays *aux,               // auxiliary arrays
+                 cl_mem F,                      // F-statistics array
+                 int *sgnlc,                    // reference to array with the parameters of the candidate signal
+                                                // (used below to write to the file)
+                 int *FNum,                     // candidate signal number
+                 OpenCL_handles* cl_handles,    // handles to OpenCL resources
+                 BLAS_handles* blas_handles);   // handle for scaling
+
+/// <summary>Copies amplitude modulation coefficients to constant memory.</summary>
+///
+void copy_amod_coeff(cl_int nifo,
+                     OpenCL_handles* cl_handles,
+                     Aux_arrays* aux);
+
+/// <summary>The purpose of this function was undocumented.</summary>
+///
+void modvir_gpu(real_t sinal,
+                real_t cosal,
+                real_t sindel,
+                real_t cosdel,
+                cl_int Np,
+                Detector_settings* ifoi,
+                OpenCL_handles* cl_handles,
+                Aux_arrays* aux,
+                cl_int idet);
+
+/// <summary>The purpose of this function was undocumented.</summary>
+///
+void tshift_pmod_gpu(real_t shft1,
+                     real_t het0,
+                     real_t ns0,
+                     real_t ns1,
+                     real_t ns2,
+                     real_t* xDat_d,
+                     complex_t* xa_d,
+                     complex_t* xb_d,
+                     real_t* shft_d,
+                     real_t* shftf_d,
+                     real_t* tshift_d,
+                     real_t* aa_d,
+                     real_t* bb_d,
+                     real_t* DetSSB_d,
+                     real_t oms,
+                     cl_int N,
+                     cl_int nfft,
+                     cl_int interpftpad);
+
+/// <summary>Shifts frequencies and remove those over Nyquist.</summary>
+///
+void resample_postfft_gpu(cl_mem xa_d,
+                          cl_mem xb_d,
+                          cl_int nfft,
+                          cl_int Ninterp,
+                          cl_int nyqst,
+                          OpenCL_handles* cl_handles);
+
+/// <summary>Scales vectors with a constant.</summary>
+///
+void blas_scale(cl_mem xa_d,
+                cl_mem xa_b,
+                cl_uint n,
+                real_t a,
+                OpenCL_handles* cl_handles,
+                BLAS_handles* blas_handles);
 
 /// <summary>Saves the designated array into a file with the specified name.</summary>
 ///

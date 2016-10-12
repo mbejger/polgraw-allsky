@@ -90,6 +90,12 @@ void set_search_range(Search_settings *sett,
                       Command_line_opts *opts, 
                       Search_range *s_range);
 
+/// <summary>Sets up BLAS internal states.</summary>
+///
+void init_blas(Search_settings* sett,
+               OpenCL_handles* cl_handles,
+               BLAS_handles* blas_handles);
+
 /// <summary>Sets up FFT plans.</summary>
 ///
 void plan_fft(Search_settings* sett,

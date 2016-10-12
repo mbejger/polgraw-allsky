@@ -1,6 +1,10 @@
 #ifndef __FLOATS_H__
 #define __FLOATS_H__
 
+// OpenCL includes
+#include <CL/cl.h>
+
+
 #undef COMP_FLOAT
 
 //changing computations in spindown loop to single-precision arithmetic
@@ -18,6 +22,7 @@ typedef cl_double2 complex_devt;
 #define FLOAT_TYPE cl_double
 #define COMPLEX_TYPE cl_double2
 #ifdef WIN32
+typedef _Dcomplex complex_t;
 #define HOST_COMPLEX_TYPE _Dcomplex
 #else
 #define HOST_COMPLEX_TYPE complex double
