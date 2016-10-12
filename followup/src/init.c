@@ -662,7 +662,7 @@ void add_signal(
 		Search_range *s_range) {
 
   int i, j, n, gsize, reffr, k; 
-  double h0, cof, thsnr = 0; 
+  double snr, sum = 0, h0, cof, thsnr = 0; 
   double sinaadd, cosaadd, sindadd, cosdadd, phaseadd, shiftadd, signadd; 
   double nSource[3], sgnlo[10], sgnlol[4];
   double **sigaa, **sigbb;   // aa[nifo][N]
@@ -678,7 +678,7 @@ void add_signal(
 	
     // Fscanning for the GW amplitude, grid size, hemisphere 
     // and the reference frame (for which the signal freq. is not spun-down/up)
-    fscanf (data, "%le %d %d %d", &h0, &gsize, s_range->pmr, &reffr);    
+    fscanf (data, "%le %d %d %d", &snr, &gsize, s_range->pmr, &reffr);    
 
     // Fscanning signal parameters: f, fdot, delta, alpha (sgnlo[0], ..., sgnlo[3])
     // four amplitudes sgnlo[4], ..., sgnlo[7] 
@@ -796,8 +796,9 @@ void add_signal(
       // Adding the signal to the data vector 
 
       if(ifo[n].sig.xDat[i]) { 
-        ifo[n].sig.xDat[i] += h0*signadd;
-	       thsnr += pow(signadd, 2.);
+        ifo[n].sig.xDat[i] += signadd;
+	sum += pow(signadd, 2.);
+//	       thsnr += pow(h0*signadd, 2.);
 
       }
 
@@ -819,7 +820,13 @@ void add_signal(
     fclose(dataout); */
     
   }
-printf("%le ", sqrt(thsnr));
+  h0 = snr/(sqrt(sum));
+  for(n=0; n<sett->nifo; n++) {
+    for (i=0; i<sett->N; i++) {
+      ifo[n].sig.xDat[i] = ifo[n].sig.xDat[i]*h0;
+    }
+  }
+printf("%le %le\n", snr, h0);
 for (i = 0; i < sett->nifo; i++) free(sigaa[i]);
 free(sigaa);
 for (i = 0; i < sett->nifo; i++) free(sigbb[i]);
