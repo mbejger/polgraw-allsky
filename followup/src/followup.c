@@ -110,6 +110,7 @@ Yep64f** neigh(double *m, double *perc, int b){
 		}
 		beg[0] = beg[0] + width[0];
 	}
+
 	return array;
 
 }
@@ -369,6 +370,13 @@ Yep64f* MADS(Search_settings *sett, Aux_arrays *aux, double* in, double *start, 
 	for (n= 0; n < 11; n++){
 		out[n] = extr[n];
 	}
+
+	free(p);
+	free(nSource);
+	free(extr);
+	free(res);
+	free_matrix(sigaa, sett->nifo, sett->N);
+	free_matrix(sigbb, sett->nifo, sett->N);
 	return out;
 }
 
@@ -482,6 +490,7 @@ int update_simplex(double ** simplex, int dim, double  fmax, double ** fx, int i
 		for (j = 0; j < 11; j++) fx[ihi][j] = fx2[j];
 		update = 1;
 	}
+
 	free_vector(next, dim);
 	return update;
 }
@@ -512,6 +521,7 @@ void contract_simplex(double ** simplex, int dim, double ** fx, int ilo, int ihi
 			for (k = 0; k < 11; k++) fx[i][k] = fx3[k];
 		}
 	}
+
 }
 
 int check_tol(double fmax, double fmin, double ftol){
@@ -558,6 +568,7 @@ double * amoeba(Search_settings *sett, Aux_arrays *aux, double *point, double *n
 	free_vector(midpoint, dim);
 	free_vector(line, dim);
 	free_matrix(simplex, dim + 1, dim);
+
 /*	free(fx);
 	free(midpoint);
 	free(line);
@@ -608,10 +619,10 @@ int main (int argc, char *argv[]) {
 
 #endif
 
-	pc[0] = 0.01;
-	pc[1] = 0.01;
-	pc[2] = 0.01;
-	pc[3] = 0.01;
+	pc[0] = 0.015;
+	pc[1] = 0.015;
+	pc[2] = 0.015;
+	pc[3] = 0.015;
 
 	for (i = 0; i < 4; i++){
 		pc2[i] = 2*pc[i]/bins;
@@ -695,8 +706,10 @@ int main (int argc, char *argv[]) {
   				search_settings(&sett); 
 // Detector network settings
   				detectors_settings(&sett, &opts); 
+
 // Array initialization
   				init_arrays(&sett, &opts, &aux_arr, &F);
+				
 // Amplitude modulation functions for each detector  
 				for(i=0; i<sett.nifo; i++) rogcvir(&ifo[i]); 
 // Adding signal from file
@@ -760,7 +773,7 @@ omp_set_num_threads(1);
 //						puts("Simplex");
 
 						maximum = amoeba(&sett, &aux_arr, sgnlo, nSource, results, dim, tol, pc2, sigaa, sigbb);
-//printf("Amoeba: %le %le %le %le %le %le\n", maximum[6], maximum[7], maximum[8], maximum[9], maximum[5], maximum[4]);
+printf("Amoeba: %le %le %le %le %le %le\n", maximum[6], maximum[7], maximum[8], maximum[9], maximum[5], maximum[4]);
 // Maximum value in points searching
 #pragma omp critical
 						if(maximum[5] < results_max[5]){
@@ -771,6 +784,8 @@ omp_set_num_threads(1);
 
 					} //simplex
 				} // d - main outside loop
+				free_matrix(sigaa, sett.nifo, sett.N);
+				free_matrix(sigbb, sett.nifo, sett.N);
 
 } //pragma
 
@@ -786,7 +801,7 @@ omp_set_num_threads(1);
 //Time test
 //				tend = clock();
 //				tdiff = (tend - tstart)/(double)CLOCKS_PER_SEC;
-				printf("Maximum: %le %le %le %le %le %le\n", results_max[6], results_max[7], results_max[8], results_max[9], results_max[5], results_max[4]);
+				printf("%le %le %le %le %le %le\n", results_max[6], results_max[7], results_max[8], results_max[9], results_max[5], results_max[4]);
 
 
 
@@ -816,7 +831,13 @@ if((opts.mads_flag)||(opts.simplex_flag)){
 	puts("**********************************************************************");
 }*/
 // Cleanup & memory free 
-//  	cleanup(&sett, &opts, &aux_arr, F);
+	free(results_max);
+	free(results_first);
+	free(results);
+	free(maximum);
+	free(mean);
+	free_matrix(arr, ROW, 4);
+  	cleanup_followup(&sett, &opts, &s_range, &aux_arr, F);
 	
 
 	return 0;
