@@ -662,7 +662,8 @@ void add_signal(
 		Search_range *s_range) {
 
   int i, j, n, gsize, reffr, k; 
-  double snr, sum = 0, h0, cof, thsnr = 0; 
+  double snr, sum = 0., h0, cof, thsnr = 0; 
+  double sigma_noise = 1.0;
   double sinaadd, cosaadd, sindadd, cosdadd, phaseadd, shiftadd, signadd; 
   double nSource[3], sgnlo[10], sgnlol[4];
   double **sigaa, **sigbb;   // aa[nifo][N]
@@ -820,7 +821,7 @@ void add_signal(
     fclose(dataout); */
     
   }
-  h0 = snr/(sqrt(sum));
+  h0 = (snr*sigma_noise)/(sqrt(sum));
   for(n=0; n<sett->nifo; n++) {
     for (i=0; i<sett->N; i++) {
       ifo[n].sig.xDat[i] = ifo[n].sig.xDat[i]*h0;
