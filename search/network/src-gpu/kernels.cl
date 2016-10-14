@@ -144,65 +144,129 @@ __kernel void computeB(__global complex_t* y,
     }
 }
 
-//__global__ void phase_mod_1(cufftDoubleComplex *xa, cufftDoubleComplex *xb,
-//                            cufftDoubleComplex *xar, cufftDoubleComplex *xbr,
-//                            double het1, double sgnlt1, double *shft,
-//                            int N){
-//
-//  int idx = blockIdx.x * blockDim.x + threadIdx.x;
-//  if (idx < N) {
-//    //          FLOAT_TYPE phase = - ( het1*idx + sgnlt1 * ( (double)idx*idx + 2 * idx * shft[idx] ) );
-//    double phase = - idx * ( het1 + sgnlt1 * ( idx + 2 * shft[idx] ) );
-//    double s, c;
-//
-//    sincos(phase, &s, &c);
-//
-//    xa[idx].x = xar[idx].x*c - xar[idx].y*s;
-//    xa[idx].y = xar[idx].x*s + xar[idx].y*c;
-//
-//    xb[idx].x = xbr[idx].x*c - xbr[idx].y*s;
-//    xb[idx].y = xbr[idx].x*s + xbr[idx].y*c;
-//    //    if (idx==1) printf("xa=(%f, %f)\n", xa[idx].x, xa[idx].y);
-//
-//  }
-//}
-//
-//__global__ void phase_mod_2(cufftDoubleComplex *xa, cufftDoubleComplex *xb,
-//                            cufftDoubleComplex *xar, cufftDoubleComplex *xbr,
-//                            double het1, double sgnlt1, double *shft,
-//                            int N){
-//
-//  int idx = blockIdx.x * blockDim.x + threadIdx.x;
-//  if (idx < N) {
-//    //          FLOAT_TYPE phase = - ( het1*idx + sgnlt1 * ( (double)idx*idx + 2 * idx * shft[idx] ) );
-//    double phase = - idx * ( het1 + sgnlt1 * ( idx + 2 * shft[idx] ) );
-//    double s, c;
-//
-//    sincos(phase, &s, &c);
-//
-//    xa[idx].x += xar[idx].x*c - xar[idx].y*s;
-//    xa[idx].y += xar[idx].x*s + xar[idx].y*c;
-//
-//    xb[idx].x += xbr[idx].x*c - xbr[idx].y*s;
-//    xb[idx].y += xbr[idx].x*s + xbr[idx].y*c;
-//    //    if (idx==1) printf("xa=(%f, %f)\n", xa[idx].x, xa[idx].y);
-//
-//  }
-//}
-//
-//extern  __constant__  double maa_d, mbb_d;
-//
-//__global__ void compute_Fstat(cufftDoubleComplex *xa, cufftDoubleComplex *xb,
-//                              double *F, int N) { // N = nmax - nmin
-//  int i = blockIdx.x * blockDim.x + threadIdx.x;
-//  //  if (i==0) printf("maa_d=%f\n", maa_d);
-//  if (i < N) {
-//    F[i] = ( xa[i].x*xa[i].x + xa[i].y*xa[i].y)/maa_d + (xb[i].x*xb[i].x + xb[i].y*xb[i].y)/mbb_d;
-//  }
-//}
-//
-//
-///*
+/// <summary>Multiplies the tridiagonal matrix specified by <c>{dl, d, du}</c> with dense vector <c>x</c>.</summary>
+///
+__kernel void tridiagMul(__global real_t* dl,
+                         __global real_t* d,
+                         __global real_t* du,
+                         __global complex_t* x,
+                         __global complex_t* y)
+{
+    size_t gid = get_global_id(0);
+    size_t gsi = get_global_size(0);
+
+    y[gid] = (gid == 0 ? (real_t)0 : x[gid - 1]) +
+             x[gid] +
+             (gid == gsi - 1 ? (real_t)0 : x[gid + 1]);
+}
+
+/// <summary>The purpose of this function was undocumented.</summary>
+///
+__kernel void interpolate(__global real_t* new_x,
+                          __global complex_t* new_y,
+                          __global complex_t* z,
+                          __global complex_t* y,
+                          int N,
+                          int new_N)
+{
+    size_t idx = get_global_id(0);
+    real_t alpha = 1. / 6.;
+    complex_t result;
+
+    if (idx < new_N)
+    {
+        real_t x = new_x[idx];
+
+        //get index of interval
+        int i = floor(x);
+        //compute value:
+        // S[i](x) = z[i+1]/6 * (x-x[i])**3 + z[i]/6 *	(x[i+1]-x)**3 + C[i]*(x-x[i]) + D[i]*(x[i+1]-x)
+        // C[i] = y[i+1] - z[i+1]/6
+        // D[i] = y[i] - z[i]/6
+        // x[i] = i
+        // x = new_x
+        real_t dist1 = x - i;
+        real_t dist2 = i + 1 - x;
+
+        new_y[idx].x = dist1*(z[i + 1].x*alpha*(dist1*dist1 - 1) + y[i + 1].x) +
+            dist2*(z[i].x*alpha*(dist2*dist2 - 1) + y[i].x);
+        new_y[idx].y = dist1*(z[i + 1].y*alpha*(dist1*dist1 - 1) + y[i + 1].y) +
+            dist2*(z[i].y*alpha*(dist2*dist2 - 1) + y[i].y);
+    }
+}
+
+/// <summary>The purpose of this function was undocumented.</summary>
+///
+__kernel void phase_mod_1(__global complex_t* xa,
+                          __global complex_t* xb,
+                          __global complex_t* xar,
+                          __global complex_t* xbr,
+                          real_t het1,
+                          real_t sgnlt1,
+                          __global real_t* shft,
+                          int N)
+{
+    size_t idx = get_global_id(0);
+
+    if (idx < N)
+    {
+        real_t phase = -idx * (het1 + sgnlt1 * (idx + 2 * shft[idx]));
+        real_t s = sin(phase);
+        real_t c = cos(phase);
+
+        xa[idx].x = xar[idx].x*c - xar[idx].y*s;
+        xa[idx].y = xar[idx].x*s + xar[idx].y*c;
+
+        xb[idx].x = xbr[idx].x*c - xbr[idx].y*s;
+        xb[idx].y = xbr[idx].x*s + xbr[idx].y*c;
+    }
+}
+
+/// <summary>The purpose of this function was undocumented.</summary>
+///
+__kernel void phase_mod_2(__global complex_t* xa,
+                          __global complex_t* xb,
+                          __global complex_t* xar,
+                          __global complex_t* xbr,
+                          real_t het1,
+                          real_t sgnlt1,
+                          __global real_t* shft,
+                          int N)
+{
+    size_t idx = get_global_id(0);
+
+    if (idx < N)
+    {
+        real_t phase = -idx * (het1 + sgnlt1 * (idx + 2 * shft[idx]));
+        real_t s = sin(phase);
+        real_t c = cos(phase);
+
+        xa[idx].x += xar[idx].x*c - xar[idx].y*s;
+        xa[idx].y += xar[idx].x*s + xar[idx].y*c;
+
+        xb[idx].x += xbr[idx].x*c - xbr[idx].y*s;
+        xb[idx].y += xbr[idx].x*s + xbr[idx].y*c;
+
+    }
+}
+
+/// <summary>Compute F-statistics.</summary>
+/// 
+__kernel void compute_Fstat(__global complex_t* xa,
+                            __global complex_t* xb,
+                            __global real_t* F,
+                            __constant real_t* maa_d,
+                            __constant real_t* mbb_d,
+                            int N)
+{
+    size_t i = get_global_id(0);
+
+    if (i < N)
+    {
+        F[i] = (xa[i].x*xa[i].x + xa[i].y*xa[i].y) / maa_d[0] + (xb[i].x*xb[i].x + xb[i].y*xb[i].y) / mbb_d[0];
+    }
+}
+
 //__global__ void reduction_sum(double *in, double *out, int N) {
 //  extern __shared__ double sd_data[];
 //
@@ -223,21 +287,27 @@ __kernel void computeB(__global complex_t* y,
 //  if (tid==0) out[blockIdx.x] = sd_data[0];
 //
 //}
-//*/
 //
-//__global__ void fstat_norm_simple(FLOAT_TYPE *F_d, int nav) {
-//  //  int idx = blockIdx.x * blockDim.x + threadIdx.x;
-//  int i;
-//  FLOAT_TYPE *fr = F_d + blockIdx.x*nav;
-//  FLOAT_TYPE mu = 0.;
-//  for (i=0; i<nav; ++i)
-//    mu += *fr++;
-//  mu /= 2.*nav;
-//  fr = F_d + blockIdx.x*nav;
-//  for (i=0; i<nav; i++)
-//    *fr++ /= mu;
 //
-//}
+
+/// <summary>Compute F-statistics.</summary>
+/// 
+__kernel void fstat_norm_simple(real_t* F_d,
+                                int nav)
+{
+    real_t* fr = F_d + blockIdx.x*nav;
+    real_t mu = 0;
+
+    for (int i = 0; i < nav; ++i)
+        mu += *fr++;
+
+    mu /= 2 * nav;
+    fr = F_d + blockIdx.x*nav;
+
+    for (int i = 0; i < nav; ++i)
+        *fr++ /= mu;
+}
+
 //
 //
 //// parameters are:

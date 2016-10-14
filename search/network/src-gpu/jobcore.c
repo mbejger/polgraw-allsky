@@ -1,6 +1,12 @@
 // MSVC macro to include constants, such as M_PI (include before math.h)
 #define _USE_MATH_DEFINES
 
+// Define to provide safe versions of CRT functions
+#define __STDC_WANT_LIB_EXT1__ 1
+
+// Polgraw includes
+#include <CL/util.h>        // checkErr
+
 // Standard C includes
 //#define _GNU_SOURCE
 #include <math.h>
@@ -11,6 +17,9 @@
 //#include <unistd.h>
 #include <malloc.h>
 #include <complex.h>
+#include <string.h>         // memcpy_s
+#include <errno.h>          // errno_t
+#include <stdlib.h>         // EXIT_FAILURE
 
 /* JobCore file */
 #include "struct.h"
@@ -180,7 +189,7 @@ real_t* job_core(int pm,                        // hemisphere
                  FFT_plans *plans,              // plans for fftw
                  FFT_arrays *fft_arr,           // arrays for fftw
                  Aux_arrays *aux,               // auxiliary arrays
-                 cl_mem F,                      // F-statistics array
+                 cl_mem F_d,                    // F-statistics array
                  int *sgnlc,                    // reference to array with the parameters of the candidate signal
                                                 // (used below to write to the file)
                  int *FNum,                     // candidate signal number
@@ -323,7 +332,8 @@ real_t* job_core(int pm,                        // hemisphere
                    aux->diag_d,         //diagonal
                    aux->ldiag_d,        //lower diagonal
                    aux->udiag_d,        //upper diagonal
-                   aux->B_d);           //coefficient matrix
+                   aux->B_d,            //coefficient matrix
+                   cl_handles);
 
         gpu_interp(fft_arr->xb_d,       //input data
                    sett->Ninterp,       //input data length
@@ -333,44 +343,43 @@ real_t* job_core(int pm,                        // hemisphere
                    aux->diag_d,         //diagonal
                    aux->ldiag_d,        //lower diagonal
                    aux->udiag_d,        //upper diagonal
-                   aux->B_d);           //coefficient matrix
+                   aux->B_d,            //coefficient matrix
+                   cl_handles);
 
         ft = 1. / ifo[n].sig.sig2;
-        //    cublasZdscal( scale, sett->N, &ft, ifo[n].sig.xDatma_d, 1);
-        //    cublasZdscal( scale, sett->N, &ft, ifo[n].sig.xDatmb_d, 1);
-        //    CudaCheckError();
 
+        blas_scale(ifo[n].sig.xDatma_d,
+                   ifo[n].sig.xDatmb_d,
+                   sett->N,
+                   ft,
+                   cl_handles,
+                   blas_handles);
     } // end of detector loop 
 
-    double _maa = 0.;
-    double _mbb = 0.;
+    real_t _maa = 0;
+    real_t _mbb = 0;
 
     for (int n = 0; n<sett->nifo; ++n)
     {
-        //    double aatemp = 0., bbtemp = 0.;
-        //    // square sums of modulation factors
-        //    cublasDdot (scale, sett->N , 
-        //      (const double *)ifo[n].sig.aa_d, 1,
-        //      (const double *)ifo[n].sig.aa_d, 1,
-        //      &aatemp);
-        //    cublasDdot (scale, sett->N , 
-        //      (const double *)ifo[n].sig.bb_d, 1,
-        //      (const double *)ifo[n].sig.bb_d, 1,
-        //      &bbtemp);
-        //    
-        //    /* or use sqr( cublasSnrm2()) */
-        //    _maa += aatemp/ifo[n].sig.sig2;
-        //    _mbb += bbtemp/ifo[n].sig.sig2;
+        real_t* temp = blas_dot(ifo[n].sig.aa_d, ifo[n].sig.bb_d, sett->N, cl_handles, blas_handles);
+
+        _maa += temp[0] / ifo[n].sig.sig2;
+        _mbb += temp[1] / ifo[n].sig.sig2;
+
+        free(temp);
     }
-    //  CudaCheckError();
 
-    //  printf("maa_d=%f", _maa);
-    //  cudaMemcpyToSymbol(maa_d, &_maa, sizeof(double), 0, cudaMemcpyHostToDevice);
-    //  cudaMemcpyToSymbol(mbb_d, &_mbb, sizeof(double), 0, cudaMemcpyHostToDevice);
-    //  CudaCheckError();  
+    // Copy sums to constant memory
+    {
+        cl_event write_event[2];
+        clEnqueueWriteBuffer(cl_handles->write_queues[0], aux->maa_d, CL_FALSE, 0, sizeof(real_t), &_maa, 0, NULL, &write_event[0]);
+        clEnqueueWriteBuffer(cl_handles->write_queues[0], aux->mbb_d, CL_FALSE, 0, sizeof(real_t), &_mbb, 0, NULL, &write_event[1]);
 
+        clWaitForEvents(2, write_event);
+        for (size_t i = 0; i < 2; ++i) clReleaseEvent(write_event[i]);
+    }
 
-    /* Spindown loop */
+    // Spindown loop //
 
 #if TIMERS>2
     struct timespec tstart, tend;
@@ -395,7 +404,8 @@ real_t* job_core(int pm,                        // hemisphere
     if (opts->s0_flag) smin = smax;
 
     // if spindown parameter is taken into account, smin != smax
-    for (ss = smin; ss <= smax; ++ss) {
+    for (ss = smin; ss <= smax; ++ss)
+    {
 
 #if TIMERS>2
         tstart = get_current_time();
@@ -408,7 +418,7 @@ real_t* job_core(int pm,                        // hemisphere
         //    if(sgnlt[1] >= -sett->Smax && sgnlt[1] <= sett->Smax) { 
 
         int ii;
-        double Fc, het1;
+        real_t Fc, het1;
 
 #ifdef VERBOSE
         //print a 'dot' every new spindown
@@ -419,47 +429,69 @@ real_t* job_core(int pm,                        // hemisphere
         if (het1<0) het1 += sett->M[0];
 
         sgnl0 = het0 + het1;
-        //      printf("%d  %d\n", BLOCK_SIZE, (sett->N + BLOCK_SIZE - 1)/BLOCK_SIZE );
+        // printf("%d  %d\n", BLOCK_SIZE, (sett->N + BLOCK_SIZE - 1)/BLOCK_SIZE );
 
+        phase_mod_1_gpu(fft_arr->xa_d,
+                        fft_arr->xb_d,
+                        ifo[0].sig.xDatma_d,
+                        ifo[0].sig.xDatmb_d,
+                        het1,
+                        sgnlt[1],
+                        ifo[0].sig.shft_d,
+                        sett->N,
+                        cl_handles);
 
-        //      phase_mod_1<<<(sett->N + BLOCK_SIZE - 1)/BLOCK_SIZE, BLOCK_SIZE>>>
-        //        ( fft_arr->xa_d, fft_arr->xb_d,
-        //          ifo[0].sig.xDatma_d, ifo[0].sig.xDatmb_d,
-        //          het1, sgnlt[1], ifo[0].sig.shft_d,
-        //          sett->N );
-        //      
-        //      cudaDeviceSynchronize();
-
-        for (int n = 1; n<sett->nifo; ++n) {
-            //	phase_mod_2<<<(sett->N + BLOCK_SIZE - 1)/BLOCK_SIZE, BLOCK_SIZE>>>
-            //	  ( fft_arr->xa_d, fft_arr->xb_d,
-            //	    ifo[n].sig.xDatma_d, ifo[n].sig.xDatmb_d,
-            //	    het1, sgnlt[1], ifo[n].sig.shft_d,
-            //	    sett->N );
+        for (int n = 1; n<sett->nifo; ++n)
+        {
+            phase_mod_2(fft_arr->xa_d,
+                        fft_arr->xb_d,
+                        ifo[n].sig.xDatma_d,
+                        ifo[n].sig.xDatmb_d,
+                        het1,
+                        sgnlt[1],
+                        ifo[n].sig.shft_d,
+                        sett->N,
+                        cl_handles);
         }
 
         // initialize arrays to 0. with integer 0
         // assuming double , remember to change when switching to float
-        // cuMemsetD32Async((CUdeviceptr) (fft_arr->xa_d + sett->N), 0,
-        //       (sett->nfftf - sett->N)*2*(sizeof(double)/4), NULL);
-        // cuMemsetD32Async((CUdeviceptr) (fft_arr->xb_d + sett->N), 0,
-        //       (sett->nfftf - sett->N)*2*(sizeof(double)/4), NULL);
-        // CudaCheckError();
+        {
+            cl_int CL_err = CL_SUCCESS;
+            real_t pattern = 0;
+            cl_event fill_event[2];
+
+            CL_err = clEnqueueFillBuffer(cl_handles->write_queues[0], fft_arr->xa_d, &pattern, sizeof(real_t), sett->N, (sett->nfftf - sett->N) * 2 * (sizeof(double) / (sizeof(double) / sizeof(real_t)) / 4), 0, NULL, &fill_event[0]);
+            checkErr(CL_err, "clEnqueueFillBuffer");
+            CL_err = clEnqueueFillBuffer(cl_handles->write_queues[0], fft_arr->xb_d, &pattern, sizeof(real_t), sett->N, (sett->nfftf - sett->N) * 2 * (sizeof(double) / (sizeof(double) / sizeof(real_t)) / 4), 0, NULL, &fill_event[1]);
+            checkErr(CL_err, "clEnqueueFillBuffer");
+
+            clWaitForEvents(2, fill_event);
+
+            clReleaseEvent(fill_event[0]);
+            clReleaseEvent(fill_event[1]);
+        }
 
         // fft length fftpad*nfft
-        //cufftExecZ2Z(plans->plan, fft_arr->xa_d, fft_arr->xa_d, CUFFT_FORWARD);
-        //cufftExecZ2Z(plans->plan, fft_arr->xb_d, fft_arr->xb_d, CUFFT_FORWARD);
+        {
+            cl_event fft_exec[2];
+            clfftEnqueueTransform(plans->plan, CLFFT_FORWARD, 1, cl_handles->exec_queues, 0, NULL, &fft_exec[0], fft_arr->xa_d, NULL, NULL /*May be slow, consider using tmp_buffer*/);
+            clfftEnqueueTransform(plans->plan, CLFFT_FORWARD, 1, cl_handles->exec_queues, 0, NULL, &fft_exec[1], fft_arr->xb_d, NULL, NULL /*May be slow, consider using tmp_buffer*/);
+
+            clWaitForEvents(2, fft_exec);
+        }
 
         (*FNum)++;
 
-        // compute_Fstat<<<(sett->nmax-sett->nmin + BLOCK_SIZE - 1)/BLOCK_SIZE, BLOCK_SIZE>>>
-        //   ( fft_arr->xa_d + sett->nmin,
-        //     fft_arr->xb_d + sett->nmin,
-        //     F_d + sett->nmin,
-        //     sett->nmax - sett->nmin );
-        // CudaCheckError();
+        compute_Fstat_gpu(fft_arr->xa_d,
+                          fft_arr->xb_d,
+                          F_d,
+                          aux->maa_d,
+                          aux->mbb_d,
+                          sett->nmin,
+                          sett->nmax,
+                          cl_handles);
 
-#define GPUFSTAT_NO
 #ifdef GPUFSTAT
         if (!(opts->white_flag))  // if the noise is not white noise
             FStat_gpu(F_d + sett->nmin, sett->nmax - sett->nmin, NAV, aux->mu_d, aux->mu_t_d);
@@ -715,15 +747,178 @@ void blas_scale(cl_mem xa_d,
     for (size_t i = 0; i < 2; ++i) clReleaseEvent(blas_exec[i]);
 }
 
+/// <summary>Calculates the inner product of both <c>x</c> and <c>y</c>.</summary>
+/// <remarks>The function allocates an array of 2 and gives ownership to the caller.</remarks>
+/// <remarks>Consider making the temporaries persistent, either providing them via function params or give static storage duration.</remarks>
+///
+real_t* blas_dot(cl_mem x,
+                 cl_mem y,
+                 cl_uint n,
+                 OpenCL_handles* cl_handles,
+                 BLAS_handles* blas_handles)
+{
+    cl_int CL_err = CL_SUCCESS;
+    clblasStatus status[2];
+    cl_event blas_exec[2], unmap;
+    cl_mem result_buf, scratch_buf[2];
+
+    real_t* result = (real_t*)malloc(2 * sizeof(real_t));
+
+    result_buf = clCreateBuffer(cl_handles->ctx, CL_MEM_READ_WRITE | CL_MEM_ALLOC_HOST_PTR, 2 * sizeof(real_t), NULL, &CL_err);
+    scratch_buf[0] = clCreateBuffer(cl_handles->ctx, CL_MEM_READ_WRITE | CL_MEM_ALLOC_HOST_PTR, n * sizeof(real_t), NULL, &CL_err);
+    scratch_buf[1] = clCreateBuffer(cl_handles->ctx, CL_MEM_READ_WRITE | CL_MEM_ALLOC_HOST_PTR, n * sizeof(real_t), NULL, &CL_err);
+
+#ifdef COMP_FLOAT
+    status[0] = clblasSdotu(n, result_buf, 0, x, 0, 1, x, 0, 1, scratch_buf[0], 1, cl_handles->exec_queues, 0, NULL, &blas_exec[0]);
+    status[0] = clblasSdotu(n, result_buf, 1, x, 0, 1, x, 0, 1, scratch_buf[1], 1, cl_handles->exec_queues, 0, NULL, &blas_exec[1]);
+#else
+    status[0] = clblasDdotu(n, result_buf, 0, x, 0, 1, x, 0, 1, scratch_buf[0], 1, cl_handles->exec_queues, 0, NULL, &blas_exec[0]);
+    status[0] = clblasDdotu(n, result_buf, 1, x, 0, 1, x, 0, 1, scratch_buf[1], 1, cl_handles->exec_queues, 0, NULL, &blas_exec[1]);
+#endif // COMP_FLOAT
+
+    void* res = clEnqueueMapBuffer(cl_handles->read_queues[0], result_buf, CL_TRUE, CL_MAP_READ, 0, 2 * sizeof(real_t), 2, blas_exec, NULL, &CL_err);
+    checkErr(CL_err, "clEnqueueMapMemObject(result_buf)");
+
+    errno_t CRT_err = memcpy_s(result, 2 * sizeof(real_t), res, 2 * sizeof(real_t));
+    if (CRT_err != 0)
+        exit(EXIT_FAILURE);
+
+    CL_err = clEnqueueUnmapMemObject(cl_handles->read_queues[0], result_buf, res, 0, NULL, &unmap);
+    checkErr(CL_err, "clEnqueueUnmapMemObject(result_buf)");
+
+    clWaitForEvents(1, &unmap);
+
+    // cleanup
+    clReleaseEvent(blas_exec[0]);
+    clReleaseEvent(blas_exec[1]);
+    clReleaseEvent(unmap);
+    clReleaseMemObject(result_buf);
+    clReleaseMemObject(scratch_buf[0]);
+    clReleaseMemObject(scratch_buf[1]);
+
+    return result;
+}
+
+/// <summary>The purpose of this function was undocumented.</summary>
+///
+void phase_mod_1_gpu(cl_mem xa,
+                     cl_mem xb,
+                     cl_mem xar,
+                     cl_mem xbr,
+                     real_t het1,
+                     real_t sgnlt1,
+                     cl_mem shft,
+                     cl_int N,
+                     OpenCL_handles* cl_handles)
+{
+    cl_int CL_err = CL_SUCCESS;
+
+    clSetKernelArg(cl_handles->kernels[PhaseMod1], 0, sizeof(cl_mem), &xa);
+    clSetKernelArg(cl_handles->kernels[PhaseMod1], 1, sizeof(cl_mem), &xb);
+    clSetKernelArg(cl_handles->kernels[PhaseMod1], 2, sizeof(cl_mem), &xar);
+    clSetKernelArg(cl_handles->kernels[PhaseMod1], 3, sizeof(cl_mem), &xbr);
+    clSetKernelArg(cl_handles->kernels[PhaseMod1], 4, sizeof(real_t), &het1);
+    clSetKernelArg(cl_handles->kernels[PhaseMod1], 5, sizeof(real_t), &sgnlt1);
+    clSetKernelArg(cl_handles->kernels[PhaseMod1], 6, sizeof(cl_mem), &shft);
+    clSetKernelArg(cl_handles->kernels[PhaseMod1], 7, sizeof(cl_int), &N);
+
+    cl_event exec;
+    CL_err = clEnqueueNDRangeKernel(cl_handles->exec_queues[0], cl_handles->kernels[PhaseMod1], 1, NULL, &N, NULL, 0, NULL, &exec);
+
+    clWaitForEvents(1, &exec);
+
+    clReleaseEvent(exec);
+}
+
+/// <summary>The purpose of this function was undocumented.</summary>
+///
+void phase_mod_2_gpu(cl_mem xa,
+                     cl_mem xb,
+                     cl_mem xar,
+                     cl_mem xbr,
+                     real_t het1,
+                     real_t sgnlt1,
+                     cl_mem shft,
+                     cl_int N,
+                     OpenCL_handles* cl_handles)
+{
+    cl_int CL_err = CL_SUCCESS;
+
+    clSetKernelArg(cl_handles->kernels[PhaseMod2], 0, sizeof(cl_mem), &xa);
+    clSetKernelArg(cl_handles->kernels[PhaseMod2], 1, sizeof(cl_mem), &xb);
+    clSetKernelArg(cl_handles->kernels[PhaseMod2], 2, sizeof(cl_mem), &xar);
+    clSetKernelArg(cl_handles->kernels[PhaseMod2], 3, sizeof(cl_mem), &xbr);
+    clSetKernelArg(cl_handles->kernels[PhaseMod2], 4, sizeof(real_t), &het1);
+    clSetKernelArg(cl_handles->kernels[PhaseMod2], 5, sizeof(real_t), &sgnlt1);
+    clSetKernelArg(cl_handles->kernels[PhaseMod2], 6, sizeof(cl_mem), &shft);
+    clSetKernelArg(cl_handles->kernels[PhaseMod2], 7, sizeof(cl_int), &N);
+
+    cl_event exec;
+    CL_err = clEnqueueNDRangeKernel(cl_handles->exec_queues[0], cl_handles->kernels[PhaseMod2], 1, 0, &N, NULL, 0, NULL, &exec);
+
+    clWaitForEvents(1, &exec);
+
+    clReleaseEvent(exec);
+}
+
+/// <summary>Compute F-statistics.</summary>
+/// 
+void compute_Fstat_gpu(cl_mem xa,
+                       cl_mem xb,
+                       cl_mem F,
+                       cl_mem maa_d,
+                       cl_mem mbb_d,
+                       cl_int nmin,
+                       cl_int nmax,
+                       OpenCL_handles* cl_handles)
+{
+    cl_int CL_err = CL_SUCCESS;
+    cl_int N = nmax - nmin;
+
+    clSetKernelArg(cl_handles->kernels[ComputeFStat], 0, sizeof(cl_mem), &xa);
+    clSetKernelArg(cl_handles->kernels[ComputeFStat], 1, sizeof(cl_mem), &xb);
+    clSetKernelArg(cl_handles->kernels[ComputeFStat], 2, sizeof(cl_mem), &F);
+    clSetKernelArg(cl_handles->kernels[ComputeFStat], 3, sizeof(cl_mem), &maa_d);
+    clSetKernelArg(cl_handles->kernels[ComputeFStat], 4, sizeof(cl_mem), &mbb_d);
+    clSetKernelArg(cl_handles->kernels[ComputeFStat], 5, sizeof(cl_int), &N);
+
+    cl_event exec;
+    CL_err = clEnqueueNDRangeKernel(cl_handles->exec_queues[0], cl_handles->kernels[ComputeFStat], 1, &nmin, &N, NULL, 0, NULL, &exec);
+
+    clWaitForEvents(1, &exec);
+
+    clReleaseEvent(exec);
+}
+
+/// <summary>Compute F-statistics.</summary>
+///
+void FStat_gpu_simple(cl_mem F_d,
+    cl_int nfft,
+    cl_int nav,
+    OpenCL_handles* cl_handles)
+{
+    cl_int CL_err = CL_SUCCESS;
+    cl_int N = nfft / nav;
+
+    clSetKernelArg(cl_handles->kernels[FStatSimple], 0, sizeof(cl_mem), &F_d);
+    clSetKernelArg(cl_handles->kernels[FStatSimple], 1, sizeof(cl_int), &nav);
+
+    cl_event exec;
+    CL_err = clEnqueueNDRangeKernel(cl_handles->exec_queues[0], cl_handles->kernels[FStatSimple], 1, NULL, &N, NULL, 0, NULL, &exec);
+
+    clWaitForEvents(1, &exec);
+
+    clReleaseEvent(exec);
+}
+
 /* just simple patch - to be replaced */
 void FStat_gpu_simple(FLOAT_TYPE *F_d, int nfft, int nav) {
   
-  // int blocks = nfft/nav;
-  // fstat_norm_simple<<<blocks, 1>>>(F_d, nav);
-  // CudaCheckError();
+  int blocks = nfft/nav;
+  fstat_norm_simple<<<blocks, 1>>>(F_d, nav);
+  CudaCheckError();
 
 }
-
 
 #ifdef GPUFSTAT
 /* WARNING

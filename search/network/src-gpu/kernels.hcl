@@ -63,21 +63,60 @@ __kernel void computeB(__global complex_t* y,
                        __global complex_t* B,
                        int N);
 
-//__global__ void phase_mod_1(cufftDoubleComplex *xa, cufftDoubleComplex *xb,
-//                            cufftDoubleComplex *xar, cufftDoubleComplex *xbr,
-//                            double het1, double sgnlt1, double *shft,
-//                            int N);
-//
-//__global__ void phase_mod_2(cufftDoubleComplex *xa, cufftDoubleComplex *xb,
-//                            cufftDoubleComplex *xar, cufftDoubleComplex *xbr,
-//                            double het1, double sgnlt1, double *shft,
-//                            int N);
-//
-//__global__ void compute_Fstat(cufftDoubleComplex *xa, cufftDoubleComplex *xb,
-//                              double *F, 
-//			      int N);
-//
-//__global__ void fstat_norm_simple(FLOAT_TYPE *F_d, int nav);
+/// <summary>Multiplies the tridiagonal matrix specified by <c>{dl, d, du}</c> with dense vector <c>x</c>.</summary>
+///
+__kernel void tridiagMul(__global real_t* dl,
+                         __global real_t* d,
+                         __global real_t* du,
+                         __global complex_t* x,
+                         __global complex_t* y);
+
+/// <summary>The purpose of this function was undocumented.</summary>
+///
+__kernel void interpolate(__global real_t* new_x,
+                          __global complex_t* new_y,
+                          __global complex_t* z,
+                          __global complex_t* y,
+                          int N,
+                          int new_N);
+
+
+/// <summary>The purpose of this function was undocumented.</summary>
+///
+__kernel void phase_mod_1(__global complex_t* xa,
+                          __global complex_t* xb,
+                          __global complex_t* xar,
+                          __global complex_t* xbr,
+                          real_t het1,
+                          real_t sgnlt1,
+                          __global real_t* shft,
+                          int N);
+
+/// <summary>The purpose of this function was undocumented.</summary>
+///
+__kernel void phase_mod_2(__global complex_t* xa,
+                          __global complex_t* xb,
+                          __global complex_t* xar,
+                          __global complex_t* xbr,
+                          real_t het1,
+                          real_t sgnlt1,
+                          __global real_t* shft,
+                          int N);
+
+/// <summary>Compute F-statistics.</summary>
+/// 
+__kernel void compute_Fstat(__global complex_t* xa,
+                            __global complex_t* xb,
+                            __global real_t* F,
+                            __constant real_t* maa_d,
+                            __constant real_t* mbb_d,
+                            int N);
+
+/// <summary>Compute F-statistics.</summary>
+/// 
+__kernel void fstat_norm_simple(real_t* F_d,
+                                int nav);
+
 //__global__ void fstat_norm(FLOAT_TYPE *F, FLOAT_TYPE *mu, int N, int nav);
 
 

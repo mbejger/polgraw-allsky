@@ -104,11 +104,63 @@ void blas_scale(cl_mem xa_d,
                 OpenCL_handles* cl_handles,
                 BLAS_handles* blas_handles);
 
+/// <summary>Calculates the inner product of both <c>x</c> and <c>y</c>.</summary>
+/// <remarks>The function allocates an array of 2 and gives ownership to the caller.</remarks>
+/// <remarks>Consider making the temporaries persistent, either providing them via function params or give static storage duration.</remarks>
+///
+real_t* blas_dot(cl_mem x,
+                 cl_mem y,
+                 cl_uint n,
+                 OpenCL_handles* cl_handles,
+                 BLAS_handles* blas_handles);
+
+/// <summary>The purpose of this function was undocumented.</summary>
+///
+void phase_mod_1_gpu(cl_mem xa,
+                     cl_mem xb,
+                     cl_mem xar,
+                     cl_mem xbr,
+                     real_t het1,
+                     real_t sgnlt1,
+                     cl_mem shft,
+                     cl_int N,
+                     OpenCL_handles* cl_handles);
+
+/// <summary>The purpose of this function was undocumented.</summary>
+///
+void phase_mod_2_gpu(cl_mem xa,
+                     cl_mem xb,
+                     cl_mem xar,
+                     cl_mem xbr,
+                     real_t het1,
+                     real_t sgnlt1,
+                     cl_mem shft,
+                     cl_int N,
+                     OpenCL_handles* cl_handles);
+
+/// <summary>Compute F-statistics.</summary>
+/// 
+void compute_Fstat_gpu(cl_mem xa,
+                       cl_mem xb,
+                       cl_mem F,
+                       cl_mem maa_d,
+                       cl_mem mbb_d,
+                       cl_int nmin,
+                       cl_int nmax,
+                       OpenCL_handles* cl_handles);
+
+/// <summary>Compute F-statistics.</summary>
+///
+void FStat_gpu_simple(cl_mem F_d,
+                      cl_int nfft,
+                      cl_int nav,
+                      OpenCL_handles* cl_handles);
+
 /// <summary>Saves the designated array into a file with the specified name.</summary>
 ///
 void save_array(HOST_COMPLEX_TYPE *arr, int N, const char* file);
 
-void FStat_gpu_simple(FLOAT_TYPE *F_d, int nfft, int nav);
+
 double FStat (double *, int, int, int);
 void FStat_gpu(FLOAT_TYPE *F_d, int N, int nav, FLOAT_TYPE *mu_d, FLOAT_TYPE *mu_t_d);
 

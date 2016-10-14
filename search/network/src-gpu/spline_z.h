@@ -39,4 +39,23 @@ void computeB_gpu(cl_mem y,
                   cl_int N,
                   OpenCL_handles* cl_handles);
 
+/// <summary>Multiplies the tridiagonal matrix specified by <c>{dl, d, du}</c> with dense vector <c>x</c>.</summary>
+///
+void tridiagMul_gpu(cl_mem dl,
+                    cl_mem d,
+                    cl_mem du,
+                    cl_mem x,
+                    cl_int length,
+                    OpenCL_handles* cl_handles);
+
+/// <summary>The purpose of this function was undocumented.</summary>
+///
+void interpolate_gpu(cl_mem new_x,
+                     cl_mem new_y,
+                     cl_mem z,
+                     cl_mem y,
+                     cl_int N,
+                     cl_int new_N,
+                     OpenCL_handles* cl_handles);
+
 #endif // __SPLINE_Z_H__

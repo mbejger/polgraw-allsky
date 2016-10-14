@@ -23,6 +23,7 @@ list (APPEND HDRS ${PROJECT_SOURCE_DIR}/settings.h)
 list (APPEND HDRS ${PROJECT_SOURCE_DIR}/spline_z.h)
 list (APPEND HDRS ${PROJECT_SOURCE_DIR}/struct.h)
 list (APPEND HDRS ${PROJECT_SOURCE_DIR}/timer.h)
+list (APPEND HDRS ${PROJECT_SOURCE_DIR}/CL/util.h)
 
 list (APPEND SRCS ${PROJECT_SOURCE_DIR}/auxi.c)
 list (APPEND SRCS ${PROJECT_SOURCE_DIR}/main.c)
@@ -31,6 +32,7 @@ list (APPEND SRCS ${PROJECT_SOURCE_DIR}/timer.c)
 list (APPEND SRCS ${PROJECT_SOURCE_DIR}/init.c)
 list (APPEND SRCS ${PROJECT_SOURCE_DIR}/jobcore.c)
 list (APPEND SRCS ${PROJECT_SOURCE_DIR}/spline_z.c)
+list (APPEND SRCS ${PROJECT_SOURCE_DIR}/CL/util.c)
 
 list (APPEND SRCS ${PROJECT_SOURCE_DIR}/getopt.c)
 
@@ -52,8 +54,8 @@ add_executable (${PROJECT_NAME} ${BUILD})
 # Append our project's include directory to the "#include <>" paths
 target_include_directories (${PROJECT_NAME} PUBLIC ${PROJECT_SOURCE_DIR})
 target_include_directories (${PROJECT_NAME} PUBLIC ${OpenCL_INCLUDE_DIRS})
-#target_include_directories (${PROJECT_NAME} ${CLFFT_INCLUDE_DIRS})
-#target_include_directories (${PROJECT_NAME} ${CLBLAS_INCLUDE_DIRS})
+target_include_directories (${PROJECT_NAME} PUBLIC ${CLFFT_INCLUDE_DIRS})
+target_include_directories (${PROJECT_NAME} PUBLIC ${CLBLAS_INCLUDE_DIRS})
 #target_include_directories (${PROJECT_NAME} ${clSPARSE_INCLUDE_DIRS})
 
 MESSAGE (STATUS "clSPARSE include dir: ${clSPARSE_INCLUDE_DIRS}")

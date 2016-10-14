@@ -123,7 +123,13 @@ enum Kernel
     Modvir = 1,
     TShiftPMod = 2,
     ResamplePostFFT = 3,
-    ComputeB = 4
+    ComputeB = 4,
+    TriDiagMul = 5,
+    Interpolate = 6,
+    PhaseMod1 = 7,
+    PhaseMod2 = 8,
+    ComputeFStat = 9,
+    FStatSimple = 10
 };
 
 /* FFTW plans  */ 
@@ -146,8 +152,9 @@ typedef struct _aux_arrays {
   cl_mem t2_d  ;                // time^2
   cl_mem tshift_d;
   cl_mem ifo_amod_d;             // constant buffer of detector settings
-  COMPLEX_TYPE *diag_d, *ldiag_d, *udiag_d, *B_d; //used in spline interpolation
-  FLOAT_TYPE *mu_d, *mu_t_d; //arrays for smoothing F-stat
+  cl_mem diag_d, ldiag_d, udiag_d, B_d; //used in spline interpolation
+  cl_mem mu_d, mu_t_d; //arrays for smoothing F-stat
+  cl_mem maa_d, mbb_d;
 
 } Aux_arrays;
 
