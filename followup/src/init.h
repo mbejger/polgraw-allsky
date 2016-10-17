@@ -15,6 +15,14 @@ void init_arrays(
   Aux_arrays *aux_arr, 
   double** F);
 
+unsigned long int random_seed();
+
+void gauss_xdat(
+  Search_settings *sett,
+  double amplitude,
+  double sigma,
+  int i);
+
 void add_signal(
   Search_settings *sett,
   Command_line_opts *opts,
@@ -41,6 +49,13 @@ void read_checkpoints(
 	Command_line_opts *opts, 
   Search_range *s_range,
   int *Fnum);
+
+void cleanup_followup(
+	Search_settings *sett,
+	Command_line_opts *opts,
+	Search_range *s_range,
+	Aux_arrays *aux,
+	double *F);
 
 void cleanup(
 	Search_settings *sett,

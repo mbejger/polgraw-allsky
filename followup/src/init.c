@@ -13,7 +13,10 @@
 #include <gsl/gsl_linalg.h>
 #include <gsl/gsl_math.h>
 #include <gsl/gsl_eigen.h>
+#include <gsl/gsl_rng.h> 
+#include <gsl/gsl_randist.h>
 #include <time.h>
+#include <sys/time.h>
 
 #include "init.h"
 #include "struct.h"
@@ -61,9 +64,10 @@ void handle_opts( Search_settings *sett,
   opts->veto_flag=0; 
   opts->simplex_flag=0;
   opts->mads_flag=0;
+  opts->gauss_flag=0;
 
   static int help_flag=0, white_flag=0, s0_flag=0, 
-             checkp_flag=1, veto_flag=0, simplex_flag=0, mads_flag=0;
+             checkp_flag=1, veto_flag=0, simplex_flag=0, mads_flag=0, gauss_flag=0;
 
   // Reading arguments 
 
@@ -76,6 +80,7 @@ void handle_opts( Search_settings *sett,
       {"vetolines", no_argument, &veto_flag, 1}, 
       {"simplex", no_argument, &simplex_flag, 1},
       {"mads", no_argument, &mads_flag, 1},
+      {"gauss", no_argument, &gauss_flag, 1},
       // frame number
       {"ident", required_argument, 0, 'i'},
       // frequency band number
@@ -137,6 +142,7 @@ void handle_opts( Search_settings *sett,
       printf("--vetolines       Veto known lines from files in data directory\n");
       printf("--simplex         Direct search of maximum using Nelder-Mead (simplex) algorithm\n");
       printf("--mads       	Direct search of maximum using MADS algorithm\n");
+      printf("--gauss		Generate Gaussian noise instead of reading data. Amplitude and sigma of the noise declared in init.c\n");
       printf("--help            This help\n");
 
       exit(EXIT_SUCCESS);
@@ -211,6 +217,7 @@ void handle_opts( Search_settings *sett,
   opts->veto_flag = veto_flag; 
   opts->simplex_flag = simplex_flag;
   opts->mads_flag = mads_flag;
+  opts->gauss_flag = gauss_flag;
 
   printf("Input data directory is %s\n", opts->dtaprefix);
   printf("Output directory is %s\n", opts->prefix);
@@ -266,6 +273,10 @@ void handle_opts( Search_settings *sett,
 
   if(opts->veto_flag) 
     printf("Known lines will be vetoed (reading from files in the data directory)\n");
+
+  if(opts->gauss_flag) 
+    printf("Gaussian noise will be generated instead of reading data from file\n");
+
   if(opts->mads_flag) 
     printf("MADS direct maximum search\n");
 
@@ -322,31 +333,38 @@ void init_arrays(
 		 Aux_arrays *aux_arr,
 		 double** F) {
 
-  int i, status; 
+  int i, status;
+//Noise parameters 
+  double amplitude = 1.0;
+  double sigma = 1.0;
+
   // Allocates and initializes to zero the data, detector ephemeris
   // and the F-statistic arrays
 
   FILE *data;
 
   for(i=0; i<sett->nifo; i++) { 
-
-    ifo[i].sig.xDat = (double *) calloc(sett->N, sizeof(double));
-    
-    // Input time-domain data handling
-    // 
-    // The file name ifo[i].xdatname is constructed 
-    // in settings.c, while looking for the detector 
-    // subdirectories
-    
-    if((data = fopen(ifo[i].xdatname, "r")) != NULL) {
-      status = fread((void *)(ifo[i].sig.xDat), 
-		     sizeof(double), sett->N, data);
-      fclose (data);
-      
-    } else {
-      perror (ifo[i].xdatname);
-      exit(EXIT_FAILURE); 
-    }
+	  ifo[i].sig.xDat = (double *) calloc(sett->N, sizeof(double));
+	  if(!opts->gauss){	    
+	    // Input time-domain data handling
+	    // 
+	    // The file name ifo[i].xdatname is constructed 
+	    // in settings.c, while looking for the detector 
+	    // subdirectories
+	    
+	    if((data = fopen(ifo[i].xdatname, "r")) != NULL) {
+	      status = fread((void *)(ifo[i].sig.xDat), 
+			     sizeof(double), sett->N, data);
+	      fclose (data);
+	      
+	    } else {
+	      perror (ifo[i].xdatname);
+	      exit(EXIT_FAILURE); 
+	    }
+	  }
+	  else {
+	    gauss_xdat(sett, amplitude, sigma, i);	
+	  }
     
     int j, Nzeros=0;
     // Checking for null values in the data
@@ -589,6 +607,50 @@ void glue(Command_line_opts *opts){
 
 }
 
+unsigned long int random_seed()
+{
+
+ unsigned int seed;
+ struct timeval tv;
+ FILE *devrandom;
+
+ if ((devrandom = fopen("/dev/random","r")) == NULL) {
+   gettimeofday(&tv,0);
+   seed = tv.tv_sec + tv.tv_usec;
+ } else {
+   fread(&seed,sizeof(seed),1,devrandom);
+   fclose(devrandom);
+ }
+
+ return(seed);
+
+}
+
+  /* Generate Gaussian noise (keep it only in memory; do not save) */
+
+void gauss_xdat(Search_settings *sett, double amplitude, double sigma, int i){
+
+  gsl_rng * r;
+  int j;
+  unsigned long mySeed;
+  mySeed = random_seed();
+
+  const gsl_rng_type * T;
+  
+  gsl_rng_env_setup();
+
+  T = gsl_rng_default;
+  r = gsl_rng_alloc (T);
+  gsl_rng_set(r, mySeed);
+  // Generate normal distribution (around 0, 
+  // with amplitude and sigma as parameters)
+  for(j = 0; j < sett->N; j++) 
+    ifo[i].sig.xDat[j] = amplitude*gsl_ran_gaussian_ziggurat(r, sigma);
+ 
+  gsl_rng_free(r); 
+
+
+}
 
   /* Add signal to data   */ 
 
@@ -600,7 +662,8 @@ void add_signal(
 		Search_range *s_range) {
 
   int i, j, n, gsize, reffr, k; 
-  double h0, cof, thsnr = 0; 
+  double snr, sum = 0., h0, cof, thsnr = 0; 
+  double sigma_noise = 1.0;
   double sinaadd, cosaadd, sindadd, cosdadd, phaseadd, shiftadd, signadd; 
   double nSource[3], sgnlo[10], sgnlol[4];
   double **sigaa, **sigbb;   // aa[nifo][N]
@@ -616,7 +679,7 @@ void add_signal(
 	
     // Fscanning for the GW amplitude, grid size, hemisphere 
     // and the reference frame (for which the signal freq. is not spun-down/up)
-    fscanf (data, "%le %d %d %d", &h0, &gsize, s_range->pmr, &reffr);    
+    fscanf (data, "%le %d %d %d", &snr, &gsize, s_range->pmr, &reffr);    
 
     // Fscanning signal parameters: f, fdot, delta, alpha (sgnlo[0], ..., sgnlo[3])
     // four amplitudes sgnlo[4], ..., sgnlo[7] 
@@ -734,17 +797,42 @@ void add_signal(
       // Adding the signal to the data vector 
 
       if(ifo[n].sig.xDat[i]) { 
-        ifo[n].sig.xDat[i] += h0*signadd;
-	       thsnr += pow(signadd, 2.);
+        ifo[n].sig.xDat[i] += signadd;
+	sum += pow(signadd, 2.);
+//	       thsnr += pow(h0*signadd, 2.);
 
       }
 
 	 
     }
+    // Write the data+signal to file   
+/*    FILE *dataout;
+    char xxx[512]; 
+    sprintf(xxx, "%s/%03d/%s/xdatc_%03d_%04d%s.bin",
+          opts->dtaprefix, opts->ident, ifo[n].name, 
+          opts->ident, opts->band, opts->label);
+    printf("Flag 1: try to write xDat to fole %s\n", xxx);
+    if((dataout = fopen(xxx, "wb")) != NULL) {
+    	fwrite(ifo[n].sig.xDat, sizeof(*ifo[n].sig.xDat), sett->N, dataout);
+    }
+    else{
+    	printf("Problem with %s file!\n", xxx);
+    }
+    fclose(dataout); */
     
   }
-printf("Signal SNR:%le\n", sqrt(thsnr));
-
+  h0 = (snr*sigma_noise)/(sqrt(sum));
+  for(n=0; n<sett->nifo; n++) {
+    for (i=0; i<sett->N; i++) {
+      ifo[n].sig.xDat[i] = ifo[n].sig.xDat[i]*h0;
+    }
+  }
+printf("%le %le\n", snr, h0);
+for (i = 0; i < sett->nifo; i++) free(sigaa[i]);
+free(sigaa);
+for (i = 0; i < sett->nifo; i++) free(sigbb[i]);
+free(sigbb);
+//exit(0);
 } 
 
 /* Search range */ 
@@ -1013,6 +1101,33 @@ void read_checkpoints(
 
   /* Cleanup & memory free 
 	 */
+void cleanup_followup(
+	Search_settings *sett,
+	Command_line_opts *opts,
+	Search_range *s_range,
+	Aux_arrays *aux,
+	double *F) {
+
+  int i; 
+
+  for(i=0; i<sett->nifo; i++) {
+    free(ifo[i].sig.xDat);
+    free(ifo[i].sig.xDatma);
+    free(ifo[i].sig.xDatmb);
+    free(ifo[i].sig.DetSSB);
+    free(ifo[i].sig.aa);
+    free(ifo[i].sig.bb);
+    free(ifo[i].sig.shftf);
+    free(ifo[i].sig.shft);
+  }
+  free(aux->sinmodf);
+  free(aux->cosmodf);
+  free(aux->t2);
+  free(F);
+
+  free(sett->M);
+}
+
 
 void cleanup(
 	Search_settings *sett,
