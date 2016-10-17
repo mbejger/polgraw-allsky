@@ -396,7 +396,7 @@ int job_core(int pm,                   // Hemisphere
   }
 
 #ifdef YEPPP
-#define VLEN 128
+#define VLEN 1024
   int bnd = (sett->N/VLEN)*VLEN;
 #endif
 
@@ -446,7 +446,7 @@ int job_core(int pm,                   // Hemisphere
   
     /* Spindown loop  */
 
-#pragma omp for schedule(guided)
+#pragma omp for schedule(static,4)
     for(ss=smin; ss<=smax; ++ss) {
 
 #if TIMERS>2
