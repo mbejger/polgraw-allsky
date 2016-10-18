@@ -1,9 +1,6 @@
 // Polgraw includes
 #include <spline_z.h>
 
-// clSPARSE includes
-#include <clSPARSE.h>
-
 // Standard C includes
 #include <stdlib.h>          // calloc, free
 
@@ -16,7 +13,7 @@ void init_spline_matrices(OpenCL_handles* cl_handles,
                           cl_mem cu_dl, // buffer of complex_devt
                           cl_mem cu_du, // buffer of complex_devt
                           cl_mem cu_B,  // buffer of complex_devt
-                          int N)
+                          cl_int N)
 {
     cl_int CL_err = CL_SUCCESS;
     N -= 1; // N is number of intervals here

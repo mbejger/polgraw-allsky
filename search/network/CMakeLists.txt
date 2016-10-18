@@ -1,7 +1,7 @@
 ﻿###############################################################################
 #
 # Top level CMakeLists.txt file for the polgraw-allsky repo's search/network
-# Hacker: Máté Ferenc Nagy-Egri
+# Hacker: Mate Ferenc Nagy-Egri
 # Last modified: 2016.10.04.
 #
 ###############################################################################
@@ -20,7 +20,7 @@ project (polgraw-search)
 	
 # Behavioural options for the project
 option (USE_OPENCL "Build OpenCL language test suite" ON)
-option (USE_CUDA "Build SYCL language test suite" OFF)
+option (USE_CUDA "Build CUDA language test suite" OFF)
 option (BUILD_TESTS "Build unit tests" OFF)
 	
 
@@ -29,14 +29,17 @@ option (BUILD_TESTS "Build unit tests" OFF)
 #
   # Find delpendencies		
   if (${USE_OPENCL})
+
     find_package(OpenCL REQUIRED)
     find_package(clFFT REQUIRED CONFIG)
     find_package(clBLAS REQUIRED CONFIG)
-    find_package(clSPARSE REQUIRED CONFIG)
+
   endif (${USE_OPENCL})
   
   if (${USE_CUDA})
+
     find_package(CUDA REQUIRED)
+
   endif (${USE_CUDA})
   
   # Use solution folders in IDEs
@@ -46,6 +49,9 @@ option (BUILD_TESTS "Build unit tests" OFF)
   set (CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
   set (CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
   set (CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin/${CMAKE_BUILD_TYPE})
+
+  # Set curent path for later use
+  set (POLGRAW_SEARCH_NETWORK_ROOT ${PROJECT_SOURCE_DIR})
 	
 #
 # Set platform-specific variables
@@ -81,8 +87,4 @@ endif (BUILD_TESTS)
 #
 # Process targets based on user-input
 #
-  #if (CP_BUILD_MANYBODY)
-		
-    add_subdirectory (src-gpu)
-		
-  #endif (CP_BUILD_MANYBODY)
+  add_subdirectory (src-gpu)

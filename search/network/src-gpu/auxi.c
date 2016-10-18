@@ -1,8 +1,10 @@
-#ifndef __SETTINGS_H__
-#define __SETTINGS_H__
-
-// MSVC macro to include constants, such as M_PI
+// C behavioral defines
+//
+// MSVC: macro to include constants, such as M_PI (include before math.h)
 #define _USE_MATH_DEFINES
+
+// Polgraw includes
+#include <auxi.h>
 
 // Standard C includes
 #include <stdlib.h>
@@ -11,8 +13,6 @@
 #include <math.h>
 #include <complex.h>
 #include <float.h>
-
-#include "auxi.h"
 
 
 /// <summary>Change linear (grid) coordinates to real coordinates</summary>
@@ -325,6 +325,4 @@ double det (const double *a, int N)
   free (indx);
   free (al);
   return d;
-} /* det() */
-
-#endif
+} // det()

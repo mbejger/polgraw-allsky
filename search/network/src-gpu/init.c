@@ -1,4 +1,6 @@
-// MSVC macro to include constants, such as M_PI (include before math.h)
+// C behavioral defines
+//
+// MSVC: macro to include constants, such as M_PI (include before math.h)
 #define _USE_MATH_DEFINES
 
 // Polgraw includes
@@ -7,25 +9,33 @@
 #include <settings.h>
 #include <auxi.h>
 #include <spline_z.h>
+#include <CL/util.h>    // checkErr
 
 // OpenCL includes
 #include <CL/cl.h>
 
+// Posix includes
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#ifdef WIN32
+#include <direct.h>
+#include <posix/dirent.h>
+#include <posix/getopt.h>
+#else
+#include <unistd.h>
+#include <dirent.h>
+#include <getopt.h>
+#endif // WIN32
+
 // Standard C includes
 #include <stdio.h>
 #include <stdlib.h>     // EXIT_FAILURE
-//#include <unistd.h>
 #include <math.h>
 #include <complex.h>
 #include <string.h>
 #include <errno.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
-#include <getopt.h>
 #include <time.h>
-
-#include <direct.h>
 
 
 /// <summary>Command line options handling: search</summary>
@@ -253,19 +263,6 @@ void handle_opts(Search_settings* sett,
   }
 
 } // end of command line options handling 
-
-/// <summary>OpenCL error handling function.</summary>
-/// <remarks>If an error occurs, prints it to standard error and exits.</remarks>
-///
-void checkErr(cl_int err,
-              const char * name)
-{
-    if (err != CL_SUCCESS)
-    {
-        perror("ERROR: %s (%i)\n", name, err);
-        exit(err);
-    }
-}
 
 /// <summary>Initialize OpenCL devices based on user preference.</summary>
 /// <remarks>Currently, only a sinle platform can be selected.</remarks>

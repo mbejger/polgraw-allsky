@@ -1,43 +1,48 @@
-// MSVC macro to include constants, such as M_PI (include before math.h)
+// C behavioral defines
+//
+// MSVC: macro to include constants, such as M_PI (include before math.h)
 #define _USE_MATH_DEFINES
-
-// Define to provide safe versions of CRT functions
+// ISO: request safe versions of functions
 #define __STDC_WANT_LIB_EXT1__ 1
+// GCC: hope this macro is not actually needed
+//#define _GNU_SOURCE
 
 // Polgraw includes
 #include <CL/util.h>        // checkErr
+#include <struct.h>
+#include <jobcore.h>
+#include <auxi.h>
+#include <settings.h>
+#include <timer.h>
+#include <spline_z.h>
+#include <floats.h>
 
-// Standard C includes
-//#define _GNU_SOURCE
-#include <math.h>
-#include <stdio.h>
+// OpenCL includes
+#include <CL/cl.h>
+
+// Posix includes
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
-
 #ifdef WIN32
 #include <io.h>             // _chsize_s
+#include <direct.h>
+#include <posix/dirent.h>
+#include <posix/getopt.h>
 #else
 #include <unistd.h>         // ftruncate
+#include <dirent.h>
+#include <getopt.h>
 #endif // WIN32
 
+// Standard C includes
+#include <math.h>
+#include <stdio.h>          // fopen/fclose, fprintf
 #include <malloc.h>
 #include <complex.h>
 #include <string.h>         // memcpy_s
 #include <errno.h>          // errno_t
 #include <stdlib.h>         // EXIT_FAILURE
-
-/* JobCore file */
-#include "struct.h"
-#include "jobcore.h"
-#include "auxi.h"
-#include "settings.h"
-#include "timer.h"
-//#include "kernels.h"
-#include "spline_z.h"
-//#include "cuda_error.h"
-#include <assert.h>
-#include <floats.h>
 
 
 void save_array(HOST_COMPLEX_TYPE *arr, int N, const char* file)

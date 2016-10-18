@@ -1,4 +1,6 @@
-// MSVC macro to include constants, such as M_PI (include before math.h)
+// C behavioral defines
+//
+// MSVC: macro to include constants, such as M_PI (include before math.h)
 #define _USE_MATH_DEFINES
 
 // Polgraw includes

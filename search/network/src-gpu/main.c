@@ -1,4 +1,6 @@
-// ISO C behavioral defines
+// C behavioral defines
+//
+// ISO: request safe versions of functions
 #define __STDC_WANT_LIB_EXT1__ 1
 
 // Polgraw includes
@@ -9,25 +11,27 @@
 #include <jobcore.h>
 #include <init.h>
 
+// Posix includes
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#ifdef WIN32
+#include <direct.h>
+#include <posix/dirent.h>
+#include <posix/getopt.h>
+#else
+#include <unistd.h>
+#include <dirent.h>
+#include <getopt.h>
+#endif // WIN32
+
 // Standard C includes
 #include <stdio.h>      // fopen_s
 #include <stdlib.h>
-//#include <unistd.h>
 #include <math.h>
 #include <complex.h>
-//#include <fftw3.h>
 #include <string.h>
 #include <errno.h>
-
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <dirent.h>
-#if defined _MSC_VER
-#include <direct.h>
-#endif
-
-#include <fcntl.h>
-#include <getopt.h>
 #include <time.h>
 
 // Default output and data directories

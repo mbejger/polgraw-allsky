@@ -13,11 +13,6 @@ void handle_opts(Search_settings* sett,
 		         int argc,  
 		         char* argv[]);
 
-/// <summary>OpenCL error handling function.</summary>
-/// <remarks>If an error occurs, prints it to standard error and exits.</remarks>
-///
-void checkErr(cl_int err, const char * name);
-
 /// <summary>Initialize OpenCL devices based on user preference.</summary>
 /// <remarks>Currently, only a sinle platform can be selected.</remarks>
 ///

@@ -1,14 +1,23 @@
 #ifndef __SETTINGS_H__
 #define __SETTINGS_H__
 
+// MSVC macro to include constants, such as M_PI (include before math.h)
+#define _USE_MATH_DEFINES
+
 // Polgraw includes
 #include <struct.h>
 
+// ISO C includes
+#include <math.h>
 
-#define NPAR 5 		/* no. of trigger parameters */
 
-//#define INT 1		/* simplest interpolation */
-#define FFT 2		/* refined (fft) interpolation */
+#define NPAR 5 		// no. of trigger parameters //
+
+// Commented out due to not being in actual use but conflicting with minwindef.h on Windows
+//
+//#define INT 1		// simplest interpolation //
+
+#define FFT 2		// refined (fft) interpolation //
 
 #define NAV 4096    /* to define nmin and nmax on the edges; multiplied by B=0.5/dt */   
 

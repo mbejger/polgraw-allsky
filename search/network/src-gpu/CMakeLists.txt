@@ -34,8 +34,6 @@ list (APPEND SRCS ${PROJECT_SOURCE_DIR}/jobcore.c)
 list (APPEND SRCS ${PROJECT_SOURCE_DIR}/spline_z.c)
 list (APPEND SRCS ${PROJECT_SOURCE_DIR}/CL/util.c)
 
-list (APPEND SRCS ${PROJECT_SOURCE_DIR}/getopt.c)
-
 list (APPEND KRNS ${PROJECT_SOURCE_DIR}/floats.hcl)
 list (APPEND KRNS ${PROJECT_SOURCE_DIR}/kernels.hcl)
 list (APPEND KRNS ${PROJECT_SOURCE_DIR}/kernels.cl)
@@ -56,19 +54,36 @@ target_include_directories (${PROJECT_NAME} PUBLIC ${PROJECT_SOURCE_DIR})
 target_include_directories (${PROJECT_NAME} PUBLIC ${OpenCL_INCLUDE_DIRS})
 target_include_directories (${PROJECT_NAME} PUBLIC ${CLFFT_INCLUDE_DIRS})
 target_include_directories (${PROJECT_NAME} PUBLIC ${CLBLAS_INCLUDE_DIRS})
-#target_include_directories (${PROJECT_NAME} ${clSPARSE_INCLUDE_DIRS})
-
-MESSAGE (STATUS "clSPARSE include dir: ${clSPARSE_INCLUDE_DIRS}")
 
 target_include_directories (${PROJECT_NAME} PUBLIC ${PROJECT_SOURCE_DIR}/posix)
 
 # Link dependant libraries
-target_link_libraries(${PROJECT_NAME} clFFT)
-target_link_libraries(${PROJECT_NAME} clBLAS)
-target_link_libraries(${PROJECT_NAME} clSPARSE)
+target_link_libraries (${PROJECT_NAME} clFFT)
+target_link_libraries (${PROJECT_NAME} clBLAS)
 
 # Create project groups for IDEs
-set_target_properties (${PROJECT_NAME} PROPERTIES FOLDER "GWSearch\\GPU")
+set_target_properties (${PROJECT_NAME} PROPERTIES FOLDER "GPU")
+
+#
+# Set compiler-specific variables
+#
+  # If compiling with Microsoft Visual C
+  if (CMAKE_C_COMPILER_ID MATCHES "MSVC")
+
+    # Generate static library of missing posix functions
+    add_library (getopt SHARED ${PROJECT_SOURCE_DIR}/posix/getopt.c)
+    target_include_directories (getopt PUBLIC ${PROJECT_SOURCE_DIR})
+    
+    # Link it to our executable
+    target_link_libraries (${PROJECT_NAME} getopt)
+    
+    # Set definition to export symbols into library
+    target_compile_definitions (getopt PRIVATE EXPORTS_GETOPT)
+    
+    # Create project groups for IDEs
+    set_target_properties (${PROJECT_NAME} PROPERTIES FOLDER "GPU")
+
+  endif (CMAKE_C_COMPILER_ID MATCHES "MSVC")
 
 #########################
 #                       #
@@ -78,8 +93,8 @@ set_target_properties (${PROJECT_NAME} PROPERTIES FOLDER "GWSearch\\GPU")
 
 # Add unit test
 if (BUILD_TESTS)
-		
-#  add_test(NAME ${PROJECT_NAME}
-#           COMMAND ${PROJECT_NAME} --input ${CP_MANYBODY_TEST_DATA} --validate ${CP_MANYBODY_TEST_VALIDATE})
+
+  add_test(NAME ${PROJECT_NAME}
+           COMMAND "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${PROJECT_NAME} ${POLGRAW_SEARCH_NETWORK_ROOT}/../../testdata/test-data-network-injection -ident 205 -label J0322+0441 -band 000 -fpo 1391.3 -r ${POLGRAW_SEARCH_NETWORK_ROOT}/../../testdata/range-J0322+0441.txt")
 		
 endif (BUILD_TESTS)
