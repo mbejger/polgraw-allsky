@@ -4,6 +4,9 @@
 // OpenCL includes
 #include <CL/cl.h>
 
+// Standard C includes
+#include <complex.h>    // _Dcomplex
+
 
 #undef COMP_FLOAT
 

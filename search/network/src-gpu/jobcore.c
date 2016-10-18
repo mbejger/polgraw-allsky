@@ -14,7 +14,13 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
-//#include <unistd.h>
+
+#ifdef WIN32
+#include <io.h>             // _chsize_s
+#else
+#include <unistd.h>         // ftruncate
+#endif // WIN32
+
 #include <malloc.h>
 #include <complex.h>
 #include <string.h>         // memcpy_s
@@ -33,7 +39,6 @@
 #include <assert.h>
 #include <floats.h>
 
-// __constant__ double maa_d, mbb_d;  // mean Amplitude modulation functions
 
 void save_array(HOST_COMPLEX_TYPE *arr, int N, const char* file)
 {
@@ -114,7 +119,15 @@ void search(Search_settings* sett,
             {
                 if (opts->checkp_flag)
                 {
+#ifdef WIN32
+                    if (_chsize(state, 0))
+                    {
+                        printf("Failed to resize file");
+                        exit(EXIT_FAILURE);
+                    }
+#else
                     ftruncate(fileno(state), 0);
+#endif // WIN32
                     fprintf(state, "%d %d %d %d %d\n", pm, mm, nn, s_range->sst, *Fnum);
                     fseek(state, 0, SEEK_SET);
                 }
@@ -274,8 +287,7 @@ real_t* job_core(int pm,                        // hemisphere
         * for each detector (in signal sub-struct
         * of _detector, ifo[n].sig.aa, ifo[n].sig.bb)
         */
-        modvir_gpu(sinalt, cosalt, sindelt, cosdelt,
-                   sett->N, &ifo[n], aux, n);
+        modvir_gpu(sinalt, cosalt, sindelt, cosdelt, sett->N, &ifo[n], cl_handles, aux, n);
 
         // Calculate detector positions with respect to baricenter
         nSource[0] = cosalt*cosdelt;
@@ -443,15 +455,15 @@ real_t* job_core(int pm,                        // hemisphere
 
         for (int n = 1; n<sett->nifo; ++n)
         {
-            phase_mod_2(fft_arr->xa_d,
-                        fft_arr->xb_d,
-                        ifo[n].sig.xDatma_d,
-                        ifo[n].sig.xDatmb_d,
-                        het1,
-                        sgnlt[1],
-                        ifo[n].sig.shft_d,
-                        sett->N,
-                        cl_handles);
+            phase_mod_2_gpu(fft_arr->xa_d,
+                            fft_arr->xb_d,
+                            ifo[n].sig.xDatma_d,
+                            ifo[n].sig.xDatmb_d,
+                            het1,
+                            sgnlt[1],
+                            ifo[n].sig.shft_d,
+                            sett->N,
+                            cl_handles);
         }
 
         // initialize arrays to 0. with integer 0
@@ -498,10 +510,13 @@ real_t* job_core(int pm,                        // hemisphere
 
 #else
         if (!(opts->white_flag))  // if the noise is not white noise
-            FStat_gpu_simple(F_d + sett->nmin, sett->nmax - sett->nmin, NAVFSTAT);
+            FStat_gpu_simple(F_d, sett->nfft, NAVFSTAT, cl_handles);
 #endif
 
-        // CudaSafeCall ( cudaMemcpy(F, F_d, 2*sett->nfft*sizeof(FLOAT_TYPE), cudaMemcpyDeviceToHost));
+        cl_int CL_err = CL_SUCCESS;
+
+        CL_err = clEnqueueReadBuffer(cl_handles->read_queues[0], F_d, CL_TRUE, 0, 2 * sett->nfft * sizeof(real_t), F, 0, NULL, NULL);
+
         /*
         FILE *f1 = fopen("fstat-gpu.dat", "w");
         for(i=sett->nmin; i<sett->nmax; i++)
@@ -543,6 +558,7 @@ real_t* job_core(int pm,                        // hemisphere
 #endif 
 
             } // if Fc > trl 
+
         } // for i
 
 
@@ -769,11 +785,11 @@ real_t* blas_dot(cl_mem x,
     scratch_buf[1] = clCreateBuffer(cl_handles->ctx, CL_MEM_READ_WRITE | CL_MEM_ALLOC_HOST_PTR, n * sizeof(real_t), NULL, &CL_err);
 
 #ifdef COMP_FLOAT
-    status[0] = clblasSdotu(n, result_buf, 0, x, 0, 1, x, 0, 1, scratch_buf[0], 1, cl_handles->exec_queues, 0, NULL, &blas_exec[0]);
-    status[0] = clblasSdotu(n, result_buf, 1, x, 0, 1, x, 0, 1, scratch_buf[1], 1, cl_handles->exec_queues, 0, NULL, &blas_exec[1]);
+    status[0] = clblasSdot(n, result_buf, 0, x, 0, 1, x, 0, 1, scratch_buf[0], 1, cl_handles->exec_queues, 0, NULL, &blas_exec[0]);
+    status[0] = clblasSdot(n, result_buf, 1, x, 0, 1, x, 0, 1, scratch_buf[1], 1, cl_handles->exec_queues, 0, NULL, &blas_exec[1]);
 #else
-    status[0] = clblasDdotu(n, result_buf, 0, x, 0, 1, x, 0, 1, scratch_buf[0], 1, cl_handles->exec_queues, 0, NULL, &blas_exec[0]);
-    status[0] = clblasDdotu(n, result_buf, 1, x, 0, 1, x, 0, 1, scratch_buf[1], 1, cl_handles->exec_queues, 0, NULL, &blas_exec[1]);
+    status[0] = clblasDdot(n, result_buf, 0, x, 0, 1, x, 0, 1, scratch_buf[0], 1, cl_handles->exec_queues, 0, NULL, &blas_exec[0]);
+    status[0] = clblasDdot(n, result_buf, 1, x, 0, 1, x, 0, 1, scratch_buf[1], 1, cl_handles->exec_queues, 0, NULL, &blas_exec[1]);
 #endif // COMP_FLOAT
 
     void* res = clEnqueueMapBuffer(cl_handles->read_queues[0], result_buf, CL_TRUE, CL_MAP_READ, 0, 2 * sizeof(real_t), 2, blas_exec, NULL, &CL_err);
@@ -824,6 +840,7 @@ void phase_mod_1_gpu(cl_mem xa,
 
     cl_event exec;
     CL_err = clEnqueueNDRangeKernel(cl_handles->exec_queues[0], cl_handles->kernels[PhaseMod1], 1, NULL, &N, NULL, 0, NULL, &exec);
+    checkErr(CL_err, "clEnqueueNDRangeKernel(PhaseMod1)");
 
     clWaitForEvents(1, &exec);
 
@@ -855,6 +872,7 @@ void phase_mod_2_gpu(cl_mem xa,
 
     cl_event exec;
     CL_err = clEnqueueNDRangeKernel(cl_handles->exec_queues[0], cl_handles->kernels[PhaseMod2], 1, 0, &N, NULL, 0, NULL, &exec);
+    checkErr(CL_err, "clEnqueueNDRangeKernel(PhaseMod2)");
 
     clWaitForEvents(1, &exec);
 
@@ -884,6 +902,7 @@ void compute_Fstat_gpu(cl_mem xa,
 
     cl_event exec;
     CL_err = clEnqueueNDRangeKernel(cl_handles->exec_queues[0], cl_handles->kernels[ComputeFStat], 1, &nmin, &N, NULL, 0, NULL, &exec);
+    checkErr(CL_err, "clEnqueueNDRangeKernel(ComputeFStat)");
 
     clWaitForEvents(1, &exec);
 
@@ -893,31 +912,39 @@ void compute_Fstat_gpu(cl_mem xa,
 /// <summary>Compute F-statistics.</summary>
 ///
 void FStat_gpu_simple(cl_mem F_d,
-    cl_int nfft,
-    cl_int nav,
+    cl_uint nfft,
+    cl_uint nav,
     OpenCL_handles* cl_handles)
 {
     cl_int CL_err = CL_SUCCESS;
-    cl_int N = nfft / nav;
+    cl_uint N = nfft / nav;
+    size_t max_wgs;             // maximum supported wgs on the device (limited by register count)
+    cl_ulong local_size;        // local memory size in bytes
+    cl_uint ssi;                // shared size in num gentypes
+
+    CL_err = clGetKernelWorkGroupInfo(cl_handles->kernels[FStatSimple], cl_handles->devs[0], CL_KERNEL_WORK_GROUP_SIZE, sizeof(size_t), &max_wgs, NULL);
+    checkErr(CL_err, "clGetKernelWorkGroupInfo(FStatSimple, CL_KERNEL_WORK_GROUP_SIZE)");
+
+    CL_err = clGetDeviceInfo(cl_handles->devs[0], CL_DEVICE_LOCAL_MEM_SIZE, sizeof(cl_ulong), &local_size, NULL);
+    checkErr(CL_err, "clGetDeviceInfo(FStatSimple, CL_DEVICE_LOCAL_MEM_SIZE)");
+
+    // How long is the array of local memory
+    ssi = local_size / sizeof(real_t);
 
     clSetKernelArg(cl_handles->kernels[FStatSimple], 0, sizeof(cl_mem), &F_d);
-    clSetKernelArg(cl_handles->kernels[FStatSimple], 1, sizeof(cl_int), &nav);
+    clSetKernelArg(cl_handles->kernels[FStatSimple], 1, ssi * sizeof(real_t), NULL);
+    clSetKernelArg(cl_handles->kernels[FStatSimple], 2, sizeof(cl_uint), &ssi);
+    clSetKernelArg(cl_handles->kernels[FStatSimple], 3, sizeof(cl_uint), &nav);
+
+    size_t gsi = N;
 
     cl_event exec;
-    CL_err = clEnqueueNDRangeKernel(cl_handles->exec_queues[0], cl_handles->kernels[FStatSimple], 1, NULL, &N, NULL, 0, NULL, &exec);
+    CL_err = clEnqueueNDRangeKernel(cl_handles->exec_queues[0], cl_handles->kernels[FStatSimple], 1, NULL, &gsi, &max_wgs, 0, NULL, &exec);
+    checkErr(CL_err, "clEnqueueNDRangeKernel(FStatSimple)");
 
     clWaitForEvents(1, &exec);
 
     clReleaseEvent(exec);
-}
-
-/* just simple patch - to be replaced */
-void FStat_gpu_simple(FLOAT_TYPE *F_d, int nfft, int nav) {
-  
-  int blocks = nfft/nav;
-  fstat_norm_simple<<<blocks, 1>>>(F_d, nav);
-  CudaCheckError();
-
 }
 
 #ifdef GPUFSTAT

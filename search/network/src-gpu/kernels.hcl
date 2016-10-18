@@ -113,9 +113,14 @@ __kernel void compute_Fstat(__global complex_t* xa,
                             int N);
 
 /// <summary>Compute F-statistics.</summary>
+/// <precondition>ssi less than or equal to nav</precondition>
+/// <precondition>lsi less than or equal to ssi</precondition>
+/// <precondition>lsi be an integer power of 2</precondition>
 /// 
-__kernel void fstat_norm_simple(real_t* F_d,
-                                int nav);
+__kernel void fstat_norm_simple(__global real_t* F,
+                                __local real_t* shared,
+                                unsigned int ssi,
+                                unsigned int nav);
 
 //__global__ void fstat_norm(FLOAT_TYPE *F, FLOAT_TYPE *mu, int N, int nav);
 

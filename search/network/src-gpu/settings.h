@@ -7,7 +7,7 @@
 
 #define NPAR 5 		/* no. of trigger parameters */
 
-#define INT 1		/* simplest interpolation */
+//#define INT 1		/* simplest interpolation */
 #define FFT 2		/* refined (fft) interpolation */
 
 #define NAV 4096    /* to define nmin and nmax on the edges; multiplied by B=0.5/dt */   

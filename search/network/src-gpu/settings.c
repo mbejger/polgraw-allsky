@@ -305,5 +305,3 @@ void rogcvir(Detector_settings* ifoi)
   ifoi->amod.c9 = .5*sin(2.*ifoi->egam)*sin(2.*ifoi->ephi);
 
 } // rogcvir
-
-#endif

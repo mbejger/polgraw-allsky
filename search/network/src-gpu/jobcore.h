@@ -152,8 +152,8 @@ void compute_Fstat_gpu(cl_mem xa,
 /// <summary>Compute F-statistics.</summary>
 ///
 void FStat_gpu_simple(cl_mem F_d,
-                      cl_int nfft,
-                      cl_int nav,
+                      cl_uint nfft,
+                      cl_uint nav,
                       OpenCL_handles* cl_handles);
 
 /// <summary>Saves the designated array into a file with the specified name.</summary>

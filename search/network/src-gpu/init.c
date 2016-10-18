@@ -350,12 +350,11 @@ cl_device_id* select_devices(cl_platform_id platform,
     return result;
 }
 
-/// <summary>Create a contet that holds all specified devices.</summary>
+/// <summary>Create a contxet that holds all specified devices.</summary>
 ///
 cl_context create_standard_context(cl_device_id* devices, cl_uint count)
 {
     cl_int CL_err = CL_SUCCESS;
-    cl_uint count = 0;
     cl_context result = NULL;
     cl_platform_id platform = NULL;
 
@@ -1051,47 +1050,46 @@ void read_checkpoints(Command_line_opts *opts,
 
 } // end reading checkpoints
 
+/// <summary>Frees all resources for termination.</summary>
+///
+void cleanup(Search_settings *sett,
+             Command_line_opts *opts,
+             Search_range *s_range,
+             OpenCL_handles* cl_handles,
+             BLAS_handles* blas_handles,
+             FFT_plans *plans,
+             FFT_arrays *fft_arr,
+             Aux_arrays *aux,
+             cl_mem F_d)
+{
+    for (int i = 0; i<sett->nifo; i++)
+    {
+        free(ifo[i].sig.xDat);
+        free(ifo[i].sig.DetSSB);
 
-   /* Cleanup & memory free */
+        clReleaseMemObject(ifo[i].sig.xDatma_d);
+        clReleaseMemObject(ifo[i].sig.xDatmb_d);
 
-void cleanup(
-	     Search_settings *sett,
-	     Command_line_opts *opts,
-	     Search_range *s_range,
-	     FFT_plans *plans,
-	     FFT_arrays *fft_arr,
-	     Aux_arrays *aux,
-	     double *F_d) {
+        clReleaseMemObject(ifo[i].sig.aa_d);
+        clReleaseMemObject(ifo[i].sig.bb_d);
 
-  int i; 
-  
-  for(i=0; i<sett->nifo; i++) {
-    //CudaSafeCall( cudaFreeHost(ifo[i].sig.xDat) );
-    //CudaSafeCall( cudaFreeHost(ifo[i].sig.DetSSB) );
-    //
-    //CudaSafeCall( cudaFree(ifo[i].sig.xDatma_d) );
-    //CudaSafeCall( cudaFree(ifo[i].sig.xDatmb_d) );
-    //
-    //CudaSafeCall( cudaFree(ifo[i].sig.aa_d) );
-    //CudaSafeCall( cudaFree(ifo[i].sig.bb_d) );
-    //
-    //CudaSafeCall( cudaFree(ifo[i].sig.shft_d) );
-    //CudaSafeCall( cudaFree(ifo[i].sig.shftf_d) );
-  } 
+        clReleaseMemObject(ifo[i].sig.shft_d);
+        clReleaseMemObject(ifo[i].sig.shftf_d);
+    }
 
-  //CudaSafeCall( cudaFree(aux->cosmodf_d) );
-  //CudaSafeCall( cudaFree(aux->sinmodf_d) );
-  //CudaSafeCall( cudaFree(aux->t2_d) );
-  //
-  //CudaSafeCall( cudaFree(F_d) );
-  //
-  //CudaSafeCall( cudaFree(fft_arr->xa_d) );
+    clReleaseMemObject(aux->cosmodf_d);
+    clReleaseMemObject(aux->sinmodf_d);
+    clReleaseMemObject(aux->t2_d);
 
-  free(sett->M);
+    clReleaseMemObject(F_d);
 
-  //cufftDestroy(plans->plan);
-  //cufftDestroy(plans->pl_int);
-  //cufftDestroy(plans->pl_inv);
+    clReleaseMemObject(fft_arr->xa_d);
+
+    free(sett->M);
+
+    clfftDestroyPlan(plans->plan);
+    clfftDestroyPlan(plans->pl_int);
+    clfftDestroyPlan(plans->pl_inv);
 
 } // end of cleanup & memory free 
 

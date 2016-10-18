@@ -61,7 +61,7 @@ int main (int argc, char* argv[])
     handle_opts(&sett, &cl_sett, &opts, argc, argv);
 
     // Initialize OpenCL
-    init_opencl(&cl_handles, &opts);
+    init_opencl(&cl_handles, &cl_sett);
 
     // Setup output buffer
     setup_output(&buffer, &opts);
@@ -95,9 +95,7 @@ int main (int argc, char* argv[])
     read_checkpoints(&opts, &s_range, &Fnum);
 
     // main search job
-    search(&sett, &opts, &s_range,
-        &fft_plans, &fft_arr, &aux_arr,
-        &Fnum, F_d);
+    search(&sett, &opts, &s_range, &cl_handles, &blas_handles, &fft_plans, &fft_arr, &aux_arr, &Fnum, F_d);
 
     // state file zeroed at the end of the run
     FILE *state;
@@ -109,7 +107,7 @@ int main (int argc, char* argv[])
     }
 
     // Cleanup & memory free 
-    cleanup(&sett, &opts, &s_range,
+    cleanup(&sett, &opts, &s_range, &cl_handles, &blas_handles,
         &fft_plans, &fft_arr, &aux_arr, F_d);
 
     return EXIT_SUCCESS;

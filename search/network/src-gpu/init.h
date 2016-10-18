@@ -34,7 +34,7 @@ cl_device_id* select_devices(cl_platform_id platform,
                              cl_device_type dev_type,
                              cl_uint* count);
 
-/// <summary>Create a contet that holds all specified devices.</summary>
+/// <summary>Create a context that holds all specified devices.</summary>
 ///
 cl_context create_standard_context(cl_device_id* devices,
                                    cl_uint count);
@@ -108,14 +108,17 @@ void read_checkpoints(
 		      Search_range *s_range,
 		      int *Fnum);
 
-void cleanup(
-	     Search_settings *sett,
-	     Command_line_opts *opts,
-	     Search_range *s_range,
-	     FFT_plans *plans,
-	     FFT_arrays *fft_arr,
-	     Aux_arrays *aux,
-	     double *F);
+/// <summary>Frees all resources for termination.</summary>
+///
+void cleanup(Search_settings *sett,
+	         Command_line_opts *opts,
+	         Search_range *s_range,
+             OpenCL_handles* cl_handles,
+             BLAS_handles* blas_handles,
+	         FFT_plans *plans,
+	         FFT_arrays *fft_arr,
+	         Aux_arrays *aux,
+	         cl_mem F_d);
 
 // Coincidences specific functions 
 void handle_opts_coinc(

@@ -291,21 +291,58 @@ __kernel void compute_Fstat(__global complex_t* xa,
 //
 
 /// <summary>Compute F-statistics.</summary>
+/// <precondition>ssi less than or equal to nav</precondition>
+/// <precondition>lsi less than or equal to ssi</precondition>
+/// <precondition>lsi be an integer power of 2</precondition>
 /// 
-__kernel void fstat_norm_simple(real_t* F_d,
-                                int nav)
+__kernel void fstat_norm_simple(__global real_t* F,
+                                __local real_t* shared,
+                                unsigned int ssi,
+                                unsigned int nav)
 {
-    real_t* fr = F_d + blockIdx.x*nav;
-    real_t mu = 0;
+    size_t gid = get_global_id(0),
+           lid = get_local_id(0),
+           gsi = get_global_size(0),
+           lsi = get_local_size(0),
+           grp = get_group_id(0);
 
-    for (int i = 0; i < nav; ++i)
-        mu += *fr++;
+    // Outer pass responsible for handling nav potentially being larger than what shared can hold
+    //
+    // NOTE: note 'P' starting from 0. Unlike the inner pass loop, this HAS to execute at least once.
+    for (size_t P = 0; P < nav / ssi; ++P)
+    {
+        event_t copy = async_workgroup_copy(shared,
+                                            F + grp * nav + P * ssi,
+                                            ssi,
+                                            NULL);
+        wait_group_events(1, &copy);
 
-    mu /= 2 * nav;
-    fr = F_d + blockIdx.x*nav;
+        // Inner pass responsible for handling ssi potentially having more elements than lsi has threads
+        //
+        // NOTE: note 'p' starting from one. This is to handle the case where lsi == ssi, and no
+        //       multi-pass needs to be done.
+        for (size_t p = 1; p < ssi / lsi; ++p)
+        {
+            shared[lid] += shared[p * lsi + lid];
 
-    for (int i = 0; i < nav; ++i)
-        *fr++ /= mu;
+            barrier(CLK_LOCAL_MEM_FENCE);
+        }
+
+        // Divide and conquer inside the work-group
+        for (size_t mid = lsi / 2; mid != 1; mid /= 2)
+        {
+            if (lid < mid) shared[lid] += shared[mid + lid];
+
+            barrier(CLK_LOCAL_MEM_FENCE);
+        }
+    }
+
+    real_t mu = shared[0] / (2 * nav);
+
+    for (size_t P = 0; P < nav / lsi; ++P)
+    {
+        F[grp * nav + P * lsi + lid] /= mu;
+    }
 }
 
 //
