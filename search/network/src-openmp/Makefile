@@ -1,4 +1,4 @@
-TARGET = gwsearch-cpu-omp-sb-fftw335-6d
+TARGET = gwsearch-cpu-omp-haswell-fftw335-6d
 
 VER := $(shell git rev-parse HEAD)
 
@@ -7,16 +7,18 @@ VER := $(shell git rev-parse HEAD)
 FFTW_DIR = /opt/fftw/3.3.5/gnu-omp-devtoolset3
 SINCOS =  YEPPP #YEPPP or SLEEF or GNUSINCOS or NOSINCOS
 
-CC = gcc -std=gnu11 -fopenmp
+CC = gcc -std=gnu11 -static-libgcc -fopenmp
 
 # pre-processor flags: TIMERS, VERBOSE (rich stdout output)
-CFLAGS = -DPREFIX="./candidates" -DCODEVER=$(VER) -DTIMERS=1 -D$(SINCOS) #-DVERBOSE 
+CFLAGS = -DPREFIX="./candidates" -DCODEVER=$(VER) -DTIMERS=1 -D$(SINCOS) -UUSE_LOCKING #-DVERBOSE 
 CFLAGS += -I$(FFTW_DIR)/include 
 CFLAGS += -g -Wall -Wno-unused -fno-omit-frame-pointer \
-	  -O3 -ffast-math -funsafe-loop-optimizations -funroll-loops \
-	  -march=sandybridge  -mavx -mtune=sandybridge
-#	  -march=haswell -mtune=haswell -mavx2 -mfma
+	  -O3 -funsafe-loop-optimizations -funroll-loops \
+	  -march=haswell -mtune=haswell -mavx2 -mfma \
+	  -ffast-math
 #
+# 	  -march=sandybridge  -mavx -mtune=sandybridge
+#	  -march=haswell -mtune=haswell -mavx2 -mfma
 #sandy-bridge (psk)
 #	-march=corei7-avx -mtune=corei7-avx -mavx
 #westmere (plgrid)
@@ -26,7 +28,7 @@ LDFLAGS = -L$(FFTW_DIR)/lib
 
 LDLIBS = -Wl,--dynamic-linker=/lib64/ld-linux-x86-64.so.2 \
 	 -static -lfftw3 -lgsl -lgslcblas -lfftw3_omp \
-	 -Wl,-Bdynamic -lc -lrt -lm
+	 -Wl,-Bdynamic -lc -lm -lrt
 
 ifeq ($(strip $(SINCOS)),SLEEF)
 SPATH = lib/sleef-2.80/simd

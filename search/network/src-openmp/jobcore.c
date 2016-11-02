@@ -131,12 +131,13 @@ void search(
 	    return;
 	  }
 
+#ifdef USE_LOCKING
 	  lck.l_type = F_WRLCK;
 	  lck.l_whence = 0;
 	  lck.l_start = 0L;
 	  lck.l_len = 0L;
-	  
           if (fcntl (fd, F_SETLKW, &lck) < 0) perror ("fcntl()");
+#endif
           write(fd, (void *)(sgnlv), sgnlc*NPAR*sizeof(FLOAT_TYPE));
           if (close(fd) < 0) perror ("close()");
 	  sgnlc=0;
@@ -155,12 +156,13 @@ void search(
       return; 
     }
 
+#ifdef USE_LOCKING
     lck.l_type = F_WRLCK;
     lck.l_whence = 0;
     lck.l_start = 0L;
     lck.l_len = 0L;
-    
     if (fcntl (fd, F_SETLKW, &lck) < 0) perror ("fcntl()");
+#endif
     write(fd, (void *)(sgnlv), sgnlc*NPAR*sizeof(FLOAT_TYPE));
     if (close(fd) < 0) perror ("close()");
     sgnlc=0; 
