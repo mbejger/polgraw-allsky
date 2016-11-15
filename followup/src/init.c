@@ -345,7 +345,7 @@ void init_arrays(
 
   for(i=0; i<sett->nifo; i++) { 
 	  ifo[i].sig.xDat = (double *) calloc(sett->N, sizeof(double));
-	  if(!opts->gauss){	    
+	  if(!opts->gauss_flag){	    
 	    // Input time-domain data handling
 	    // 
 	    // The file name ifo[i].xdatname is constructed 
