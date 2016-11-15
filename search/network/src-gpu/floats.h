@@ -2,7 +2,7 @@
 #define __FLOATS_H__
 
 // OpenCL includes
-#include <CL/cl.h>
+#include <CL/cl.h>      // cl_float, cl_double
 
 // Standard C includes
 #include <complex.h>    // _Dcomplex
@@ -28,6 +28,7 @@ typedef cl_double2 complex_devt;
 typedef _Dcomplex complex_t;
 #define HOST_COMPLEX_TYPE _Dcomplex
 #else
+typedef complex double complex_t;
 #define HOST_COMPLEX_TYPE complex double
 #endif // WIN32
 #endif

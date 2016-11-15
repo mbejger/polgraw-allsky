@@ -159,7 +159,7 @@ void handle_opts(Search_settings* sett,
       opts->trl = atof(optarg);
       break;
     case 'h':
-      opts->hemi = atof(optarg);
+      opts->hemi = (int)atof(optarg); // WARNING: Why atof when assigning to int?
       break;
     case 'b':
       opts->band = atoi(optarg);
@@ -270,10 +270,10 @@ void handle_opts(Search_settings* sett,
 void init_opencl(OpenCL_handles* cl_handles,
                  OpenCL_settings* cl_sett)
 {
-    cl_handles->plat = select_platform(cl_sett->plat_id);
+    cl_handles->plat = select_platform(/*cl_sett->plat_id*/ 0);
 
     cl_handles->devs = select_devices(cl_handles->plat,
-                                      cl_sett->dev_type,
+                                      /*cl_sett->dev_type*/ CL_DEVICE_TYPE_GPU,
                                       &cl_handles->dev_count);
 
     cl_handles->ctx = create_standard_context(cl_handles->devs,
@@ -283,7 +283,7 @@ void init_opencl(OpenCL_handles* cl_handles,
     cl_handles->exec_queues  = create_command_queue_set(cl_handles->ctx);
     cl_handles->read_queues  = create_command_queue_set(cl_handles->ctx);
 
-    const char* source = load_program_file(NULL);
+    char* source = load_program_file("./kernels.cl");
 
     cl_handles->prog = build_program_source(cl_handles->ctx, source);
 
@@ -382,7 +382,9 @@ cl_command_queue* create_command_queue_set(cl_context context)
     CL_err = clGetContextInfo(context, CL_CONTEXT_NUM_DEVICES, sizeof(cl_uint), &count, NULL);
     checkErr(CL_err, "clGetContextInfo(CL_CONTEXT_NUM_DEVICES)");
 
-    CL_err = clGetContextInfo(context, CL_CONTEXT_DEVICES, sizeof(cl_device_id*), devices, NULL);
+    devices = (cl_device_id*)malloc(count * sizeof(cl_device_id));
+
+    CL_err = clGetContextInfo(context, CL_CONTEXT_DEVICES, count * sizeof(cl_device_id), devices, NULL);
     checkErr(CL_err, "clGetContextInfo(CL_CONTEXT_DEVICES)");
 
     result = (cl_command_queue*)malloc(count * sizeof(cl_command_queue));
@@ -480,7 +482,7 @@ cl_program build_program_source(cl_context context,
     checkErr(CL_err, "clGetContextInfo(CL_CONTEXT_DEVICES)");
 
     // Warnings will be treated like errors, this is useful for debug
-    char build_params[] = { "-Werror" };
+    char build_params[] = { "-Werror -I./" };
     CL_err = clBuildProgram(result, numDevices, devices, build_params, NULL, NULL);
 
     if (CL_err != CL_SUCCESS)
@@ -499,7 +501,7 @@ cl_program build_program_source(cl_context context,
 
         free(buffer);
 
-        exit(CL_err);
+        checkErr(-111, "clBuildProgram");
     }
 
     return result;
@@ -514,7 +516,7 @@ cl_kernel* create_kernels(cl_program program)
     cl_kernel* result = (cl_kernel*)malloc(kernel_count * sizeof(cl_kernel));
 
     for (cl_uint i = 0; i < kernel_count; ++i)
-        result = obtain_kernel(program, i);
+        result[i] = obtain_kernel(program, i);
 
     return result;
 }
@@ -600,7 +602,8 @@ void init_arrays(Search_settings* sett,
                  cl_mem* F_d)
 {
     cl_int CL_err = CL_SUCCESS;
-    int i, status;
+    int i;
+    size_t status;
 
     // Allocates and initializes to zero the data, detector ephemeris
     // and the F-statistic arrays
@@ -818,10 +821,10 @@ void init_arrays(Search_settings* sett,
     checkErr(CL_err, "clCreateBuffer(aux_arr->ifo_amod_d)");
 
     init_spline_matrices(cl_handles,
-                         &aux_arr->diag_d,
-                         &aux_arr->ldiag_d,
-                         &aux_arr->udiag_d,
-                         &aux_arr->B_d,
+                         aux_arr->diag_d,
+                         aux_arr->ldiag_d,
+                         aux_arr->udiag_d,
+                         aux_arr->B_d,
                          sett->Ninterp);
 
     CL_err = clSetKernelArg(cl_handles->kernels[ComputeSinCosModF], 0, sizeof(cl_mem), &aux_arr->sinmodf_d);
@@ -834,11 +837,13 @@ void init_arrays(Search_settings* sett,
     checkErr(CL_err, "clSetKernelArg(3)");
 
     cl_event exec;
+    size_t size_N = (size_t)sett->N; // Variable so pointer can be given to API
+
     CL_err = clEnqueueNDRangeKernel(cl_handles->exec_queues[0],
                                     cl_handles->kernels[ComputeSinCosModF],
                                     1,
                                     NULL,
-                                    &sett->N,
+                                    &size_N,
                                     NULL,
                                     0,
                                     NULL,
@@ -1084,9 +1089,9 @@ void cleanup(Search_settings *sett,
 
     free(sett->M);
 
-    clfftDestroyPlan(plans->plan);
-    clfftDestroyPlan(plans->pl_int);
-    clfftDestroyPlan(plans->pl_inv);
+    clfftDestroyPlan(&plans->plan);
+    clfftDestroyPlan(&plans->pl_int);
+    clfftDestroyPlan(&plans->pl_inv);
 
 } // end of cleanup & memory free 
 
@@ -1192,7 +1197,7 @@ void handle_opts_coinc(Search_settings *sett,
       sett->fpo = atof(optarg);
       break;
     case 's': // Cell shifts 
-      opts->shift = atof(optarg);
+      opts->shift = (int)atof(optarg); // WARNING: Why atof when assigning to int?
       break;
     case 'z': // Cell scaling   
       opts->scale = atoi(optarg);

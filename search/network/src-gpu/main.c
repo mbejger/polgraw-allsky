@@ -103,10 +103,18 @@ int main (int argc, char* argv[])
 
     // state file zeroed at the end of the run
     FILE *state;
-    if (opts.checkp_flag) {
+    if (opts.checkp_flag)
+    {
+#ifdef __STDC_LIB_EXT1__
         errno_t err = fopen_s(&state, opts.qname, "w");
         if (err)
             perror("Error zeroing out state file.");
+#else
+        state = fopen(opts.qname, "w");
+        if (state == NULL)
+            perror("Error zeroing out state file.");
+#endif // __STDC_LIB_EXT1__
+        
         fclose(state);
     }
 

@@ -7,6 +7,9 @@
 // Polgraw includes
 #include <struct.h>
 
+// Posix includes
+#include <sys/stat.h>
+
 // ISO C includes
 #include <math.h>
 

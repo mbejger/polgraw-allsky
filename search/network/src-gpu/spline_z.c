@@ -1,4 +1,5 @@
 // Polgraw includes
+#include <CL/util.h>        // checkErr
 #include <spline_z.h>
 
 // Standard C includes
@@ -144,7 +145,9 @@ void computeB_gpu(cl_mem y,
     clSetKernelArg(cl_handles->kernels[ComputeB], 2, sizeof(cl_int), &N);
 
     cl_event exec;
-    CL_err = clEnqueueNDRangeKernel(cl_handles->exec_queues[0], cl_handles->kernels[ComputeB], 1, NULL, &N, NULL, 0, NULL, &exec);
+    size_t size_N = (size_t)N; // Helper variable to make pointer types match. Cast to silence warning
+
+    CL_err = clEnqueueNDRangeKernel(cl_handles->exec_queues[0], cl_handles->kernels[ComputeB], 1, NULL, &size_N, NULL, 0, NULL, &exec);
 
     clWaitForEvents(1, &exec);
 
@@ -171,7 +174,9 @@ void tridiagMul_gpu(cl_mem dl,
     clSetKernelArg(cl_handles->kernels[TriDiagMul], 4, sizeof(cl_mem), &y);
 
     cl_event events[2];
-    CL_err = clEnqueueNDRangeKernel(cl_handles->exec_queues[0], cl_handles->kernels[TriDiagMul], 1, NULL, &length, NULL, 0, NULL, &events[0]);
+    size_t size_length = (size_t)length; // Helper variable to make pointer types match. Cast to silence warning
+
+    CL_err = clEnqueueNDRangeKernel(cl_handles->exec_queues[0], cl_handles->kernels[TriDiagMul], 1, NULL, &size_length, NULL, 0, NULL, &events[0]);
     CL_err = clEnqueueCopyBuffer(cl_handles->write_queues[0], y, x, 0, 0, length * sizeof(complex_t), 1, &events[0], &events[1]);
 
     clWaitForEvents(2, events);
@@ -200,7 +205,8 @@ void interpolate_gpu(cl_mem new_x,
     clSetKernelArg(cl_handles->kernels[Interpolate], 5, sizeof(cl_int), &new_N);
 
     cl_event exec;
-    CL_err = clEnqueueNDRangeKernel(cl_handles->exec_queues[0], cl_handles->kernels[Interpolate], 1, NULL, &new_N, NULL, 0, NULL, &exec);
+    size_t size_new_N = (size_t)new_N; // Helper variable to make pointer types match. Cast to silence warning
+    CL_err = clEnqueueNDRangeKernel(cl_handles->exec_queues[0], cl_handles->kernels[Interpolate], 1, NULL, &size_new_N, NULL, 0, NULL, &exec);
 
     clWaitForEvents(1, &exec);
 

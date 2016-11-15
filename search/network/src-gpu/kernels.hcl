@@ -3,6 +3,14 @@
 
 #include <floats.hcl>
 
+/// <summar>Amplitude modulation function coefficients</summary>
+///
+typedef struct _ampl_mod_coeff
+{
+    real_t c1, c2, c3, c4, c5, c6, c7, c8, c9;
+
+} Ampl_mod_coeff;
+
 
 /// <summary>The purpose of this function was undocumented.</summary>
 ///
@@ -43,8 +51,8 @@ __kernel void tshift_pmod_kern(real_t shft1,
 
 /// <summary>Shifts frequencies and remove those over Nyquist.</summary>
 ///
-__kernel void resample_postfft(complex_t *xa_d,
-                               complex_t *xb_d,
+__kernel void resample_postfft(__global complex_t *xa_d,
+                               __global complex_t *xb_d,
                                int nfft,
                                int Ninterp,
                                int nyqst);

@@ -83,8 +83,8 @@ __kernel void tshift_pmod_kern(real_t shft1,
 
 /// <summary>Shifts frequencies and remove those over Nyquist.</summary>
 ///
-__kernel void resample_postfft(complex_t *xa_d,
-                               complex_t *xb_d,
+__kernel void resample_postfft(__global complex_t *xa_d,
+                               __global complex_t *xb_d,
                                int nfft,
                                int Ninterp,
                                int nyqst)
@@ -311,10 +311,11 @@ __kernel void fstat_norm_simple(__global real_t* F,
     // NOTE: note 'P' starting from 0. Unlike the inner pass loop, this HAS to execute at least once.
     for (size_t P = 0; P < nav / ssi; ++P)
     {
-        event_t copy = async_workgroup_copy(shared,
-                                            F + grp * nav + P * ssi,
-                                            ssi,
-                                            NULL);
+        event_t copy;
+        async_work_group_copy(shared,
+                              F + grp * nav + P * ssi,
+                              ssi,
+                              copy);
         wait_group_events(1, &copy);
 
         // Inner pass responsible for handling ssi potentially having more elements than lsi has threads

@@ -7,12 +7,19 @@
 #include <settings.h>
 #include <auxi.h>
 
+// Posix includes
+#ifdef WIN32
+#include <direct.h>
+#include <posix/dirent.h>
+#else
+#include <dirent.h>
+#endif // WIN32
+
 // Standard C includes
 #include <math.h>
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <dirent.h>
 
 
 /// <summary>Create directory for disk output.</summary>
@@ -101,8 +108,9 @@ void search_settings(Search_settings* sett)
     // The value of sett->fftpad (zero padding - original grids: 2, new grids: 1) 
     // is read from the grid.bin file in read_grid() (see init.c) 
 
-    sett->nmin = sett->fftpad*NAV*sett->B;
-    sett->nmax = (sett->nfft / 2 - NAV*sett->B)*sett->fftpad;
+    // Explicit casts silence warning, cast is safe and intended
+    sett->nmin = (int)(sett->fftpad*NAV*sett->B);
+    sett->nmax = (int)((sett->nfft / 2 - NAV*sett->B)*sett->fftpad);
 
     // initial value of number of known instrumental lines in band 
     sett->numlines_band = 0;

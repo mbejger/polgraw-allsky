@@ -162,7 +162,7 @@ typedef struct _aux_arrays {
 // Search settings //
 typedef struct _search_settings {
 
-  double fpo,    // Band frequency
+  real_t fpo,    // Band frequency
          dt,     // Sampling time
          B,      // Bandwidth
          oms,    // Dimensionless angular frequency (fpo)

@@ -84,7 +84,9 @@ void search(Search_settings* sett,
     FLOAT_TYPE *sgnlv;    // array with candidates data
 
     char outname[512];
-    int fd;
+#ifdef WIN32
+    int low_state;
+#endif // WIN32
     FILE *state;
 
 #if TIMERS>0
@@ -105,7 +107,18 @@ void search(Search_settings* sett,
 
     state = NULL;
     if (opts->checkp_flag)
+#ifdef WIN32
+    {
+        _sopen_s(&low_state, opts->qname,
+            _O_RDWR | _O_CREAT,   // Allowed operations
+            _SH_DENYNO,           // Allowed sharing
+            _S_IREAD | _S_IWRITE);// Permission settings
+
+        state = _fdopen(low_state, "w");
+    }
+#else
         state = fopen(opts->qname, "w");
+#endif // WIN32
 
     // Loop over hemispheres //
     for (pm = s_range->pst; pm <= s_range->pmr[1]; ++pm)
@@ -125,13 +138,17 @@ void search(Search_settings* sett,
                 if (opts->checkp_flag)
                 {
 #ifdef WIN32
-                    if (_chsize(state, 0))
+                    if (_chsize(low_state, 0))
                     {
                         printf("Failed to resize file");
                         exit(EXIT_FAILURE);
                     }
 #else
-                    ftruncate(fileno(state), 0);
+                    if (ftruncate(fileno(state), 0))
+                    {
+                        printf("Failed to resize file");
+                        exit(EXIT_FAILURE);
+                    }
 #endif // WIN32
                     fprintf(state, "%d %d %d %d %d\n", pm, mm, nn, s_range->sst, *Fnum);
                     fseek(state, 0, SEEK_SET);
@@ -267,8 +284,8 @@ real_t* job_core(int pm,                        // hemisphere
     if ((sqr(al1) + sqr(al2)) / sqr(sett->oms) > 1.) return NULL;
 
     int ss;
-    real_t shft1, phase, cp, sp;
-    complex_t exph;
+    real_t shft1/*, phase, cp, sp*/; // Unused variables
+    // complex_t exph; // Unused variable
 
     // Change linear (grid) coordinates to real coordinates
     lin2ast(al1 / sett->oms, al2 / sett->oms,
@@ -299,9 +316,9 @@ real_t* job_core(int pm,                        // hemisphere
         nSource[1] = sinalt*cosdelt;
         nSource[2] = sindelt;
 
-        shft1 = nSource[0] * ifo[n].sig.DetSSB[0]
-            + nSource[1] * ifo[n].sig.DetSSB[1]
-            + nSource[2] * ifo[n].sig.DetSSB[2];
+        shft1 = nSource[0] * ifo[n].sig.DetSSB[0] +
+                nSource[1] * ifo[n].sig.DetSSB[1] +
+                nSource[2] * ifo[n].sig.DetSSB[2];
 
         tshift_pmod_gpu(shft1, het0, nSource[0], nSource[1], nSource[2],
                         ifo[n].sig.xDat_d, fft_arr->xa_d, fft_arr->xb_d,
@@ -312,8 +329,8 @@ real_t* job_core(int pm,                        // hemisphere
                         sett->oms, sett->N, sett->nfft, sett->interpftpad, cl_handles);
 
         cl_event fft_exec[2];
-        clfftEnqueueTransform(plans->pl_int, CLFFT_FORWARD, 1, cl_handles->exec_queues, 0, NULL, &fft_exec[0], fft_arr->xa_d, NULL, NULL /*May be slow, consider using tmp_buffer*/);
-        clfftEnqueueTransform(plans->pl_int, CLFFT_FORWARD, 1, cl_handles->exec_queues, 0, NULL, &fft_exec[1], fft_arr->xb_d, NULL, NULL /*May be slow, consider using tmp_buffer*/);
+        clfftEnqueueTransform(plans->pl_int, CLFFT_FORWARD, 1, cl_handles->exec_queues, 0, NULL, &fft_exec[0], &fft_arr->xa_d, NULL, NULL /*May be slow, consider using tmp_buffer*/);
+        clfftEnqueueTransform(plans->pl_int, CLFFT_FORWARD, 1, cl_handles->exec_queues, 0, NULL, &fft_exec[1], &fft_arr->xb_d, NULL, NULL /*May be slow, consider using tmp_buffer*/);
 
         clWaitForEvents(2, fft_exec);
 
@@ -325,8 +342,8 @@ real_t* job_core(int pm,                        // hemisphere
                              cl_handles);
 
         // Backward fft (len Ninterp = nfft*interpftpad)
-        clfftEnqueueTransform(plans->pl_inv, CLFFT_BACKWARD, 1, cl_handles->exec_queues, 0, NULL, &fft_exec[0], fft_arr->xa_d, NULL, NULL /*May be slow, consider using tmp_buffer*/);
-        clfftEnqueueTransform(plans->pl_inv, CLFFT_BACKWARD, 1, cl_handles->exec_queues, 0, NULL, &fft_exec[1], fft_arr->xb_d, NULL, NULL /*May be slow, consider using tmp_buffer*/);
+        clfftEnqueueTransform(plans->pl_inv, CLFFT_BACKWARD, 1, cl_handles->exec_queues, 0, NULL, &fft_exec[0], &fft_arr->xa_d, NULL, NULL /*May be slow, consider using tmp_buffer*/);
+        clfftEnqueueTransform(plans->pl_inv, CLFFT_BACKWARD, 1, cl_handles->exec_queues, 0, NULL, &fft_exec[1], &fft_arr->xb_d, NULL, NULL /*May be slow, consider using tmp_buffer*/);
 
         clWaitForEvents(2, fft_exec);
         for (size_t i = 0; i < 2; ++i) clReleaseEvent(fft_exec[i]);
@@ -411,8 +428,8 @@ real_t* job_core(int pm,                        // hemisphere
     if (!strcmp(opts->addsig, "") && !strcmp(opts->range, "")) {
 
         // Spindown range defined using Smin and Smax (settings.c)  
-        smin = trunc((sett->Smin - nn*sett->M[9] - mm*sett->M[13]) / sett->M[5]);
-        smax = trunc(-(nn*sett->M[9] + mm*sett->M[13] + sett->Smax) / sett->M[5]);
+        smin = (int)trunc((sett->Smin - nn*sett->M[9] - mm*sett->M[13]) / sett->M[5]);  // Cast is intentional and safe (silences warning).
+        smax = (int)trunc(-(nn*sett->M[9] + mm*sett->M[13] + sett->Smax) / sett->M[5]); // Cast is intentional and safe (silences warning).
     }
 
     printf("\n>>%d\t%d\t%d\t[%d..%d]\n", *FNum, mm, nn, smin, smax);
@@ -492,8 +509,8 @@ real_t* job_core(int pm,                        // hemisphere
         // fft length fftpad*nfft
         {
             cl_event fft_exec[2];
-            clfftEnqueueTransform(plans->plan, CLFFT_FORWARD, 1, cl_handles->exec_queues, 0, NULL, &fft_exec[0], fft_arr->xa_d, NULL, NULL /*May be slow, consider using tmp_buffer*/);
-            clfftEnqueueTransform(plans->plan, CLFFT_FORWARD, 1, cl_handles->exec_queues, 0, NULL, &fft_exec[1], fft_arr->xb_d, NULL, NULL /*May be slow, consider using tmp_buffer*/);
+            clfftEnqueueTransform(plans->plan, CLFFT_FORWARD, 1, cl_handles->exec_queues, 0, NULL, &fft_exec[0], &fft_arr->xa_d, NULL, NULL /*May be slow, consider using tmp_buffer*/);
+            clfftEnqueueTransform(plans->plan, CLFFT_FORWARD, 1, cl_handles->exec_queues, 0, NULL, &fft_exec[1], &fft_arr->xb_d, NULL, NULL /*May be slow, consider using tmp_buffer*/);
 
             clWaitForEvents(2, fft_exec);
         }
@@ -639,7 +656,7 @@ void modvir_gpu(real_t sinal,
                 int idet)
 {
     cl_int CL_err = CL_SUCCESS;
-    real_t cosalfr, sinalfr, c2d, c2sd, c, s, c2s, cs;
+    real_t cosalfr, sinalfr, c2d, c2sd/*, c, s, c2s, cs*/; // Unused variables
 
     cosalfr = cosal*(ifoi->sig.cphir) + sinal*(ifoi->sig.sphir);
     sinalfr = sinal*(ifoi->sig.cphir) - cosal*(ifoi->sig.sphir);
@@ -661,7 +678,9 @@ void modvir_gpu(real_t sinal,
     clSetKernelArg(cl_handles->kernels[Modvir], 12, sizeof(cl_mem), &aux->ifo_amod_d);
 
     cl_event exec;
-    CL_err = clEnqueueNDRangeKernel(cl_handles->exec_queues[0], cl_handles->kernels[Modvir], 1, NULL, &Np, NULL, 0, NULL, &exec);
+    size_t size_Np = (size_t)Np; // Helper variable to make pointer types match. Cast to silence warning
+
+    CL_err = clEnqueueNDRangeKernel(cl_handles->exec_queues[0], cl_handles->kernels[Modvir], 1, NULL, &size_Np, NULL, 0, NULL, &exec);
 
     clWaitForEvents(1, &exec);
 
@@ -685,9 +704,9 @@ void tshift_pmod_gpu(real_t shft1,
                      cl_mem bb_d,
                      cl_mem DetSSB_d,
                      real_t oms,
-                     int N,
-                     int nfft,
-                     int interpftpad,
+                     cl_int N,
+                     cl_int nfft,
+                     cl_int interpftpad,
                      OpenCL_handles* cl_handles)
 {
     cl_int CL_err = CL_SUCCESS;
@@ -712,7 +731,9 @@ void tshift_pmod_gpu(real_t shft1,
     clSetKernelArg(cl_handles->kernels[TShiftPMod], 17, sizeof(cl_int), &interpftpad);
 
     cl_event exec;
-    CL_err = clEnqueueNDRangeKernel(cl_handles->exec_queues[0], cl_handles->kernels[TShiftPMod], 1, NULL, &nfft, NULL, 0, NULL, &exec);
+    size_t size_nfft = (size_t)nfft; // Helper variable to make pointer types match. Cast to silence warning
+
+    CL_err = clEnqueueNDRangeKernel(cl_handles->exec_queues[0], cl_handles->kernels[TShiftPMod], 1, NULL, &size_nfft, NULL, 0, NULL, &exec);
 
     clWaitForEvents(1, &exec);
 
@@ -737,7 +758,9 @@ void resample_postfft_gpu(cl_mem xa_d,
     clSetKernelArg(cl_handles->kernels[ResamplePostFFT], 4, sizeof(real_t), &nyqst);
 
     cl_event exec;
-    CL_err = clEnqueueNDRangeKernel(cl_handles->exec_queues[0], cl_handles->kernels[ResamplePostFFT], 1, NULL, &Ninterp, NULL, 0, NULL, &exec);
+    size_t size_Ninterp = (size_t)Ninterp; // Helper variable to make pointer types match. Cast to silence warning
+
+    CL_err = clEnqueueNDRangeKernel(cl_handles->exec_queues[0], cl_handles->kernels[ResamplePostFFT], 1, NULL, &size_Ninterp, NULL, 0, NULL, &exec);
 
     clWaitForEvents(1, &exec);
 
@@ -844,7 +867,9 @@ void phase_mod_1_gpu(cl_mem xa,
     clSetKernelArg(cl_handles->kernels[PhaseMod1], 7, sizeof(cl_int), &N);
 
     cl_event exec;
-    CL_err = clEnqueueNDRangeKernel(cl_handles->exec_queues[0], cl_handles->kernels[PhaseMod1], 1, NULL, &N, NULL, 0, NULL, &exec);
+    size_t size_N = (size_t)N; // Helper variable to make pointer types match. Cast to silence warning
+
+    CL_err = clEnqueueNDRangeKernel(cl_handles->exec_queues[0], cl_handles->kernels[PhaseMod1], 1, NULL, &size_N, NULL, 0, NULL, &exec);
     checkErr(CL_err, "clEnqueueNDRangeKernel(PhaseMod1)");
 
     clWaitForEvents(1, &exec);
@@ -876,7 +901,9 @@ void phase_mod_2_gpu(cl_mem xa,
     clSetKernelArg(cl_handles->kernels[PhaseMod2], 7, sizeof(cl_int), &N);
 
     cl_event exec;
-    CL_err = clEnqueueNDRangeKernel(cl_handles->exec_queues[0], cl_handles->kernels[PhaseMod2], 1, 0, &N, NULL, 0, NULL, &exec);
+    size_t size_N = (size_t)N; // Helper variable to make pointer types match. Cast to silence warning
+
+    CL_err = clEnqueueNDRangeKernel(cl_handles->exec_queues[0], cl_handles->kernels[PhaseMod2], 1, 0, &size_N, NULL, 0, NULL, &exec);
     checkErr(CL_err, "clEnqueueNDRangeKernel(PhaseMod2)");
 
     clWaitForEvents(1, &exec);
@@ -906,7 +933,10 @@ void compute_Fstat_gpu(cl_mem xa,
     clSetKernelArg(cl_handles->kernels[ComputeFStat], 5, sizeof(cl_int), &N);
 
     cl_event exec;
-    CL_err = clEnqueueNDRangeKernel(cl_handles->exec_queues[0], cl_handles->kernels[ComputeFStat], 1, &nmin, &N, NULL, 0, NULL, &exec);
+    size_t size_N = (size_t)N,
+           size_nmin = (size_t)nmin; // Helper variable to make pointer types match. Cast to silence warning
+
+    CL_err = clEnqueueNDRangeKernel(cl_handles->exec_queues[0], cl_handles->kernels[ComputeFStat], 1, &size_nmin, &size_N, NULL, 0, NULL, &exec);
     checkErr(CL_err, "clEnqueueNDRangeKernel(ComputeFStat)");
 
     clWaitForEvents(1, &exec);
@@ -934,7 +964,7 @@ void FStat_gpu_simple(cl_mem F_d,
     checkErr(CL_err, "clGetDeviceInfo(FStatSimple, CL_DEVICE_LOCAL_MEM_SIZE)");
 
     // How long is the array of local memory
-    ssi = local_size / sizeof(real_t);
+    ssi = (cl_uint)(local_size / sizeof(real_t)); // Assume integer is enough to store gentype count (well, it better)
 
     clSetKernelArg(cl_handles->kernels[FStatSimple], 0, sizeof(cl_mem), &F_d);
     clSetKernelArg(cl_handles->kernels[FStatSimple], 1, ssi * sizeof(real_t), NULL);
