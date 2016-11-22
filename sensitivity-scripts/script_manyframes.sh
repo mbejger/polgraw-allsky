@@ -58,7 +58,7 @@ sim_num=${PWD##*/}
 mkdir BAND 
 
 # Calculate band frequency from band number
-fpo=$(echo "BAND DT"|awk '{print 10 + 0.96875*$1/(2.0*$2)}')
+fpo=$(echo "BAND DT"|awk '{printf("%.6f", 10 + 0.96875*$1/(2.0*$2))}')
 
 # Searching for coincidences 
 for shi in {0..1}{0..1}{0..1}{0..1}; do
