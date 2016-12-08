@@ -12,10 +12,10 @@
 /// <remarks>PCI Should replace it with kernels that initialize on the device.</remarks>
 ///
 void init_spline_matrices(OpenCL_handles* cl_handles, 
-                          cl_mem cu_d,  // buffer of complex_devt
-                          cl_mem cu_dl, // buffer of complex_devt
-                          cl_mem cu_du, // buffer of complex_devt
-                          cl_mem cu_B,  // buffer of complex_devt
+                          cl_mem* cu_d,  // buffer of complex_devt
+                          cl_mem* cu_dl, // buffer of complex_devt
+                          cl_mem* cu_du, // buffer of complex_devt
+                          cl_mem* cu_B,  // buffer of complex_devt
                           cl_int N);
 
 /// <summary>Spline interpolation to xDatma, xDatmb arrays.</summary>

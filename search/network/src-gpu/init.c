@@ -42,16 +42,16 @@
 ///
 void handle_opts(Search_settings* sett,
                  OpenCL_settings* cl_sett,
-		         Command_line_opts* opts,
-		         int argc, 
-		         char* argv[]) {
+                 Command_line_opts* opts,
+                 int argc, 
+                 char* argv[]) {
   
   opts->hemi=0;
   opts->wd=NULL;
 
   // Default F-statistic threshold 
   opts->trl=20;
-	
+    
   strcpy (opts->prefix, TOSTR(PREFIX));
   strcpy (opts->dtaprefix, TOSTR(DTAPREFIX));
 
@@ -60,7 +60,7 @@ void handle_opts(Search_settings* sett,
   opts->getrange[0] = '\0';
   opts->usedet[0]   = '\0';
   opts->addsig[0] = '\0';
-	
+    
   // Initial value of starting frequency set to a negative quantity. 
   // If this is not changed by the command line value, fpo is calculated 
   // from the band number b (fpo = fpo = fstart + 0.96875*b/(2dt))
@@ -147,7 +147,7 @@ void handle_opts(Search_settings* sett,
 
     int option_index = 0;
     int c = getopt_long_only(argc, argv, "i:b:o:d:l:r:g:c:t:h:p:x:s:u:", 
-			     long_options, &option_index);
+                 long_options, &option_index);
     if (c == -1)
       break;
 
@@ -207,7 +207,7 @@ void handle_opts(Search_settings* sett,
   opts->white_flag = white_flag;
   opts->s0_flag = s0_flag;
   opts->checkp_flag = checkp_flag;	
-	
+    
   printf("Input data directory is %s\n", opts->dtaprefix);
   printf("Output directory is %s\n", opts->prefix);
   printf("Frame and band numbers are %d and %d\n", opts->ident, opts->band);
@@ -512,7 +512,7 @@ cl_program build_program_source(cl_context context,
 cl_kernel* create_kernels(cl_program program)
 {
     cl_int CL_err = CL_SUCCESS;
-    cl_uint kernel_count = 1;
+    cl_uint kernel_count = 11;
     cl_kernel* result = (cl_kernel*)malloc(kernel_count * sizeof(cl_kernel));
 
     for (cl_uint i = 0; i < kernel_count; ++i)
@@ -531,6 +531,36 @@ const char* obtain_kernel_name(cl_uint i)
     {
     case ComputeSinCosModF:
         result = "compute_sincosmodf";
+        break;
+    case Modvir:
+        result = "modvir_kern";
+        break;
+    case TShiftPMod:
+        result = "tshift_pmod_kern";
+        break;
+    case ResamplePostFFT:
+        result = "resample_postfft";
+        break;
+    case ComputeB:
+        result = "computeB";
+        break;
+    case TriDiagMul:
+        result = "tridiagMul";
+        break;
+    case Interpolate:
+        result = "interpolate";
+        break;
+    case PhaseMod1:
+        result = "phase_mod_1";
+        break;
+    case PhaseMod2:
+        result = "phase_mod_2";
+        break;
+    case ComputeFStat:
+        result = "compute_Fstat";
+        break;
+    case FStatSimple:
+        result = "fstat_norm_simple";
         break;
     default:
         perror("Unkown kernel index");
@@ -777,7 +807,7 @@ void init_arrays(Search_settings* sett,
     sett->cepsm = ifo[0].sig.cepsm;
 
     *F_d = clCreateBuffer(cl_handles->ctx,
-                          CL_MEM_READ_WRITE | CL_MEM_ALLOC_HOST_PTR,
+                          CL_MEM_READ_WRITE,
                           2 * sett->nfft * sizeof(real_t),
                           NULL,
                           &CL_err);
@@ -786,45 +816,59 @@ void init_arrays(Search_settings* sett,
     // Auxiliary arrays, Earth's rotation
 
     aux_arr->t2_d = clCreateBuffer(cl_handles->ctx,
-                                   CL_MEM_READ_WRITE | CL_MEM_ALLOC_HOST_PTR,
+                                   CL_MEM_READ_WRITE,
                                    sett->N * sizeof(real_t),
                                    NULL,
                                    &CL_err);
     checkErr(CL_err, "clCreateBuffer(aux_arr->t2_d)");
 
     aux_arr->cosmodf_d = clCreateBuffer(cl_handles->ctx,
-                                        CL_MEM_READ_WRITE | CL_MEM_ALLOC_HOST_PTR,
+                                        CL_MEM_READ_WRITE,
                                         sett->N * sizeof(real_t),
                                         NULL,
                                         &CL_err);
     checkErr(CL_err, "clCreateBuffer(aux_arr->cosmodf_d)");
 
     aux_arr->sinmodf_d = clCreateBuffer(cl_handles->ctx,
-                                        CL_MEM_READ_WRITE | CL_MEM_ALLOC_HOST_PTR,
+                                        CL_MEM_READ_WRITE,
                                         sett->N * sizeof(real_t),
                                         NULL,
                                         &CL_err);
     checkErr(CL_err, "clCreateBuffer(aux_arr->sinmodf_d)");
 
     aux_arr->tshift_d = clCreateBuffer(cl_handles->ctx,
-                                       CL_MEM_READ_WRITE | CL_MEM_ALLOC_HOST_PTR,
+                                       CL_MEM_READ_WRITE,
                                        sett->N * sizeof(real_t),
                                        NULL,
                                        &CL_err);
     checkErr(CL_err, "clCreateBuffer(aux_arr->tshift_d)");
 
     aux_arr->ifo_amod_d = clCreateBuffer(cl_handles->ctx,
-                                         CL_MEM_READ_ONLY | CL_MEM_ALLOC_HOST_PTR,
+                                         CL_MEM_READ_ONLY,
                                          sett->nifo * sizeof(Ampl_mod_coeff),
                                          NULL,
                                          &CL_err);
     checkErr(CL_err, "clCreateBuffer(aux_arr->ifo_amod_d)");
 
+    aux_arr->maa_d = clCreateBuffer(cl_handles->ctx,
+                                    CL_MEM_READ_ONLY,
+                                    sizeof(real_t),
+                                    NULL,
+                                    &CL_err);
+    checkErr(CL_err, "clCreateBuffer(aux_arr->maa_d)");
+
+    aux_arr->mbb_d = clCreateBuffer(cl_handles->ctx,
+                                    CL_MEM_READ_ONLY,
+                                    sizeof(real_t),
+                                    NULL,
+                                    &CL_err);
+    checkErr(CL_err, "clCreateBuffer(aux_arr->mbb_d)");
+
     init_spline_matrices(cl_handles,
-                         aux_arr->diag_d,
-                         aux_arr->ldiag_d,
-                         aux_arr->udiag_d,
-                         aux_arr->B_d,
+                         &aux_arr->diag_d,
+                         &aux_arr->ldiag_d,
+                         &aux_arr->udiag_d,
+                         &aux_arr->B_d,
                          sett->Ninterp);
 
     CL_err = clSetKernelArg(cl_handles->kernels[ComputeSinCosModF], 0, sizeof(cl_mem), &aux_arr->sinmodf_d);
@@ -965,38 +1009,48 @@ void plan_fft(Search_settings* sett,
               FFT_arrays* fft_arr)
 {
     cl_int CL_err = CL_SUCCESS;
+    clfftStatus CLFFT_status = CLFFT_SUCCESS;
 
     fft_arr->arr_len = (sett->fftpad*sett->nfft > sett->Ninterp ?
-        sett->fftpad*sett->nfft :
-        sett->Ninterp);
+                        sett->fftpad*sett->nfft :
+                        sett->Ninterp);
 
     fft_arr->xa_d = clCreateBuffer(cl_handles->ctx,
-                                   CL_MEM_READ_WRITE | CL_MEM_ALLOC_HOST_PTR,
-                                   fft_arr->arr_len * sizeof(complex_devt),
+                                   CL_MEM_READ_WRITE,
+                                   fft_arr->arr_len * sizeof(complex_t),
                                    NULL,
                                    &CL_err);
     checkErr(CL_err, "clCreateBuffer(fft_arr->xa_d)");
 
     fft_arr->xb_d = clCreateBuffer(cl_handles->ctx,
-                                   CL_MEM_READ_WRITE | CL_MEM_ALLOC_HOST_PTR,
-                                   fft_arr->arr_len * sizeof(complex_devt),
+                                   CL_MEM_READ_WRITE,
+                                   fft_arr->arr_len * sizeof(complex_t),
                                    NULL,
                                    &CL_err);
     checkErr(CL_err, "clCreateBuffer(fft_arr->xb_d)");
 
-    CL_err = clfftSetPlanPrecision(plans->plan, CLFFT_TRANSFORM_PRECISION);
-    checkErr(CL_err, "clfftSetPlanPrecision(CLFFT_SINGLE)");
-    CL_err = clfftSetLayout(plans->plan, CLFFT_TRANSFORM_LAYOUT, CLFFT_TRANSFORM_LAYOUT);
-    checkErr(CL_err, "clfftSetLayout(CLFFT_COMPLEX_INTERLEAVED, CLFFT_COMPLEX_INTERLEAVED)");
-    CL_err = clfftSetResultLocation(plans->plan, CLFFT_INPLACE);
-    checkErr(CL_err, "clfftSetResultLocation(CLFFT_INPLACE)");
+    clfftSetupData fftSetup;
+    CLFFT_status = clfftSetup(&fftSetup);
+    checkErrFFT(CLFFT_status, "clffftSetup");
 
-    CL_err = clfftBakePlan(plans->plan,
-                           cl_handles->dev_count,
+    clfftDim dim = CLFFT_1D;
+    size_t size_arr_len = (size_t)fft_arr->arr_len;
+    CLFFT_status = clfftCreateDefaultPlan(&plans->plan, cl_handles->ctx, dim, &size_arr_len);
+    checkErrFFT(CLFFT_status, "clCreateDefaultPlan");
+
+    CLFFT_status = clfftSetPlanPrecision(plans->plan, CLFFT_TRANSFORM_PRECISION);
+    checkErrFFT(CLFFT_status, "clfftSetPlanPrecision(CLFFT_SINGLE)");
+    CLFFT_status = clfftSetLayout(plans->plan, CLFFT_TRANSFORM_LAYOUT, CLFFT_TRANSFORM_LAYOUT);
+    checkErrFFT(CLFFT_status, "clfftSetLayout(CLFFT_COMPLEX_INTERLEAVED, CLFFT_COMPLEX_INTERLEAVED)");
+    CLFFT_status = clfftSetResultLocation(plans->plan, CLFFT_INPLACE);
+    checkErrFFT(CLFFT_status, "clfftSetResultLocation(CLFFT_INPLACE)");
+
+    CLFFT_status = clfftBakePlan(plans->plan,
+                           1u,//cl_handles->dev_count,
                            cl_handles->exec_queues,
                            NULL,
                            NULL);
-    checkErr(CL_err, "clfftBakePlan()");
+    checkErrFFT(CLFFT_status, "clfftBakePlan()");
 
 } // plan_fft
 
@@ -1004,30 +1058,30 @@ void plan_fft(Search_settings* sett,
 /* Checkpointing */
 
 void read_checkpoints(Command_line_opts *opts, 
-		      Search_range *s_range, 
-		      int *FNum) {
+              Search_range *s_range, 
+              int *FNum) {
 
   if(opts->checkp_flag) {
 
     // filename of checkpoint state file, depending on the hemisphere
     if(opts->hemi)
       sprintf(opts->qname, "state_%03d_%04d%s_%d.dat",  
-	      opts->ident, opts->band, opts->label, opts->hemi);
+          opts->ident, opts->band, opts->label, opts->hemi);
     else
       sprintf(opts->qname, "state_%03d_%04d%s.dat", 
-	      opts->ident, opts->band, opts->label);
+          opts->ident, opts->band, opts->label);
 
     FILE *state;
     if((state = fopen(opts->qname, "r")) != NULL) {
 
       // Scan the state file to get last recorded parameters
       if((fscanf(state, "%d %d %d %d %d", &s_range->pst, &s_range->mst,
-		 &s_range->nst, &s_range->sst, FNum)) == EOF) {
+         &s_range->nst, &s_range->sst, FNum)) == EOF) {
 
-	// This means that state file is empty (=end of the calculations)
-	fprintf (stderr, "State file empty: nothing to do...\n");
-	fclose (state);
-	return;
+    // This means that state file is empty (=end of the calculations)
+    fprintf (stderr, "State file empty: nothing to do...\n");
+    fclose (state);
+    return;
 
       }
 
@@ -1092,6 +1146,8 @@ void cleanup(Search_settings *sett,
     clfftDestroyPlan(&plans->plan);
     clfftDestroyPlan(&plans->pl_int);
     clfftDestroyPlan(&plans->pl_inv);
+
+    clfftTeardown();
 
 } // end of cleanup & memory free 
 
@@ -1255,8 +1311,8 @@ void handle_opts_coinc(Search_settings *sett,
  */ 
 
 void manage_grid_matrix(
-			Search_settings *sett, 
-			Command_line_opts_coinc *opts) {
+            Search_settings *sett, 
+            Command_line_opts_coinc *opts) {
 
   sett->M = (double *)calloc(16, sizeof (double));
 
@@ -1314,15 +1370,15 @@ void manage_grid_matrix(
       gsl_vector_view evec_i = gsl_matrix_column(evec, i);
 
       for(j=0; j<4; j++)   
-	eigvec[j][i] = gsl_vector_get(&evec_i.vector, j);               
+    eigvec[j][i] = gsl_vector_get(&evec_i.vector, j);               
     } 
 
     // This is an auxiliary matrix composed of the eigenvector 
     // columns multiplied by a matrix with sqrt(eigenvalues) on diagonal  
     for(i=0; i<4; i++) { 
       for(j=0; j<4; j++) { 
-	sett->vedva[i][j]  = eigvec[i][j]*sqrt(eigval[j]); 
-	//        printf("%.12le ", sett->vedva[i][j]); 
+    sett->vedva[i][j]  = eigvec[i][j]*sqrt(eigval[j]); 
+    //        printf("%.12le ", sett->vedva[i][j]); 
       } 
       //      printf("\n"); 
     }

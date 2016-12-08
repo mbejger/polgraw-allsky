@@ -17,6 +17,9 @@
 #include <spline_z.h>
 #include <floats.h>
 
+// clFFT includes
+#include <clFFT.h>
+
 // OpenCL includes
 #include <CL/cl.h>
 
@@ -102,8 +105,8 @@ void search(Search_settings* sett,
     int nav_blocks = (sett->nmax - sett->nmin) / NAV;     //number of nav-blocks
     int blocks = (sett->nmax - sett->nmin) / BLOCK_SIZE;  //number of blocks for Fstat-smoothing
 
-    aux->mu_t_d = clCreateBuffer(cl_handles->ctx, CL_MEM_READ_WRITE | CL_MEM_ALLOC_HOST_PTR, blocks * sizeof(real_t), NULL, &CL_err);
-    aux->mu_d = clCreateBuffer(cl_handles->ctx, CL_MEM_READ_WRITE | CL_MEM_ALLOC_HOST_PTR, nav_blocks * sizeof(real_t), NULL, &CL_err);
+    aux->mu_t_d = clCreateBuffer(cl_handles->ctx, CL_MEM_READ_WRITE, blocks * sizeof(real_t), NULL, &CL_err);
+    aux->mu_d = clCreateBuffer(cl_handles->ctx, CL_MEM_READ_WRITE, nav_blocks * sizeof(real_t), NULL, &CL_err);
 
     state = NULL;
     if (opts->checkp_flag)
@@ -328,9 +331,12 @@ real_t* job_core(int pm,                        // hemisphere
                         ifo[n].sig.DetSSB_d,
                         sett->oms, sett->N, sett->nfft, sett->interpftpad, cl_handles);
 
+        clfftStatus CLFFT_status = CLFFT_SUCCESS;
         cl_event fft_exec[2];
-        clfftEnqueueTransform(plans->pl_int, CLFFT_FORWARD, 1, cl_handles->exec_queues, 0, NULL, &fft_exec[0], &fft_arr->xa_d, NULL, NULL /*May be slow, consider using tmp_buffer*/);
-        clfftEnqueueTransform(plans->pl_int, CLFFT_FORWARD, 1, cl_handles->exec_queues, 0, NULL, &fft_exec[1], &fft_arr->xb_d, NULL, NULL /*May be slow, consider using tmp_buffer*/);
+        CLFFT_status = clfftEnqueueTransform(plans->plan /*pl_int*/, CLFFT_FORWARD, 1, cl_handles->exec_queues, 0, NULL, &fft_exec[0], &fft_arr->xa_d, NULL, NULL /*May be slow, consider using tmp_buffer*/);
+        checkErrFFT(CLFFT_status, "clfftEnqueueTransform(CLFFT_FORWARD)");
+        CLFFT_status = clfftEnqueueTransform(plans->plan /*pl_int*/, CLFFT_FORWARD, 1, cl_handles->exec_queues, 0, NULL, &fft_exec[1], &fft_arr->xb_d, NULL, NULL /*May be slow, consider using tmp_buffer*/);
+        checkErrFFT(CLFFT_status, "clfftEnqueueTransform(CLFFT_FORWARD)");
 
         clWaitForEvents(2, fft_exec);
 
@@ -343,7 +349,9 @@ real_t* job_core(int pm,                        // hemisphere
 
         // Backward fft (len Ninterp = nfft*interpftpad)
         clfftEnqueueTransform(plans->pl_inv, CLFFT_BACKWARD, 1, cl_handles->exec_queues, 0, NULL, &fft_exec[0], &fft_arr->xa_d, NULL, NULL /*May be slow, consider using tmp_buffer*/);
+        checkErrFFT(CLFFT_status, "clfftEnqueueTransform(CLFFT_BACKWARD)");
         clfftEnqueueTransform(plans->pl_inv, CLFFT_BACKWARD, 1, cl_handles->exec_queues, 0, NULL, &fft_exec[1], &fft_arr->xb_d, NULL, NULL /*May be slow, consider using tmp_buffer*/);
+        checkErrFFT(CLFFT_status, "clfftEnqueueTransform(CLFFT_BACKWARD)");
 
         clWaitForEvents(2, fft_exec);
         for (size_t i = 0; i < 2; ++i) clReleaseEvent(fft_exec[i]);
@@ -492,12 +500,13 @@ real_t* job_core(int pm,                        // hemisphere
         // assuming double , remember to change when switching to float
         {
             cl_int CL_err = CL_SUCCESS;
-            real_t pattern = 0;
+            complex_t pattern = {0, 0};
             cl_event fill_event[2];
 
-            CL_err = clEnqueueFillBuffer(cl_handles->write_queues[0], fft_arr->xa_d, &pattern, sizeof(real_t), sett->N, (sett->nfftf - sett->N) * 2 * (sizeof(double) / (sizeof(double) / sizeof(real_t)) / 4), 0, NULL, &fill_event[0]);
+            // Zero pad from offset until the end
+            CL_err = clEnqueueFillBuffer(cl_handles->write_queues[0], fft_arr->xa_d, &pattern, sizeof(complex_t), sett->N * sizeof(complex_t), (sett->nfftf - sett->N) * 2 * sizeof(complex_t), 0, NULL, &fill_event[0]);
             checkErr(CL_err, "clEnqueueFillBuffer");
-            CL_err = clEnqueueFillBuffer(cl_handles->write_queues[0], fft_arr->xb_d, &pattern, sizeof(real_t), sett->N, (sett->nfftf - sett->N) * 2 * (sizeof(double) / (sizeof(double) / sizeof(real_t)) / 4), 0, NULL, &fill_event[1]);
+            CL_err = clEnqueueFillBuffer(cl_handles->write_queues[0], fft_arr->xb_d, &pattern, sizeof(complex_t), sett->N * sizeof(complex_t), (sett->nfftf - sett->N) * 2 * sizeof(complex_t), 0, NULL, &fill_event[1]);
             checkErr(CL_err, "clEnqueueFillBuffer");
 
             clWaitForEvents(2, fill_event);
@@ -508,9 +517,12 @@ real_t* job_core(int pm,                        // hemisphere
 
         // fft length fftpad*nfft
         {
+            clfftStatus CLFFT_status = CLFFT_SUCCESS;
             cl_event fft_exec[2];
             clfftEnqueueTransform(plans->plan, CLFFT_FORWARD, 1, cl_handles->exec_queues, 0, NULL, &fft_exec[0], &fft_arr->xa_d, NULL, NULL /*May be slow, consider using tmp_buffer*/);
+            checkErrFFT(CLFFT_status, "clfftEnqueueTransform(CLFFT_FORWARD)");
             clfftEnqueueTransform(plans->plan, CLFFT_FORWARD, 1, cl_handles->exec_queues, 0, NULL, &fft_exec[1], &fft_arr->xb_d, NULL, NULL /*May be slow, consider using tmp_buffer*/);
+            checkErrFFT(CLFFT_status, "clfftEnqueueTransform(CLFFT_FORWARD)");
 
             clWaitForEvents(2, fft_exec);
         }

@@ -6,7 +6,7 @@
 #include <stdlib.h>     // exit
 
 /// <summary>OpenCL error handling function.</summary>
-///
+/// 
 void checkErr(cl_int err, const char * name)
 {
     if (err != CL_SUCCESS)
@@ -14,5 +14,17 @@ void checkErr(cl_int err, const char * name)
         int count = printf_s("ERROR: %s (%i)\n", name, err);
 
         exit(err);
+    }
+}
+
+/// <summary>clFFT error handling function.</summary>
+///
+void checkErrFFT(clfftStatus stat, const char * name)
+{
+    if (stat != CLFFT_SUCCESS)
+    {
+        printf("ERROR: %s (%i)\n", name, stat);
+
+        exit(stat);
     }
 }

@@ -10,10 +10,10 @@
 /// <remarks>PCI Should replace it with kernels that initialize on the device.</remarks>
 ///
 void init_spline_matrices(OpenCL_handles* cl_handles,
-                          cl_mem cu_d,  // buffer of complex_devt
-                          cl_mem cu_dl, // buffer of complex_devt
-                          cl_mem cu_du, // buffer of complex_devt
-                          cl_mem cu_B,  // buffer of complex_devt
+                          cl_mem* cu_d,  // buffer of complex_devt
+                          cl_mem* cu_dl, // buffer of complex_devt
+                          cl_mem* cu_du, // buffer of complex_devt
+                          cl_mem* cu_B,  // buffer of complex_devt
                           cl_int N)
 {
     cl_int CL_err = CL_SUCCESS;
@@ -46,33 +46,33 @@ void init_spline_matrices(OpenCL_handles* cl_handles,
     d[N - 2].s[1] = 0;
 
     // copy to gpu
-    cu_d = clCreateBuffer(cl_handles->ctx,
-                          CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR,
-                          (N - 1) * sizeof(complex_devt),
-                          d,
-                          &CL_err);
+    *cu_d = clCreateBuffer(cl_handles->ctx,
+                           CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR,
+                           (N - 1) * sizeof(complex_devt),
+                           d,
+                           &CL_err);
     checkErr(CL_err, "clCreateBuffer(cu_d)");
 
-    cu_dl = clCreateBuffer(cl_handles->ctx,
-                           CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR,
-                           (N - 1) * sizeof(complex_devt),
-                           d,
-                           &CL_err);
+    *cu_dl = clCreateBuffer(cl_handles->ctx,
+                            CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR,
+                            (N - 1) * sizeof(complex_devt),
+                            d,
+                            &CL_err);
     checkErr(CL_err, "clCreateBuffer(cu_dl)");
 
-    cu_du = clCreateBuffer(cl_handles->ctx,
-                           CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR,
-                           (N - 1) * sizeof(complex_devt),
-                           d,
-                           &CL_err);
+    *cu_du = clCreateBuffer(cl_handles->ctx,
+                            CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR,
+                            (N - 1) * sizeof(complex_devt),
+                            d,
+                            &CL_err);
     checkErr(CL_err, "clCreateBuffer(cu_du)");
 
     // allocate B (or z) vector
-    cu_B = clCreateBuffer(cl_handles->ctx,
-                          CL_MEM_READ_WRITE | CL_MEM_ALLOC_HOST_PTR,
-                          (N + 1) * sizeof(complex_devt),
-                          NULL,
-                          &CL_err);
+    *cu_B = clCreateBuffer(cl_handles->ctx,
+                           CL_MEM_READ_WRITE,
+                           (N + 1) * sizeof(complex_devt),
+                           NULL,
+                           &CL_err);
     checkErr(CL_err, "clCreateBuffer(cu_B)");
 
     //clean up
@@ -96,9 +96,9 @@ void gpu_interp(cl_mem cu_y,                // buffer of complex_t
 {
     N-=1; // N is number of intervals here
   
-	// allocate and compute vector B=z (replaced on gtsv)
-	// z has size N+1 (i=0..N), but we solve only for (i=1..N-1)
-	// (z[0] = z[N] = 0) because of `natural conditions` of spline
+    // allocate and compute vector B=z (replaced on gtsv)
+    // z has size N+1 (i=0..N), but we solve only for (i=1..N-1)
+    // (z[0] = z[N] = 0) because of `natural conditions` of spline
 
     complex_t pattern = {(real_t)0, (real_t)0};
     cl_event fill_event;
