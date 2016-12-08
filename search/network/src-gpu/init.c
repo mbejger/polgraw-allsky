@@ -3,6 +3,11 @@
 // MSVC: macro to include constants, such as M_PI (include before math.h)
 #define _USE_MATH_DEFINES
 
+// OpenCL behavioral defines
+//
+// 1.2+ OpenCL headers: tells the headers not to bitch about clCreateCommandQueue being renamed to clCreateCommandQueueWithProperties
+#define CL_USE_DEPRECATED_OPENCL_1_2_APIS 1
+
 // Polgraw includes
 #include <init.h>       // all function declarations
 #include <struct.h>     // Search_settings, Command_line_opts, OpenCL_handles, ...
@@ -36,6 +41,7 @@
 #include <string.h>
 #include <errno.h>
 #include <time.h>
+#include <limits.h>     // UINT_MAX
 
 
 /// <summary>Command line options handling: search</summary>
@@ -273,7 +279,7 @@ void init_opencl(OpenCL_handles* cl_handles,
     cl_handles->plat = select_platform(/*cl_sett->plat_id*/ 0);
 
     cl_handles->devs = select_devices(cl_handles->plat,
-                                      /*cl_sett->dev_type*/ CL_DEVICE_TYPE_GPU,
+                                      /*cl_sett->dev_type*/ CL_DEVICE_TYPE_CPU,
                                       &cl_handles->dev_count);
 
     cl_handles->ctx = create_standard_context(cl_handles->devs,
@@ -411,15 +417,24 @@ char* load_program_file(const char* filename)
     size_t res = 0;
     char* src = NULL;
     FILE* file = NULL;
+#ifdef WIN32
     errno_t err = 0;
 
     err = fopen_s(&file, filename, "rb");
-
-    if (!file)
+    if (err)
     {
         printf_s("Failed to open file %s\n", filename);
         exit(EXIT_FAILURE);
     }
+#else
+    file = fopen(filename, "rb");
+
+    if (!file)
+    {
+        printf("Failed to open file %s\n", filename);
+        exit(EXIT_FAILURE);
+    }
+#endif
 
     if (fseek(file, 0, SEEK_END))
     {
@@ -469,8 +484,11 @@ cl_program build_program_source(cl_context context,
 
     cl_uint numDevices = 0;
     cl_device_id* devices = NULL;
-
+#ifdef WIN32
     const size_t length = strnlen_s(source, UINT_MAX);
+#else
+    const size_t length = strlen(source);
+#endif
 
     result = clCreateProgramWithSource(context, 1, &source, &length, &CL_err);
     checkErr(CL_err, "clCreateProgramWithSource()");
@@ -482,7 +500,8 @@ cl_program build_program_source(cl_context context,
     checkErr(CL_err, "clGetContextInfo(CL_CONTEXT_DEVICES)");
 
     // Warnings will be treated like errors, this is useful for debug
-    char build_params[] = { "-Werror -I./" };
+    //char build_params[] = { "-Werror -I./" };
+    char build_params[] = { "-I./" };
     CL_err = clBuildProgram(result, numDevices, devices, build_params, NULL, NULL);
 
     if (CL_err != CL_SUCCESS)

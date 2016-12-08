@@ -20,6 +20,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <errno.h>
 
 
 /// <summary>Create directory for disk output.</summary>
@@ -35,7 +36,7 @@ void setup_output(struct stat* buff,
 #ifdef WIN32
             if (_mkdir(opts->prefix) == -1)
 #else
-            if (mkdir(opts.prefix, S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH) == -1)
+            if (mkdir(opts->prefix, S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH) == -1)
 #endif
             {
                 perror(opts->prefix);
@@ -129,7 +130,11 @@ void detectors_settings(Search_settings* sett,
     char dirname[buf_size], x[buf_size];
 
     // Main input directory name 
-    int err = sprintf_s(dirname, 512, "%s/%03d", opts->dtaprefix, opts->ident);
+#ifdef WIN32
+    int err = sprintf_s(dirname, buf_size, "%s/%03d", opts->dtaprefix, opts->ident);
+#else
+    int err = sprintf(dirname, "%s/%03d", opts->dtaprefix, opts->ident);
+#endif
     if (err <= 0)
         perror("Directory name assembly failed.");
 
@@ -163,9 +168,12 @@ void detectors_settings(Search_settings* sett,
                 // sprintf(x, "%s/%03d/%s/xdatc_%03d%s.bin",
                 //         opts->dtaprefix, opts->ident, ep->d_name,
                 //         opts->ident, opts->label);
-
+#ifdef WIN32
                 int err = sprintf_s(x,
                     buf_size,
+#else
+                int err = sprintf(x,
+#endif
                     "%s/%03d/%s/xdatc_%03d_%04d%s.bin",
                     opts->dtaprefix,
                     opts->ident,

@@ -1,6 +1,9 @@
 #ifndef __UTIL_H__
 #define __UTIL_H__
 
+// OpenCL behavioral defines
+#define CL_USE_DEPRECATED_OPENCL_1_2_APIS 1
+
 // clFFT includes
 #include <clFFT.h>
 

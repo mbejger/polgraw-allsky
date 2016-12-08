@@ -99,8 +99,11 @@ void gpu_interp(cl_mem cu_y,                // buffer of complex_t
     // allocate and compute vector B=z (replaced on gtsv)
     // z has size N+1 (i=0..N), but we solve only for (i=1..N-1)
     // (z[0] = z[N] = 0) because of `natural conditions` of spline
-
+#ifdef WIN32
     complex_t pattern = {(real_t)0, (real_t)0};
+#else
+    complex_t pattern = 0;
+#endif
     cl_event fill_event;
 
     clEnqueueFillBuffer(cl_handles->write_queues[0], cu_B, &pattern, sizeof(complex_t), 0, (N + 1) * sizeof(complex_t), 0, NULL, &fill_event);

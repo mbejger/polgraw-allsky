@@ -500,7 +500,12 @@ real_t* job_core(int pm,                        // hemisphere
         // assuming double , remember to change when switching to float
         {
             cl_int CL_err = CL_SUCCESS;
-            complex_t pattern = {0, 0};
+#ifdef WIN32
+            complex_t pattern = { 0, 0 };
+#else
+            complex_t pattern = 0;
+#endif
+
             cl_event fill_event[2];
 
             // Zero pad from offset until the end
@@ -835,9 +840,13 @@ real_t* blas_dot(cl_mem x,
     void* res = clEnqueueMapBuffer(cl_handles->read_queues[0], result_buf, CL_TRUE, CL_MAP_READ, 0, 2 * sizeof(real_t), 2, blas_exec, NULL, &CL_err);
     checkErr(CL_err, "clEnqueueMapMemObject(result_buf)");
 
+#ifdef WIN32
     errno_t CRT_err = memcpy_s(result, 2 * sizeof(real_t), res, 2 * sizeof(real_t));
     if (CRT_err != 0)
         exit(EXIT_FAILURE);
+#else
+    memcpy(result, res, 2 * sizeof(real_t));
+#endif
 
     CL_err = clEnqueueUnmapMemObject(cl_handles->read_queues[0], result_buf, res, 0, NULL, &unmap);
     checkErr(CL_err, "clEnqueueUnmapMemObject(result_buf)");
