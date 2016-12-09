@@ -8,7 +8,7 @@
 #include <auxi.h>
 
 // Posix includes
-#ifdef WIN32
+#ifdef _WIN32
 #include <direct.h>
 #include <posix/dirent.h>
 #else
@@ -33,7 +33,7 @@ void setup_output(struct stat* buff,
         if (errno == ENOENT)
         {
             // Output directory apparently does not exist, try to create one
-#ifdef WIN32
+#ifdef _WIN32
             if (_mkdir(opts->prefix) == -1)
 #else
             if (mkdir(opts->prefix, S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH) == -1)
@@ -130,7 +130,7 @@ void detectors_settings(Search_settings* sett,
     char dirname[buf_size], x[buf_size];
 
     // Main input directory name 
-#ifdef WIN32
+#ifdef _WIN32
     int err = sprintf_s(dirname, buf_size, "%s/%03d", opts->dtaprefix, opts->ident);
 #else
     int err = sprintf(dirname, "%s/%03d", opts->dtaprefix, opts->ident);
@@ -168,7 +168,7 @@ void detectors_settings(Search_settings* sett,
                 // sprintf(x, "%s/%03d/%s/xdatc_%03d%s.bin",
                 //         opts->dtaprefix, opts->ident, ep->d_name,
                 //         opts->ident, opts->label);
-#ifdef WIN32
+#ifdef _WIN32
                 int err = sprintf_s(x,
                     buf_size,
 #else

@@ -23,7 +23,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
-#ifdef WIN32
+#ifdef _WIN32
 #include <direct.h>
 #include <posix/dirent.h>
 #include <posix/getopt.h>
@@ -261,7 +261,7 @@ void handle_opts(Search_settings* sett,
     printf ("Adding signal from '%s'\n", opts->addsig);
   if (opts->wd) {
     printf ("Changing working directory to %s\n", opts->wd);
-#ifdef WIN32
+#ifdef _WIN32
     if (_chdir(opts->wd)) { perror(opts->wd); abort(); }
 #else
     if (chdir(opts->wd)) { perror (opts->wd); abort (); }
@@ -417,7 +417,7 @@ char* load_program_file(const char* filename)
     size_t res = 0;
     char* src = NULL;
     FILE* file = NULL;
-#ifdef WIN32
+#ifdef _WIN32
     errno_t err = 0;
 
     err = fopen_s(&file, filename, "rb");
@@ -484,7 +484,7 @@ cl_program build_program_source(cl_context context,
 
     cl_uint numDevices = 0;
     cl_device_id* devices = NULL;
-#ifdef WIN32
+#ifdef _WIN32
     const size_t length = strnlen_s(source, UINT_MAX);
 #else
     const size_t length = strlen(source);

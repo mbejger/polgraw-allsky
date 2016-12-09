@@ -15,7 +15,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
-#ifdef WIN32
+#ifdef _WIN32
 #include <direct.h>
 #include <posix/dirent.h>
 #include <posix/getopt.h>

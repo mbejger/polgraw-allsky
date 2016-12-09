@@ -83,10 +83,6 @@ set_target_properties (${PROJECT_NAME} PROPERTIES FOLDER "GPU")
     # Create project groups for IDEs
     set_target_properties (${PROJECT_NAME} PROPERTIES FOLDER "GPU")
 
-	# Set debugger options
-	set_target_properties(${PROJECT_NAME} PROPERTIES VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}")
-	set_target_properties(${PROJECT_NAME} PROPERTIES VS_DEBUGGER_COMMAND_ARGUEMENTS "${POLGRAW_SEARCH_NETWORK_ROOT}/../../testdata/test-data-network-injection -ident 205 -label J0322+0441 -band 000 -fpo 1391.3 -r ${POLGRAW_SEARCH_NETWORK_ROOT}/../../testdata/range-J0322+0441.txt")
-
   endif (CMAKE_C_COMPILER_ID MATCHES "MSVC")
 
 #########################

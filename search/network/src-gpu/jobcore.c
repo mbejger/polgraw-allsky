@@ -27,7 +27,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
-#ifdef WIN32
+#ifdef _WIN32
 #include <io.h>             // _chsize_s
 #include <direct.h>
 #include <posix/dirent.h>
@@ -87,7 +87,7 @@ void search(Search_settings* sett,
     FLOAT_TYPE *sgnlv;    // array with candidates data
 
     char outname[512];
-#ifdef WIN32
+#ifdef _WIN32
     int low_state;
 #endif // WIN32
     FILE *state;
@@ -110,7 +110,7 @@ void search(Search_settings* sett,
 
     state = NULL;
     if (opts->checkp_flag)
-#ifdef WIN32
+#ifdef _WIN32
     {
         _sopen_s(&low_state, opts->qname,
             _O_RDWR | _O_CREAT,   // Allowed operations
@@ -140,7 +140,7 @@ void search(Search_settings* sett,
             {
                 if (opts->checkp_flag)
                 {
-#ifdef WIN32
+#ifdef _WIN32
                     if (_chsize(low_state, 0))
                     {
                         printf("Failed to resize file");
@@ -500,7 +500,7 @@ real_t* job_core(int pm,                        // hemisphere
         // assuming double , remember to change when switching to float
         {
             cl_int CL_err = CL_SUCCESS;
-#ifdef WIN32
+#ifdef _WIN32
             complex_t pattern = { 0, 0 };
 #else
             complex_t pattern = 0;
@@ -840,7 +840,7 @@ real_t* blas_dot(cl_mem x,
     void* res = clEnqueueMapBuffer(cl_handles->read_queues[0], result_buf, CL_TRUE, CL_MAP_READ, 0, 2 * sizeof(real_t), 2, blas_exec, NULL, &CL_err);
     checkErr(CL_err, "clEnqueueMapMemObject(result_buf)");
 
-#ifdef WIN32
+#ifdef _WIN32
     errno_t CRT_err = memcpy_s(result, 2 * sizeof(real_t), res, 2 * sizeof(real_t));
     if (CRT_err != 0)
         exit(EXIT_FAILURE);

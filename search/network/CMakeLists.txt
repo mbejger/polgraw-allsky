@@ -19,8 +19,8 @@ cmake_minimum_required (VERSION 3.1.0)
 project (polgraw-search)
 	
 # Behavioural options for the project
-option (USE_OPENCL "Build OpenCL language test suite" ON)
-option (USE_CUDA "Build CUDA language test suite" OFF)
+option (USE_OPENCL "Build OpenCL accelerated search suite" ON)
+option (USE_CUDA "Build CUDA accelerated search suite" OFF)
 option (BUILD_TESTS "Build unit tests" OFF)
 	
 

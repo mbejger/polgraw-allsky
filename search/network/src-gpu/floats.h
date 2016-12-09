@@ -24,7 +24,7 @@ typedef cl_double real_t;
 typedef cl_double2 complex_devt;
 #define FLOAT_TYPE cl_double
 #define COMPLEX_TYPE cl_double2
-#ifdef WIN32
+#ifdef _WIN32
 typedef _Dcomplex complex_t;
 #define HOST_COMPLEX_TYPE _Dcomplex
 #else

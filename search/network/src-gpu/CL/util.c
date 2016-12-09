@@ -11,7 +11,7 @@ void checkErr(cl_int err, const char * name)
 {
     if (err != CL_SUCCESS)
     {
-#ifdef WIN32
+#ifdef _WIN32
         int count = printf_s("ERROR: %s (%i)\n", name, err);
 #else
         printf("ERROR: %s (%i)\n", name, err);
