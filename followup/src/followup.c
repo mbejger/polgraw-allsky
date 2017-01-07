@@ -144,7 +144,16 @@ complex double** matrix_complex(int rows, int cols) {
 double * alloc_vector(int cols){
 	return (double *) malloc(sizeof(double) * cols);
 }
+
+int * alloc_vector_int(int cols){
+	return (int*) malloc(sizeof(int) * cols);
+}
+
 void free_vector(double * vector, int cols){
+	free(vector);
+}
+
+void free_vector_int(int * vector, int cols){
 	free(vector);
 }
 
@@ -398,7 +407,7 @@ double ** make_simplex(double * point, int dim, double *pc2){
 
 void evaluate_simplex(double ** simplex, int dim, double ** fx, Search_settings *sett, Aux_arrays *aux, double *nS, double **sigaa, double **sigbb){
 	double sinalt, cosalt, sindelt, cosdelt;
-	double *out;
+	double *out = alloc_vector(11);
 	int i, o, j;
 	for (i = 0; i < dim + 1; i++){
 			sinalt = sin(simplex[i][3]);
@@ -417,6 +426,7 @@ void evaluate_simplex(double ** simplex, int dim, double ** fx, Search_settings 
 			out = Fstatnet(sett, simplex[i], nS, sigaa, sigbb);
 			for (j = 0; j < 11; j++) fx[i][j] = out[j];
 	}
+	free_vector(out, 11);
 }
 
 int* simplex_extremes(double ** fx, int dim){
@@ -466,7 +476,7 @@ void simplex_bearings(double ** simplex, int dim, double * midpoint, double * li
 int update_simplex(double ** simplex, int dim, double  fmax, double ** fx, int ihi, double * midpoint, double * line, double scale, Search_settings *sett, Aux_arrays *aux, double *nS, double **sigaa, double **sigbb){
 	int i, o, j, update = 0; 
 	double * next = alloc_vector(dim);
-	double * fx2;
+	double * fx2 = alloc_vector(11)	;
 	double sinalt, cosalt, sindelt, cosdelt;
 
 	for (i = 0; i < dim; i++) next[i] = midpoint[i] + scale * line[i];
@@ -492,12 +502,13 @@ int update_simplex(double ** simplex, int dim, double  fmax, double ** fx, int i
 	}
 
 	free_vector(next, dim);
+	free_vector(fx2, 11);
 	return update;
 }
 
 void contract_simplex(double ** simplex, int dim, double ** fx, int ilo, int ihi, Search_settings *sett, Aux_arrays *aux, double *nS, double **sigaa, double **sigbb){
   	double sinalt, cosalt, sindelt, cosdelt;
-	double * fx3;
+	double *fx3= alloc_vector(11);
 	int i, j, k, o;
 
 	for (i = 0; i < dim + 1; i++){
@@ -521,6 +532,7 @@ void contract_simplex(double ** simplex, int dim, double ** fx, int ilo, int ihi
 			for (k = 0; k < 11; k++) fx[i][k] = fx3[k];
 		}
 	}
+	free_vector(fx3, 11);
 
 }
 
@@ -567,7 +579,9 @@ double * amoeba(Search_settings *sett, Aux_arrays *aux, double *point, double *n
 	free_matrix(fx, dim + 1, 10);
 	free_vector(midpoint, dim);
 	free_vector(line, dim);
+//	free_vector_int(ih, 3);
 	free_matrix(simplex, dim + 1, dim);
+
 
 /*	free(fx);
 	free(midpoint);
@@ -587,7 +601,7 @@ int main (int argc, char *argv[]) {
   	double *F; 			// F-statistic array
   	int i, j, r, c, a, b, g; 	
 	int d, o, m, k;
-	int bins = 2, ROW, dim = 4;	// neighbourhood of point will be divide into defined number of bins
+	int bins = 4, ROW, dim = 4;	// neighbourhood of point will be divide into defined number of bins
 	double pc[4];			// % define neighbourhood around each parameter for initial grid
 	double pc2[4];			// % define neighbourhood around each parameter for direct maximum search (MADS & Simplex)
 	double tol = 1e-10;
@@ -619,10 +633,10 @@ int main (int argc, char *argv[]) {
 
 #endif
 
-	pc[0] = 0.015;
-	pc[1] = 0.015;
-	pc[2] = 0.015;
-	pc[3] = 0.015;
+	pc[0] = 0.0003;
+	pc[1] = 0.01;
+	pc[2] = 0.01;
+	pc[3] = 0.01;
 
 	for (i = 0; i < 4; i++){
 		pc2[i] = 2*pc[i]/bins;
@@ -650,19 +664,22 @@ int main (int argc, char *argv[]) {
     }
   }
 */
-	sprintf(path, "%s/candidates.coi", opts.dtaprefix);
+//	sprintf(path, "%s/candidates_%03d.coi", opts.dtaprefix, opts.ident);
+	sprintf(path, "candidates.coi", opts.ident);
 
 //Glue function
-	if(strlen(opts.glue)) {
+/*	if(strlen(opts.glue)) {
 		glue(&opts);
 
 		sprintf(opts.dtaprefix, "./data_total");
 		sprintf(opts.dtaprefix, "%s/followup_total_data", opts.prefix); 
 		opts.ident = 000;
-	}	
+	}
+*/	
 	FILE *coi;
 	int z;
 	if ((coi = fopen(path, "r")) != NULL) {
+		printf("Using %s as a starting point\n", path);
 //		while(!feof(coi)) {
 
 /*			if(!fread(&w, sizeof(unsigned short int), 1, coi)) { break; } 
@@ -719,7 +736,7 @@ int main (int argc, char *argv[]) {
   				}
 
 // Setting number of using threads (not required)
-omp_set_num_threads(1);
+//omp_set_num_threads(2);
 
 				results_max[5] = 0.;
 
@@ -759,7 +776,7 @@ omp_set_num_threads(1);
 // F-statistic in given point
 
 					results = Fstatnet(&sett, sgnlo, nSource, sigaa, sigbb);
-//printf("Fstatnet: %le %le %le %le %le %le\n", results[6], results[7], results[8], results[9], results[5], results[4]);
+printf("%le %le %le %le %le %le\n", results[6], results[7], results[8], results[9], results[5], results[4]);
 
 #pragma omp critical
 					if(results[5] < results_max[5]){
@@ -773,7 +790,7 @@ omp_set_num_threads(1);
 //						puts("Simplex");
 
 						maximum = amoeba(&sett, &aux_arr, sgnlo, nSource, results, dim, tol, pc2, sigaa, sigbb);
-printf("Amoeba: %le %le %le %le %le %le\n", maximum[6], maximum[7], maximum[8], maximum[9], maximum[5], maximum[4]);
+//printf("Amoeba: %le %le %le %le %le %le\n", maximum[6], maximum[7], maximum[8], maximum[9], maximum[5], maximum[4]);
 // Maximum value in points searching
 #pragma omp critical
 						if(maximum[5] < results_max[5]){
@@ -801,6 +818,7 @@ printf("Amoeba: %le %le %le %le %le %le\n", maximum[6], maximum[7], maximum[8], 
 //Time test
 //				tend = clock();
 //				tdiff = (tend - tstart)/(double)CLOCKS_PER_SEC;
+				puts("Maximum:");
 				printf("%le %le %le %le %le %le\n", results_max[6], results_max[7], results_max[8], results_max[9], results_max[5], results_max[4]);
 
 
@@ -810,7 +828,7 @@ printf("Amoeba: %le %le %le %le %le %le\n", maximum[6], maximum[7], maximum[8], 
 	} //if coi
 	else {
 		
-		perror (path);
+		printf ("Problem with %s\n", path);
 		return 1;
 	}
 
@@ -865,5 +883,7 @@ if((opts.mads_flag)||(opts.simplex_flag)){
 
 //time LD_LIBRARY_PATH=/home/msieniawska/tests/addsig/polgraw-allsky/test/search/network/src-cpu/lib/yeppp-1.0.0/binaries/linux/x86_64 ./followup -data /home/msieniawska/tests/addsig/data -output . -ident 031 -band 0666 -dt 2 -addsig /home/msieniawska/tests/addsig/data/sig1 -usedet H1 --simplex
 //LD_LIBRARY_PATH=/home/msieniawska/tests/addsig/polgraw-allsky/test/search/network/src-cpu/lib/yeppp-1.0.0/binaries/linux/x86_64 ./gwsearch-cpu -data /home/msieniawska/tests/addsig/test/pulsar8 -output . -ident 001 -band 0747 -dt 2 -usedet H1 -threshold 200 --whitenoise 
-//time LD_LIBRARY_PATH=/home/msieniawska/tests/addsig/polgraw-allsky/test/search/network/src-cpu/lib/yeppp-1.0.0/binaries/linux/x86_64 ./followup -data /home/msieniawska/tests/addsig/test/pulsar8 -output . -ident 001 -band 0747 -dt 2 -usedet H1 --simplex
+//time LD_LIBRARY_PATH=/home/msieniawska/tests/addsig/polgraw-allsky/test/search/network/src-cpu/lib/yeppp-1.0.0/binaries/linux/x86_64 ./followup -data /home/msieniawska/tests/addsig/test/pulsar8 -output . -ident 010 -band 0747 -dt 2 -usedet H1 --simplex
+
+// LD_LIBRARY_PATH=/home/msieniawska/tests/newglue/search/network/src-cpu/lib/yeppp-1.0.0/binaries/linux/x86_64 ./followup -data /home/msieniawska/tests/newglue/data/notglued -ident 001 -band 0666 -dt 2 -addsig /home/msieniawska/tests/newglue/data/sig20 > /home/msieniawska/tests/newglue/output/6d/followup_6_days.txt
 
