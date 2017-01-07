@@ -29,7 +29,7 @@ void search_settings(
 
   omr = C_OMEGA_R*dt;
 
-  nod = 6;                          // Observation time in days
+  nod = 12;                          // Observation time in days
   N = round (nod*C_SIDDAY/dt);      // No. of data points
 
   nfft = 1 << (int)ceil(log(N)/log(2.));    // length of FFT
@@ -121,33 +121,28 @@ void detectors_settings(
           opts->dtaprefix, opts->ident, ep->d_name,
           opts->ident, opts->label);
 */
-	  if(!opts->gauss){
-		sprintf(x, "%s/%03d/%s/xdatg_%03d_%04d%s.bin",
-		opts->dtaprefix, opts->ident, ep->d_name,
-		opts->ident, opts->band, opts->label);
-	  }
-	  else {
-		sprintf(x, "%s/%03d/%s/DetSSB.bin",
-		opts->dtaprefix, opts->ident, ep->d_name);
-	  }
 
-		if((data = fopen(x, "r")) != NULL) {
-
-		  xnames[i]   = calloc(strlen(x)+1, sizeof(char));
-		  detnames[i] = calloc(DETNAME_LENGTH+1, sizeof(char));
-
-		  strncpy(xnames[i], x, strlen(x));
-		  strncpy(detnames[i], ep->d_name, DETNAME_LENGTH);
-		  i++;
-
-		} else { 
-		  printf("Directory %s exists, but no input file found:\n%s missing...\n", 
-		    ep->d_name, x);  
-		  //perror (x);
-		}
-
-		fclose(data); 
-		memset(x, 0, sizeof(x));
+          sprintf(x, "%s/%03d/%s/xdatc_%03d_%04d%s.bin",
+           opts->dtaprefix, opts->ident, ep->d_name,
+           opts->ident, opts->band, opts->label);
+ 
+           if((data = fopen(x, "r")) != NULL) {
+ 
+             xnames[i]   = calloc(strlen(x)+1, sizeof(char));
+             detnames[i] = calloc(DETNAME_LENGTH+1, sizeof(char));
+ 
+             strncpy(xnames[i], x, strlen(x));
+             strncpy(detnames[i], ep->d_name, DETNAME_LENGTH);
+             i++;
+ 
+           } else { 
+             printf("Directory %s exists, but no input file found:\n%s missing...\n", 
+               ep->d_name, x);  
+             //perror (x);
+           }
+ 
+           fclose(data); 
+           memset(x, 0, sizeof(x));
       }
     } 
       
