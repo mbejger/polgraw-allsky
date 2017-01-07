@@ -47,7 +47,7 @@ void handle_opts( Search_settings *sett,
   opts->getrange[0] = '\0';
   opts->usedet[0]   = '\0';
   opts->addsig[0]   = '\0';
-  opts->glue[0]   = '\0';
+//  opts->glue[0]   = '\0';
 	
   // Initial value of starting frequency set to a negative quantity. 
   // If this is not changed by the command line value, fpo is calculated 
@@ -106,7 +106,7 @@ void handle_opts( Search_settings *sett,
       // add signal parameters
       {"addsig", required_argument, 0, 'x'},
       // glue frames together
-      {"glue", required_argument, 0, 'e'},
+//      {"glue", required_argument, 0, 'e'},
       // which detectors to use
       {"usedet", required_argument, 0, 'u'}, 
       // data sampling time 
@@ -132,7 +132,7 @@ void handle_opts( Search_settings *sett,
       printf("-p, -fpo          Reference band frequency fpo value\n");
       printf("-s, -dt           data sampling time dt (default value: 0.5)\n");
       printf("-u, -usedet       Use only detectors from string (default is use all available)\n");
-      printf("-e, -glue		Glue chosen frames together. Names of frames from <file>\n");
+//      printf("-e, -glue		Glue chosen frames together. Names of frames from <file>\n");
       printf("-x, -addsig       Add signal with parameters from <file>\n\n");
 
       printf("Also:\n\n");
@@ -196,9 +196,9 @@ void handle_opts( Search_settings *sett,
     case 's':
       sett->dt = atof(optarg);
       break;
-    case 'e':
+/*    case 'e':
       strcpy(opts->glue, optarg);
-      break;
+      break; */
     case 'u':
       strcpy(opts->usedet, optarg);
       break;
@@ -264,8 +264,8 @@ void handle_opts( Search_settings *sett,
 
   if (strlen(opts->addsig))
     printf ("Adding signal from '%s'\n", opts->addsig);
-  if(strlen(opts->glue))
-    printf ("Gluing together frames from '%s'\n", opts->glue);
+//  if(strlen(opts->glue))
+//    printf ("Gluing together frames from '%s'\n", opts->glue);
   if (opts->wd) {
     printf ("Changing working directory to %s\n", opts->wd);
     if (chdir(opts->wd)) { perror (opts->wd); abort (); }
@@ -344,28 +344,23 @@ void init_arrays(
   FILE *data;
 
   for(i=0; i<sett->nifo; i++) { 
-	  ifo[i].sig.xDat = (double *) calloc(sett->N, sizeof(double));
-	  if(!opts->gauss_flag){	    
-	    // Input time-domain data handling
-	    // 
-	    // The file name ifo[i].xdatname is constructed 
-	    // in settings.c, while looking for the detector 
-	    // subdirectories
-	    
-	    if((data = fopen(ifo[i].xdatname, "r")) != NULL) {
-	      status = fread((void *)(ifo[i].sig.xDat), 
-			     sizeof(double), sett->N, data);
-	      fclose (data);
-	      
-	    } else {
-	      perror (ifo[i].xdatname);
-	      exit(EXIT_FAILURE); 
-	    }
-	  }
-	  else {
-	    gauss_xdat(sett, amplitude, sigma, i);	
-	  }
-    
+    ifo[i].sig.xDat = (double *) calloc(sett->N, sizeof(double));
+     
+     // Input time-domain data handling
+     // 
+     // The file name ifo[i].xdatname is constructed 
+     // in settings.c, while looking for the detector 
+     // subdirectories
+     
+     if((data = fopen(ifo[i].xdatname, "r")) != NULL) {
+       status = fread((void *)(ifo[i].sig.xDat), 
+ 		     sizeof(double), sett->N, data);
+       fclose (data);
+       
+     } else {
+       perror (ifo[i].xdatname);
+       exit(EXIT_FAILURE); 
+     }
     int j, Nzeros=0;
     // Checking for null values in the data
     for(j=0; j < sett->N; j++)
@@ -468,7 +463,7 @@ void init_arrays(
 
   /* Gluing frames */
 
-void glue(Command_line_opts *opts){
+/* void glue(Command_line_opts *opts){
 //	char prfx[512]= opts->prefix;  
 //	char dataprfx[512]= opts->dtaprefix;
 //	char band[10]= opts->label;
@@ -605,7 +600,7 @@ void glue(Command_line_opts *opts){
 	fclose(list);
 //	return 0;
 
-}
+} */
 
 unsigned long int random_seed()
 {
@@ -629,7 +624,7 @@ unsigned long int random_seed()
   /* Generate Gaussian noise (keep it only in memory; do not save) */
 
 void gauss_xdat(Search_settings *sett, double amplitude, double sigma, int i){
-
+puts("Generate Gaussian noise");
   gsl_rng * r;
   int j;
   unsigned long mySeed;
@@ -660,7 +655,7 @@ void add_signal(
 		Command_line_opts *opts,
 		Aux_arrays *aux_arr,
 		Search_range *s_range) {
-
+puts("Adding signal from file");
   int i, j, n, gsize, reffr, k; 
   double snr, sum = 0., h0, cof, thsnr = 0; 
   double sigma_noise = 1.0;
@@ -827,7 +822,7 @@ void add_signal(
       ifo[n].sig.xDat[i] = ifo[n].sig.xDat[i]*h0;
     }
   }
-printf("%le %le\n", snr, h0);
+printf("snr=%le h0=%le\n", snr, h0);
 for (i = 0; i < sett->nifo; i++) free(sigaa[i]);
 free(sigaa);
 for (i = 0; i < sett->nifo; i++) free(sigbb[i]);
