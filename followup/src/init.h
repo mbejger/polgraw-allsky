@@ -12,8 +12,7 @@ void handle_opts(
 void init_arrays(
   Search_settings *sett,
   Command_line_opts *opts, 
-  Aux_arrays *aux_arr, 
-  double** F);
+  Aux_arrays *aux_arr);
 
 unsigned long int random_seed();
 
@@ -26,60 +25,11 @@ void gauss_xdat(
 void add_signal(
   Search_settings *sett,
   Command_line_opts *opts,
-  Aux_arrays *aux_arr,
-  Search_range *s_range);
-
-void set_search_range(
-	Search_settings *sett, 
-	Command_line_opts *opts, 
-	Search_range *s_range);  
-
-void read_grid(
-	Search_settings *sett, 
-	Command_line_opts *opts);
-
-void plan_fftw(
-	Search_settings *sett, 
-	Command_line_opts *opts, 
-  FFTW_plans *plans, 
-	FFTW_arrays *fftw_arr, 
-	Aux_arrays *aux_arr);
-
-void read_checkpoints(
-	Command_line_opts *opts, 
-  Search_range *s_range,
-  int *Fnum);
+  Aux_arrays *aux_arr);
 
 void cleanup_followup(
 	Search_settings *sett,
 	Command_line_opts *opts,
-	Search_range *s_range,
-	Aux_arrays *aux,
-	double *F);
-
-void cleanup(
-	Search_settings *sett,
-	Command_line_opts *opts,
-	Search_range *s_range,
-	FFTW_plans *plans,
-	FFTW_arrays *fftw_arr,
-	Aux_arrays *aux,
-	double *F);
-
-// Coincidences specific functions 
-void handle_opts_coinc(
-	Search_settings *sett,
-	Command_line_opts_coinc *opts,
-    int argc,  
-	char* argv[]);  
-
-void manage_grid_matrix(
-    Search_settings *sett,
-    Command_line_opts_coinc *opts);
-
-void convert_to_linear(
-    Search_settings *sett,
-    Command_line_opts_coinc *opts, 
-    Candidate_triggers *trig);
+	Aux_arrays *aux);
 
 #endif
