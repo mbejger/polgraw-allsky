@@ -449,9 +449,11 @@ void add_signal(
 		Search_range *s_range) {
 
   int i, j, n, gsize, reffr; 
-  double h0, cof; 
+  double snr, sum = 0., h0, cof, thsnr = 0., d1; 
+  double sigma_noise = 1.0;
+  double be[2];
   double sinaadd, cosaadd, sindadd, cosdadd, phaseadd, shiftadd, signadd; 
-  double nSource[3], sgnlo[10], sgnlol[4];
+  double nSource[3], sgnlo[8], sgnlol[4];
   
   FILE *data;
   
@@ -460,13 +462,13 @@ void add_signal(
 	
     // Fscanning for the GW amplitude, grid size, hemisphere 
     // and the reference frame (for which the signal freq. is not spun-down/up)
-    fscanf (data, "%le %d %d %d", &h0, &gsize, s_range->pmr, &reffr);    
+    fscanf (data, "%le %d %d", &snr, &gsize, &reffr);    
 
     // Fscanning signal parameters: f, fdot, delta, alpha (sgnlo[0], ..., sgnlo[3])
     // four amplitudes sgnlo[4], ..., sgnlo[7] 
     // (see sigen.c and Phys. Rev. D 82, 022005 2010, Eqs. 2.13a-d) 
     // be1, be2 (sgnlo[8], sgnlo[9] to translate the sky position into grid position)  
-    for(i=0; i<10; i++)
+    for(i=0; i<8; i++)
       fscanf(data, "%le",i+sgnlo); 
     
     fclose (data);
@@ -490,13 +492,29 @@ void add_signal(
   
   for(i=0; i<2; i++) sgnlol[i] = sgnlo[i]; 
   
-  sgnlol[2] = sgnlo[8]*cof; 
-  sgnlol[3] = sgnlo[9]*cof;  
+//printf("%le %le \n", be[0], be[1]);
+
+  ast2lin(sgnlo[3], sgnlo[2], C_EPSMA, be);
+ 
+  d1= asin(be[0]*sin(C_EPSMA) 
+            + sqrt(1. - be[0]*be[0] - be[1]*be[1])*cos(C_EPSMA)) - sgnlo[2];
+    if(fabs(d1)  < 10.*DBL_EPSILON)
+        s_range->pmr[0] = 1;
+    else
+        s_range->pmr[0] = 2;
+
+printf("%le %le %d\n", be[0], be[1], s_range->pmr[0]);
+
+  sgnlol[2] = be[0]*cof; //sgnlo[8]*cof; 
+  sgnlol[3] = be[1]*cof; //sgnlo[9]*cof;  
  		 	
   // solving a linear system in order to translate 
   // sky position, frequency and spindown (sgnlo parameters) 
   // into the position in the grid
-  
+
+
+
+
   double *MM ; 
   MM = (double *) calloc (16, sizeof (double));
   for(i=0; i<16; i++) MM[i] = sett->M[i] ;
@@ -575,18 +593,52 @@ void add_signal(
       //#mb test printout 
       //printf("%d %le\n", i + sett->N*(opts->ident-1), phaseadd); 
 
+      sum += pow(signadd, 2.);
     
+    } //data loop
+   
+  } //detector loop
+
+  h0 = (snr*sigma_noise)/(sqrt(sum));
+
+  for(n=0; n<sett->nifo; n++) {
+    modvir(sinaadd, cosaadd, sindadd, cosdadd,
+	   sett->N, &ifo[n], aux_arr);
+
+    nSource[0] = cosaadd*cosdadd;
+    nSource[1] = sinaadd*cosdadd;
+    nSource[2] = sindadd;
+					
+    // adding signal to data (point by point)  								
+    for (i=0; i<sett->N; i++) {
+      
+      shiftadd = 0.; 					 
+      for (j=0; j<3; j++)
+      	shiftadd += nSource[j]*ifo[n].sig.DetSSB[i*3+j];		 
+      
+      // Phase 
+      phaseadd = sgnlo[0]*i + sgnlo[1]*aux_arr->t2[i] 
+        + (cof + 2.*sgnlo[1]*i)*shiftadd
+        - phaseshift; 
+
+      // The whole signal with 4 amplitudes and modulations 
+      signadd = sgnlo[4]*(ifo[n].sig.aa[i])*cos(phaseadd) 
+        + sgnlo[6]*(ifo[n].sig.aa[i])*sin(phaseadd) 
+        + sgnlo[5]*(ifo[n].sig.bb[i])*cos(phaseadd) 
+        + sgnlo[7]*(ifo[n].sig.bb[i])*sin(phaseadd);
+
+
       // Adding the signal to the data vector 
       if(ifo[n].sig.xDat[i]) { 
         ifo[n].sig.xDat[i] += h0*signadd;
+
 	      // thsnr += pow(signadd, 2.);
-      }
-	 
-    }
-    
-  }
+      } //if xDat
+    } //data loop
+  } //detector loop
+//printf("snr=%le h0=%le\n", snr, h0);
   
-} 
+} //add_signal
 
 
 /* Search range */ 
@@ -622,16 +674,13 @@ void set_search_range(
       
       /*
       //#mb commented-out for now - useful for tests 
-
       // the case when range file does not contain 8 integers
       // describing the grid ranges, but other values:
       // the pulsar position, frequency, and spindowns.
       if(range_status!=8) {
-
       rewind(data);
       range_status = fscanf (data, "%le %le %le %le %le %le %d",
       &pepoch, &alpha, &delta, &f0, &f1, &f2, &gsize);
-
       // GPS time of the first sample
       double gps1;
       sprintf (filename, "%s/%03d/starting_date", dtaprefix, ident);
@@ -642,61 +691,44 @@ void set_search_range(
       perror (filename);
       return 1;
       }
-
       // Conversion of mjd to gps time
       double pepoch_gps = (pepoch - 44244)*86400 - 51.184;
       //			 gps1 = (gps1 - 44244)*86400 - 51.184;
-
       // Interpolation of ephemeris parameters to the starting time
       double *sgnlo;
       sgnlo = (double *) calloc (4, sizeof (double));
-
       double *be;
       be = (double *) calloc (2, sizeof (double));
-
       // ast2lin (auxi.c) returns the hemisphere number
       // and the vector be (used for sky position in linear coords.)
       pmr[0] = ast2lin(alpha, delta, epsm, be);
-
       sgnlo[0] = f0 + f1*(gps1 - pepoch_gps) + f2*pow(gps1 - pepoch_gps, 2)/2.;
       sgnlo[0] = 2*M_PI*2*sgnlo[0]*dt - oms;
-
       sgnlo[1] = f1 + f2*(gps1 - pepoch_gps);
       sgnlo[1] = M_PI*2*sgnlo[1]*dt*dt;
-
       sgnlo[2] = be[0]*(oms + sgnlo[0]);
       sgnlo[3] = be[1]*(oms + sgnlo[0]);
-
       // solving a linear system in order to translate
       // sky position, frequency and spindown (sgnlo parameters)
       // into the position in the grid
-
       gsl_vector *x = gsl_vector_alloc (4);
       int s;
-
       gsl_matrix_view m = gsl_matrix_view_array (M, 4, 4);
       gsl_matrix_transpose (&m.matrix) ;
       gsl_vector_view b = gsl_vector_view_array (sgnlo, 4);
       gsl_permutation *p = gsl_permutation_alloc (4);
-
       gsl_linalg_LU_decomp (&m.matrix, p, &s);
       gsl_linalg_LU_solve (&m.matrix, p, &b.vector, x);
-
       spndr[0] = round(gsl_vector_get(x, 1));
       nr[0]		= round(gsl_vector_get(x, 2));
       mr[0]		= round(gsl_vector_get(x, 3));
-
       gsl_permutation_free (p);
       gsl_vector_free (x);
       free (be);
       free (sgnlo);
-
-
       // Warnings and infos
       if(hemi)
-
       printf("Warning: -h switch hemisphere choice (%d) may be altered\nby the choice of -r grid range...\n", hemi);
-
       // Define the grid range in which the signal will be looked for
       spndr[1] = spndr[0] + gsize ;
       spndr[0] -= gsize;
@@ -705,7 +737,6 @@ void set_search_range(
       mr[1] = mr[0] + gsize ;
       mr[0] -= gsize;
       pmr[1] = pmr[0];
-
       }
       */
 
@@ -1115,7 +1146,6 @@ void manage_grid_matrix(
   
   if ((data=fopen (filename, "r")) != NULL) {
     fscanf(data, "%le", &opts->refgps);
-
     printf("Reading the reference starting_date file at %s The GPS time is %12f\n", opts->refloc, opts->refgps);
     fclose (data);
   } else {
@@ -1165,15 +1195,12 @@ void manage_grid_matrix(
     {1.5497867603229576e-005, 1.9167007413107127e-006, 1.0599051611325639e-008, -5.0379548388381567e-008}, 
     {2.4410008440913992e-005, 3.2886518554938671e-006, -5.7338464150027107e-008, -9.3126913365595100e-009},
   };
-
   { int i,j; 
   for(i=0; i<4; i++) 
     for(j=0; j<4; j++) 
       sett->vedva[i][j]  = _tmp[i][j]; 
   }
-
   printf("\n"); 
-
   { int i, j; 
   for(i=0; i<4; i++) { 
     for(j=0; j<4; j++) {
@@ -1181,7 +1208,6 @@ void manage_grid_matrix(
       }
       printf("\n"); 
   } 
-
  } 
 */ 
 
@@ -1189,5 +1215,3 @@ void manage_grid_matrix(
   gsl_matrix_free (evec);
 
 } // end of manage grid matrix  
-
-
