@@ -17,7 +17,7 @@ void search_settings(
   Search_settings* sett) {
 
   double dt, B, oms, omr, Smin, Smax;
-  int nod, N, nfft, s, nd, interpftpad;
+  int nod, N, nd;
 
 
   dt = sett->dt;                    // data sampling time:  
@@ -29,11 +29,8 @@ void search_settings(
 
   omr = C_OMEGA_R*dt;
 
-  nod = 12;                          // Observation time in days
+  nod = 6;                          // Observation time in days
   N = round (nod*C_SIDDAY/dt);      // No. of data points
-
-  nfft = 1 << (int)ceil(log(N)/log(2.));    // length of FFT
-  s = 1;                                    // No. of spindowns
 
   Smin = 1000.*C_YEARSEC;                   // Minimum spindown time 
                                             // [sec.]
@@ -44,28 +41,14 @@ void search_settings(
   nd = 2;     // Degree of freedom, 
               // (2*nd = deg. no ofrees of freedom for chi^2)
 
-  interpftpad = 2;
-
   sett->B=B;          	// bandwidth
   sett->oms=oms;      	// dimensionless angular frequency
   sett->omr=omr;      	// C_OMEGA_R * dt
   sett->nod=nod;      	// number of days of observation
   sett->N=N;          	// number of data points
-  sett->nfft=nfft;    	// length of fft
-  sett->s=s;          	// number of spindowns
   sett->Smin=Smin;    	// minimum spindown
   sett->Smax=Smax;    	// maximum spindown
   sett->nd=nd;        	// degrees of freedom
-  sett->interpftpad=interpftpad;
-
-  // Because of frequency-domain filters, we search
-  // F-statistic in range (nmin+1, nmax) of data points
-  // 
-  // The value of sett->fftpad (zero padding - original grids: 2, new grids: 1) 
-  // is read from the grid.bin file in read_grid() (see init.c) 
-
-  sett->nmin = sett->fftpad*NAV*sett->B;
-  sett->nmax = (sett->nfft/2 - NAV*sett->B)*sett->fftpad;
 
   // initial value of number of known instrumental lines in band 
   sett->numlines_band=0; 
@@ -122,7 +105,7 @@ void detectors_settings(
           opts->ident, opts->label);
 */
 
-          sprintf(x, "%s/%03d/%s/xdatc_%03d_%04d%s.bin",
+          sprintf(x, "%s/%03d/%s/xdatg_%03d_%04d%s.bin",
            opts->dtaprefix, opts->ident, ep->d_name,
            opts->ident, opts->band, opts->label);
  
