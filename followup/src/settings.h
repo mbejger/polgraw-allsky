@@ -67,10 +67,4 @@ int read_lines(
 
 void lines_in_band(Search_settings* sett);  
 
-// Coincidences 
-void read_trigger_files(
-    Search_settings *sett,
-    Command_line_opts_coinc *opts, 
-    Candidate_triggers *trig);
-
 #endif
