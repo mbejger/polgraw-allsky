@@ -596,9 +596,8 @@ int main (int argc, char *argv[]) {
 
 	Search_settings sett;	
 	Command_line_opts opts;
-  	Search_range s_range; 
   	Aux_arrays aux_arr;
-  	double *F; 			// F-statistic array
+//  	double *F; 			// F-statistic array
   	int i, j, r, c, a, b, g; 	
 	int d, o, m, k;
 	int bins = 4, ROW, dim = 4;	// neighbourhood of point will be divide into defined number of bins
@@ -715,24 +714,25 @@ int main (int argc, char *argv[]) {
   				}
 */
 // Grid data
-  				if(strlen(opts.addsig)) { 
+/*  				if(strlen(opts.addsig)) { 
 
 					read_grid(&sett, &opts);
 				}
+*/
 // Search settings
   				search_settings(&sett); 
 // Detector network settings
   				detectors_settings(&sett, &opts); 
 
 // Array initialization
-  				init_arrays(&sett, &opts, &aux_arr, &F);
+  				init_arrays(&sett, &opts, &aux_arr);
 				
 // Amplitude modulation functions for each detector  
 				for(i=0; i<sett.nifo; i++) rogcvir(&ifo[i]); 
 // Adding signal from file
   				if(strlen(opts.addsig)) { 
 
-    					add_signal(&sett, &opts, &aux_arr, &s_range);
+    					add_signal(&sett, &opts, &aux_arr);
   				}
 
 // Setting number of using threads (not required)
@@ -855,7 +855,7 @@ if((opts.mads_flag)||(opts.simplex_flag)){
 	free(maximum);
 	free(mean);
 	free_matrix(arr, ROW, 4);
-  	cleanup_followup(&sett, &opts, &s_range, &aux_arr, F);
+  	cleanup_followup(&sett, &opts, &aux_arr);
 	
 
 	return 0;
