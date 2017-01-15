@@ -15,22 +15,17 @@
 // Command line option struct for search 
 typedef struct _comm_line_opts {
   
-  int white_flag, 		// white noise flag
-      s0_flag,			// no spin-down flag
-      checkp_flag,		// checkpointing flag
-      veto_flag,                // veto lines flag 
+  int veto_flag,                // veto lines flag 
       simplex_flag,		// Simplex direct maximum search flag
       mads_flag,		// MADS direct maximum search flag
       gauss_flag,		// Generate Gaussian noise instead of reading data
       help_flag;
   
-  int fftinterp;
   int ident, band, hemi;
   double trl;
   double fpo_val;
   
-  char prefix[512], dtaprefix[512], label[512], 
-    range[512], getrange[512], qname[512], usedet[32], 
+  char prefix[512], dtaprefix[512], label[512], qname[512], usedet[32], 
     addsig[512], glue[512], gauss[512], *wd;
   
 } Command_line_opts;
@@ -58,38 +53,6 @@ typedef struct _signals {
 
 } Signals;
 
-
-//fftw arrays
-typedef struct _fftw_arrays {
-
-  fftw_complex *xa, *xb;
-  int arr_len;
-  
-} FFTW_arrays;
-
-
-  /* Search range
-   */ 
-
-typedef struct _search_range {
-  int pmr[2], mr[2], nr[2], spndr[2];
-  int pst, mst, nst, sst;
-} Search_range;
-
-
-  /* FFTW plans
-   */ 
-
-typedef struct _fftw_plans {
-  fftw_plan plan,    // main plan
-            pl_int,  // interpolation forward
-            pl_inv;  // interpolation backward
-  fftw_plan plan2,   // main plan
-            pl_int2, // interpolation forward
-            pl_inv2; // interpolation backward
-} FFTW_plans;
-
-
   /* Auxiluary arrays
    */ 
 
@@ -99,7 +62,6 @@ typedef struct _aux_arrays {
   double *t2;                // time^2
 
 } Aux_arrays;
-
 
   /* Search settings 
    */ 
@@ -117,26 +79,10 @@ typedef struct _search_settings {
          sepsm,	 // sin(epsm)
          cepsm;	 // cos(epsm)
   
-  int nfft,       // length of fft
-      nod,        // number of days of observation
+  int nod,        // number of days of observation
       N,          // number of data points
-      nfftf,      // nfft * fftpad
-      nmax,	  // first and last point
-      nmin, 	  // of Fstat
-      s,          // number of spindowns
       nd,         // degrees of freedom
-      interpftpad,
-      fftpad,     // zero padding
-      Ninterp, 	  // for resampling (set in plan_fftw() init.c)
       nifo;       // number of detectors
-
-  double *M;      // Grid-generating matrix (or Fisher matrix, 
-                  // in case of coincidences) 
-
-  double vedva[4][4];   // transformation matrix: its columns are 
-                        // eigenvectors, each component multiplied 
-                        // by sqrt(eigval), see init.c manage_grid_matrix(): 
-                        // sett->vedva[i][j]  = eigvec[i][j]*sqrt(eigval[j])  
 
   double lines[MAXL][2]; // Array for lines in given band 
   int numlines_band;     // number of lines in band   
@@ -179,34 +125,5 @@ typedef struct _detector {
    */ 
 
 struct _detector ifo[MAX_DETECTORS]; 
-
-// Command line option struct for coincidences 
-typedef struct _comm_line_opts_coinc {
-  
-  int help_flag; 
-  
-  int shift, // Cell shifts  (4 digit number corresponding to fsda, e.g. 0101)  
-      scale, // Cell scaling (4 digit number corresponding to fsda, e.g. 4824) 
-      refr;  // Reference frame 
-
-  // Minimal number of coincidences recorded in the output  
-  int mincoin; 
-
-  double fpo, refgps, narrowdown, snrcutoff; 
-  
-  char prefix[512], dtaprefix[512], trigname[512], refloc[512], *wd;
-  
-} Command_line_opts_coinc;
-
-typedef struct _triggers { 
-
-  int frameinfo[256][3];    // Info about candidates in frames: 
-                            // - [0] frame number, [1] initial number 
-                            // of candidates, [2] number of candidates
-                            // after sorting    
-
-  int frcount, goodcands; 
-
-} Candidate_triggers; 
 
 #endif 
