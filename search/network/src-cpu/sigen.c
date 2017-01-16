@@ -1,3 +1,4 @@
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -27,7 +28,8 @@ int main(int argc, char *argv[]) {
 	
   int i, numl=0, freq_line_check, c, pm, gsize=2, band=0, reffr; 
   char filename[512], dtaprefix[512], *wd=NULL ; 
-  double freql[32768], linew[32768], sgnlo[8], rrn[2], amp, 
+//  double amp;
+  double freql[32768], linew[32768], sgnlo[8], rrn[2], snr, 
 	dvr, fpo_val, be1, be2, fr, lw, freqlp, freqlm, f1, f2,  
 	sepsm, cepsm, sinalt, cosalt, sindelt, cosdelt, 
 	iota, ph_o, psik, hop, hoc ; 
@@ -43,7 +45,10 @@ int main(int argc, char *argv[]) {
   sett.dt = 0.5; 
 
   // Default GW amplitude of the injected signal 
-  amp = 2.e-3; 
+//  amp = 2.e-3; 
+
+  // Default SNR of the injected signal
+  snr = 20.;
 
   // Default reference time frame (frame in which the frequency 
   // of the signal is as selected below, not spun-down/up) is 1
@@ -61,7 +66,9 @@ int main(int argc, char *argv[]) {
     static struct option long_options[] = {
       {"help", no_argument, &help_flag, 1},			
       // GW amplitude 
-      {"amp", required_argument, 0, 'a'},
+//      {"amp", required_argument, 0, 'a'},
+      // SNR
+      {"snr", required_argument, 0, 'n'},
       // frequency band number 
       {"band", required_argument, 0, 'b'},
       // change directory parameter
@@ -86,7 +93,8 @@ int main(int argc, char *argv[]) {
      printf("*** Software injection parameters - cont. GW signal ***\n"); 
      printf("Usage: ./sigen -[switch1] <value1> -[switch2] <value2> ...\n") ;
      printf("Switches are:\n\n"); 
-     printf("-amp   GW amplitude (default value: 2.e-3)\n"); 
+//     printf("-amp   GW amplitude (default value: 2.e-3)\n"); 
+     printf("-snr   Signal-to-Noise ratio of the injected signal\n"); 
      printf("-band  Band number\n"); 
      printf("-cwd   Change to directory <dir>\n");     
      printf("-data  Data directory in case of lines (default is .)\n"); 
@@ -101,13 +109,16 @@ int main(int argc, char *argv[]) {
   }
 
     int option_index = 0;
-    c = getopt_long_only (argc, argv, "a:b:c:d:p:g:s:r:", long_options, &option_index);
+    c = getopt_long_only (argc, argv, "n:b:c:d:p:g:s:r:", long_options, &option_index);
 
    if (c == -1)
       break;
     switch (c) {
-    case 'a':
+/*    case 'a':
       amp  = atof (optarg);
+      break; */
+    case 'n':
+      snr  = atof (optarg);
       break; 
     case 'b':
       band = atoi (optarg);
@@ -333,17 +344,16 @@ int main(int argc, char *argv[]) {
   sgnlo[7] = -sin(2.*psik)*hop*sin(ph_o) + cos(2.*psik)*hoc*cos(ph_o) ;
 
   // Output
-  printf("%le\n%d\n%d\n%d\n", amp, gsize, pm, reffr);   		 
+  printf("%le\n%d\n%d\n", snr, gsize, reffr);   		 
   printf("%.16le\n%.16le\n%.16le\n%.16le\n%.16le\n%.16le\n%.16le\n%.16le\n", 
 			sgnlo[0], sgnlo[1], sgnlo[2], sgnlo[3], 
 			sgnlo[4], sgnlo[5], sgnlo[6], sgnlo[7]);
-  printf("%.16le\n%.16le\n", be1, be2); 			 
+//  printf("%.16le\n%.16le\n", be1, be2); 			 
    
   // Testing printouts	
 /*
   printf("Random number between 0 and 1: %lf\n", rand1) ; 
   printf("pm, mm, nn, spnd: %d %d %d %d\n", pm, mm, nn, spnd) ;
-
   printf("%le\n%d\n%d\n", amp, gsize, pm) ;
   printf("rrn[0], rrn[1]: %.16le %.16le\n", rrn[0], rrn[1]) ; 
   
@@ -351,7 +361,6 @@ int main(int argc, char *argv[]) {
 		sgnlo[0], sgnlo[1], sgnlo[2], sgnlo[3]) ;
   printf("sgnlo[4]: %.16le\nsgnlo[5]: %.16le\nsgnlo[6]: %.16le\nsgnlo[7]: %.16le\n",
 		sgnlo[4], sgnlo[5], sgnlo[6], sgnlo[7]) ;		
-
   printf("be1: %.16le\nbe2: %.16le\n", be1, be2) ; 
   
   printf("iota, ph_o, psik: %.8lf %.8lf %.8lf\nhop, hoc: %.8lf %.8lf\n", 
