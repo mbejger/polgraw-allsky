@@ -69,7 +69,7 @@ int main (int argc, char* argv[]) {
 }
 
 
-static int way2compare_4c(const void *a, const void *b){
+inline int way2compare_4c(const void *a, const void *b){
   /* compare 4 columns (0,1,2,3) */
 
   const int* x = *((const int **)a);
@@ -84,7 +84,7 @@ static int way2compare_4c(const void *a, const void *b){
   return *(y+3) - *(x+3);
 }
 
-static int way2compare_c1(const void *a, const void *b){
+inline int way2compare_c1(const void *a, const void *b){
   /* compare column 1 */
 
   const int* x = *((const int **)a);
@@ -119,6 +119,7 @@ void read_trigger_files(Search_settings *sett,
   
   int i, j, candsize=INICANDSIZE, allcandsize=INICANDSIZE, goodcands=0, current_frame=0, frcount=0;  
   int val, shift[4], scale[4]; 
+  int hemi;
   double sqrN, omsN, v[4][4], be[2];
   FLOAT_TYPE tmp[4], c[5];
 
@@ -250,7 +251,7 @@ void read_trigger_files(Search_settings *sett,
 		
 		// Transformation of astronomical to linear coordinates;  
 		// C_EPSMA, an average value of epsm, is defined in settings.h  
-		ast2lin(c[3], c[2], C_EPSMA, be);
+		hemi = ast2lin(c[3], c[2], C_EPSMA, be);
 		
 		// tmp[2] corresponds to declination (d), tmp[3] to right ascension (a) 
 		tmp[2] = omsN*be[0]; 
@@ -287,13 +288,12 @@ void read_trigger_files(Search_settings *sett,
 	    // (realloc by a factor of 2) 
 	    if(i==candsize) {
 	      
-	      //candsize *= 2; 
-	      candsize *= 1.3;
+	      candsize *= 2; 
 	      
 	      ti = realloc(candi, candsize*sizeof(int *)); 
 	      if(ti!=NULL) { 
 		candi = ti; 
-		for(j=i; j<candsize; j++)
+		for(j=candsize/2; j<candsize; j++)
 		  candi[j] = malloc(7*sizeof(int));
 	      } else { 
 		printf("Problem with memory realloc for candidates array (int)... exiting...\n"); 
@@ -303,7 +303,7 @@ void read_trigger_files(Search_settings *sett,
 	      tf = realloc(candf, candsize*sizeof(FLOAT_TYPE *)); 
 	      if(tf!=NULL) { 
 		candf = tf; 
-		for(j=i; j<candsize; j++)
+		for(j=candsize/2; j<candsize; j++)
 		  candf[j] = malloc(5*sizeof(FLOAT_TYPE));
 	      } else { 
 		printf("Problem with memory realloc for candidates array (astro)... exiting...\n"); 
@@ -340,7 +340,6 @@ void read_trigger_files(Search_settings *sett,
 	    
 	    idx = candi[i][6]; 
 	    
-        // if(!1) that is if(0) which means rows are different   
 	    if(!diff) {
 	      
 	      int k=i, kidx=idx; 
@@ -360,13 +359,12 @@ void read_trigger_files(Search_settings *sett,
 	      
 	      if(goodcands==allcandsize) {
 		
-		//allcandsize *= 2;
-		allcandsize *= 1.3;
+		allcandsize *= 2; 
 		
 		ti = realloc(allcandi, allcandsize*sizeof(int *)); 
 		if(ti!=NULL) { 
 		  allcandi = ti; 
-		  for(j=goodcands; j<allcandsize; j++)
+		  for(j=allcandsize/2; j<allcandsize; j++)
 		    allcandi[j] = malloc(7*sizeof(int));
 		} else { 
 		  printf("Problem with memory realloc for ALL candidates array (int)... exiting...\n"); 
@@ -376,7 +374,7 @@ void read_trigger_files(Search_settings *sett,
 		tf = realloc(allcandf, allcandsize*sizeof(FLOAT_TYPE *)); 
 		if(tf!=NULL) { 
 		  allcandf = tf; 
-		  for(j=goodcands; j<allcandsize; j++)
+		  for(j=allcandsize/2; j<allcandsize; j++)
 		    allcandf[j] = malloc(5*sizeof(FLOAT_TYPE));
 		} else { 
 		  printf("Problem with memory realloc for ALL candidates array (astro)... exiting...\n"); 
@@ -387,17 +385,13 @@ void read_trigger_files(Search_settings *sett,
 	      }
 	      
 	      
-	    // The candidate is not unique, selecting the one 
-        // with the highest SNR   
 	    } else {
 	      
 	      idx1 = candi[i+1][6];
 	      
 	      if(!maxsnridx) {  
-		    maxsnridx = (candf[idx][4] > candf[idx1][4] ? idx : idx1); 
-		    //#pci maxi = i;
-            maxi = (candf[idx][4] > candf[idx1][4] ? i : i+1);
-
+		maxsnridx = (candf[idx][4] > candf[idx1][4] ? idx : idx1); 
+		maxi = i; 
 		candsnr = candf[maxsnridx][4];    
 	      } else { 
 		if(candf[idx][4] > candsnr) {
@@ -503,23 +497,23 @@ void read_trigger_files(Search_settings *sett,
 
     for(l=0; l<5; l++) mean[l]=0; 
 
-    for(i=0; i<w; i++) {   
+    for(i=0; i<imtr[q][1]; i++) {   
       int l, k = j-i; 
       int f = allcandi[k][6]; 
  
 //#mb 
-      for(l=0; l<4; l++)  
-        mean[l] += allcandf[f][l]; 
+//      for(l=0; l<4; l++)  
+//        mean[l] += allcandf[f][l]; 
 
 //#mb definition for alpha (mean[3]) in MDC Stage4 
-//      for(l=0; l<3; l++)  
-//        mean[l] += allcandf[f][l];      
-//
-//      if(allcandf[f][3]>M_PI) 
+      for(l=0; l<3; l++)  
+        mean[l] += allcandf[f][l];      
+
+      if(allcandf[f][3]>M_PI) 
 //        mean[3] += 2*M_PI - arccos(cos(allcandf[f][3])); 
-//        mean[3] += 2*M_PI - allcandf[f][3]; 
-//      else 
-//        mean[3] += allcandf[f][3];     
+        mean[3] += 2*M_PI - allcandf[f][3]; 
+      else 
+        mean[3] += allcandf[f][3];     
 
 
       mean[4] += allcandf[f][4]*allcandf[f][4];  
