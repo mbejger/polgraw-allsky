@@ -23,7 +23,7 @@ lin2ast (double be1, double be2, int pm, double sepsm, double cepsm,
 
 } /* lin2ast() */
 
-void ast2lin (FLOAT_TYPE alfa, FLOAT_TYPE delta, double epsm, double *be) {
+int ast2lin (FLOAT_TYPE alfa, FLOAT_TYPE delta, double epsm, double *be) {
 
   /* alfa - right ascension [rad]
      delta - declination [rad]
@@ -35,7 +35,7 @@ void ast2lin (FLOAT_TYPE alfa, FLOAT_TYPE delta, double epsm, double *be) {
     be[1] = cos(alfa)*cos(delta);
 
     //#mb this is not needed at the moment 
-/* 
+ 
     double d1 = asin(be[0]*sin(epsm) 
             + sqrt(1. - be[0]*be[0] - be[1]*be[1])*cos(epsm)) - delta;
 
@@ -50,9 +50,7 @@ void ast2lin (FLOAT_TYPE alfa, FLOAT_TYPE delta, double epsm, double *be) {
         pm = 2;
 
     return pm; 
-*/ 
-
-}
+} /* ast2lin */
 
 inline void
 spline(complex double *y, int n, complex double *y2)
