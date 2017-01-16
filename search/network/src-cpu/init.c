@@ -460,14 +460,14 @@ void add_signal(
   // Signal parameters are read
   if ((data=fopen (opts->addsig, "r")) != NULL) {
 	
-    // Fscanning for the GW amplitude, grid size, hemisphere 
-    // and the reference frame (for which the signal freq. is not spun-down/up)
+    // Fscanning for the GW snr, grid size and the reference
+    // frame (for which the signal freq. is not spun-down/up)
     fscanf (data, "%le %d %d", &snr, &gsize, &reffr);    
 
     // Fscanning signal parameters: f, fdot, delta, alpha (sgnlo[0], ..., sgnlo[3])
     // four amplitudes sgnlo[4], ..., sgnlo[7] 
     // (see sigen.c and Phys. Rev. D 82, 022005 2010, Eqs. 2.13a-d) 
-    // be1, be2 (sgnlo[8], sgnlo[9] to translate the sky position into grid position)  
+
     for(i=0; i<8; i++)
       fscanf(data, "%le",i+sgnlo); 
     
@@ -492,18 +492,12 @@ void add_signal(
   
   for(i=0; i<2; i++) sgnlol[i] = sgnlo[i]; 
   
-//printf("%le %le \n", be[0], be[1]);
+//Hemisphere an be vector 
+//(previously was fscanned from sigfile, now calculated here)
 
-  ast2lin(sgnlo[3], sgnlo[2], C_EPSMA, be);
+  s_range->pmr[0] = ast2lin(sgnlo[3], sgnlo[2], C_EPSMA, be);
  
-  d1= asin(be[0]*sin(C_EPSMA) 
-            + sqrt(1. - be[0]*be[0] - be[1]*be[1])*cos(C_EPSMA)) - sgnlo[2];
-    if(fabs(d1)  < 10.*DBL_EPSILON)
-        s_range->pmr[0] = 1;
-    else
-        s_range->pmr[0] = 2;
-
-printf("%le %le %d\n", be[0], be[1], s_range->pmr[0]);
+// printf("%le %le %d\n", be[0], be[1], s_range->pmr[0]);
 
   sgnlol[2] = be[0]*cof; //sgnlo[8]*cof; 
   sgnlol[3] = be[1]*cof; //sgnlo[9]*cof;  
@@ -562,7 +556,7 @@ printf("%le %le %d\n", be[0], be[1], s_range->pmr[0]);
   double phaseshift = sgnlo[0]*sett->N*(reffr - opts->ident)   
     + sgnlo[1]*pow(sett->N*(reffr - opts->ident), 2); 
 
-  // Loop for each detector 
+  // Loop for each detector - sum calculations
   for(n=0; n<sett->nifo; n++) {
     
     modvir(sinaadd, cosaadd, sindadd, cosdadd,
@@ -572,7 +566,6 @@ printf("%le %le %d\n", be[0], be[1], s_range->pmr[0]);
     nSource[1] = sinaadd*cosdadd;
     nSource[2] = sindadd;
 					
-    // adding signal to data (point by point)  								
     for (i=0; i<sett->N; i++) {
       
       shiftadd = 0.; 					 
@@ -593,14 +586,17 @@ printf("%le %le %d\n", be[0], be[1], s_range->pmr[0]);
       //#mb test printout 
       //printf("%d %le\n", i + sett->N*(opts->ident-1), phaseadd); 
 
+// Sum over signals
       sum += pow(signadd, 2.);
     
     } //data loop
    
   } //detector loop
 
+//Signal amplitude
   h0 = (snr*sigma_noise)/(sqrt(sum));
 
+// Loop for each detector - adding signal to data (point by point)  								
   for(n=0; n<sett->nifo; n++) {
     modvir(sinaadd, cosaadd, sindadd, cosdadd,
 	   sett->N, &ifo[n], aux_arr);
@@ -609,7 +605,6 @@ printf("%le %le %d\n", be[0], be[1], s_range->pmr[0]);
     nSource[1] = sinaadd*cosdadd;
     nSource[2] = sindadd;
 					
-    // adding signal to data (point by point)  								
     for (i=0; i<sett->N; i++) {
       
       shiftadd = 0.; 					 
