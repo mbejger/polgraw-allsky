@@ -36,7 +36,7 @@ void handle_opts( Search_settings *sett,
   opts->wd=NULL;
 
   // Default F-statistic threshold 
-  opts->trl=20;
+  opts->trl = 20;
 
   strcpy (opts->prefix, TOSTR(PREFIX));
   strcpy (opts->dtaprefix, TOSTR(DTAPREFIX));
@@ -44,6 +44,7 @@ void handle_opts( Search_settings *sett,
   opts->label[0]    = '\0';
   opts->usedet[0]   = '\0';
   opts->addsig[0]   = '\0';
+  opts->candidates[0]   = '\0';
 //  opts->glue[0]   = '\0';
 	
   // Initial value of starting frequency set to a negative quantity. 
@@ -53,6 +54,9 @@ void handle_opts( Search_settings *sett,
 
   // Default initial value of the data sampling time 
   sett->dt = 0.5; 
+
+// Initial number of reference frame
+  opts->refr = -1;
 
   opts->help_flag=0;
   opts->veto_flag=0; 
@@ -95,6 +99,10 @@ void handle_opts( Search_settings *sett,
       {"usedet", required_argument, 0, 'u'}, 
       // data sampling time 
       {"dt", required_argument, 0, 's'},
+      // use candidates from file 
+      {"candidates", required_argument, 0, 'a'},
+      // Reference frame number 
+      {"refr", required_argument, 0, 'r'},
       {0, 0, 0, 0}
     };
 
@@ -114,7 +122,9 @@ void handle_opts( Search_settings *sett,
       printf("-s, -dt           data sampling time dt (default value: 0.5)\n");
       printf("-u, -usedet       Use only detectors from string (default is use all available)\n");
 //      printf("-e, -glue		Glue chosen frames together. Names of frames from <file>\n");
-      printf("-x, -addsig       Add signal with parameters from <file>\n\n");
+      printf("-x, -addsig       Add signal with parameters from <file>\n");
+      printf("-a, -candidates   As a starting point in followup use parameters from <file>\n");
+      printf("-refr             Reference frame number\n\n");
 
       printf("Also:\n\n");
       printf("--vetolines       Veto known lines from files in data directory\n");
@@ -127,7 +137,7 @@ void handle_opts( Search_settings *sett,
     }
 
     int option_index = 0;
-    int c = getopt_long_only(argc, argv, "i:b:o:d:l:c:t:p:x:s:e:u:", 
+    int c = getopt_long_only(argc, argv, "i:b:o:d:l:c:t:p:x:a:r:s:e:u:", 
 			     long_options, &option_index);
     if (c == -1)
       break;
@@ -161,6 +171,12 @@ void handle_opts( Search_settings *sett,
       break;
     case 'x':
       strcpy(opts->addsig, optarg);
+      break;
+    case 'a':
+      strcpy(opts->candidates, optarg);
+      break;
+    case 'r':
+      opts->refr = atoi(optarg);
       break;
     case 's':
       sett->dt = atof(optarg);
@@ -204,10 +220,14 @@ void handle_opts( Search_settings *sett,
 
   if(opts->trl!=20)
     printf ("Threshold for the F-statistic is %lf\n", opts->trl);
+  if(opts->refr > 0)
+    printf ("Reference frame is %d\n", opts->refr);
   if(strlen(opts->label))
     printf ("Using '%s' as data label\n", opts->label);
   if (strlen(opts->addsig))
     printf ("Adding signal from '%s'\n", opts->addsig);
+  if (strlen(opts->candidates))
+    printf ("Starting point for followup taken from '%s'\n", opts->candidates);
 //  if(strlen(opts->glue))
 //    printf ("Gluing together frames from '%s'\n", opts->glue);
   if (opts->wd) {
@@ -610,7 +630,7 @@ puts("Adding signal from file");
 
   hem = ast2lin(sgnlo[3], sgnlo[2], C_EPSMA, be);
 
-  printf("%le %le %d\n", be[0], be[1], hem);
+//  printf("%le %le %d\n", be[0], be[1], hem);
 
 
   // sgnlo[2]: declination, sgnlo[3]: right ascension 
