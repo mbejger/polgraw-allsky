@@ -614,7 +614,7 @@ int main (int argc, char *argv[]) {
 	double nSource[3];
   	double sinalt, cosalt, sindelt, cosdelt;
 	double F_min;
-	char path[512];
+//	char path[512];
 	double x, y;
 	ROW = pow((bins+1),4);
 
@@ -646,6 +646,14 @@ int main (int argc, char *argv[]) {
 
 // Command line options 
 	handle_opts(&sett, &opts, argc, argv); 
+// Search settings
+  	search_settings(&sett); 
+// Detector network settings
+  	detectors_settings(&sett, &opts); 
+
+// Array initialization
+  	init_arrays(&sett, &opts, &aux_arr);
+
 // Output data handling
 /*  struct stat buffer;
 
@@ -664,7 +672,7 @@ int main (int argc, char *argv[]) {
   }
 */
 //	sprintf(path, "%s/candidates_%03d.coi", opts.dtaprefix, opts.ident);
-	sprintf(path, "candidates.coi", opts.ident);
+//	sprintf(path, "candidates.coi", opts.ident);
 
 //Glue function
 /*	if(strlen(opts.glue)) {
@@ -677,8 +685,7 @@ int main (int argc, char *argv[]) {
 */	
 	FILE *coi;
 	int z;
-	if ((coi = fopen(path, "r")) != NULL) {
-		printf("Using %s as a starting point\n", path);
+	if ((coi = fopen(opts.candidates, "r")) != NULL) {
 //		while(!feof(coi)) {
 
 /*			if(!fread(&w, sizeof(unsigned short int), 1, coi)) { break; } 
@@ -691,6 +698,13 @@ int main (int argc, char *argv[]) {
 			while(fscanf(coi, "%le %le %le %le", &mean[0], &mean[1], &mean[2], &mean[3]) == 4){
 //Time test
 //			tstart = clock();
+
+//Frequency shifted from the reference frame to the current frame
+				if (opts.refr > 0){
+
+					mean[0] += -2.*mean[1]*(sett.N)*(opts.refr - opts.ident); 
+				}
+
 				arr = matrix(ROW, 4);
 
 //Function neighbourhood - generating grid around point
@@ -719,14 +733,7 @@ int main (int argc, char *argv[]) {
 					read_grid(&sett, &opts);
 				}
 */
-// Search settings
-  				search_settings(&sett); 
-// Detector network settings
-  				detectors_settings(&sett, &opts); 
-
-// Array initialization
-  				init_arrays(&sett, &opts, &aux_arr);
-				
+		
 // Amplitude modulation functions for each detector  
 				for(i=0; i<sett.nifo; i++) rogcvir(&ifo[i]); 
 // Adding signal from file
@@ -739,10 +746,6 @@ int main (int argc, char *argv[]) {
 //omp_set_num_threads(2);
 
 				results_max[5] = 0.;
-
-// ifo zostaje shared
-// ifo....shft i ifo....xdatm{a,b] prerobić na lokalne tablice w fstatnet
-// w regionie parallel wprowadzić tablice private aa i bb ; alokować i przekazywać je jako argumenty do fstatnet i amoeba
 
 // Main loop - over all parameters + parallelisation
 #pragma omp parallel default(shared) private(d, i, sgnlo, sinalt, cosalt, sindelt, cosdelt, nSource, results, maximum)
@@ -828,7 +831,7 @@ printf("%le %le %le %le %le %le\n", results[6], results[7], results[8], results[
 	} //if coi
 	else {
 		
-		printf ("Problem with %s\n", path);
+		printf ("Problem with %s\n", opts.candidates);
 		return 1;
 	}
 
