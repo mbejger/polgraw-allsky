@@ -21,12 +21,13 @@ typedef struct _comm_line_opts {
       gauss_flag,		// Generate Gaussian noise instead of reading data
       help_flag;
   
-  int ident, band, hemi;
+  int ident, band, hemi, refr;
   double trl;
   double fpo_val;
   
-  char prefix[512], dtaprefix[512], label[512], qname[512], usedet[32], 
-    addsig[512], glue[512], gauss[512], *wd;
+  char prefix[512], dtaprefix[512], label[512], qname[512], 
+    usedet[32], addsig[512], candidates[512],glue[512], 
+    gauss[512], *wd;
   
 } Command_line_opts;
 
