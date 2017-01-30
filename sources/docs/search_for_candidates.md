@@ -135,12 +135,14 @@ where `bbb` is the band number, and `dt` is the data sampling time (`0.5 s` for 
 `VSR1` database contains 929 narrow (1 Hz, $B=1/(2dt)$) bands, covering the range 
 100 - 1000 Hz. Neighboring bands overlap by 0.03125 Hz. 
 
-In case of the `O1` data, the bandwidth was chosen to be `0.25 Hz` (`dt` was chosen to be equal `2 s`). Consequently, the reference band frequency `fpo` is defined as 
+###
+#### 4.1 O1 change of sampling `dt` (bandwidth `B`) and data length 
+
+For the `O1` data, the bandwidth was chosen to be `0.25 Hz` (`dt` was chosen to be equal `2 s`). Consequently, the reference band frequency `fpo` is defined as 
 $$
 fpo = 10 + (1 - 2^{-5})\cdot bbbb\cdot \frac{1}{2dt}\ \mathrm{[Hz]}. 
 $$
-`O1` data contains ${\simeq} 2000$ narrow `0.25 Hz` bands in the frequency range `10-500 Hz`. Because of the sampling time change, the total number of data points in the 2 sideral day long segment is `N=86164`. 6 day segments contain `N=258492` double-precision numbers.     
-
+`O1` data thus contains ${\simeq} 2000$ narrow `0.25 Hz` bands in the frequency range `10-500 Hz`. Because of the sampling time change, the total number of data points in the 2 sideral day long segment is `N=86164`. For lower frequencies 6 day length segments are used. They contain `N=258492` double-precision numbers. 
 
 ### 5. Input data files
 

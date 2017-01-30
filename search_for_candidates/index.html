@@ -120,13 +120,19 @@
         
             <li><a href="#4-data-structure">4. Data structure</a></li>
         
-            <li><a href="#5-input-data-files">5. Input data files</a></li>
+            <li><a href="#41-o1-change-of-sampling-dt-bandwidth-b-and-data-length">4.1 O1 change of sampling dt (bandwidth B) and data length</a></li>
         
-            <li><a href="#6-output-files">6. Output files</a></li>
+    
+        <li class="main "><a href="#5-input-data-files">5. Input data files</a></li>
         
-            <li><a href="#7-auxiliary-files">7. Auxiliary files</a></li>
+    
+        <li class="main "><a href="#6-output-files">6. Output files</a></li>
         
-            <li><a href="#8-versions">8. Versions</a></li>
+    
+        <li class="main "><a href="#7-auxiliary-files">7. Auxiliary files</a></li>
+        
+    
+        <li class="main "><a href="#8-versions">8. Versions</a></li>
         
     
     </ul>
@@ -308,11 +314,13 @@ $$</mathjax>
 where <code>bbb</code> is the band number, and <code>dt</code> is the data sampling time (<code>0.5 s</code> for VSR1 data). 
 <code>VSR1</code> database contains 929 narrow (1 Hz, <mathjax>$B=1/(2dt)$</mathjax>) bands, covering the range 
 100 - 1000 Hz. Neighboring bands overlap by 0.03125 Hz. </p>
-<p>In case of the <code>O1</code> data, the bandwidth was chosen to be <code>0.25 Hz</code> (<code>dt</code> was chosen to be equal <code>2 s</code>). Consequently, the reference band frequency <code>fpo</code> is defined as 
+<h3 id="_4"></h3>
+<h4 id="41-o1-change-of-sampling-dt-bandwidth-b-and-data-length">4.1 O1 change of sampling <code>dt</code> (bandwidth <code>B</code>) and data length</h4>
+<p>For the <code>O1</code> data, the bandwidth was chosen to be <code>0.25 Hz</code> (<code>dt</code> was chosen to be equal <code>2 s</code>). Consequently, the reference band frequency <code>fpo</code> is defined as 
 <mathjax>$$
 fpo = 10 + (1 - 2^{-5})\cdot bbbb\cdot \frac{1}{2dt}\ \mathrm{[Hz]}. 
 $$</mathjax>
-<code>O1</code> data contains <mathjax>${\simeq} 2000$</mathjax> narrow <code>0.25 Hz</code> bands in the frequency range <code>10-500 Hz</code>. Because of the sampling time change, the total number of data points in the 2 sideral day long segment is <code>N=86164</code>. 6 day segments contain <code>N=258492</code> double-precision numbers.     </p>
+<code>O1</code> data thus contains <mathjax>${\simeq} 2000$</mathjax> narrow <code>0.25 Hz</code> bands in the frequency range <code>10-500 Hz</code>. Because of the sampling time change, the total number of data points in the 2 sideral day long segment is <code>N=86164</code>. For lower frequencies 6 day length segments are used. They contain <code>N=258492</code> double-precision numbers. </p>
 <h3 id="5-input-data-files">5. Input data files</h3>
 <p>A single run requires 2 data files for each detector <code>DD</code>, stored in <code>data_dir/nnn/DD</code> 
 subdirectory, where <code>DD</code> is <code>H1</code> (Hanford), <code>L1</code> (Livingston), or <code>V1</code> (Virgo Cascina):</p>
