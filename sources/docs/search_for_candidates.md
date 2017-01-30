@@ -66,10 +66,12 @@ Also:
 
 #### 3.2. Network of detectors 
 
-For the examplary input data time streams `xdatc_001_0101.bin` provided in [test-data-network.tar.gz](https://polgraw.camk.edu.pl/polgraw-allsky/data/test-data-network.tar.gz), the call is as follows: 
+For the examplary input data time streams `xdatc_001_0101.bin` provided in [test-data-network.tar.gz](https://polgraw.camk.edu.pl/polgraw-allsky/data/test-data-network.tar.gz), the call is as follows:
+
 ```
 LD_LIBRARY_PATH=lib/yeppp-1.0.0/binaries/linux/x86_64 ./gwsearch-cpu -data ./test-data-network -ident 001 -band 0101 -usedet H1V1
 ```
+
 where the `LD_LIBRARY_PATH` points to the location of the `YEPPP!` library. 
 
 The program will proceed assuming that the data directory `./test-data-network/001` for the time frame `001` contain subdirectories for the network of detectors (here `H1` and `V1`) with input time series `xdatc_001_0101.bin` and the ephemerids files `DetSSB.bin` in each subdirectory. The grid of parameters files is expected to be in `./test-data-network/001/grid.bin`. Switch `-usedet H1` (`-usedet V1`) select the appropriate data and performs single detector search. 
@@ -77,10 +79,12 @@ The program will proceed assuming that the data directory `./test-data-network/0
 ####
 #### 3.3. Network of detectors in spotlight search (depreciated)
 
-For the `H1L1` network of detectors, using the [test-data-network-injection.tar.gz](https://polgraw.camk.edu.pl/polgraw-allsky/data/test-data-network-injection.tar.gz) to search towards a pre-defined direction (spotlight search) in one 2-day segment: 
+For the `H1L1` network of detectors, using the [test-data-network-injection.tar.gz](https://polgraw.camk.edu.pl/polgraw-allsky/data/test-data-network-injection.tar.gz) to search towards a pre-defined direction (spotlight search) in one 2-day segment:
+
 ```
 LD_LIBRARY_PATH=lib/yeppp-1.0.0/binaries/linux/x86_64 ./search -data ./test-data-network-injection -ident 205 -band 000 -spotlight ./test-data-network-injection/205/spot_J0322+0441.dat -fpo 1391.3 -label J0322+0441 -dt 2  
 ```
+
 The injection corresponds to a pulsar J0322+0441. Note the differences with respect to the minimal call: 
 
 * instead of calculating the band frequency `fpo` from `band`, we provide it directly with the `-fpo` switch (`-band 000` is invoked for legacy), 
@@ -99,9 +103,7 @@ Results are as follows:
 
 #### 3.4. One-detector version 
 
-In the case of `one-detector` and `gpu-current` versions, test data is in
-[test-data.tar.gz](https://polgraw.camk.edu.pl/polgraw-allsky/data/test-data.tar.gz). 
-The directory `001` contains directly the `DetSSB.bin`, `grid.bin` and `xdatc_001_101.bin` files. 
+In the case of `one-detector` version, test data is in [test-data.tar.gz](https://polgraw.camk.edu.pl/polgraw-allsky/data/test-data.tar.gz). The directory `001` contains directly the `DetSSB.bin`, `grid.bin` and `xdatc_001_101.bin` files. 
 
 ### 4. Data structure
 
@@ -130,8 +132,15 @@ $$
 fpo = 100 + (1 - 2^{-5})\cdot bbb\cdot \frac{1}{2dt}\ \mathrm{[Hz]},
 $$
 where `bbb` is the band number, and `dt` is the data sampling time (`0.5 s` for VSR1 data). 
-VSR1 database contains 929 narrow (1 Hz, $B=1/(2dt)$) bands, covering the range 
+`VSR1` database contains 929 narrow (1 Hz, $B=1/(2dt)$) bands, covering the range 
 100 - 1000 Hz. Neighboring bands overlap by 0.03125 Hz. 
+
+In case of the `O1` data, the bandwidth was chosen to be `0.25 Hz` (`dt` was chosen to be equal `2 s`). Consequently, the reference band frequency `fpo` is defined as 
+$$
+fpo = 10 + (1 - 2^{-5})\cdot bbbb\cdot \frac{1}{2dt}\ \mathrm{[Hz]}. 
+$$
+`O1` data contains ${\simeq} 2000$ narrow `0.25 Hz` bands in the frequency range `10-500 Hz`. Because of the sampling time change, the total number of data points in the 2 sideral day long segment is `N=86164`. 6 day segments contain `N=258492` double-precision numbers.     
+
 
 ### 5. Input data files
 

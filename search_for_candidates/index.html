@@ -255,7 +255,7 @@
 </tbody>
 </table>
 <h4 id="32-network-of-detectors">3.2. Network of detectors</h4>
-<p>For the examplary input data time streams <code>xdatc_001_0101.bin</code> provided in <a href="https://polgraw.camk.edu.pl/polgraw-allsky/data/test-data-network.tar.gz">test-data-network.tar.gz</a>, the call is as follows: </p>
+<p>For the examplary input data time streams <code>xdatc_001_0101.bin</code> provided in <a href="https://polgraw.camk.edu.pl/polgraw-allsky/data/test-data-network.tar.gz">test-data-network.tar.gz</a>, the call is as follows:</p>
 <pre><code>LD_LIBRARY_PATH=lib/yeppp-1.0.0/binaries/linux/x86_64 ./gwsearch-cpu -data ./test-data-network -ident 001 -band 0101 -usedet H1V1
 </code></pre>
 
@@ -263,7 +263,7 @@
 <p>The program will proceed assuming that the data directory <code>./test-data-network/001</code> for the time frame <code>001</code> contain subdirectories for the network of detectors (here <code>H1</code> and <code>V1</code>) with input time series <code>xdatc_001_0101.bin</code> and the ephemerids files <code>DetSSB.bin</code> in each subdirectory. The grid of parameters files is expected to be in <code>./test-data-network/001/grid.bin</code>. Switch <code>-usedet H1</code> (<code>-usedet V1</code>) select the appropriate data and performs single detector search. </p>
 <h4 id="_3"></h4>
 <h4 id="33-network-of-detectors-in-spotlight-search-depreciated">3.3. Network of detectors in spotlight search (depreciated)</h4>
-<p>For the <code>H1L1</code> network of detectors, using the <a href="https://polgraw.camk.edu.pl/polgraw-allsky/data/test-data-network-injection.tar.gz">test-data-network-injection.tar.gz</a> to search towards a pre-defined direction (spotlight search) in one 2-day segment: </p>
+<p>For the <code>H1L1</code> network of detectors, using the <a href="https://polgraw.camk.edu.pl/polgraw-allsky/data/test-data-network-injection.tar.gz">test-data-network-injection.tar.gz</a> to search towards a pre-defined direction (spotlight search) in one 2-day segment:</p>
 <pre><code>LD_LIBRARY_PATH=lib/yeppp-1.0.0/binaries/linux/x86_64 ./search -data ./test-data-network-injection -ident 205 -band 000 -spotlight ./test-data-network-injection/205/spot_J0322+0441.dat -fpo 1391.3 -label J0322+0441 -dt 2  
 </code></pre>
 
@@ -282,9 +282,7 @@ where <mathjax>$h$</mathjax> is the hemisphere number (1 or 2), <mathjax>$N_{sky
 <p>Results are as follows: </p>
 <p><img alt="Results for the network of detectors" src="../img/1det2det.png" /></p>
 <h4 id="34-one-detector-version">3.4. One-detector version</h4>
-<p>In the case of <code>one-detector</code> and <code>gpu-current</code> versions, test data is in
-<a href="https://polgraw.camk.edu.pl/polgraw-allsky/data/test-data.tar.gz">test-data.tar.gz</a>. 
-The directory <code>001</code> contains directly the <code>DetSSB.bin</code>, <code>grid.bin</code> and <code>xdatc_001_101.bin</code> files. </p>
+<p>In the case of <code>one-detector</code> version, test data is in <a href="https://polgraw.camk.edu.pl/polgraw-allsky/data/test-data.tar.gz">test-data.tar.gz</a>. The directory <code>001</code> contains directly the <code>DetSSB.bin</code>, <code>grid.bin</code> and <code>xdatc_001_101.bin</code> files. </p>
 <h3 id="4-data-structure">4. Data structure</h3>
 <p><a id="data_structure"></a> 
 We describe the structure using the VSR1 data as an example. 
@@ -308,8 +306,13 @@ file:</p>
 fpo = 100 + (1 - 2^{-5})\cdot bbb\cdot \frac{1}{2dt}\ \mathrm{[Hz]},
 $$</mathjax>
 where <code>bbb</code> is the band number, and <code>dt</code> is the data sampling time (<code>0.5 s</code> for VSR1 data). 
-VSR1 database contains 929 narrow (1 Hz, <mathjax>$B=1/(2dt)$</mathjax>) bands, covering the range 
+<code>VSR1</code> database contains 929 narrow (1 Hz, <mathjax>$B=1/(2dt)$</mathjax>) bands, covering the range 
 100 - 1000 Hz. Neighboring bands overlap by 0.03125 Hz. </p>
+<p>In case of the <code>O1</code> data, the bandwidth was chosen to be <code>0.25 Hz</code> (<code>dt</code> was chosen to be equal <code>2 s</code>). Consequently, the reference band frequency <code>fpo</code> is defined as 
+<mathjax>$$
+fpo = 10 + (1 - 2^{-5})\cdot bbbb\cdot \frac{1}{2dt}\ \mathrm{[Hz]}. 
+$$</mathjax>
+<code>O1</code> data contains <mathjax>${\simeq} 2000$</mathjax> narrow <code>0.25 Hz</code> bands in the frequency range <code>10-500 Hz</code>. Because of the sampling time change, the total number of data points in the 2 sideral day long segment is <code>N=86164</code>. 6 day segments contain <code>N=258492</code> double-precision numbers.     </p>
 <h3 id="5-input-data-files">5. Input data files</h3>
 <p>A single run requires 2 data files for each detector <code>DD</code>, stored in <code>data_dir/nnn/DD</code> 
 subdirectory, where <code>DD</code> is <code>H1</code> (Hanford), <code>L1</code> (Livingston), or <code>V1</code> (Virgo Cascina):</p>
