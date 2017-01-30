@@ -1,5 +1,12 @@
 #!/bin/bash
 
+# Auxiliary temporary dir for each simulation (locally on the nodes) 
+tmpdir="/tmp/${PWD#"${PWD%/*/*}/"}"
+parenttmpdir="$(dirname "${tmpdir}")"
+
+rm -fr ${parenttmpdir}/*
+mkdir -p ${tmpdir} 
+
 #-------------------
 # Signal generation
 #-------------------
@@ -13,7 +20,7 @@ done
 hemi=($sig_pars); hemi=${hemi[2]}
 
 # Saving injection details ''just in case''
-echo $sig_pars > sig_BAND
+echo $sig_pars > ${tmpdir}/sig_BAND
 
 num_of_frames=0 
 
@@ -35,39 +42,25 @@ for frame in $(cat LOF|sort -r); do
 
 done 
 
-## this loop is used when the signal goes out of the initial band
-#if [[ $last_frame ]]; then 
-#
-#	for frame in $(awk '{if($1<='${last_frame}') print $1}' LONF|sort -r); do
-#
-#	        ./search -d DATA -i ${frame} -b NEXTB --whitenoise -a <(echo $sig_pars)	2>> BAND.snr
-#		let "num_of_frames += 1"
-#
-#	done 
-#fi 
-
-# signal-to-noise estimate (mean of the values generated during the search)
-# snr=$(grep "SNR:" BAND.snr | awk '{sum +=$2*$2} END {print sqrt(sum/'$num_of_frames')}')
-
 sim_num=${PWD##*/} 
 
 #--------------
 # Coincidences
 #--------------
 
-mkdir BAND 
+mkdir ${tmpdir}/BAND 
 
 # Calculate band frequency from band number
 fpo=$(echo "BAND DT"|awk '{printf("%.6f", 10 + 0.96875*$1/(2.0*$2))}')
 
 # Searching for coincidences 
 for shi in {0..1}{0..1}{0..1}{0..1}; do
-	./coincidences -mincoin MINCOIN -snrcutoff SNRCUT -data . -trigname triggers_ -refloc DATA/REFFR -fpo $fpo -shift $shi -scale CELL -refr REFFR -dt DT -output BAND 2>> BAND/summary 1>> BAND.out  
+	./coincidences -mincoin MINCOIN -snrcutoff SNRCUT -data ${tmpdir} -trigname triggers_ -refloc DATA/REFFR -fpo $fpo -shift $shi -scale CELL -refr REFFR -dt DT -output ${tmpdir}/BAND 2>> ${tmpdir}/BAND/summary 1>> ${tmpdir}/BAND.out  
 done
 
 # Selecting maximal coincidence for each pulsar among all 16 shifts (col. 5) 
 # if many, select the one with highest SNR (col. 10)  
-sort -rgk5 -gk10 BAND/summary | head -1 >> summary 
+sort -rgk5 -gk10 ${tmpdir}/BAND/summary | head -1 >> summary 
 sumvar=$(<summary)
 
 # Cleanup (archiving and deleting the coi files) 
@@ -79,7 +72,8 @@ sumvar=$(<summary)
 #done 
 
 # cleanup 
-rm -fr triggers_* *.e* *.o* BAND wisdom*
+rm -fr ${tmpdir}
+rm -fr *.e* *.o* wisdom*
 
 cd ../
 

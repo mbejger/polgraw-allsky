@@ -28,8 +28,8 @@ Example call:
 
 $ ./mcsim.sh /home/michal/polgraw-allsky/scripts/band_h0.list  
 
-End results (summary how many simulations crossed a coincidence 
-threshold of 0.7): 
+End results (summary how many out of 100 simulations crossed a coincidence 
+threshold of 0.7 for bands in the range of 0301-0350): 
 
-$ ./mcsummary.sh list_of_bands /home/michal/polgraw-allsky/scripts/band_h0.list
+$ ./mcsummary.sh <(seq -f %04g 301 350) 0.7 100
 

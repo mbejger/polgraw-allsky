@@ -1,5 +1,8 @@
 #!/bin/bash 
 
+thresh=$2
+howmuch=$3
+
 # band number is read from a list given from 
 # command line 
 for b in $(cat $1); do
@@ -8,8 +11,8 @@ for b in $(cat $1); do
 
     # list file contains the following columns:
     # 1. band number, 2-..., h0 GW amplitude
-    h=$(awk '{if($1=="'$b'") print $0}' $2)
-    h=($h)
+    h=$(ls -d *_${b}|sed -e 's/_'${b}'//g'|sort -g)
+    h=($b $h)
     # length of h array
     hlen=$((${#h[@]}-1))
 
@@ -20,7 +23,7 @@ for b in $(cat $1); do
         if [ -d "$diri" ]; then
 			cd $diri
 			find . -name "${diri}*.sum" -exec cat {} > ${diri}.summary \;
-			n[$i]=$(awk '$20>=0.7*$19 {n++;} END {if(n) print n; else print 0}' ${diri}.summary)
+			n[$i]=$(awk '$20>='$thresh'*$19 {n++;} END {if(n) print n/'$howmuch'; else print 0}' ${diri}.summary)
 			cd ../
         fi
 

@@ -27,16 +27,11 @@ cp ${script_home}/script_manyframes.sh script.sh
 #cp ${script_home}/clean.sh .
 #cp ${script_home}/get_summary.sh .
 
-# for the case when signal enters another band
-next_band=$((${band#0}+1))
-next_band=$(printf "%03d\n" ${next_band})
-
 # replacements in script.sh 
 sed -i 's|BAND|'$band'|g;s|GSIZE|'$gsize'|g;s|REFFR|'$reffr'|g' script.sh
 sed -i 's|H0|'$h0'|g;s|CELL|'$cell'|g;s|DT|'$dt'|g;s|THRESH|'$thresh'|g' script.sh
 sed -i 's|SNRCUT|'$snrcut'|g;s|MINCOIN|'$mincoin'|g' script.sh 
 sed -i 's|DATA|'$data'|g;s|LOF|'$list_of_frames'|g;s|USEDET|'$usedet'|g' script.sh
-#sed -i 's|NEXTB|'$next_band'|g;s|LONF|'$list_of_frames'/'$next_band'.d|g' script.sh
 sed -i 's|LDLP|'$ldlp'|g;s|LZ4PATH|'$lz4path'|g' script.sh 
 
 # loop below prepares a number of catalogues: 01, 02,..., $howmany
