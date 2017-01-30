@@ -110,19 +110,9 @@
     
         <li class="main active"><a href="#coincidences-between-candidates">Coincidences between candidates</a></li>
         
-            <li><a href="#0-description-of-how-the-coincidences-are-done">0. Description of how the coincidences are done</a></li>
+            <li><a href="#prerequisites">Prerequisites</a></li>
         
-            <li><a href="#1-prerequisites">1. Prerequisites</a></li>
-        
-            <li><a href="#2-compilation">2. Compilation</a></li>
-        
-            <li><a href="#3-how-to-run-the-program">3. How to run the program?</a></li>
-        
-            <li><a href="#4-example-using-the-vsr1-data">4. Example using the VSR1 data</a></li>
-        
-            <li><a href="#5-programs-ran-before-and-after-coiproc-veto-etc">5. Programs ran before and after coiproc (veto etc.)</a></li>
-        
-            <li><a href="#6-coincidences-code-in-c-under-development">6. Coincidences code in C (under development)</a></li>
+            <li><a href="#the-idea-behind-coincidences">The idea behind coincidences</a></li>
         
             <li><a href="#7-compilation">7. Compilation</a></li>
         
@@ -137,243 +127,7 @@
 
 <h1 id="coincidences-between-candidates">Coincidences between candidates</h1>
 <p>In order to establish the probability of detection of a real gravitational wave, after finding the candidate signals with the <a href="../../polgraw-allsky/candidate_search/">F-statistic candidate signal search</a>, the pipeline searches for coincidences between candidates found in different time frames. </p>
-<h3 id="0-description-of-how-the-coincidences-are-done">0. Description of how the coincidences are done</h3>
-<p>Brief description about the idea behind the coincidences</p>
-<h3 id="1-prerequisites">1. Prerequisites</h3>
-<p>Pascal compiler (<a href="http://www.freepascal.org">FreePascal</a>). </p>
-<h3 id="2-compilation">2. Compilation</h3>
-<p>Current version of the coincidence code <code>coiproc</code> is written in Pascal 
-and is compiled with <a href="http://www.freepascal.org/">FreePascal</a> v2.6.0. 
-It uses the following auxiliary modules: <code>gwau</code>, <code>cncdu</code>, <code>sortdc</code>, <code>vsr1unit</code> and <code>precalc</code>.</p>
-<h3 id="3-how-to-run-the-program">3. How to run the program?</h3>
-<p>The call is  </p>
-<pre><code>&gt; ./coiproc [options] list_file
-</code></pre>
-
-<p>where <code>list_file</code> is a list of trigger files containing candidates (from one hemisphere). 
-Available <code>[options]</code> are</p>
-<table>
-<thead>
-<tr>
-<th>Option</th>
-<th align="left">Description</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>-scale_f <code>value</code></td>
-<td align="left">scaling cell in f-direction size by <code>value</code></td>
-</tr>
-<tr>
-<td>-scale_s <code>value</code></td>
-<td align="left">scaling cell in s-direction size by <code>value</code></td>
-</tr>
-<tr>
-<td>-scale_a <code>value</code></td>
-<td align="left">scaling cell in a-direction size by <code>value</code></td>
-</tr>
-<tr>
-<td>-scale_d <code>value</code></td>
-<td align="left">scaling cell in d-direction size by <code>value</code></td>
-</tr>
-<tr>
-<td>-threshold <code>value</code></td>
-<td align="left">minimal coincidence number to consider</td>
-</tr>
-<tr>
-<td>-f</td>
-<td align="left">shift of cells in x1 direction</td>
-</tr>
-<tr>
-<td>-s</td>
-<td align="left">shift of cells in x2 direction</td>
-</tr>
-<tr>
-<td>-a</td>
-<td align="left">shift of cells in x3 direction</td>
-</tr>
-<tr>
-<td>-d</td>
-<td align="left">shift of cells in x4 direction</td>
-</tr>
-<tr>
-<td>-nocorrectfreq</td>
-<td align="left">do not correct frequency to the reference time frame (default is <code>68</code>)</td>
-</tr>
-<tr>
-<td>-refr <code>value</code></td>
-<td align="left">set the reference time frame to <code>value</code></td>
-</tr>
-<tr>
-<td>-shift <code>dddd</code></td>
-<td align="left">set shift in direction <code>dddd</code> (<code>d</code> can be 0 or 1) (default <code>0000</code>)</td>
-</tr>
-<tr>
-<td>-fpo <code>value</code></td>
-<td align="left">set <code>value</code> of the reference band frequency <code>fpo</code> to <code>value</code></td>
-</tr>
-</tbody>
-</table>
-<h3 id="4-example-using-the-vsr1-data">4. Example using the VSR1 data</h3>
-<p>Example call: </p>
-<pre><code>&gt; ./coiproc sht_016_1.list
-</code></pre>
-
-<p>where the list <code>sht_016_1.list</code> contains the list of candidate (trigger) files. Note that 
-the candidate binary files <code>pvc_trig_timeframe_band_hemisphere.bin</code> have different 
-names than the trigger files produced by the <code>search</code> code. The original files are vetoed. 
-<pre>
-  ./01/pvc_trig_01_016_1.bin
-  ./02/pvc_trig_02_016_1.bin
-  ./03/pvc_trig_03_016_1.bin
-  ./04/pvc_trig_04_016_1.bin
-  ./08/pvc_trig_08_016_1.bin
-  ./11/pvc_trig_11_016_1.bin
-  ./17/pvc_trig_17_016_1.bin
-  ./26/pvc_trig_26_016_1.bin
-  ./50/pvc_trig_50_016_1.bin
-  ./63/pvc_trig_63_016_1.bin
-  ./67/pvc_trig_67_016_1.bin
-  ./03/pvc_trig_03_017_1.bin
-  ./04/pvc_trig_04_017_1.bin
-  ./08/pvc_trig_08_017_1.bin
-  ./10/pvc_trig_10_017_1.bin
-  ./11/pvc_trig_11_017_1.bin
-  ./15/pvc_trig_15_017_1.bin
-  ./17/pvc_trig_17_017_1.bin
-  ./30/pvc_trig_30_017_1.bin
-  ./32/pvc_trig_32_017_1.bin
-  ./33/pvc_trig_33_017_1.bin
-  ./36/pvc_trig_36_017_1.bin
-  ./37/pvc_trig_37_017_1.bin
-  ./40/pvc_trig_40_017_1.bin
-  ./46/pvc_trig_46_017_1.bin
-  ./47/pvc_trig_47_017_1.bin
-  ./50/pvc_trig_50_017_1.bin
-  ./51/pvc_trig_51_017_1.bin
-  ./52/pvc_trig_52_017_1.bin
-  ./53/pvc_trig_53_017_1.bin
-  ./58/pvc_trig_58_017_1.bin
-  ./60/pvc_trig_60_017_1.bin
-  ./61/pvc_trig_61_017_1.bin
-</pre></p>
-<p>Results are saved into ASCII text files <code>xxxx_fff_h.resf</code>, where <code>xxxx</code> is a
-vector in the <code>x1-x2-x3-x4</code> parameter space (for example <code>1001</code> means shift in x1
-and x4 directions). An intermediate, auxiliary output file is <code>xxxx_fff_h.txt</code>.<br />
-The <code>0000_016_1.txt</code> file contains 
-<pre>
-%*   File name                   size
-%&gt;  pvc_trig_01_016_1.bin          20888
-%&gt;  pvc_trig_02_016_1.bin            262
-%&gt;  pvc_trig_03_016_1.bin           2572
-%&gt;  pvc_trig_03_017_1.bin           3023
-%&gt;  pvc_trig_04_016_1.bin           2248
-%&gt;  pvc_trig_04_017_1.bin           3047
-%&gt;  pvc_trig_08_016_1.bin           1538
-%&gt;  pvc_trig_08_017_1.bin            730
-%&gt;  pvc_trig_10_017_1.bin           3626
-%&gt;  pvc_trig_11_016_1.bin           3260
-%&gt;  pvc_trig_11_017_1.bin           2598
-%&gt;  pvc_trig_15_017_1.bin           2672
-%&gt;  pvc_trig_17_016_1.bin           2722
-%&gt;  pvc_trig_17_017_1.bin           2503
-%&gt;  pvc_trig_26_016_1.bin          10449
-%&gt;  pvc_trig_30_017_1.bin          10599
-%&gt;  pvc_trig_32_017_1.bin           1828
-%&gt;  pvc_trig_33_017_1.bin           3896
-%&gt;  pvc_trig_36_017_1.bin           2429
-%&gt;  pvc_trig_37_017_1.bin           1031
-%&gt;  pvc_trig_40_017_1.bin           9049
-%&gt;  pvc_trig_46_017_1.bin           7259
-%&gt;  pvc_trig_47_017_1.bin           2632
-%&gt;  pvc_trig_50_016_1.bin           8982
-%&gt;  pvc_trig_50_017_1.bin           6457
-%&gt;  pvc_trig_51_017_1.bin           1874
-%&gt;  pvc_trig_52_017_1.bin            466
-%&gt;  pvc_trig_53_017_1.bin           1023
-%&gt;  pvc_trig_58_017_1.bin           3542
-%&gt;  pvc_trig_60_017_1.bin           7172
-%&gt;  pvc_trig_61_017_1.bin           6163
-%&gt;  pvc_trig_63_016_1.bin            904
-%&gt;  pvc_trig_67_016_1.bin             36
-% Shift in dimentions = (0, 0, 0, 0)
-% Number of files : 33
-% Correct frequency : TRUE
-% Frequency band (in Hz) [115.50, 116.47]
-% Scaling values = (64.00, 8.00, 4.00, 4.00)
-% Max value = 3
-% Max coincidence/file number = 9.09%
-% Threshold value = 3
-% Statistic of coincidences 
-%   term    band  hemsph      in       coinc     unique
-       1      16       1     20888         1     12713
-       2      16       1       262         0       154
-       3      16       1      2572         0      2553
-       3      17       1      3023         0        76
-       4      16       1      2248         0      2071
-       4      17       1      3047         0       146
-       8      16       1      1538         1      1517
-       8      17       1       730         0       111
-      10      17       1      3626         0       210
-      11      16       1      3260         0      1572
-      11      17       1      2598         0       158
-      15      17       1      2672         0       137
-      17      16       1      2722         1      2638
-      17      17       1      2503         0        52
-      26      16       1     10449         2     10181
-      30      17       1     10599         0        66
-      32      17       1      1828         0        15
-      33      17       1      3896         0       126
-      36      17       1      2429         0        91
-      37      17       1      1031         0        35
-      40      17       1      9049         0      1069
-      46      17       1      7259         0       498
-      47      17       1      2632         0       192
-      50      16       1      8982         1      8480
-      50      17       1      6457         0       140
-      51      17       1      1874         0       270
-      52      17       1       466         0         5
-      53      17       1      1023         0        17
-      58      17       1      3542         0        30
-      60      17       1      7172         0       204
-      61      17       1      6163         0       215
-      63      16       1       904         0       834
-      67      16       1        36         0        32
-</pre></p>
-<p>The file <code>0000_016_1.resf</code> contains the following (if <code>-binary</code> switch is not set): 
-<pre>
-% Shift in dimensions = (0, 0, 0, 0)
-% Number of files : 33
-% Correct frequency : TRUE
-% Scaling value = (64.00, 8.00, 4.00, 4.00)
-% Max value = 3
-% Max coincidence/file number = 9.09%
-% Threshold value = 3
-% Frequency band (in Hz) [115.50, 116.47]
-%     frel      sdnl      decl      ascl    term    band   hmsph    position       SNR     f_corrected
-    -21575     -2835        -1         0       1      16       1        3277       6.10     115.777611
-    -21575     -2835        -1         0      17      16       1        1452       6.21     115.781075
-    -21575     -2835        -1         0      26      16       1        8694       6.33     115.781662
-    -10276     -1349        -1         1       8      16       1         940       6.02     115.629623
-    -10276     -1349        -1         1      26      16       1        5057       6.28     115.628441
-    -10276     -1349        -1         1      50      16       1        5874       6.03     115.626526
-</pre> </p>
-<p>The file <code>0000_016_1.resf</code> contains the following (if <code>-binary</code> switch is set): 
-<pre>
-% Shift in dimensions = (0, 0, 0, 0)
-% Number of files : 33
-% Correct frequency : TRUE
-% Scaling value = (64.00, 8.00, 4.00, 4.00)
-% Max value = 3
-% Max coincidence/file number = 9.09%
-% Threshold value = 3
-% Frequency band (in Hz) [115.50, 116.47]
-% Data of coincidences are in binary file 0000_016_1.coi
-</pre></p>
-<h4 id="missing-description-of-coi-file-format">Missing: description of <code>.coi</code> file format.</h4>
-<h3 id="5-programs-ran-before-and-after-coiproc-veto-etc">5. Programs ran before and after <code>coiproc</code> (veto etc.)</h3>
-<h3 id="6-coincidences-code-in-c-under-development">6. Coincidences code in <code>C</code> (under development)</h3>
-<p>A version of the coincidences code written in <code>C</code>, currently in testing phase, is available at <a href="https://github.com/mbejger/polgraw-allsky/tree/master">github</a>. To get it, run <code>git clone https://github.com/mbejger/polgraw-allsky.git</code>.</p>
+<p>The coincidences code is available at <a href="https://github.com/mbejger/polgraw-allsky/tree/master">github</a>. To get it, run <code>git clone https://github.com/mbejger/polgraw-allsky.git</code>.</p>
 <h4 id="prerequisites">Prerequisites</h4>
 <p>The code is written in standard <code>C</code>. The only dependency is <a href="http://www.gnu.org/software/gsl/">GNU Scientific Library (GSL)</a>, used to manipulate the Fisher matrix (calculate the eigenvectors and eigenvalues). <a href="http://www.gnu.org/software/libc/manual/html_node/Accessing-Directories.html#Accessing-Directories">GNU struct dirent</a> objects are used to read the directories. </p>
 <h4 id="the-idea-behind-coincidences">The idea behind coincidences</h4>
@@ -441,7 +195,7 @@ The <code>0000_016_1.txt</code> file contains
 </tr>
 <tr>
 <td>-trigname</td>
-<td align="left">Part of triggers name (for identifying files)</td>
+<td align="left">Part of triggers' name (for identifying files)</td>
 </tr>
 <tr>
 <td>-refloc</td>
@@ -453,11 +207,15 @@ The <code>0000_016_1.txt</code> file contains
 </tr>
 <tr>
 <td>-narrowdown</td>
-<td align="left">Narrow-down the frequency band (range [0,1], +- around center)</td>
+<td align="left">Narrow-down the frequency band (range [0, 0.5] +- around center)</td>
+</tr>
+<tr>
+<td>-snrcutoff</td>
+<td align="left">Signal-to-noise threshold cutoff (default value: 6)</td>
 </tr>
 </tbody>
 </table>
-<p>Also</p>
+<p>Also:</p>
 <table>
 <thead>
 <tr>
@@ -690,7 +448,7 @@ where </p>
 	<footer class="col-md-12">
 		<hr>
 		
-		<center>Documentation built with <a href="http://www.mkdocs.org/">MkDocs</a>.</center>
+		<p>Documentation built with <a href="http://www.mkdocs.org/">MkDocs</a>.</p>
 	</footer>
 
 

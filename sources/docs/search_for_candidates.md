@@ -1,29 +1,32 @@
 # F-statistic candidate signal search
 
-Default (serial) version of the code for a network of detectors is available at [github](https://github.com/mbejger/polgraw-allsky/tree/master). To get it, run `git clone https://github.com/mbejger/polgraw-allsky.git`. 
+Production serial code for a network of detectors is available at [here](https://github.com/mbejger/polgraw-allsky/tree/master/search/network/src-cpu). `OpenMP` version is at [this location](https://github.com/mbejger/polgraw-allsky/tree/master/search/network/src-openmp). To get the whole pipeline, run `git clone https://github.com/mbejger/polgraw-allsky.git`. 
+
+
+### Algorithm flowchart
+##
+
+![Code flowchart](img/flowchart.png)
+
 
 ### 1. Prerequisites
 
 The code is written in standard `C`. [GNU Scientific Library (GSL)](http://www.gnu.org/software/gsl/) and the [FFTW library](http://www.fftw.org) (version 3.0 or later) are needed to run the code. [GNU struct dirent](http://www.gnu.org/software/libc/manual/html_node/Accessing-Directories.html#Accessing-Directories) objects are used to read the directories. 
 
-Optionally, [SLEEF](http://shibatch.sourceforge.net) or
-[YEPPP!](http://www.yeppp.info), libraries for high-performance computing that
-are optimized for speed are used to evaluate the trigonometric functions in
-`search`. These libraries are ported with the source code and are located in
-`src/lib`. The choice which of these libraries to use has to be made at compilation time by
-modifying the `Makefile`. 
+Optionally, [SLEEF](http://shibatch.sourceforge.net) or [YEPPP!](http://www.yeppp.info), libraries for high-performance computing that are optimized for speed are used to evaluate the trigonometric functions in the search code. These libraries are ported with the source code and are located in `src/lib`. The choice which of these libraries to use has to be made at compilation time by modifying the `Makefile`. 
 
-### 2. Compilation
+### 2. Compilation. Example for serial CPU code
 
-Run  `make search` or `make` (search is a default option). Resulting  binary is called `search`. 
-Modify the `Makefile` to fit your system. By default the `YEPPP!` library is selected. 
+Run  `make gwsearch-cpu` or `make` in `search/network/src-cpu` (default `C` version not-optimized with `openMP`; for the `openMP` version see the `search/network/src-openmp` directory). Resulting  binary is called `gwsearch-cpu`. Modify the `Makefile` to fit your system. By default the `YEPPP!` library is selected. 
 
 ### 3. How to run the program?
 
-Minimal call of `search` is as follows (code compiled with the `GNUSINCOS` option): 
+Minimal call to `gwsearch-cpu` is as follows (code compiled with the `GNUSINCOS` option): 
+
 ```
-  ./search -d data_dir -o output_dir -i frame -b band  
+./gwsearch-cpu -d data_dir -o output_dir -i frame -b band
 ```
+
 where
  
 * `data_dir` is the base directory of input data files,
@@ -41,35 +44,38 @@ where
 |-i, -ident       | Frame number
 |-b, -band        | Band number
 |-l, -label       | Custom label for the input and output files
-|-r, -range       | File with grid range or pulsar position
+|-r, -range       | Use file with grid range or pulsar position
+|-g, -getrange    | Write grid ranges & save fft wisdom & exit (ignore -r)
 |-c, -cwd         | Change to directory `<dir>`
-|-t, -threshold   | Threshold for the F-statistic (default is 20)
+|-t, -threshold   | Threshold for the F-statistic (default is `20`)
 |-h, -hemisphere  | Hemisphere (default is 0 - does both)
-|-p, -fpo         | Reference band frequency fpo value
-|-s, -dt          | Data sampling time dt (default value: 0.5)
+|-p, -fpo         | Reference band frequency `fpo` value
+|-s, -dt          | Data sampling time dt (default value: `0.5`)
+|-u, -usedet      | Use only detectors from string (default is `use all available`)
 |-x, -addsig      | Add signal with parameters from `<file>`
+|-n, -narrowdown  | Narrow-down the frequency band (range `[0, 0.5] +- around center`)
 
-Also 
+Also: 
 
 |                 |             | 
 |-----------------|:------------|
-| --whitenoise    |white Gaussian noise assumed | 
-| --nospindown    |spindowns neglected | 
-| --nocheckpoint  |state file will not be created (no checkpointing) |
-| --help          |This help | 
+| --whitenoise    | White Gaussian noise assumed | 
+| --nospindown    | Spindowns neglected | 
+| --nocheckpoint  | State file will not be created (no checkpointing) |
+| --help          | This help | 
 
-#### 3.2. Network of detectors (`master` branch)
+#### 3.2. Network of detectors 
 
-For the examplary input data time streams `xdatc_001_101.bin` provided in [test-data-network.tar.gz](https://polgraw.camk.edu.pl/polgraw-allsky/data/test-data-network.tar.gz), the call is as follows: 
+For the examplary input data time streams `xdatc_001_0101.bin` provided in [test-data-network.tar.gz](https://polgraw.camk.edu.pl/polgraw-allsky/data/test-data-network.tar.gz), the call is as follows: 
 ```
-LD_LIBRARY_PATH=lib/yeppp-1.0.0/binaries/linux/x86_64 ./search -data ./test-data-network -ident 001 -band 101
+LD_LIBRARY_PATH=lib/yeppp-1.0.0/binaries/linux/x86_64 ./gwsearch-cpu -data ./test-data-network -ident 001 -band 0101 -usedet H1V1
 ```
 where the `LD_LIBRARY_PATH` points to the location of the `YEPPP!` library. 
 
-The program will proceed assuming that the data directory `./test-data-network/001` for the time frame `001` contain subdirectories for the network of detectors (here `H1` and `V1`) with input time series `xdatc_001_101.bin` and the ephemerids files `DetSSB.bin` in each subdirectory. The grid of parameters files is expected to be in `./test-data-network/001/grid.bin`. 
+The program will proceed assuming that the data directory `./test-data-network/001` for the time frame `001` contain subdirectories for the network of detectors (here `H1` and `V1`) with input time series `xdatc_001_0101.bin` and the ephemerids files `DetSSB.bin` in each subdirectory. The grid of parameters files is expected to be in `./test-data-network/001/grid.bin`. Switch `-usedet H1` (`-usedet V1`) select the appropriate data and performs single detector search. 
 
 ####
-#### 3.3. Network of detectors in spotlight search (`spotlight` branch)
+#### 3.3. Network of detectors in spotlight search (depreciated)
 
 For the `H1L1` network of detectors, using the [test-data-network-injection.tar.gz](https://polgraw.camk.edu.pl/polgraw-allsky/data/test-data-network-injection.tar.gz) to search towards a pre-defined direction (spotlight search) in one 2-day segment: 
 ```
@@ -176,17 +182,11 @@ variable is determined by a call to `gethostname()`,
 
 * `state_nnn_bbb.dat` - checkpoint file.  The  search can  be safely restarted, calculations will continue  from the last grid position saved to this file. After successful termination, checkpoint file is left empty.
 
-### 8. Algorithm flowchart
-##
-
-![Code flowchart](img/flowchart.png)
-
-### 9. Versions
+### 8. Versions
 
 Polgraw-allsky code comes also as an
 [MPI](http://www.sciencedirect.com/science/article/pii/S0010465514003774),
 [network of detectors spotlight
-search](https://github.com/mbejger/polgraw-allsky/tree/spotlight) and a
-[GPU](https://github.com/mbejger/polgraw-allsky/tree/gpu-current) (currently
-one detector) version. 
+search](https://github.com/mbejger/polgraw-allsky/tree/master/search/spotlight) and a
+[GPU](https://github.com/mbejger/polgraw-allsky/tree/master/search/network/src-gpu) version. 
 

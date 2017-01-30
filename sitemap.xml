@@ -3,8 +3,8 @@
 
     
     <url>
-     <loc>None/</loc>
-     <lastmod>2016-04-27</lastmod>
+     <loc>/</loc>
+     <lastmod>2017-01-30</lastmod>
      <changefreq>daily</changefreq>
     </url>
     
@@ -12,32 +12,32 @@
     
         
     <url>
-     <loc>None/input_data/</loc>
-     <lastmod>2016-04-27</lastmod>
+     <loc>/input_data/</loc>
+     <lastmod>2017-01-30</lastmod>
      <changefreq>daily</changefreq>
     </url>
         
     <url>
-     <loc>None/search_for_candidates/</loc>
-     <lastmod>2016-04-27</lastmod>
+     <loc>/search_for_candidates/</loc>
+     <lastmod>2017-01-30</lastmod>
      <changefreq>daily</changefreq>
     </url>
         
     <url>
-     <loc>None/coincidences/</loc>
-     <lastmod>2016-04-27</lastmod>
+     <loc>/coincidences/</loc>
+     <lastmod>2017-01-30</lastmod>
      <changefreq>daily</changefreq>
     </url>
         
     <url>
-     <loc>None/pipeline_script/</loc>
-     <lastmod>2016-04-27</lastmod>
+     <loc>/pipeline_script/</loc>
+     <lastmod>2017-01-30</lastmod>
      <changefreq>daily</changefreq>
     </url>
         
     <url>
-     <loc>None/articles/</loc>
-     <lastmod>2016-04-27</lastmod>
+     <loc>/articles/</loc>
+     <lastmod>2017-01-30</lastmod>
      <changefreq>daily</changefreq>
     </url>
         
