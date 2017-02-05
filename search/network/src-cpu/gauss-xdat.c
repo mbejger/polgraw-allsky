@@ -4,6 +4,7 @@
 #include <math.h>
 #include <gsl/gsl_rng.h> 
 #include <gsl/gsl_randist.h>
+#include <sys/time.h>
 
 // ./gauss-xdat 86164 3 1 ../testdata/001/H1/xdatc_001_0666.bin
 // compilation: gcc gauss-xdat.c -o gauss-xdat -lm -lgsl -lgslcblas
