@@ -19,14 +19,15 @@ typedef struct _comm_line_opts {
       simplex_flag,		// Simplex direct maximum search flag
       mads_flag,		// MADS direct maximum search flag
       gauss_flag,		// Generate Gaussian noise instead of reading data
-      help_flag;
+      neigh_flag,		// Area of calculation will be defined as %% from initial value
+      help_flag;		
   
   int ident, band, hemi, refr;
   double trl;
   double fpo_val;
   
   char prefix[512], dtaprefix[512], label[512], qname[512], 
-    usedet[32], addsig[512], candidates[512],glue[512], 
+    usedet[32], addsig[512], candidates[512], glue[512], 
     gauss[512], *wd;
   
 } Command_line_opts;
@@ -83,7 +84,11 @@ typedef struct _search_settings {
   int nod,        // number of days of observation
       N,          // number of data points
       nd,         // degrees of freedom
+      fftpad,     // zero padding
       nifo;       // number of detectors
+
+  double *M;      // Grid-generating matrix (or Fisher matrix, 
+                  // in case of coincidences) 
 
   double lines[MAXL][2]; // Array for lines in given band 
   int numlines_band;     // number of lines in band   
