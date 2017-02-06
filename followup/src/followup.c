@@ -819,7 +819,7 @@ int main (int argc, char *argv[]) {
 					mr[1] = mr[0] + gsize; 
 					mr[0] -= gsize;
 
-					printf(" s = %d %d, n = %d %d, m = %d %d\n", spndr[0], spndr[1], nr[0], nr[1], mr[0], mr[1]);
+//					printf(" s = %d %d, n = %d %d, m = %d %d\n", spndr[0], spndr[1], nr[0], nr[1], mr[0], mr[1]);
 
 // Go back to astrophysical units - calculate range for calculations
 
@@ -844,7 +844,7 @@ int main (int argc, char *argv[]) {
 					}
 					sgnlo_range[0][0] = 0.9997*mean[0];
 					sgnlo_range[0][1] = 1.0003*mean[0];
-					for (i = 0; i < 4; i++) printf("range[%d][0] = %le, range[%d][1] = %le\n", i, sgnlo_range[i][0], i, sgnlo_range[i][1]);
+//					for (i = 0; i < 4; i++) printf("range[%d][0] = %le, range[%d][1] = %le\n", i, sgnlo_range[i][0], i, sgnlo_range[i][1]);
 					arr = neigh_from_range(sgnlo_range, bins);
 					pc2[0] = 0.0006/bins;
 					for (i = 1; i < 4; i++) pc2[i] = (sgnlo_range[i][1] - sgnlo_range[i][0])/bins;
@@ -884,16 +884,15 @@ int main (int argc, char *argv[]) {
 				results_max[5] = 0.;
 
 // Main loop - over all parameters + parallelisation
-//#pragma omp parallel default(shared) private(d, i, sgnlo, sinalt, cosalt, sindelt, cosdelt, nSource, results, maximum)
-//{
+#pragma omp parallel default(shared) private(d, i, sgnlo, sinalt, cosalt, sindelt, cosdelt, nSource, results, maximum)
+{
 
                        		double **sigaa, **sigbb;   // aa[nifo][N]
               			sigaa = matrix(sett.nifo, sett.N);
 				sigbb = matrix(sett.nifo, sett.N);
 
-//#pragma omp for  
+#pragma omp for  
 				for (d = 0; d < ROW; ++d){
-printf("%d\n", d);
 
 					for (i = 0; i < 4; i++){
 						sgnlo[i] = arr[d][i];
@@ -918,7 +917,7 @@ printf("%d\n", d);
 					results = Fstatnet(&sett, sgnlo, nSource, sigaa, sigbb);
 //printf("%le %le %le %le %le %le\n", results[6], results[7], results[8], results[9], results[5], results[4]);
 
-//#pragma omp critical
+#pragma omp critical
 					if(results[5] < results_max[5]){
 						for (i = 0; i < 11; i++){
 							results_max[i] = results[i];
@@ -932,7 +931,7 @@ printf("%d\n", d);
 						maximum = amoeba(&sett, &aux_arr, sgnlo, nSource, results, dim, tol, pc2, sigaa, sigbb);
 //printf("Amoeba: %le %le %le %le %le %le\n", maximum[6], maximum[7], maximum[8], maximum[9], maximum[5], maximum[4]);
 // Maximum value in points searching
-//#pragma omp critical
+#pragma omp critical
 						if(maximum[5] < results_max[5]){
 							for (i = 0; i < 11; i++){
 								results_max[i] = maximum[i];
@@ -944,7 +943,7 @@ printf("%d\n", d);
 				free_matrix(sigaa, sett.nifo, sett.N);
 				free_matrix(sigbb, sett.nifo, sett.N);
 
-//} //pragma
+} //pragma
 
 				for(g = 0; g < 11; g++) results_first[g] = results_max[g];
 
@@ -1008,32 +1007,6 @@ if((opts.mads_flag)||(opts.simplex_flag)){
 	return 0;
 
 }
-
-//old test
-//time LD_LIBRARY_PATH=lib/yeppp-1.0.0/binaries/linux/x86_64 ./followup -data ./data -ident 001 -band 100 -fpo 199.21875 
-// new test: 
-//time LD_LIBRARY_PATH=/home/msieniawska/tests/polgraw-allsky/search/network/src-cpu/lib/yeppp-1.0.0/binaries/linux/x86_64/ ./followup -data /home/msieniawska/tests/polgraw-allsky/followup/src/testdata/ -output /home/msieniawska/tests/polgraw-allsky/followup/src/output -label J0000+1902 -band 1902
-//test for basic testdata:
-//time LD_LIBRARY_PATH=/home/msieniawska/tests/polgraw-allsky/search/network/src-cpu/lib/yeppp-1.0.0/binaries/linux/x86_64/ ./followup -data /home/msieniawska/tests/polgraw-allsky/followup/src/testdata/ -output /home/msieniawska/tests/polgraw-allsky/followup/src/output -band 100 -ident 10 -fpo 199.21875
-//time LD_LIBRARY_PATH=/home/msieniawska/tests/polgraw-allsky/search/network/src-cpu/lib/yeppp-1.0.0/binaries/linux/x86_64/ ./followup -data /home/msieniawska/tests/bigdogdata/mdc_025/ -output /home/polgraw-allsky/followup/src/output -band 100 -ident 10 -fpo 199.21875
-//
-//time LD_LIBRARY_PATH=/work/psk/msieniawska/test_followup/1/polgraw-allsky/search/network/src-cpu/lib/yeppp-1.0.0/binaries/linux/x86_64/ ./followup -data /work/psk/msieniawska/test_followup/data/ -output /work/psk/msieniawska/test_followup/output -band 103 -label 103_10 -fpo 103.0
-//
-//time LD_LIBRARY_PATH=/home/msieniawska/tests/bin_test/1/polgraw-allsky/search/network/src-cpu/lib/yeppp-1.0.0/binaries/linux/x86_64/ ./followup -data /home/msieniawska/tests/bin_test/data -output /home/msieniawska/tests/bin_test/output1 -fpo 124.9453125 -label 103_10 -fpo 103.0 -dt 2.0>& out1.txt
-//
-//time LD_LIBRARY_PATH=/home/msieniawska/tests/gluetest/polgraw-allsky/search/network/src-cpu/lib/yeppp-1.0.0/binaries/linux/x86_64/ ./followup -data /home/msieniawska/tests/gluetest/d1/followup_total_data -output /home/msieniawska/tests/gluetest/output1 -fpo 124.9453125 -label 103_10 -ident 000 -dt 2.0
-
-//time LD_LIBRARY_PATH=/home/msieniawska/tests/addsig/polgraw-allsky/search/network/src-cpu/lib/yeppp-1.0.0/binaries/linux/x86_64 ./followup -data /home/msieniawska/tests/addsig/data -output . -ident 001 -band 0666 -dt 2 -addsig sigfile001 --nocheckpoint
-//time LD_LIBRARY_PATH=/home/msieniawska/tests/addsig/polgraw-allsky/search/network/src-cpu/lib/yeppp-1.0.0/binaries/linux/x86_64 ./followup -data /home/msieniawska/tests/addsig/data -output . -ident 001 -band 0666 -dt 2 -addsig /home/msieniawska/tests/addsig/data/sigfile001 --nocheckpoint
-
-//time LD_LIBRARY_PATH=/home/msieniawska/tests/addsig/polgraw-allsky/search/network/src-cpu/lib/yeppp-1.0.0/binaries/linux/x86_64 ./gwsearch-cpu -data /home/msieniawska/tests/addsig/data -output . -ident 031 -band 0666 -dt 2 -addsig /home/msieniawska/tests/addsig/data/sig1 --nocheckpoint >searchtest.txt
-
-//time LD_LIBRARY_PATH=/home/msieniawska/tests/addsig/polgraw-allsky/test/search/network/src-cpu/lib/yeppp-1.0.0/binaries/linux/x86_64 ./followup -data /home/msieniawska/tests/addsig/data -output . -ident 031 -band 0666 -dt 2 -addsig /home/msieniawska/tests/addsig/data/sig1 -usedet H1 --simplex
-//LD_LIBRARY_PATH=/home/msieniawska/tests/addsig/polgraw-allsky/test/search/network/src-cpu/lib/yeppp-1.0.0/binaries/linux/x86_64 ./gwsearch-cpu -data /home/msieniawska/tests/addsig/test/pulsar8 -output . -ident 001 -band 0747 -dt 2 -usedet H1 -threshold 200 --whitenoise 
-//time LD_LIBRARY_PATH=/home/msieniawska/tests/addsig/polgraw-allsky/test/search/network/src-cpu/lib/yeppp-1.0.0/binaries/linux/x86_64 ./followup -data /home/msieniawska/tests/addsig/test/pulsar8 -output . -ident 010 -band 0747 -dt 2 -usedet H1 --simplex
-
-// LD_LIBRARY_PATH=/home/msieniawska/tests/newglue/search/network/src-cpu/lib/yeppp-1.0.0/binaries/linux/x86_64 ./followup -data /home/msieniawska/tests/newglue/data/notglued -ident 001 -band 0666 -dt 2 -addsig /home/msieniawska/tests/newglue/data/sig20 > /home/msieniawska/tests/newglue/output/6d/followup_6_days.txt
-
 
 // LD_LIBRARY_PATH=/home/magdalena/phd/newglue/newcodes/search/network/src-cpu/lib/yeppp-1.0.0/binaries/linux/x86_64 ./gwsearch-cpu -data /home/magdalena/phd/newglue/data/notglued -output /home/magdalena/phd/newglue/output/test -ident 001 -band 0666 -dt 2 -addsig /home/magdalena/phd/newglue/data/sig20 --nocheckpoint  
 //001: 575 579 34 38 30 34 2 2
