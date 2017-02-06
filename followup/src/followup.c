@@ -32,6 +32,8 @@ MS
 //#include <fcntl.h>
 #include <getopt.h>
 #include <gsl/gsl_linalg.h>
+#include <gsl/gsl_math.h>
+#include <gsl/gsl_eigen.h>
 #include <time.h>
 #include <dirent.h>
 #include <omp.h>
@@ -86,19 +88,19 @@ Yep64f** neigh(double *m, double *perc, int b){
 	double beg[4];
 	double width[4];
 	int i1, i2, i3, i4, j, i;
-	for(j = 0; j < 4; j++) {
+	for (j = 0; j < 4; j++) {
 		width[j] = 2*perc[j]*m[j]/b;
 	}
 	i = 0;
 	beg[0] = m[0]*(1 - perc[0]);
-	for(i1 = 0; i1 < (b + 1); i1++){
+	for (i1 = 0; i1 < (b + 1); i1++){
 		beg[1] = m[1]*(1 - perc[1]);
-		for(i2 = 0; i2 < (b + 1); i2++){
+		for (i2 = 0; i2 < (b + 1); i2++){
 			beg[2] = m[2]*(1 - perc[2]);
-			for(i3 = 0; i3 < (b + 1); i3++){
+			for (i3 = 0; i3 < (b + 1); i3++){
 				beg[3] = m[3]*(1 - perc[3]);
-				for(i4 = 0; i4 < (b + 1); i4++){
-					for(j = 0; j < 4; j++) {
+				for (i4 = 0; i4 < (b + 1); i4++){
+					for (j = 0; j < 4; j++) {
 						array[i][j] = beg[j];
 					}
 					beg[3] = beg[3] + width[3];
@@ -114,6 +116,57 @@ Yep64f** neigh(double *m, double *perc, int b){
 	return array;
 
 }
+
+//Function takes calculated range around point (from grid.bin file) and creates grid around it.
+
+Yep64f** neigh_from_range(double **range, int b){
+
+	int rows, cols = 4;
+	rows = pow((b+1),4);
+	int k;
+// Allocation of memory for martix
+#ifdef YEPPP
+    	yepLibrary_Init();
+	Yep64f **array = (Yep64f**)malloc(rows*sizeof(Yep64f));
+	for (k=0; k < rows; k++) array[k] = (Yep64f*)calloc(rows,sizeof(Yep64f));
+    	enum YepStatus status;
+#else
+  	array = (double **)malloc(rows*sizeof(double *));
+  	for (k=0; k < rows; k++) array[k] = (double *)calloc(cols, sizeof(double));
+#endif
+	double beg[4];
+	double width[4];
+	int i1, i2, i3, i4, j, i;
+	for (j = 0; j < 4; j++) {
+		width[j] = (range[j][1] - range[j][0])/b;
+	}
+	i = 0;
+	beg[0] = range[0][0];
+	for (i1 = 0; i1 < (b + 1); i1++){
+		beg[1] = range[1][0];
+		for (i2 = 0; i2 < (b + 1); i2++){
+			beg[2] = range[2][0];
+			for (i3 = 0; i3 < (b + 1); i3++){
+				beg[3] = range[3][0];
+				for (i4 = 0; i4 < (b + 1); i4++){
+					for (j = 0; j < 4; j++) {
+						array[i][j] = beg[j];
+					}
+					beg[3] = beg[3] + width[3];
+					i++;
+				}
+				beg[2] = beg[2] + width[2];
+			}
+			beg[1] = beg[1] + width[1];
+		}
+		beg[0] = beg[0] + width[0];
+	}
+
+
+
+	return array;
+
+} 
 
 // Allocation of memory for double martix with given number of rows and columns
 double** matrix(int rows, int cols) {
@@ -599,18 +652,26 @@ int main (int argc, char *argv[]) {
   	Aux_arrays aux_arr;
 //  	double *F; 			// F-statistic array
   	int i, j, r, c, a, b, g; 	
-	int d, o, m, k;
-	int bins = 4, ROW, dim = 4;	// neighbourhood of point will be divide into defined number of bins
+	int d, o, m, k, s;
+	int bins = 1, ROW, dim = 4;	// neighbourhood of point will be divide into defined number of bins
+	int gsize = 1;			// grid size where followup will be searching maximum
+	int spndr[2], nr[2], mr[2];	// range in linear unities
+	int hemi; 			// hemisphere
 	double pc[4];			// % define neighbourhood around each parameter for initial grid
 	double pc2[4];			// % define neighbourhood around each parameter for direct maximum search (MADS & Simplex)
 	double tol = 1e-10;
+	double cof, al1, al2;
 //	double delta = 1e-5;		// initial step in MADS function
 //	double *results;		// Vector with results from Fstatnet function
 //	double *maximum;		// True maximum of Fstat
 //	double results_max[11];	
 	double s1, s2, s3, s4;
-	double sgnlo[4]; 		 
-	double **arr;		//  arr[ROW][COL], arrg[ROW][COL];
+	double sgnlo[4];
+	double **sgnlo_range;  
+	double sgnlol[4]; 
+	double be[2];	
+  	double *MM ; 	 		// Auxiliary array for grid points	 
+	double **arr;			// arr[ROW][COL] - array of points where Fstat will be calculated
 	double nSource[3];
   	double sinalt, cosalt, sindelt, cosdelt;
 	double F_min;
@@ -632,14 +693,6 @@ int main (int argc, char *argv[]) {
 
 #endif
 
-	pc[0] = 0.0003;
-	pc[1] = 0.01;
-	pc[2] = 0.01;
-	pc[3] = 0.01;
-
-	for (i = 0; i < 4; i++){
-		pc2[i] = 2*pc[i]/bins;
-	}
 // Time tests
 	double tdiff;
 	clock_t tstart, tend;
@@ -708,7 +761,96 @@ int main (int argc, char *argv[]) {
 				arr = matrix(ROW, 4);
 
 //Function neighbourhood - generating grid around point
-				arr = neigh(mean, pc, bins);
+//Area around starting point is calculating as a percent from initial values
+				if(opts.neigh_flag){
+					pc[0] = 0.0003;
+					pc[1] = 0.01;
+					pc[2] = 0.01;
+					pc[3] = 0.01;
+
+					for (i = 0; i < 4; i++){
+						pc2[i] = 2*pc[i]/bins;
+					}
+
+					arr = neigh(mean, pc, bins);
+
+				}
+				else{
+// Grid data
+					read_grid(&sett, &opts);
+
+					sgnlo_range = matrix(4, 2);
+					cof = sett.oms + mean[0]; 
+					for(i=0; i<2; i++) sgnlol[i] = mean[i]; 
+					hemi = ast2lin(mean[3], mean[2], C_EPSMA, be);
+ 
+					sgnlol[2] = be[0]*cof; 
+					sgnlol[3] = be[1]*cof;
+
+// solving a linear system in order to translate 
+// sky position, frequency and spindown (sgnlo parameters) 
+// into the position in the grid
+
+					MM = (double *) calloc (16, sizeof (double));
+					for(i=0; i<16; i++) MM[i] = sett.M[i];
+					gsl_vector *x = gsl_vector_alloc (4);
+					gsl_matrix_view m = gsl_matrix_view_array (MM, 4, 4);
+					gsl_matrix_transpose (&m.matrix) ; 
+					gsl_vector_view b = gsl_vector_view_array (sgnlol, 4);
+					gsl_permutation *p = gsl_permutation_alloc (4);
+					 
+					gsl_linalg_LU_decomp (&m.matrix, p, &s);
+					gsl_linalg_LU_solve (&m.matrix, p, &b.vector, x);
+					  
+					spndr[0] = round(gsl_vector_get(x,1)); 
+					nr[0] 	= round(gsl_vector_get(x,2));
+					mr[0] 	= round(gsl_vector_get(x,3));
+					  
+					gsl_permutation_free (p);
+					gsl_vector_free (x);
+					free (MM);
+
+// Define the grid range in which the signal will be looked for
+
+					spndr[1] = spndr[0] + gsize; 
+					spndr[0] -= gsize;
+					nr[1] = nr[0] + gsize; 
+					nr[0] -= gsize;
+					mr[1] = mr[0] + gsize; 
+					mr[0] -= gsize;
+
+					printf(" s = %d %d, n = %d %d, m = %d %d\n", spndr[0], spndr[1], nr[0], nr[1], mr[0], mr[1]);
+
+// Go back to astrophysical units - calculate range for calculations
+
+					for(i = 0; i < 2; i++){
+						al1 = nr[i]*sett.M[10] + mr[i]*sett.M[14];
+						al2 = nr[i]*sett.M[11] + mr[i]*sett.M[15];
+
+// check if the range is in an appropriate region of the grid
+
+  						if ((sqr(al1)+sqr(al2))/sqr(sett.oms) > 1.){ 
+							puts("Inappropriate region!");
+							return 0;
+						}
+
+						lin2ast(al1/sett.oms, al2/sett.oms, hemi, sett.sepsm, 
+							sett.cepsm, &sinalt, &cosalt, &sindelt, &cosdelt);
+
+						sgnlo_range[2][i] = asin(sindelt);
+						sgnlo_range[3][i] = fmod(atan2(sinalt, cosalt) + 2.*M_PI, 2.*M_PI);
+						sgnlo_range[1][i] = spndr[i]*sett.M[5] + nr[i]*sett.M[9] + mr[i]*sett.M[13];
+
+					}
+					sgnlo_range[0][0] = 0.9997*mean[0];
+					sgnlo_range[0][1] = 1.0003*mean[0];
+					for (i = 0; i < 4; i++) printf("range[%d][0] = %le, range[%d][1] = %le\n", i, sgnlo_range[i][0], i, sgnlo_range[i][1]);
+					arr = neigh_from_range(sgnlo_range, bins);
+					pc2[0] = 0.0006/bins;
+					for (i = 1; i < 4; i++) pc2[i] = (sgnlo_range[i][1] - sgnlo_range[i][0])/bins;
+
+
+				}
 // Output data handling
 /*  				struct stat buffer;
 
@@ -727,12 +869,6 @@ int main (int argc, char *argv[]) {
 			    		}
   				}
 */
-// Grid data
-/*  				if(strlen(opts.addsig)) { 
-
-					read_grid(&sett, &opts);
-				}
-*/
 		
 // Amplitude modulation functions for each detector  
 				for(i=0; i<sett.nifo; i++) rogcvir(&ifo[i]); 
@@ -748,15 +884,16 @@ int main (int argc, char *argv[]) {
 				results_max[5] = 0.;
 
 // Main loop - over all parameters + parallelisation
-#pragma omp parallel default(shared) private(d, i, sgnlo, sinalt, cosalt, sindelt, cosdelt, nSource, results, maximum)
-{
+//#pragma omp parallel default(shared) private(d, i, sgnlo, sinalt, cosalt, sindelt, cosdelt, nSource, results, maximum)
+//{
 
                        		double **sigaa, **sigbb;   // aa[nifo][N]
               			sigaa = matrix(sett.nifo, sett.N);
 				sigbb = matrix(sett.nifo, sett.N);
 
-#pragma omp for  
+//#pragma omp for  
 				for (d = 0; d < ROW; ++d){
+printf("%d\n", d);
 
 					for (i = 0; i < 4; i++){
 						sgnlo[i] = arr[d][i];
@@ -779,9 +916,9 @@ int main (int argc, char *argv[]) {
 // F-statistic in given point
 
 					results = Fstatnet(&sett, sgnlo, nSource, sigaa, sigbb);
-printf("%le %le %le %le %le %le\n", results[6], results[7], results[8], results[9], results[5], results[4]);
+//printf("%le %le %le %le %le %le\n", results[6], results[7], results[8], results[9], results[5], results[4]);
 
-#pragma omp critical
+//#pragma omp critical
 					if(results[5] < results_max[5]){
 						for (i = 0; i < 11; i++){
 							results_max[i] = results[i];
@@ -795,7 +932,7 @@ printf("%le %le %le %le %le %le\n", results[6], results[7], results[8], results[
 						maximum = amoeba(&sett, &aux_arr, sgnlo, nSource, results, dim, tol, pc2, sigaa, sigbb);
 //printf("Amoeba: %le %le %le %le %le %le\n", maximum[6], maximum[7], maximum[8], maximum[9], maximum[5], maximum[4]);
 // Maximum value in points searching
-#pragma omp critical
+//#pragma omp critical
 						if(maximum[5] < results_max[5]){
 							for (i = 0; i < 11; i++){
 								results_max[i] = maximum[i];
@@ -807,7 +944,7 @@ printf("%le %le %le %le %le %le\n", results[6], results[7], results[8], results[
 				free_matrix(sigaa, sett.nifo, sett.N);
 				free_matrix(sigbb, sett.nifo, sett.N);
 
-} //pragma
+//} //pragma
 
 				for(g = 0; g < 11; g++) results_first[g] = results_max[g];
 
@@ -857,6 +994,13 @@ if((opts.mads_flag)||(opts.simplex_flag)){
 	free(results);
 	free(maximum);
 	free(mean);
+	free(spndr);
+	free(nr);
+	free(mr);
+	free(MM);
+	free(sgnlol);
+	free(be);
+	free_matrix(sgnlo_range, 4, 2);
 	free_matrix(arr, ROW, 4);
   	cleanup_followup(&sett, &opts, &aux_arr);
 	
@@ -890,3 +1034,13 @@ if((opts.mads_flag)||(opts.simplex_flag)){
 
 // LD_LIBRARY_PATH=/home/msieniawska/tests/newglue/search/network/src-cpu/lib/yeppp-1.0.0/binaries/linux/x86_64 ./followup -data /home/msieniawska/tests/newglue/data/notglued -ident 001 -band 0666 -dt 2 -addsig /home/msieniawska/tests/newglue/data/sig20 > /home/msieniawska/tests/newglue/output/6d/followup_6_days.txt
 
+
+// LD_LIBRARY_PATH=/home/magdalena/phd/newglue/newcodes/search/network/src-cpu/lib/yeppp-1.0.0/binaries/linux/x86_64 ./gwsearch-cpu -data /home/magdalena/phd/newglue/data/notglued -output /home/magdalena/phd/newglue/output/test -ident 001 -band 0666 -dt 2 -addsig /home/magdalena/phd/newglue/data/sig20 --nocheckpoint  
+//001: 575 579 34 38 30 34 2 2
+//002: 585 589 35 39 30 34 2 2
+//003: 592 596 35 39 30 34 2 2
+//004: 598 602 35 39 30 34 2 2
+//005: 603 607 35 39 30 34 2 2
+//006: 603 607 35 39 30 34 2 2
+
+//LD_LIBRARY_PATH=/home/magdalena/phd/newglue/newcodes/search/network/src-cpu/lib/yeppp-1.0.0/binaries/linux/x86_64 ./followup -data /home/magdalena/phd/newglue/data/notglued -ident 001 -band 0666 -refr 003 -dt 2 -addsig /home/magdalena/phd/newglue/data/sig20  -candidates /home/magdalena/phd/newglue/data/candidates.coi >> /home/magdalena/phd/newglue/output/test/followup_test.txt
