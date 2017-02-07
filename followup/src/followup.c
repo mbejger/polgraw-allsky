@@ -458,7 +458,7 @@ double ** make_simplex(double * point, int dim, double *pc2){
 	return simplex;
 }
 
-void evaluate_simplex(double ** simplex, int dim, double ** fx, Search_settings *sett, Aux_arrays *aux, double *nS, double **sigaa, double **sigbb){
+void evaluate_simplex(double ** simplex, int dim, double ** fx, Search_settings *sett, Aux_arrays *aux, double *nS, double **sigaa_max, double **sigbb_max){
 	double sinalt, cosalt, sindelt, cosdelt;
 	double *out = alloc_vector(11);
 	int i, o, j;
@@ -474,9 +474,9 @@ void evaluate_simplex(double ** simplex, int dim, double ** fx, Search_settings 
 
 			for (o = 0; o < sett->nifo; ++o){
 				modvir(sinalt, cosalt, sindelt, cosdelt, 
-			   		sett->N, &ifo[o], aux, sigaa[o], sigbb[o]);  
+			   		sett->N, &ifo[o], aux, sigaa_max[o], sigbb_max[o]);  
 			}
-			out = Fstatnet(sett, simplex[i], nS, sigaa, sigbb);
+			out = Fstatnet(sett, simplex[i], nS, sigaa_max, sigbb_max);
 			for (j = 0; j < 11; j++) fx[i][j] = out[j];
 	}
 	free_vector(out, 11);
@@ -526,7 +526,7 @@ void simplex_bearings(double ** simplex, int dim, double * midpoint, double * li
 		line[j] = simplex[ihi][j] - midpoint[j];
 	}
 }
-int update_simplex(double ** simplex, int dim, double  fmax, double ** fx, int ihi, double * midpoint, double * line, double scale, Search_settings *sett, Aux_arrays *aux, double *nS, double **sigaa, double **sigbb){
+int update_simplex(double ** simplex, int dim, double  fmax, double ** fx, int ihi, double * midpoint, double * line, double scale, Search_settings *sett, Aux_arrays *aux, double *nS, double **sigaa_max, double **sigbb_max){
 	int i, o, j, update = 0; 
 	double * next = alloc_vector(dim);
 	double * fx2 = alloc_vector(11)	;
@@ -545,9 +545,9 @@ int update_simplex(double ** simplex, int dim, double  fmax, double ** fx, int i
 
 	for (o = 0; o < sett->nifo; ++o){
 		modvir(sinalt, cosalt, sindelt, cosdelt, 
-	   		sett->N, &ifo[o], aux, sigaa[o], sigbb[o]);  
+	   		sett->N, &ifo[o], aux, sigaa_max[o], sigbb_max[o]);  
 	}
-	fx2 = Fstatnet(sett, next, nS, sigaa, sigbb);
+	fx2 = Fstatnet(sett, next, nS, sigaa_max, sigbb_max);
 	if (fx2[5] < fmax){
 		for (i = 0; i < dim; i++) simplex[ihi][i] = next[i];
 		for (j = 0; j < 11; j++) fx[ihi][j] = fx2[j];
@@ -559,7 +559,7 @@ int update_simplex(double ** simplex, int dim, double  fmax, double ** fx, int i
 	return update;
 }
 
-void contract_simplex(double ** simplex, int dim, double ** fx, int ilo, int ihi, Search_settings *sett, Aux_arrays *aux, double *nS, double **sigaa, double **sigbb){
+void contract_simplex(double ** simplex, int dim, double ** fx, int ilo, int ihi, Search_settings *sett, Aux_arrays *aux, double *nS, double **sigaa_max, double **sigbb_max){
   	double sinalt, cosalt, sindelt, cosdelt;
 	double *fx3= alloc_vector(11);
 	int i, j, k, o;
@@ -578,10 +578,10 @@ void contract_simplex(double ** simplex, int dim, double ** fx, int ilo, int ihi
 
 			for (o = 0; o < sett->nifo; ++o){
 				modvir(sinalt, cosalt, sindelt, cosdelt, 
-			   		sett->N, &ifo[o], aux, sigaa[o], sigbb[o]);  
+			   		sett->N, &ifo[o], aux, sigaa_max[o], sigbb_max[o]);  
 			}
 
-			fx3 = Fstatnet(sett, simplex[i], nS, sigaa, sigbb);
+			fx3 = Fstatnet(sett, simplex[i], nS, sigaa_max, sigbb_max);
 			for (k = 0; k < 11; k++) fx[i][k] = fx3[k];
 		}
 	}
@@ -595,7 +595,7 @@ int check_tol(double fmax, double fmin, double ftol){
 	return (delta < (accuracy + ZEPS));
 }
 
-double * amoeba(Search_settings *sett, Aux_arrays *aux, double *point, double *nS, double *res_max, int dim, double tol, double *pc2, double **sigaa, double **sigbb){
+double * amoeba(Search_settings *sett, Aux_arrays *aux, double *point, double *nS, double *res_max, int dim, double tol, double *pc2, double **sigaa_max, double **sigbb_max){
 	int ihi, ilo, inhi;
 // ihi = ih[0], ilo = ih[1], inhi = ih[2];
 	int *ih;
@@ -606,7 +606,7 @@ double * amoeba(Search_settings *sett, Aux_arrays *aux, double *point, double *n
 	double * line = alloc_vector(dim);
 	double ** simplex = make_simplex(point, dim, pc2);
 
-	evaluate_simplex(simplex, dim, fx, sett, aux, nS, sigaa, sigbb);
+	evaluate_simplex(simplex, dim, fx, sett, aux, nS, sigaa_max, sigbb_max);
 
 	while (true)
 	{
@@ -616,13 +616,13 @@ double * amoeba(Search_settings *sett, Aux_arrays *aux, double *point, double *n
 		inhi = ih[2];
 		simplex_bearings(simplex, dim, midpoint, line, ihi);
 		if(check_tol(fx[ihi][5], fx[ilo][5], tol)) break;
-		update_simplex(simplex, dim, fx[ihi][5], fx, ihi, midpoint, line, -1.0, sett, aux, nS, sigaa, sigbb);
+		update_simplex(simplex, dim, fx[ihi][5], fx, ihi, midpoint, line, -1.0, sett, aux, nS, sigaa_max, sigbb_max);
 		if (fx[ihi][5] < fx[ilo][5]){
-			update_simplex(simplex, dim, fx[ihi][5], fx, ihi, midpoint, line, -2.0, sett, aux, nS, sigaa, sigbb);
+			update_simplex(simplex, dim, fx[ihi][5], fx, ihi, midpoint, line, -2.0, sett, aux, nS, sigaa_max, sigbb_max);
 		}
 		else if (fx[ihi][5] > fx[inhi][5]){
-			if (!update_simplex(simplex, dim, fx[ihi][5], fx, ihi, midpoint, line, 0.5, sett, aux, nS, sigaa, sigbb)){
-				contract_simplex(simplex, dim, fx, ilo, ihi, sett, aux, nS, sigaa, sigbb);
+			if (!update_simplex(simplex, dim, fx[ihi][5], fx, ihi, midpoint, line, 0.5, sett, aux, nS, sigaa_max, sigbb_max)){
+				contract_simplex(simplex, dim, fx, ilo, ihi, sett, aux, nS, sigaa_max, sigbb_max);
 			}
 		}
 	}
@@ -653,7 +653,7 @@ int main (int argc, char *argv[]) {
 //  	double *F; 			// F-statistic array
   	int i, j, r, c, a, b, g; 	
 	int d, o, m, k, s;
-	int bins = 1, ROW, dim = 4;	// neighbourhood of point will be divide into defined number of bins
+	int bins = 5, ROW, dim = 4;	// neighbourhood of point will be divide into defined number of bins
 	int gsize = 1;			// grid size where followup will be searching maximum
 	int spndr[2], nr[2], mr[2];	// range in linear unities
 	int hemi; 			// hemisphere
@@ -680,18 +680,22 @@ int main (int argc, char *argv[]) {
 	ROW = pow((bins+1),4);
 
 #ifdef YEPPP
-    yepLibrary_Init();
-    Yep64f *results_max = (Yep64f*)malloc(sizeof(Yep64f)*11); 
-    Yep64f *results_first = (Yep64f*)malloc(sizeof(Yep64f)*11);
-    Yep64f *results = (Yep64f*)malloc(sizeof(Yep64f)*11);
-    Yep64f *maximum = (Yep64f*)malloc(sizeof(Yep64f)*11);
+    	yepLibrary_Init();
+   	Yep64f *results_max = (Yep64f*)malloc(sizeof(Yep64f)*11); 
+    	Yep64f *results_first = (Yep64f*)malloc(sizeof(Yep64f)*11);
+    	Yep64f *results = (Yep64f*)malloc(sizeof(Yep64f)*11);
+	Yep64f *maximum = (Yep64f*)malloc(sizeof(Yep64f)*11);
 //    Yep64f *sgnlo = (Yep64f*)malloc(sizeof(Yep64f)*4);  
 //    Yep64f *nSource = (Yep64f*)malloc(sizeof(Yep64f)*3); 
-    Yep64f *mean = (Yep64f*)malloc(sizeof(Yep64f)*4); 
+	Yep64f *mean = (Yep64f*)malloc(sizeof(Yep64f)*4); 
 
     enum YepStatus status;
 
 #endif
+
+	double sgnlo_max[4];
+	double nSource_max[3];
+	double **sigaa_max, **sigbb_max;   // aa[nifo][N]
 
 // Time tests
 	double tdiff;
@@ -706,6 +710,11 @@ int main (int argc, char *argv[]) {
 
 // Array initialization
   	init_arrays(&sett, &opts, &aux_arr);
+
+if(opts.simplex_flag){
+		sigaa_max = matrix(sett.nifo, sett.N);
+		sigbb_max = matrix(sett.nifo, sett.N);
+	}
 
 // Output data handling
 /*  struct stat buffer;
@@ -774,7 +783,7 @@ int main (int argc, char *argv[]) {
 
 					arr = neigh(mean, pc, bins);
 
-				}
+				} //if neigh
 				else{
 // Grid data
 					read_grid(&sett, &opts);
@@ -844,13 +853,13 @@ int main (int argc, char *argv[]) {
 					}
 					sgnlo_range[0][0] = 0.9997*mean[0];
 					sgnlo_range[0][1] = 1.0003*mean[0];
-//					for (i = 0; i < 4; i++) printf("range[%d][0] = %le, range[%d][1] = %le\n", i, sgnlo_range[i][0], i, sgnlo_range[i][1]);
+					for (i = 0; i < 4; i++) printf("range[%d][0] = %le, range[%d][1] = %le\n", i, sgnlo_range[i][0], i, sgnlo_range[i][1]);
 					arr = neigh_from_range(sgnlo_range, bins);
 					pc2[0] = 0.0006/bins;
 					for (i = 1; i < 4; i++) pc2[i] = (sgnlo_range[i][1] - sgnlo_range[i][0])/bins;
 
 
-				}
+				} //if not neigh
 // Output data handling
 /*  				struct stat buffer;
 
@@ -893,6 +902,7 @@ int main (int argc, char *argv[]) {
 
 #pragma omp for  
 				for (d = 0; d < ROW; ++d){
+//printf("%d\n", d);
 
 					for (i = 0; i < 4; i++){
 						sgnlo[i] = arr[d][i];
@@ -922,23 +932,24 @@ int main (int argc, char *argv[]) {
 						for (i = 0; i < 11; i++){
 							results_max[i] = results[i];
 						}
-					}
-
-// Maximum search using simplex algorithm
-					if(opts.simplex_flag){
-//						puts("Simplex");
-
-						maximum = amoeba(&sett, &aux_arr, sgnlo, nSource, results, dim, tol, pc2, sigaa, sigbb);
-//printf("Amoeba: %le %le %le %le %le %le\n", maximum[6], maximum[7], maximum[8], maximum[9], maximum[5], maximum[4]);
-// Maximum value in points searching
-#pragma omp critical
-						if(maximum[5] < results_max[5]){
-							for (i = 0; i < 11; i++){
-								results_max[i] = maximum[i];
+						if(opts.simplex_flag){
+							for (i = 0; i < 4; i ++){
+								sgnlo_max[i] = sgnlo[i];
 							}
-						}
+							for (i = 0; i < 3; i++){
+								nSource_max[i] = nSource[i];
+							}
+							for (g = 0; g < sett.nifo; g++){
+								for (i = 0; i < sett.N; i++){
+									sigaa_max[g][i] = sigaa[g][i];
+									sigbb_max[g][i] = sigbb[g][i];
+								}
+							}
+						} //if --simplex
+//puts("2");
+					} // if results < results_max
+//puts("3");
 
-					} //simplex
 				} // d - main outside loop
 				free_matrix(sigaa, sett.nifo, sett.N);
 				free_matrix(sigbb, sett.nifo, sett.N);
@@ -953,6 +964,22 @@ int main (int argc, char *argv[]) {
 					maximum = MADS(&sett, &aux_arr, results_max, mean, tol, pc2, bins);
 
 				}
+
+// Maximum search using simplex algorithm
+				if(opts.simplex_flag){
+//						puts("Simplex");
+
+					maximum = amoeba(&sett, &aux_arr, sgnlo_max, nSource_max, results_max, dim, tol, pc2, sigaa_max, sigbb_max);
+//printf("Amoeba: %le %le %le %le %le %le\n", maximum[6], maximum[7], maximum[8], maximum[9], maximum[5], maximum[4]);
+// Maximum value in points searching
+//#pragma omp critical
+					if(maximum[5] < results_max[5]){
+						for (i = 0; i < 11; i++){
+							results_max[i] = maximum[i];
+						}
+					}
+
+				} //simplex
 
 //Time test
 //				tend = clock();
@@ -991,22 +1018,47 @@ if((opts.mads_flag)||(opts.simplex_flag)){
 	free(results_max);
 	free(results_first);
 	free(results);
-	free(maximum);
 	free(mean);
-	free(spndr);
-	free(nr);
-	free(mr);
-	free(MM);
-	free(sgnlol);
-	free(be);
 	free_matrix(sgnlo_range, 4, 2);
 	free_matrix(arr, ROW, 4);
   	cleanup_followup(&sett, &opts, &aux_arr);
-	
 
+	if(opts.simplex_flag){
+
+		free(maximum);
+		free_matrix(sigaa_max, sett.nifo, sett.N);
+		free_matrix(sigbb_max, sett.nifo, sett.N);
+
+	}
 	return 0;
 
 }
+
+//old test
+//time LD_LIBRARY_PATH=lib/yeppp-1.0.0/binaries/linux/x86_64 ./followup -data ./data -ident 001 -band 100 -fpo 199.21875 
+// new test: 
+//time LD_LIBRARY_PATH=/home/msieniawska/tests/polgraw-allsky/search/network/src-cpu/lib/yeppp-1.0.0/binaries/linux/x86_64/ ./followup -data /home/msieniawska/tests/polgraw-allsky/followup/src/testdata/ -output /home/msieniawska/tests/polgraw-allsky/followup/src/output -label J0000+1902 -band 1902
+//test for basic testdata:
+//time LD_LIBRARY_PATH=/home/msieniawska/tests/polgraw-allsky/search/network/src-cpu/lib/yeppp-1.0.0/binaries/linux/x86_64/ ./followup -data /home/msieniawska/tests/polgraw-allsky/followup/src/testdata/ -output /home/msieniawska/tests/polgraw-allsky/followup/src/output -band 100 -ident 10 -fpo 199.21875
+//time LD_LIBRARY_PATH=/home/msieniawska/tests/polgraw-allsky/search/network/src-cpu/lib/yeppp-1.0.0/binaries/linux/x86_64/ ./followup -data /home/msieniawska/tests/bigdogdata/mdc_025/ -output /home/polgraw-allsky/followup/src/output -band 100 -ident 10 -fpo 199.21875
+//
+//time LD_LIBRARY_PATH=/work/psk/msieniawska/test_followup/1/polgraw-allsky/search/network/src-cpu/lib/yeppp-1.0.0/binaries/linux/x86_64/ ./followup -data /work/psk/msieniawska/test_followup/data/ -output /work/psk/msieniawska/test_followup/output -band 103 -label 103_10 -fpo 103.0
+//
+//time LD_LIBRARY_PATH=/home/msieniawska/tests/bin_test/1/polgraw-allsky/search/network/src-cpu/lib/yeppp-1.0.0/binaries/linux/x86_64/ ./followup -data /home/msieniawska/tests/bin_test/data -output /home/msieniawska/tests/bin_test/output1 -fpo 124.9453125 -label 103_10 -fpo 103.0 -dt 2.0>& out1.txt
+//
+//time LD_LIBRARY_PATH=/home/msieniawska/tests/gluetest/polgraw-allsky/search/network/src-cpu/lib/yeppp-1.0.0/binaries/linux/x86_64/ ./followup -data /home/msieniawska/tests/gluetest/d1/followup_total_data -output /home/msieniawska/tests/gluetest/output1 -fpo 124.9453125 -label 103_10 -ident 000 -dt 2.0
+
+//time LD_LIBRARY_PATH=/home/msieniawska/tests/addsig/polgraw-allsky/search/network/src-cpu/lib/yeppp-1.0.0/binaries/linux/x86_64 ./followup -data /home/msieniawska/tests/addsig/data -output . -ident 001 -band 0666 -dt 2 -addsig sigfile001 --nocheckpoint
+//time LD_LIBRARY_PATH=/home/msieniawska/tests/addsig/polgraw-allsky/search/network/src-cpu/lib/yeppp-1.0.0/binaries/linux/x86_64 ./followup -data /home/msieniawska/tests/addsig/data -output . -ident 001 -band 0666 -dt 2 -addsig /home/msieniawska/tests/addsig/data/sigfile001 --nocheckpoint
+
+//time LD_LIBRARY_PATH=/home/msieniawska/tests/addsig/polgraw-allsky/search/network/src-cpu/lib/yeppp-1.0.0/binaries/linux/x86_64 ./gwsearch-cpu -data /home/msieniawska/tests/addsig/data -output . -ident 031 -band 0666 -dt 2 -addsig /home/msieniawska/tests/addsig/data/sig1 --nocheckpoint >searchtest.txt
+
+//time LD_LIBRARY_PATH=/home/msieniawska/tests/addsig/polgraw-allsky/test/search/network/src-cpu/lib/yeppp-1.0.0/binaries/linux/x86_64 ./followup -data /home/msieniawska/tests/addsig/data -output . -ident 031 -band 0666 -dt 2 -addsig /home/msieniawska/tests/addsig/data/sig1 -usedet H1 --simplex
+//LD_LIBRARY_PATH=/home/msieniawska/tests/addsig/polgraw-allsky/test/search/network/src-cpu/lib/yeppp-1.0.0/binaries/linux/x86_64 ./gwsearch-cpu -data /home/msieniawska/tests/addsig/test/pulsar8 -output . -ident 001 -band 0747 -dt 2 -usedet H1 -threshold 200 --whitenoise 
+//time LD_LIBRARY_PATH=/home/msieniawska/tests/addsig/polgraw-allsky/test/search/network/src-cpu/lib/yeppp-1.0.0/binaries/linux/x86_64 ./followup -data /home/msieniawska/tests/addsig/test/pulsar8 -output . -ident 010 -band 0747 -dt 2 -usedet H1 --simplex
+
+// LD_LIBRARY_PATH=/home/msieniawska/tests/newglue/search/network/src-cpu/lib/yeppp-1.0.0/binaries/linux/x86_64 ./followup -data /home/msieniawska/tests/newglue/data/notglued -ident 001 -band 0666 -dt 2 -addsig /home/msieniawska/tests/newglue/data/sig20 > /home/msieniawska/tests/newglue/output/6d/followup_6_days.txt
+
 
 // LD_LIBRARY_PATH=/home/magdalena/phd/newglue/newcodes/search/network/src-cpu/lib/yeppp-1.0.0/binaries/linux/x86_64 ./gwsearch-cpu -data /home/magdalena/phd/newglue/data/notglued -output /home/magdalena/phd/newglue/output/test -ident 001 -band 0666 -dt 2 -addsig /home/magdalena/phd/newglue/data/sig20 --nocheckpoint  
 //001: 575 579 34 38 30 34 2 2
