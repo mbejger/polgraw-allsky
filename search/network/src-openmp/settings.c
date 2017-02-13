@@ -174,7 +174,7 @@ void detectors_settings(Search_settings* sett,
       // Geographical longitude in radians
       ifo[i].elam = (10.+30./60.+16.1885/3600.)/RAD_TO_DEG;
       // Height h above the Earth ellipsoid in meters
-      ifo[i].eheight = 53.238;
+      ifo[i].eheight = 51.884;
       // Orientation of the detector gamma
       ifo[i].egam = (135. - (19.0+25./60.0+57.96/3600.))/RAD_TO_DEG;
 

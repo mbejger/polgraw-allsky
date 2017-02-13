@@ -55,7 +55,7 @@ void settings(
     // Geographical longitude in radians
     elam = (10.+30./60.+16.1885/3600.)/RAD_TO_DEG;
     // Height h above the Earth ellipsoid in meters
-    eheight = 53.238;
+    eheight = 51.884;
     // Orientation of the detector gamma
     egam = (135. - (19.0+25./60.0+57.96/3600.))/RAD_TO_DEG;
 
