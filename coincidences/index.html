@@ -139,10 +139,6 @@
 <li>list of unique candidates from all the frames is created and sorted, </li>
 <li>duplicates are counted - these are the coincidences. </li>
 </ul>
-<pre><code>[-x----][-x----][-x----][-x----][-----y][-x----][-x----][---z--]
-6 coincidences of x in 8 data segments, not bad...
-</code></pre>
-
 <p><em>TODO: describe cell shifts (16 different shifts in total: 0101, 0110, 0010 etc. in f, s, d, a directions) and scaling of cells (used to define the linear parameters for a given cell to subsequently compare the candidate values)</em> </p>
 <h3 id="7-compilation">7. Compilation</h3>
 <p>Run <code>make coincidences</code>; resulting binary is called <code>coincidences</code>. Modify the <code>Makefile</code> to fit your system.</p>
@@ -268,14 +264,14 @@ triggers_ 0110 171.296875 8 8 1.05795986e+00 -7.69412393e-09 -7.42581733e-01 5.3
 <p>It contains the <code>trigname</code> identifier, the <code>shift</code> value, the <code>fpo</code> band frequency, the number of files read (8), and the highest coincidence found (8). Next 5 numbers are arithmetic mean values of the frequency <mathjax>$\,f$</mathjax> (in radians), frequency derivative <mathjax>$\,\dot{f}$</mathjax> (spindown), sky positions <mathjax>$\delta$</mathjax> and <mathjax>$\alpha$</mathjax>, and the mean signal-to-noise ratio, <mathjax>$\widetilde{\mathrm{snr}}=\sqrt{\sum_i \mathrm{snr}_i^2}$</mathjax>. The following integers are grouped in threes and denote the triggers/time frame number, number of all candidates in that triggers' file, and the number of unique candidates. </p>
 <p>Coincidences above <code>mincoin</code> are recorded in a binary file <code>.coi</code>, separately for each shift, in the <code>-output</code> directory. Each coincidence is a set of following numbers: 
 <mathjax>$$
-N,\quad\bar{f},\quad\bar{s},\quad\bar{d},\quad\bar{a},\quad\widetilde{\mathrm{snr}},\quad\mathrm{fr}_{1},\,\dots\,\mathrm{fr}_{N},\quad\mathrm{p}_{1},\,\dots\,\mathrm{p}_{N}
+N_{coin},\quad\bar{f},\quad\bar{s},\quad\bar{d},\quad\bar{a},\quad\widetilde{\mathrm{snr}},\quad\mathrm{fr}_{1},\,\dots\,\mathrm{fr}_{N_{coin}},\quad\mathrm{p}_{1},\,\dots\,\mathrm{p}_{N_{coin}}
 $$</mathjax>
 where </p>
 <ul>
-<li><mathjax>$N$</mathjax> is the size of coincidence (written as one <code>unsigned short int</code>), </li>
+<li><mathjax>$N_{coin}$</mathjax> is the size of coincidence (written as one <code>unsigned short int</code>), </li>
 <li><mathjax>$\bar{f}$</mathjax>, <mathjax>$\bar{s}$</mathjax>, <mathjax>$\bar{d}$</mathjax>, <mathjax>$\bar{a}$</mathjax> and <mathjax>$\widetilde{\mathrm{snr}}$</mathjax> are the mean parameters of the signal (<mathjax>$5\times$</mathjax><code>float</code>),</li>
-<li><mathjax>$\mathrm{fr}_{1},\,\dots\,\mathrm{fr}_{N}$</mathjax> are the frame numbers (<mathjax>$N\times$</mathjax><code>unsigned short int</code>), </li>
-<li><mathjax>$\mathrm{p}_{1},\,\dots\,\mathrm{p}_{N}$</mathjax> are the positions of candidate signals that took part in the coincidences, in their corresponding trigger files (<mathjax>$N\times$</mathjax><code>int</code>) </li>
+<li><mathjax>$\mathrm{fr}_{1},\,\dots\,\mathrm{fr}_{N_{coin}}$</mathjax> are the frame numbers (<mathjax>$N_{coin}\times$</mathjax><code>unsigned short int</code>), </li>
+<li><mathjax>$\mathrm{p}_{1},\,\dots\,\mathrm{p}_{N_{coin}}$</mathjax> are the positions of candidate signals that took part in the coincidences, in their corresponding trigger files (<mathjax>$N_{coin}\times$</mathjax><code>int</code>) </li>
 </ul>
 <p>in order to be able to recover the actual original candidate signals, if needed. </p></div>
         </div>

@@ -17,10 +17,7 @@ After finding the candidate signals in different time frames (`search`), we want
 * duplicates within each frame are removed, 
 * list of unique candidates from all the frames is created and sorted, 
 * duplicates are counted - these are the coincidences. 
-```
-[-x----][-x----][-x----][-x----][-----y][-x----][-x----][---z--]
-6 coincidences of x in 8 data segments, not bad...
-```
+
 *TODO: describe cell shifts (16 different shifts in total: 0101, 0110, 0010 etc. in f, s, d, a directions) and scaling of cells (used to define the linear parameters for a given cell to subsequently compare the candidate values)* 
 
 ### 7. Compilation
@@ -102,14 +99,14 @@ It contains the `trigname` identifier, the `shift` value, the `fpo` band frequen
 
 Coincidences above `mincoin` are recorded in a binary file `.coi`, separately for each shift, in the `-output` directory. Each coincidence is a set of following numbers: 
 $$
-N,\quad\bar{f},\quad\bar{s},\quad\bar{d},\quad\bar{a},\quad\widetilde{\mathrm{snr}},\quad\mathrm{fr}_{1},\,\dots\,\mathrm{fr}_{N},\quad\mathrm{p}_{1},\,\dots\,\mathrm{p}_{N}
+N_{coin},\quad\bar{f},\quad\bar{s},\quad\bar{d},\quad\bar{a},\quad\widetilde{\mathrm{snr}},\quad\mathrm{fr}_{1},\,\dots\,\mathrm{fr}_{N_{coin}},\quad\mathrm{p}_{1},\,\dots\,\mathrm{p}_{N_{coin}}
 $$
 where 
 
-* $N$ is the size of coincidence (written as one `unsigned short int`), 
+* $N_{coin}$ is the size of coincidence (written as one `unsigned short int`), 
 * $\bar{f}$, $\bar{s}$, $\bar{d}$, $\bar{a}$ and $\widetilde{\mathrm{snr}}$ are the mean parameters of the signal ($5\times$`float`),
-* $\mathrm{fr}_{1},\,\dots\,\mathrm{fr}_{N}$ are the frame numbers ($N\times$`unsigned short int`), 
-* $\mathrm{p}_{1},\,\dots\,\mathrm{p}_{N}$ are the positions of candidate signals that took part in the coincidences, in their corresponding trigger files ($N\times$`int`) 
+* $\mathrm{fr}_{1},\,\dots\,\mathrm{fr}_{N_{coin}}$ are the frame numbers ($N_{coin}\times$`unsigned short int`), 
+* $\mathrm{p}_{1},\,\dots\,\mathrm{p}_{N_{coin}}$ are the positions of candidate signals that took part in the coincidences, in their corresponding trigger files ($N_{coin}\times$`int`) 
 
 in order to be able to recover the actual original candidate signals, if needed. 
 
