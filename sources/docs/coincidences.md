@@ -33,11 +33,13 @@ Sample call of `coincidences` is as follows:
 ```
 > ./coincidences -data . -output 0666-coincidences -mincoin 3 -snrcutoff 5 -trigname triggers_ -refloc 6d_xdat_0.25/010 -refr 010 -fpo 171.296875 -shift 0110 -scale 4444 -dt 2 2>> summary
 ```
-This assumes that the 0666 band frequency `fpo` is 171.296875, since we define 
-```
-fpo = 10. + (1-2^(-5))*band*(0.5/dt) 
-```
-The reference grid, corresponding to the reference frame 010 is located at `-refloc` location. Some output is directed to `stdin`. The highest-coincidence is outputed to `stderr`, redirected to a `summary` file (`2>> summary`). In principle one has to run the code 16 times for all the $2^4$ shifts `0000--1111`.   
+This assumes that for the band $bbbb=0666$ the band frequency $fpo$ is 171.296875, because we define 
+$$
+fpo = 10 + (1 - 2^{-5})\cdot bbbb\cdot \frac{1}{2dt}\ \mathrm{[Hz]}.
+$$
+The reference grid file `grid.bin`, corresponding to the reference frame `010` is located at the `-refloc` location. Some output is directed to `stdin`. The highest-coincidence is streamed to the `summary` file via the `stderr` (`2>> summary`). 
+
+In principle one has to run the code 16 times for all the $2^4$ shifts (all combinations of `0000--1111`).   
 
 #### 8.1. Full list of switches 
 Type 
@@ -63,7 +65,7 @@ to obtain the following description:
 
 Also:
 
-|                 |             |
+|                 |             | 
 |-----------------|:------------|
 | --help          |This help    |
 
@@ -107,5 +109,7 @@ where
 * $N$ is the size of coincidence (written as one `unsigned short int`), 
 * $\bar{f}$, $\bar{s}$, $\bar{d}$, $\bar{a}$ and $\widetilde{\mathrm{snr}}$ are the mean parameters of the signal ($5\times$`float`),
 * $\mathrm{fr}_{1},\,\dots\,\mathrm{fr}_{N}$ are the frame numbers ($N\times$`unsigned short int`), 
-* $\mathrm{p}_{1},\,\dots\,\mathrm{p}_{N}$ are the positions of candidate signals that took part in the coincidences, in their corresponding trigger files ($N\times$`int`).
+* $\mathrm{p}_{1},\,\dots\,\mathrm{p}_{N}$ are the positions of candidate signals that took part in the coincidences, in their corresponding trigger files ($N\times$`int`) 
+
+in order to be able to recover the actual original candidate signals, if needed. 
 

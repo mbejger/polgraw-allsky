@@ -151,11 +151,12 @@
 <pre><code>&gt; ./coincidences -data . -output 0666-coincidences -mincoin 3 -snrcutoff 5 -trigname triggers_ -refloc 6d_xdat_0.25/010 -refr 010 -fpo 171.296875 -shift 0110 -scale 4444 -dt 2 2&gt;&gt; summary
 </code></pre>
 
-<p>This assumes that the 0666 band frequency <code>fpo</code> is 171.296875, since we define </p>
-<pre><code>fpo = 10. + (1-2^(-5))*band*(0.5/dt) 
-</code></pre>
-
-<p>The reference grid, corresponding to the reference frame 010 is located at <code>-refloc</code> location. Some output is directed to <code>stdin</code>. The highest-coincidence is outputed to <code>stderr</code>, redirected to a <code>summary</code> file (<code>2&gt;&gt; summary</code>). In principle one has to run the code 16 times for all the <mathjax>$2^4$</mathjax> shifts <code>0000--1111</code>.   </p>
+<p>This assumes that for the band <mathjax>$bbbb=0666$</mathjax> the band frequency <mathjax>$fpo$</mathjax> is 171.296875, because we define 
+<mathjax>$$
+fpo = 10 + (1 - 2^{-5})\cdot bbbb\cdot \frac{1}{2dt}\ \mathrm{[Hz]}.
+$$</mathjax>
+The reference grid file <code>grid.bin</code>, corresponding to the reference frame <code>010</code> is located at the <code>-refloc</code> location. Some output is directed to <code>stdin</code>. The highest-coincidence is streamed to the <code>summary</code> file via the <code>stderr</code> (<code>2&gt;&gt; summary</code>). </p>
+<p>In principle one has to run the code 16 times for all the <mathjax>$2^4$</mathjax> shifts (all combinations of <code>0000--1111</code>).   </p>
 <h4 id="81-full-list-of-switches">8.1. Full list of switches</h4>
 <p>Type </p>
 <pre><code>&gt; ./coincidences --help 
@@ -274,8 +275,9 @@ where </p>
 <li><mathjax>$N$</mathjax> is the size of coincidence (written as one <code>unsigned short int</code>), </li>
 <li><mathjax>$\bar{f}$</mathjax>, <mathjax>$\bar{s}$</mathjax>, <mathjax>$\bar{d}$</mathjax>, <mathjax>$\bar{a}$</mathjax> and <mathjax>$\widetilde{\mathrm{snr}}$</mathjax> are the mean parameters of the signal (<mathjax>$5\times$</mathjax><code>float</code>),</li>
 <li><mathjax>$\mathrm{fr}_{1},\,\dots\,\mathrm{fr}_{N}$</mathjax> are the frame numbers (<mathjax>$N\times$</mathjax><code>unsigned short int</code>), </li>
-<li><mathjax>$\mathrm{p}_{1},\,\dots\,\mathrm{p}_{N}$</mathjax> are the positions of candidate signals that took part in the coincidences, in their corresponding trigger files (<mathjax>$N\times$</mathjax><code>int</code>).</li>
-</ul></div>
+<li><mathjax>$\mathrm{p}_{1},\,\dots\,\mathrm{p}_{N}$</mathjax> are the positions of candidate signals that took part in the coincidences, in their corresponding trigger files (<mathjax>$N\times$</mathjax><code>int</code>) </li>
+</ul>
+<p>in order to be able to recover the actual original candidate signals, if needed. </p></div>
         </div>
 
 	<footer class="col-md-12">
