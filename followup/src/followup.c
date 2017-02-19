@@ -162,10 +162,7 @@ Yep64f** neigh_from_range(double **range, int b){
 		beg[0] = beg[0] + width[0];
 	}
 
-
-
 	return array;
-
 } 
 
 // Allocation of memory for double martix with given number of rows and columns
@@ -227,7 +224,7 @@ void free_matrix_complex(complex double **matrix, int rows, int cols){
 	free(matrix);
 }
 
-// Function computes F-statistics in given point
+// Function calculates F-statistics in given point
 double* Fstatnet(Search_settings *sett, double *sgnlo, double *nSource, double **sigaa, double **sigbb){
 
 	int i = 0, n = 0; 
@@ -337,9 +334,7 @@ double* Fstatnet(Search_settings *sett, double *sgnlo, double *nSource, double *
 	fstat_out[9] = sgnlo[3];
 
 // Signal-to-noise ratio from estimated amplitudes (for h0 = 1)
-
 	fstat_out[10] = sqrt(sqr(2*creal(xasum)) + sqr(2*creal(xbsum)) + sqr(2*cimag(xasum)) + sqr(2*cimag(xbsum))); 	
-//printf("Fstatnet: %le %le %le %le %le %le\n", fstat_out[6], fstat_out[7], fstat_out[8], fstat_out[9], fstat_out[5], fstat_out[4]);
 
 	free(_sph);
 	free(_cph);
@@ -354,7 +349,6 @@ double* Fstatnet(Search_settings *sett, double *sgnlo, double *nSource, double *
 
 
 //mesh adaptive direct search (MADS) maximum search declaration
-//double
 Yep64f* MADS(Search_settings *sett, Aux_arrays *aux, double* in, double *start, double delta, double *pc, int bins){
 
 	int i, j, k, l, m, n, o, r, a = 0;
@@ -651,10 +645,10 @@ int main (int argc, char *argv[]) {
 	Command_line_opts opts;
   	Aux_arrays aux_arr;
 //  	double *F; 			// F-statistic array
-  	int i, j, r, c, a, b, g; 	
+  	int i, j, r, c, a, b, g, flag; 	
 	int d, o, m, k, s;
-	int bins = 5, ROW, dim = 4;	// neighbourhood of point will be divide into defined number of bins
-	int gsize = 1;			// grid size where followup will be searching maximum
+	int bins = 17, ROW, dim = 4;	// neighbourhood of point will be divide into defined number of bins
+	int gsize = 2;			// grid size where followup will be searching maximum
 	int spndr[2], nr[2], mr[2];	// range in linear unities
 	int hemi; 			// hemisphere
 	double pc[4];			// % define neighbourhood around each parameter for initial grid
@@ -711,9 +705,13 @@ int main (int argc, char *argv[]) {
 // Array initialization
   	init_arrays(&sett, &opts, &aux_arr);
 
-if(opts.simplex_flag){
+	if(opts.simplex_flag){
 		sigaa_max = matrix(sett.nifo, sett.N);
 		sigbb_max = matrix(sett.nifo, sett.N);
+	}
+// Grid data
+	if(!opts.neigh_flag){
+		read_grid(&sett, &opts);
 	}
 
 // Output data handling
@@ -763,7 +761,6 @@ if(opts.simplex_flag){
 
 //Frequency shifted from the reference frame to the current frame
 				if (opts.refr > 0){
-
 					mean[0] += -2.*mean[1]*(sett.N)*(opts.refr - opts.ident); 
 				}
 
@@ -785,9 +782,6 @@ if(opts.simplex_flag){
 
 				} //if neigh
 				else{
-// Grid data
-					read_grid(&sett, &opts);
-
 					sgnlo_range = matrix(4, 2);
 					cof = sett.oms + mean[0]; 
 					for(i=0; i<2; i++) sgnlol[i] = mean[i]; 
@@ -828,20 +822,23 @@ if(opts.simplex_flag){
 					mr[1] = mr[0] + gsize; 
 					mr[0] -= gsize;
 
-//					printf(" s = %d %d, n = %d %d, m = %d %d\n", spndr[0], spndr[1], nr[0], nr[1], mr[0], mr[1]);
-
 // Go back to astrophysical units - calculate range for calculations
+
+					flag = 0;
 
 					for(i = 0; i < 2; i++){
 						al1 = nr[i]*sett.M[10] + mr[i]*sett.M[14];
 						al2 = nr[i]*sett.M[11] + mr[i]*sett.M[15];
 
 // check if the range is in an appropriate region of the grid
+// if not - go to the next candidate 
 
   						if ((sqr(al1)+sqr(al2))/sqr(sett.oms) > 1.){ 
 							puts("Inappropriate region!");
-							return 0;
+							flag = 1;
+							break;
 						}
+						else{
 
 						lin2ast(al1/sett.oms, al2/sett.oms, hemi, sett.sepsm, 
 							sett.cepsm, &sinalt, &cosalt, &sindelt, &cosdelt);
@@ -849,17 +846,26 @@ if(opts.simplex_flag){
 						sgnlo_range[2][i] = asin(sindelt);
 						sgnlo_range[3][i] = fmod(atan2(sinalt, cosalt) + 2.*M_PI, 2.*M_PI);
 						sgnlo_range[1][i] = spndr[i]*sett.M[5] + nr[i]*sett.M[9] + mr[i]*sett.M[13];
-
+						}
+						
 					}
-					sgnlo_range[0][0] = 0.9997*mean[0];
-					sgnlo_range[0][1] = 1.0003*mean[0];
-					for (i = 0; i < 4; i++) printf("range[%d][0] = %le, range[%d][1] = %le\n", i, sgnlo_range[i][0], i, sgnlo_range[i][1]);
-					arr = neigh_from_range(sgnlo_range, bins);
-					pc2[0] = 0.0006/bins;
-					for (i = 1; i < 4; i++) pc2[i] = (sgnlo_range[i][1] - sgnlo_range[i][0])/bins;
+
+					if (flag == 0){
+//						sgnlo_range[0][0] = 0.9997*mean[0];
+//						sgnlo_range[0][1] = 1.0003*mean[0];
+						sgnlo_range[0][0] = mean[0] - 0.03;
+						sgnlo_range[0][1] = mean[0] + 0.03;
+//						for (i = 0; i < 4; i++) printf("range[%d][0] = %le, range[%d][1] = %le\n", i, sgnlo_range[i][0], i, sgnlo_range[i][1]);
+						arr = neigh_from_range(sgnlo_range, bins);
+//						pc2[0] = 0.0006/bins;
+						for (i = 0; i < 4; i++) pc2[i] = (sgnlo_range[i][1] - sgnlo_range[i][0])/bins;
+					}
 
 
 				} //if not neigh
+
+				if(flag == 1) continue;
+
 // Output data handling
 /*  				struct stat buffer;
 
@@ -883,12 +889,11 @@ if(opts.simplex_flag){
 				for(i=0; i<sett.nifo; i++) rogcvir(&ifo[i]); 
 // Adding signal from file
   				if(strlen(opts.addsig)) { 
-
     					add_signal(&sett, &opts, &aux_arr);
   				}
 
 // Setting number of using threads (not required)
-//omp_set_num_threads(2);
+//omp_set_num_threads(1);
 
 				results_max[5] = 0.;
 
@@ -896,17 +901,15 @@ if(opts.simplex_flag){
 #pragma omp parallel default(shared) private(d, i, sgnlo, sinalt, cosalt, sindelt, cosdelt, nSource, results, maximum)
 {
 
-                       		double **sigaa, **sigbb;   // aa[nifo][N]
+                       		double **sigaa, **sigbb;   // old aa[nifo][N], bb[nifo][N]
               			sigaa = matrix(sett.nifo, sett.N);
 				sigbb = matrix(sett.nifo, sett.N);
 
 #pragma omp for  
 				for (d = 0; d < ROW; ++d){
-//printf("%d\n", d);
 
 					for (i = 0; i < 4; i++){
 						sgnlo[i] = arr[d][i];
-//						sgnlo[i] = mean[i]; 
 					}
  
 					sinalt = sin(sgnlo[3]);
@@ -927,6 +930,7 @@ if(opts.simplex_flag){
 					results = Fstatnet(&sett, sgnlo, nSource, sigaa, sigbb);
 //printf("%le %le %le %le %le %le\n", results[6], results[7], results[8], results[9], results[5], results[4]);
 
+// Check is it the biggest found value of F-statistic
 #pragma omp critical
 					if(results[5] < results_max[5]){
 						for (i = 0; i < 11; i++){
@@ -946,9 +950,9 @@ if(opts.simplex_flag){
 								}
 							}
 						} //if --simplex
-//puts("2");
+
 					} // if results < results_max
-//puts("3");
+
 
 				} // d - main outside loop
 				free_matrix(sigaa, sett.nifo, sett.N);
@@ -962,17 +966,15 @@ if(opts.simplex_flag){
   				if(opts.mads_flag) {
 //					puts("MADS");
 					maximum = MADS(&sett, &aux_arr, results_max, mean, tol, pc2, bins);
-
 				}
 
 // Maximum search using simplex algorithm
 				if(opts.simplex_flag){
-//						puts("Simplex");
-
+					puts("Simplex");
 					maximum = amoeba(&sett, &aux_arr, sgnlo_max, nSource_max, results_max, dim, tol, pc2, sigaa_max, sigbb_max);
 //printf("Amoeba: %le %le %le %le %le %le\n", maximum[6], maximum[7], maximum[8], maximum[9], maximum[5], maximum[4]);
+
 // Maximum value in points searching
-//#pragma omp critical
 					if(maximum[5] < results_max[5]){
 						for (i = 0; i < 11; i++){
 							results_max[i] = maximum[i];
@@ -1068,4 +1070,4 @@ if((opts.mads_flag)||(opts.simplex_flag)){
 //005: 603 607 35 39 30 34 2 2
 //006: 603 607 35 39 30 34 2 2
 
-//LD_LIBRARY_PATH=/home/magdalena/phd/newglue/newcodes/search/network/src-cpu/lib/yeppp-1.0.0/binaries/linux/x86_64 ./followup -data /home/magdalena/phd/newglue/data/notglued -ident 001 -band 0666 -refr 003 -dt 2 -addsig /home/magdalena/phd/newglue/data/sig20  -candidates /home/magdalena/phd/newglue/data/candidates.coi >> /home/magdalena/phd/newglue/output/test/followup_test.txt
+//LD_LIBRARY_PATH=/home/magdalena/phd/newglue/newcodes/search/network/src-cpu/lib/yeppp-1.0.0/binaries/linux/x86_64 ./followup -data /home/magdalena/phd/newglue/data/notglued -ident 003 -band 0666 -refr 003 -dt 2 -addsig /home/magdalena/phd/newglue/data/sig20  -candidates /home/magdalena/phd/newglue/output/good/coi20.txt --simplex >> /home/magdalena/phd/newglue/output/test/followup_test20.txt
