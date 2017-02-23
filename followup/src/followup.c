@@ -1029,15 +1029,12 @@ if((opts.mads_flag)||(opts.simplex_flag)){
 	free(mean);
 	free_matrix(sgnlo_range, 4, 2);
 	free_matrix(arr, ROW, 4);
-  	cleanup_followup(&sett, &opts, &aux_arr);
-
 	if(opts.simplex_flag){
-
 		free(maximum);
 		free_matrix(sigaa_max, sett.nifo, sett.N);
 		free_matrix(sigbb_max, sett.nifo, sett.N);
-
 	}
+  	cleanup_followup(&sett, &opts, &aux_arr);
 	return 0;
 
 }
