@@ -1,3 +1,6 @@
+// gcc -o read_coi read_coi.c -lm 
+// $ ./read_coi coi_file
+
 #include <stdio.h>
 #include <stdlib.h>
 
