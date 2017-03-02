@@ -646,7 +646,7 @@ int main (int argc, char *argv[]) {
 //  	double *F; 			// F-statistic array
   	int i, j, r, c, a, b, g, flag; 	
 	int d, o, m, k, s;
-	int bins = 17, ROW, dim = 4;	// neighbourhood of point will be divide into defined number of bins
+	int bins = 2, ROW, dim = 4;	// neighbourhood of point will be divide into defined number of bins
 	int gsize = 2;			// grid size where followup will be searching maximum
 	int spndr[2], nr[2], mr[2];	// range in linear unities
 	int hemi; 			// hemisphere
@@ -668,6 +668,7 @@ int main (int argc, char *argv[]) {
 	double nSource[3];
   	double sinalt, cosalt, sindelt, cosdelt;
 	double F_min;
+	double au;
 //	char path[512];
 	double x, y;
 	ROW = pow((bins+1),4);
@@ -789,6 +790,8 @@ int main (int argc, char *argv[]) {
 				} //if neigh
 				else{
 
+printf("%d %le %le %le %le\n", sett.N, mean[0], mean[1], mean[2], mean[3]);
+
 					cof = sett.oms + mean[0]; 
 					for(i=0; i<2; i++) sgnlol[i] = mean[i]; 
 					hemi = ast2lin(mean[3], mean[2], C_EPSMA, be);
@@ -820,60 +823,91 @@ int main (int argc, char *argv[]) {
 					gsl_vector_free (x);
 					free (MM);
 
+// Check if calculated point is in an appropriate region
+
+					al1 = nr[0]*sett.M[10] + mr[0]*sett.M[14];
+					al2 = nr[0]*sett.M[11] + mr[0]*sett.M[15];
+  					if ((sqr(al1)+sqr(al2))/sqr(sett.oms) > 1.){ 
+						puts("Current candidate is in an inappropriate region! -> going to the next candidate");
+						continue;
+					}
+					else{
+
 // Define the grid range in which the signal will be looked for
 
-
-
-					spndr[1] = spndr[0] + gsize; 
-					spndr[0] -= gsize;
-					nr[1] = nr[0] + gsize; 
-					nr[0] -= gsize;
-					mr[1] = mr[0] + gsize; 
-					mr[0] -= gsize;
+						spndr[1] = spndr[0] + gsize; 
+						spndr[0] -= gsize;
+						nr[1] = nr[0] + gsize; 
+						nr[0] -= gsize;
+						mr[1] = mr[0] + gsize; 
+						mr[0] -= gsize;
 
 // Go back to astrophysical units - calculate range for calculations
 
-					flag = 0;
+						flag = 0;
 
 // Loop over min/max values
-					for(i = 0; i < 2; i++){
-						al1 = nr[i]*sett.M[10] + mr[i]*sett.M[14];
-						al2 = nr[i]*sett.M[11] + mr[i]*sett.M[15];
+						for(i = 0; i < 2; i++){
+//printf("nr = %d %d; mr = %d %d; i = %d\n", nr[0], nr[1], mr[0], mr[1], i);
+
+							al1 = nr[i]*sett.M[10] + mr[i]*sett.M[14];
+							al2 = nr[i]*sett.M[11] + mr[i]*sett.M[15];
+lin2ast(al1/sett.oms, al2/sett.oms, hemi, sett.sepsm, sett.cepsm, &sinalt, &cosalt, &sindelt, &cosdelt);
+printf("%le %le %le\n", spndr[i]*sett.M[5] + nr[i]*sett.M[9] + mr[i]*sett.M[13], asin(sindelt), fmod(atan2(sinalt, cosalt) + 2.*M_PI, 2.*M_PI));
 
 // check if the range is in an appropriate region of the grid
 // if not - go to the next candidate 
 
-  						if ((sqr(al1)+sqr(al2))/sqr(sett.oms) > 1.){ 
-							puts("Inappropriate region!");
-							flag = 1;
-							break;
-						}
-						else{
+	  						if ((sqr(al1)+sqr(al2))/sqr(sett.oms) > 1.){ 
+								puts("Inappropriate region of the range! -> changing range");
+								if (i == 0){
+									nr[i] = nr[i] + 1;
+									mr[i] = mr[i] + 1;
+									i = -1;
+								}
+								if (i == 1){
+									nr[i] = nr[i] - 1;
+									mr[i] = mr[i] - 1;
+									i = 0;
+								}
+								if ((nr[1] == nr[0])&&(mr[1] == mr[0])){
+									flag = 1;
+									continue;
+								}
+							}
+							else{
 
-							lin2ast(al1/sett.oms, al2/sett.oms, hemi, sett.sepsm, 
-								sett.cepsm, &sinalt, &cosalt, &sindelt, &cosdelt);
+								lin2ast(al1/sett.oms, al2/sett.oms, hemi, sett.sepsm, 
+									sett.cepsm, &sinalt, &cosalt, &sindelt, &cosdelt);
 
-							sgnlo_range[2][i] = asin(sindelt);
-							sgnlo_range[3][i] = fmod(atan2(sinalt, cosalt) + 2.*M_PI, 2.*M_PI);
-							sgnlo_range[1][i] = spndr[i]*sett.M[5] + nr[i]*sett.M[9] + mr[i]*sett.M[13];
-						}
+								sgnlo_range[2][i] = asin(sindelt);
+								sgnlo_range[3][i] = fmod(atan2(sinalt, cosalt) + 2.*M_PI, 2.*M_PI);
+								sgnlo_range[1][i] = spndr[i]*sett.M[5] + nr[i]*sett.M[9] + mr[i]*sett.M[13];
+							}
 						
-					} //for min/max values
+						} //for min/max values
 
-					if (flag == 0){
-//						sgnlo_range[0][0] = 0.9997*mean[0];
-//						sgnlo_range[0][1] = 1.0003*mean[0];
-						sgnlo_range[0][0] = mean[0] - 0.03;
-						sgnlo_range[0][1] = mean[0] + 0.03;
-//						for (i = 0; i < 4; i++) printf("range[%d][0] = %le, range[%d][1] = %le\n", i, sgnlo_range[i][0], i, sgnlo_range[i][1]);
+						if (flag == 0){
+//							sgnlo_range[0][0] = 0.9997*mean[0];
+//							sgnlo_range[0][1] = 1.0003*mean[0];
+							sgnlo_range[0][0] = mean[0] - 0.03;
+							sgnlo_range[0][1] = mean[0] + 0.03;
+							for (i = 0; i < 4; i++){ 
+								if (sgnlo_range[i][0] > sgnlo_range[i][1]){
+									au = sgnlo_range[i][0];
+									sgnlo_range[i][0] = sgnlo_range[i][1];
+									sgnlo_range[i][1] = au;
+								}
 
-						neigh_from_range(sgnlo_range, bins, arr);
+								printf("range[%d][0] = %le, range[%d][1] = %le\n", i, sgnlo_range[i][0], i, sgnlo_range[i][1]);
+							}
+							neigh_from_range(sgnlo_range, bins, arr);
 
-//						pc2[0] = 0.0006/bins;
-						for (j = 0; j < 4; j++) pc2[j] = (sgnlo_range[j][1] - sgnlo_range[j][0])/bins;
-					}
+//							pc2[0] = 0.0006/bins;
+							for (j = 0; j < 4; j++) pc2[j] = (sgnlo_range[j][1] - sgnlo_range[j][0])/bins;
+						}
 
-
+					} //if candidate is in good region
 				} //if not neigh
 
 				if(flag == 1) continue;
@@ -1026,17 +1060,16 @@ if((opts.mads_flag)||(opts.simplex_flag)){
 	free(results_max);
 	free(results_first);
 	free(results);
+//	free(maximum);
 	free(mean);
 	free_matrix(sgnlo_range, 4, 2);
 	free_matrix(arr, ROW, 4);
 	if(opts.simplex_flag){
-		free(maximum);
 		free_matrix(sigaa_max, sett.nifo, sett.N);
 		free_matrix(sigbb_max, sett.nifo, sett.N);
 	}
   	cleanup_followup(&sett, &opts, &aux_arr);
 	return 0;
-
 }
 
 
