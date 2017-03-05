@@ -1,24 +1,3 @@
-/* Ver. 1.0
-Main followup programm. Required files
-(all should be in directory 'data' - given 
-as argument) :
-'candidates.coi' - File with candidates from coincidences
-'list.txt'
-Ver. 2.0
-Functions glue and neigh added!
-Ver. 3.0
-Mesh adaptive direct search (MADS) added (to find real
-maximum)
-Ver. 4.0
-Simplex added
-Ver. 5.0
-Function neigh moved to followup.c
-All vectors/arrays declarated using yeppp! library 
- = FASTER!
-
-MS
-*/
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
@@ -70,21 +49,13 @@ MS
 #define ZEPS 1e-10
 
 //Function neigh takes candidate parameters and number of bins (as arguments) and creates grid around it.
+//Range is defined as a % value from the candidate's parameters
+
 void neigh(double *m, double *perc, int b, double **arr){ 
-//	double **array;
+
 	int rows, cols = 4;
 	rows = pow((b+1),4);
 	int k;
-// Allocation of memory for martix
-/*#ifdef YEPPP
-    	yepLibrary_Init();
-	Yep64f **array = (Yep64f**)malloc(rows*sizeof(Yep64f));
-	for (k=0; k < rows; k++) array[k] = (Yep64f*)calloc(rows,sizeof(Yep64f));
-    	enum YepStatus status;
-#else
-  	array = (double **)malloc(rows*sizeof(double *));
-  	for (k=0; k < rows; k++) array[k] = (double *)calloc(cols, sizeof(double));
-#endif */
 	double beg[4];
 	double width[4];
 	int i1, i2, i3, i4, j, i;
@@ -117,6 +88,43 @@ void neigh(double *m, double *perc, int b, double **arr){
 
 }
 
+//Similar as neigh() function, but takes +/- values instead of %
+
+void neigh2(double *m, double *perc, int b, double **arr){ 
+
+	int rows, cols = 4;
+	rows = pow((b+1),4);
+	int k;
+	double beg[4];
+	double width[4];
+	int i1, i2, i3, i4, j, i;
+	for (j = 0; j < 4; j++) {
+		width[j] = 2*perc[j]/b;
+	}
+	i = 0;
+	beg[0] = m[0] - perc[0];
+	for (i1 = 0; i1 < (b + 1); i1++){
+		beg[1] = m[1] - perc[1];
+		for (i2 = 0; i2 < (b + 1); i2++){
+			beg[2] = m[2] - perc[2];
+			for (i3 = 0; i3 < (b + 1); i3++){
+				beg[3] = m[3] - perc[3];
+				for (i4 = 0; i4 < (b + 1); i4++){
+					for (j = 0; j < 4; j++) {
+						arr[i][j] = beg[j];
+					}
+					beg[3] = beg[3] + width[3];
+					i++;
+				}
+				beg[2] = beg[2] + width[2];
+			}
+			beg[1] = beg[1] + width[1];
+		}
+		beg[0] = beg[0] + width[0];
+	}
+
+}
+
 //Function takes calculated range around point (from grid.bin file) and creates grid around it.
 
 void neigh_from_range(double **range, int b, double **arr){
@@ -124,16 +132,6 @@ void neigh_from_range(double **range, int b, double **arr){
 	int rows, cols = 4;
 	rows = pow((b+1),4);
 	int k;
-// Allocation of memory for martix
-/*#ifdef YEPPP
-    	yepLibrary_Init();
-	Yep64f **array = (Yep64f**)malloc(rows*sizeof(Yep64f));
-	for (k=0; k < rows; k++) array[k] = (Yep64f*)calloc(rows,sizeof(Yep64f));
-    	enum YepStatus status;
-#else 
-  	array = (double **)malloc(rows*sizeof(double *));
-  	for (k=0; k < rows; k++) array[k] = (double *)calloc(cols, sizeof(double));
-#endif */
 	double beg[4];
 	double width[4];
 	int i1, i2, i3, i4, j, i;
@@ -774,24 +772,23 @@ int main (int argc, char *argv[]) {
 				}
 
 //Function neighbourhood - generating grid around point
-//Area around starting point is calculating as a percent from initial values
+//Area around starting point is calculating as a percent from initial values if function neigh() is used
+// or area is taken as +/- of defined values if neigh2() is used
+
 				if(opts.neigh_flag){
-					pc[0] = 0.0003;
-					pc[1] = 0.01;
-					pc[2] = 0.01;
-					pc[3] = 0.01;
+					pc[0] = 1e-4;
+					pc[1] = 1e-9;
+					pc[2] = 0.03;
+					pc[3] = 0.03;
 
 					for (i = 0; i < 4; i++){
 						pc2[i] = 2*pc[i]/bins;
 					}
 
-					neigh(mean, pc, bins, arr);
+					neigh2(mean, pc, bins, arr);
 
 				} //if neigh
 				else{
-
-printf("%d %le %le %le %le\n", sett.N, mean[0], mean[1], mean[2], mean[3]);
-
 					cof = sett.oms + mean[0]; 
 					for(i=0; i<2; i++) sgnlol[i] = mean[i]; 
 					hemi = ast2lin(mean[3], mean[2], C_EPSMA, be);
@@ -827,6 +824,7 @@ printf("%d %le %le %le %le\n", sett.N, mean[0], mean[1], mean[2], mean[3]);
 
 					al1 = nr[0]*sett.M[10] + mr[0]*sett.M[14];
 					al2 = nr[0]*sett.M[11] + mr[0]*sett.M[15];
+
   					if ((sqr(al1)+sqr(al2))/sqr(sett.oms) > 1.){ 
 						puts("Current candidate is in an inappropriate region! -> going to the next candidate");
 						continue;
@@ -848,16 +846,8 @@ printf("%d %le %le %le %le\n", sett.N, mean[0], mean[1], mean[2], mean[3]);
 
 // Loop over min/max values
 						for(i = 0; i < 2; i++){
-//printf("nr = %d %d; mr = %d %d; i = %d\n", nr[0], nr[1], mr[0], mr[1], i);
-
-							al1 = nr[i]*sett.M[10] + mr[i]*sett.M[14];
-							al2 = nr[i]*sett.M[11] + mr[i]*sett.M[15];
-lin2ast(al1/sett.oms, al2/sett.oms, hemi, sett.sepsm, sett.cepsm, &sinalt, &cosalt, &sindelt, &cosdelt);
-printf("%le %le %le\n", spndr[i]*sett.M[5] + nr[i]*sett.M[9] + mr[i]*sett.M[13], asin(sindelt), fmod(atan2(sinalt, cosalt) + 2.*M_PI, 2.*M_PI));
-
 // check if the range is in an appropriate region of the grid
 // if not - go to the next candidate 
-
 	  						if ((sqr(al1)+sqr(al2))/sqr(sett.oms) > 1.){ 
 								puts("Inappropriate region of the range! -> changing range");
 								if (i == 0){
@@ -883,15 +873,15 @@ printf("%le %le %le\n", spndr[i]*sett.M[5] + nr[i]*sett.M[9] + mr[i]*sett.M[13],
 								sgnlo_range[2][i] = asin(sindelt);
 								sgnlo_range[3][i] = fmod(atan2(sinalt, cosalt) + 2.*M_PI, 2.*M_PI);
 								sgnlo_range[1][i] = spndr[i]*sett.M[5] + nr[i]*sett.M[9] + mr[i]*sett.M[13];
+
 							}
 						
 						} //for min/max values
 
 						if (flag == 0){
-//							sgnlo_range[0][0] = 0.9997*mean[0];
-//							sgnlo_range[0][1] = 1.0003*mean[0];
 							sgnlo_range[0][0] = mean[0] - 0.03;
 							sgnlo_range[0][1] = mean[0] + 0.03;
+
 							for (i = 0; i < 4; i++){ 
 								if (sgnlo_range[i][0] > sgnlo_range[i][1]){
 									au = sgnlo_range[i][0];
@@ -902,8 +892,6 @@ printf("%le %le %le\n", spndr[i]*sett.M[5] + nr[i]*sett.M[9] + mr[i]*sett.M[13],
 								printf("range[%d][0] = %le, range[%d][1] = %le\n", i, sgnlo_range[i][0], i, sgnlo_range[i][1]);
 							}
 							neigh_from_range(sgnlo_range, bins, arr);
-
-//							pc2[0] = 0.0006/bins;
 							for (j = 0; j < 4; j++) pc2[j] = (sgnlo_range[j][1] - sgnlo_range[j][0])/bins;
 						}
 
@@ -1062,7 +1050,9 @@ if((opts.mads_flag)||(opts.simplex_flag)){
 	free(results);
 //	free(maximum);
 	free(mean);
-	free_matrix(sgnlo_range, 4, 2);
+	if(!opts.neigh_flag){
+		free_matrix(sgnlo_range, 4, 2);
+	}
 	free_matrix(arr, ROW, 4);
 	if(opts.simplex_flag){
 		free_matrix(sigaa_max, sett.nifo, sett.N);
@@ -1071,5 +1061,4 @@ if((opts.mads_flag)||(opts.simplex_flag)){
   	cleanup_followup(&sett, &opts, &aux_arr);
 	return 0;
 }
-
 
