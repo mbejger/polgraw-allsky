@@ -1,4 +1,5 @@
-SEARCH_DIR = ../../search/network/src-cpu
+TARGET=coincidences
+SEARCH_DIR=../../search/network/src-cpu
 
 # FFTW_DIR - fftw location, remember to compile it with optimizations (e.g. avx)
 FFTW_DIR = /opt/fftw/3.3.5/gnu-omp-devtoolset3
@@ -9,10 +10,13 @@ CC = gcc -std=gnu11 -static-libgcc
 CFLAGS = -I$(SEARCH_DIR) -I$(FFTW_DIR)/include
 CFLAGS += -g -Wall -Wno-unused -fno-omit-frame-pointer \
 	  -O3 -funsafe-loop-optimizations -funroll-loops \
-	  -march=haswell -mtune=haswell -mavx2 -mfma
+	  -march=sandybridge -mtune=sandybridge -mavx
+
 #cpu specific optimizations e.g.: 
+#haswell
+#	  -march=haswell -mtune=haswell -mavx2 -mfma
 #sandy-bridge (psk)
-	#-march=corei7-avx -mtune=corei7-avx -mavx
+	#-march=sandybridge -mtune=sandybridge -mavx
 #westmere (plgrid)
 	#-march=corei7 -mtune=corei7
 
@@ -23,9 +27,9 @@ LOADLIBES = -Wl,--dynamic-linker=/lib64/ld-linux-x86-64.so.2 \
 	    -Wl,-Bdynamic -lc -lrt -lm
 
 
-all: coincidences
+all: $(TARGET)
 
-coincidences: coincidences.o settings.o auxi.o init.o
+$(TARGET): coincidences.o settings.o auxi.o init.o
 	$(CC) $(LDFLAGS) $^ $(LOADLIBES) -o $@
 
 coincidences.o: coincidences.c
