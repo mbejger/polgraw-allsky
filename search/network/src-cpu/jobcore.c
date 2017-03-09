@@ -338,12 +338,18 @@ int job_core(int pm,                   // Hemisphere
 
     for(i=nyqst + sett->Ninterp - sett->nfft, j=nyqst; i<sett->Ninterp; ++i, ++j) {
       fftw_arr->xa[i] = fftw_arr->xa[j];
-      fftw_arr->xa[j] = 0.;
+      // fftw_arr->xa[j] = 0.;
+    }
+    for(i=nyqst; i<nyqst + sett->Ninterp - sett->nfft; ++i) {
+      fftw_arr->xa[i] = 0.;
     }
 
     for(i=nyqst + sett->Ninterp - sett->nfft, j=nyqst; i<sett->Ninterp; ++i, ++j) {
       fftw_arr->xb[i] = fftw_arr->xb[j];
-      fftw_arr->xb[j] = 0.;
+      // fftw_arr->xb[j] = 0.;
+    }
+    for(i=nyqst; i<nyqst + sett->Ninterp - sett->nfft; ++i) {
+      fftw_arr->xb[i] = 0.;
     }
 
     // Backward fft (len Ninterp = nfft*interpftpad)
