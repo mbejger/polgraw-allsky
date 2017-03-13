@@ -17,7 +17,7 @@ void search_settings(
   Search_settings* sett) {
 
   double dt, B, oms, omr, Smin, Smax;
-  int nod, N, nfft, s, nd, interpftpad;
+  int N, nfft, s, nd, interpftpad;
 
 
   dt = sett->dt;                    // data sampling time:  
@@ -29,8 +29,7 @@ void search_settings(
 
   omr = C_OMEGA_R*dt;
 
-  nod = 6;                          // Observation time in days
-  N = round (nod*C_SIDDAY/dt);      // No. of data points
+  N = round (sett->nod*C_SIDDAY/dt);      // No. of data points 
 
   nfft = 1 << (int)ceil(log(N)/log(2.));    // length of FFT
   s = 1;                                    // No. of spindowns
@@ -59,7 +58,6 @@ void search_settings(
   sett->B=B;          	// bandwidth
   sett->oms=oms;      	// dimensionless angular frequency
   sett->omr=omr;      	// C_OMEGA_R * dt
-  sett->nod=nod;      	// number of days of observation
   sett->N=N;          	// number of data points
   sett->nfft=nfft;    	// length of fft
   sett->s=s;          	// number of spindowns

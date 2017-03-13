@@ -56,6 +56,9 @@ void handle_opts( Search_settings *sett,
   // Default value of the narrow-down parameter 
   opts->narrowdown=0.5; 
 
+  // Initial value of the number of days is set to 0
+  sett->nod = 0; 
+
   opts->help_flag=0;
   opts->white_flag=0;
   opts->s0_flag=0;
@@ -99,6 +102,8 @@ void handle_opts( Search_settings *sett,
       // add signal parameters
       {"addsig", required_argument, 0, 'x'},
       // which detectors to use
+      {"nod", required_argument, 0, 'y'},
+      // number of days in the time-domain segment 
       {"usedet", required_argument, 0, 'u'}, 
       // data sampling time 
       {"dt", required_argument, 0, 's'},
@@ -126,6 +131,7 @@ void handle_opts( Search_settings *sett,
       printf("-s, -dt           data sampling time dt (default value: 0.5)\n");
       printf("-u, -usedet       Use only detectors from string (default is use all available)\n");
       printf("-x, -addsig       Add signal with parameters from <file>\n");
+      printf("-y, -nod          Number of days\n");
       printf("-n, -narrowdown   Narrow-down the frequency band (range [0, 0.5] +- around center)\n\n");
 
 
@@ -140,7 +146,7 @@ void handle_opts( Search_settings *sett,
     }
 
     int option_index = 0;
-    int c = getopt_long_only(argc, argv, "i:b:o:d:l:r:g:c:t:h:p:x:s:u:n:", 
+    int c = getopt_long_only(argc, argv, "i:b:o:d:l:r:g:c:t:h:p:x:y:s:u:n:", 
 			     long_options, &option_index);
     if (c == -1)
       break;
@@ -184,6 +190,9 @@ void handle_opts( Search_settings *sett,
     case 'x':
       strcpy(opts->addsig, optarg);
       break;
+    case 'y':
+      sett->nod = atoi(optarg);
+      break;
     case 's':
       sett->dt = atof(optarg);
       break;
@@ -200,6 +209,15 @@ void handle_opts( Search_settings *sett,
       break ;
     } /* switch c */
   } /* while 1 */
+
+
+  // Check if sett->nod was set up, if not, exit
+  if(!(sett->nod)) { 
+    printf("Number of days not set... Exiting\n"); 
+    exit(EXIT_FAILURE); 
+  } 
+
+  printf("Number of days set to %d\n", sett->nod); 
 
   // Putting the parameter in triggers' frequency range [0, pi] 
   opts->narrowdown *= M_PI; 
@@ -313,7 +331,8 @@ void init_arrays(
 		 Aux_arrays *aux_arr,
 		 double** F) {
 
-  int i, status; 
+  int i; 
+  size_t status; 
   // Allocates and initializes to zero the data, detector ephemeris
   // and the F-statistic arrays
 
