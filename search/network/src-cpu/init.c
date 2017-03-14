@@ -101,9 +101,9 @@ void handle_opts( Search_settings *sett,
       {"fpo", required_argument, 0, 'p'},
       // add signal parameters
       {"addsig", required_argument, 0, 'x'},
-      // which detectors to use
-      {"nod", required_argument, 0, 'y'},
       // number of days in the time-domain segment 
+      {"nod", required_argument, 0, 'y'},
+      // which detectors to use
       {"usedet", required_argument, 0, 'u'}, 
       // data sampling time 
       {"dt", required_argument, 0, 's'},
@@ -217,7 +217,7 @@ void handle_opts( Search_settings *sett,
     exit(EXIT_FAILURE); 
   } 
 
-  printf("Number of days set to %d\n", sett->nod); 
+  printf("Number of days is %d\n", sett->nod); 
 
   // Putting the parameter in triggers' frequency range [0, pi] 
   opts->narrowdown *= M_PI; 
@@ -984,6 +984,9 @@ void handle_opts_coinc(
   strcpy (opts->prefix, TOSTR(PREFIX));
   strcpy (opts->dtaprefix, TOSTR(DTAPREFIX));
 
+  // Initial value of the number of days is set to 0
+  sett->nod = 0;
+
   // Default initial value of the data sampling time 
   sett->dt = 0.5;
 
@@ -1034,6 +1037,8 @@ void handle_opts_coinc(
       {"narrowdown", required_argument, 0, 'n'},
       // Signal-to-noise threshold cutoff  
       {"snrcutoff", required_argument, 0, 'c'},
+      // number of days in the time-domain segment 
+      {"nod", required_argument, 0, 'y'},
       {0, 0, 0, 0}
     };
 
@@ -1053,6 +1058,7 @@ void handle_opts_coinc(
       printf("-refloc       Location of the reference grid.bin and starting_date files\n");
       printf("-mincoin      Minimal number of coincidences recorded\n");
       printf("-narrowdown   Narrow-down the frequency band (range [0, 0.5] +- around center)\n");
+      printf("-nod          Number of days\n");
       printf("-snrcutoff    Signal-to-noise threshold cutoff (default value: 6)\n\n");
 
       printf("Also:\n\n");
@@ -1062,7 +1068,7 @@ void handle_opts_coinc(
     }
 
     int option_index = 0;
-    int c = getopt_long_only (argc, argv, "p:o:d:s:z:r:t:e:g:m:n:c:", long_options, &option_index);
+    int c = getopt_long_only (argc, argv, "p:o:d:s:z:r:t:e:g:m:n:c:y:", long_options, &option_index);
     if (c == -1)
       break;
 
@@ -1103,6 +1109,9 @@ void handle_opts_coinc(
     case 'c':
       opts->snrcutoff = atof(optarg);
       break;
+    case 'y':
+      sett->nod = atoi(optarg);
+      break;
     case '?':
       break;
     default:
@@ -1113,7 +1122,14 @@ void handle_opts_coinc(
   // Putting the parameter in triggers' frequency range [0, pi] 
   opts->narrowdown *= M_PI; 
 
-  printf("#mb add info at the beginning...\n"); 
+  // Check if sett->nod was set up, if not, exit
+  if(!(sett->nod)) { 
+    printf("Number of days not set... Exiting\n"); 
+    exit(EXIT_FAILURE); 
+  } 
+
+  printf("Number of days is %d\n", sett->nod); 
+
   printf("The SNR threshold cutoff is %.12f, ", opts->snrcutoff); 
   printf("corresponding to F-statistic value of %.12f\n", 
     pow(opts->snrcutoff, 2)/2. + 2); 
