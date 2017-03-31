@@ -429,13 +429,15 @@ void read_trigger_files(Search_settings *sett,
 	printf("goodcands/ninband = %ld/%ld\n", frgoodcands, fpar[frcount].ninband);
 	//candi_size[frcount] = frgoodcands;
 
+	/*
 	ic=0;
 	printf("allcandi[%d]=%d %d %d %d %d\n", ic,
 	       allcandi[ic][0], allcandi[ic][1], allcandi[ic][2], allcandi[ic][3], allcandi[ic][4]);
 	ic=fpar[frcount].ncands-1;
 	printf("allcandi[%d]=%d %d %d %d %d\n", ic,
 	       allcandi[ic][0], allcandi[ic][1], allcandi[ic][2], allcandi[ic][3], allcandi[ic][4]);
-	
+	*/
+
 	// save allcandi to disk
 	sprintf(fpar[frcount].candi_fname, "%s_%s", datestr, ep->d_name); 
 	printf("writing allcandi to file: %s\n", fpar[frcount].candi_fname);
@@ -564,7 +566,8 @@ void read_trigger_files(Search_settings *sett,
     
   } // chunk
 
-  printf("\nlast: idx=%ld  fi=%d\n", offset-1L, allcandi[offset-1][0]);
+  //  printf("\nlast: idx=%ld  fi=%d\n", offset-1L, allcandi[offset-1][0]);
+
   // remove temp files
   printf("removing temporary files\n");
   for(fr=1; fr<=frcount; ++fr){
@@ -584,10 +587,11 @@ void read_trigger_files(Search_settings *sett,
   // Sorting the first 4 columns of allcandi
   qsort(allcandi, offset, sizeof(int[ACLEN]), way2compare_4c);
 
+  /*
   for(ic=0; ic<3; ++ic)
     printf("after sort allcandi[%d]=%d %d %d %d %d\n", ic,
 	   allcandi[ic][0], allcandi[ic][1], allcandi[ic][2], allcandi[ic][3], allcandi[ic][4]);
-
+  */
 
   int **imtr;
   int coindx=0, numc;
@@ -630,10 +634,11 @@ void read_trigger_files(Search_settings *sett,
   //-------------------------------
   qsort(imtr, numc, sizeof(int *), way2compare_c1);
 
+  /*
   for(ic=0; ic<3; ++ic)
-    printf("after sort imtr[%d]=%d %d %d %d %d\n", ic,
-	   imtr[ic][0], imtr[ic][1], imtr[ic][2], imtr[ic][3], imtr[ic][4]);
-  
+  printf("after sort imtr[%d]=%d %d %d %d %d\n", ic,
+  imtr[ic][0], imtr[ic][1], imtr[ic][2], imtr[ic][3], imtr[ic][4]);
+  */
 
   //  exit(EXIT_SUCCESS);
   //#if 0
@@ -657,21 +662,19 @@ void read_trigger_files(Search_settings *sett,
 
     for(i=0; i<w; i++) {   
       int l, k = j-i; 
-
-      //      int f = allcandi[k][6];
-      // frame id (not frcount!)
       fr = id2frcount[allcandi[k][5]];
       // ops[i]: position in trigger file #fra[i]
       ops[i] = allcandi[k][4];
+      // frame id (not frcount!)
       fra[i] = (unsigned short int)allcandi[k][5]; 
 
       fseek(fpar[fr].trig_fh, sizeof(FLOAT_TYPE[ops[i]][TRLEN]), SEEK_SET);
       fread(trigf, sizeof(trigf), 1, fpar[fr].trig_fh);
-      printf("trigf[%ld] = %.8le %.8le %.8le %.8le %.8le\n", ops[i], 
-	     trigf[0], trigf[1], trigf[2], trigf[3], trigf[4]);
-      // read allcandf
-      
-      
+
+      trigf[0] = trigf[0] + 2.*trigf[1]*(sett->N)*(opts->refr - allcandi[k][5]);
+      //printf("trigf[%ld] = %.8le %.8le %.8le %.8le %.8le\n", ops[i], 
+      //     trigf[0], trigf[1], trigf[2], trigf[3], trigf[4]);
+
 //#mb 
       for(l=0; l<4; l++)
         mean[l] += trigf[l]; 
@@ -700,37 +703,45 @@ void read_trigger_files(Search_settings *sett,
     for(l=0; l<5; l++) meanf[l] = (float)mean[l]; 
 
     // writing to binary file 
+
     fwrite(&w, sizeof(unsigned short int), 1, data); 
-//    fwrite(&pari, sizeof(int), 4, data);  
     fwrite(&meanf, sizeof(float), 5, data);          
     fwrite(&fra, sizeof(unsigned short int), w, data); 
     fwrite(&ops, sizeof(int), w, data); 
- 
+    /*
+    printf("w %d meanf %15.8e %15.8e %15.8e %15.8e %15.8e \n", 
+	   w, mean[0], mean[1], mean[2], mean[3], mean[4]);
+    for(i=0; i<w; ++i)
+      printf("fra[%d]=%d \n", i, fra[i]); 
+    for(i=0; i<w; ++i)
+      printf("ops[%d]=%ld \n", i, ops[i]); 
+    getchar();
+    */
     // Maximal coincidence (first row of imtr[][])
     //#mb written to stderr 
     if(!q) { 
-    fprintf(stderr, "%s %04d %5f %5hu %5d %15.8le %5.8le %5.8le %5.8le %5le ", 
-      opts->trigname, opts->shift, sett->fpo, frcount, w,   
-      mean[0], mean[1], mean[2], mean[3], mean[4]);
+      fprintf(stderr, "%s %04d %5f %5hu %5d %15.8le %5.8le %5.8le %5.8le %5le ", 
+	      opts->trigname, opts->shift, sett->fpo, frcount, w,   
+	      mean[0], mean[1], mean[2], mean[3], mean[4]);
 
       int ii, jj;
       // Number of candidates from frames that participated in the coincidence 
       for(ii=0; ii<=frcount; ii++)
         for(jj=0; jj<w; jj++)
-          if(trig->frameinfo[ii][0] == fra[jj]) {
-              fprintf(stderr, "%d %d %ld ",
-                fra[jj], trig->frameinfo[ii][1], fpar[frcount].ncands);
-              break;
+	  //          if(trig->frameinfo[ii][0] == fra[jj]) {
+          if(fpar[ii+1].num == fra[jj]) {
+	    fprintf(stderr, "%d %ld %ld ",
+		    //fra[jj], trig->frameinfo[ii][1], fpar[ii+1].ncands);
+		    fra[jj], fpar[ii+1].ninband, fpar[ii+1].ncands);
+	    break;
           }
-
-          fprintf(stderr, "\n");  
-      }
+      fprintf(stderr, "\n");  
+    }
+    //printf("q=%d\n", q); 
   }
-
   // close files
-  fclose(data); 
+  fclose(data);
   for(fr=1; fr<=frcount; ++fr) fclose(fpar[fr].trig_fh);
-
   // free memory
   free(allcandi);
   //  free(allcandf);
@@ -739,8 +750,5 @@ void read_trigger_files(Search_settings *sett,
   free(imtr); 
 
   exit(EXIT_SUCCESS);
-#if 0
-
-#endif
 
 }
