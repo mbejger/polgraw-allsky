@@ -71,41 +71,12 @@ int main (int argc, char* argv[]) {
 }
 
 
-#if 0
 static int way2compare_4c(const void *a, const void *b){
-  /* compare 4 columns (0,1,2,3) */
-
-  const int* x = *((const int **)a);
-  const int* y = *((const int **)b);
-  
-  int diff = *y - *x;
-  if (diff) return diff;
-  diff = *(y+1) - *(x+1);
-  if (diff) return diff;
-  diff = *(y+2) - *(x+2);
-  if (diff) return diff;
-  return *(y+3) - *(x+3);
-}
-
-
-static int way2compare_c1(const void *a, const void *b){
-  /* compare column 1 */
-
-  const int* x = *((const int **)a);
-  const int* y = *((const int **)b);
-  
-  return *(y+1) - *(x+1);
-}
-#else
-static int way2compare_4c(const void *a, const void *b){
-  /* compare 4 columns (0,1,2,3) */
+  /* compare first 4 columns; array allocated like this: int (*candi)[CLEN] */
 
   const int* x = (const int *)a;
   const int* y = (const int *)b;
 
-  //printf("way2comapare %d %d\n", x[1], y[1]);
-  //exit(0);
-  
   int diff = *y - *x;
   if (diff) return diff;
   diff = *(y+1) - *(x+1);
@@ -124,9 +95,9 @@ static int way2compare_c1(const void *a, const void *b){
   return *(y+1) - *(x+1);
 }
 
-#endif
 
- inline int min ( int a, int b ) { return a < b ? a : b; }
+
+inline int min ( int a, int b ) { return a < b ? a : b; }
 
 // Allocation of memory for martix with given number of rows and columns
 int** matrix(int rows, int cols) {
@@ -310,10 +281,6 @@ void read_trigger_files(Search_settings *sett,
 	// do not close the file, trig_fh handle will be used later
 	//fclose(data);
 
-	//int ti=2;
-	//	printf("candf=%.8le %.8le %.8le %.8le %.8le\n", 
-	//       candf[ti][0],candf[ti][1],candf[ti][2],candf[ti][3],candf[ti][4]);
-
 	for(ic=0; ic<candsize; ++ic){
 	  
 	  if((candf[ic][0] > M_PI_2 - opts->narrowdown) && (candf[ic][0] < M_PI_2 + opts->narrowdown)) {
@@ -324,8 +291,6 @@ void read_trigger_files(Search_settings *sett,
 	    if(((candf[ic][0]>0) && (candf[ic][0]<M_PI)) && (candf[ic][4] > opts->snrcutoff)) {
 	      
 	      // Conversion to linear parameters
-	      //--------------------------------
-	      
 	      tmp[0] = candf[ic][0]*sett->N;
 	      tmp[1] = candf[ic][1]*sqrN;
 	      
@@ -355,88 +320,64 @@ void read_trigger_files(Search_settings *sett,
 	} // ic - condidate index in trigger file
 	
 	// Frame number
-	trig->frameinfo[frcount][0] = current_frame;
 	fpar[frcount].num = current_frame;
 	// Number of candidates in band for a given frame
-	trig->frameinfo[frcount][1] = i;
 	fpar[frcount].ninband = i;
 
 	// Looking for duplicates and selecting the one with highest SNR
 	//--------------------------------------------------------------
 	
 	// Sorting the first 4 columns of candi
-	//	qsort(candi, trig->frameinfo[frcount][1], sizeof(int[7]), way2compare_4c);
-	qsort(candi, fpar[frcount].ninband, sizeof(int[CLEN]), way2compare_4c);
-	
-	//	for(ic=0; ic<10; ++ic)
-	//  printf("candi[%d]=%d %d %d %d %d\n", ic,
-	//	 candi[ic][0],candi[ic][1],candi[ic][2],candi[ic][3],candi[ic][4]);
-
+	qsort(candi, fpar[frcount].ninband, sizeof(int)*CLEN, way2compare_4c);
 
 	// if frame==1 or trigger file is larger - allocate larger allcandi
-	// will be reused later...
-
+	// (it will be reused later)
 	if(frcount==1 || fpar[frcount].ninband > fpar[frcount-1].ninband ){
-	  //	  if (allcandi) free(allcandi);
+	  // if (allcandi) free(allcandi);
 	  // 6th element not needed ??
-	  //allcandi = malloc(sizeof(int[ fpar[frcount].ninband ][ ACLEN ]));
+	  // allcandi = malloc(sizeof(int[ fpar[frcount].ninband ][ ACLEN ]));
 	  printf("\n[debug] realloc allcandi to %ld for frame %d !!!\n", fpar[frcount].ninband, frcount);
-	  allcandi = realloc(allcandi, sizeof(int[ fpar[frcount].ninband ][ ACLEN ]));
+	  allcandi = realloc(allcandi, sizeof(int[ fpar[frcount].ninband ][ACLEN]));
 	}
 	
-	long maxsnridx=0, frgoodcands=0;
-	double candsnr=0;
-	for (i=0; i<trig->frameinfo[frcount][1]; ++i) {
+	int maxsnridx=0, frgoodcands=0;
+	double candsnr=0.;
+	for (i=0; i<fpar[frcount].ninband; ++i) {
 
 	  int idx, idx1, maxi, diff=1;
 	  for(j=0; j<4; ++j)
 	    // using XOR: !(a^b) equals 1 for a=b
 	    diff *= !((candi[i][j])^(candi[i+1][j]));
 
-	  idx = candi[i][6];
 	  if(!diff) {
-
 	    int k=i;
-	    if(maxsnridx) k=maxi;
+	    if(maxsnridx) k=maxsnridx;
 	    for(j=0; j<6; ++j)
 	      allcandi[frgoodcands][j] = candi[k][j];
+
  	    maxsnridx=0;
 	    ++frgoodcands;
 	    ++goodcands;
 
-	  } else { // not unique
+	  } else { // not unique - select candidate with highest SNR
 
-	    idx1 = candi[i+1][6];
+	    idx = candi[i][4];
+	    idx1 = candi[i+1][4];
 	    if(!maxsnridx) {
-	      maxsnridx = (candf[idx][4] > candf[idx1][4] ? idx : idx1);
-
-	      maxi = (candf[idx][4] > candf[idx1][4] ? i : i+1);
-	      candsnr = candf[maxsnridx][4];
+	      maxsnridx = (candf[idx][4] > candf[idx1][4] ? i : i+1);
 	    } else {
 	      if(candf[idx][4] > candsnr) {
-		maxsnridx = idx; maxi = i;
-		candsnr = candf[idx][4];
+		maxsnridx = i;
 	      } else if(candf[idx1][4] > candsnr) {
-		maxsnridx = idx1; maxi = i+1;
-		candsnr = candf[idx1][4];
+		maxsnridx = i+1;
 	      }
 	    }
+	    candsnr = candf[candi[maxsnridx][4]][4];
 	  }
-	  
 	} // i - good candidates
 
 	fpar[frcount].ncands = frgoodcands;
-	printf("goodcands/ninband = %ld/%ld\n", frgoodcands, fpar[frcount].ninband);
-	//candi_size[frcount] = frgoodcands;
-
-	/*
-	ic=0;
-	printf("allcandi[%d]=%d %d %d %d %d\n", ic,
-	       allcandi[ic][0], allcandi[ic][1], allcandi[ic][2], allcandi[ic][3], allcandi[ic][4]);
-	ic=fpar[frcount].ncands-1;
-	printf("allcandi[%d]=%d %d %d %d %d\n", ic,
-	       allcandi[ic][0], allcandi[ic][1], allcandi[ic][2], allcandi[ic][3], allcandi[ic][4]);
-	*/
+	printf("goodcands/ninband = %d/%ld\n", frgoodcands, fpar[frcount].ninband);
 
 	// save allcandi to disk
 	sprintf(fpar[frcount].candi_fname, "%s_%s", datestr, ep->d_name); 
@@ -449,9 +390,6 @@ void read_trigger_files(Search_settings *sett,
 	  exit(EXIT_FAILURE);
 	}
 
-	//free(candi); // althrough we could reuse it if the next candsize is smaller...
-	//free(candf);
-
       } else {
 	printf("Problem while opening file %s\n", filename);
       }
@@ -459,21 +397,12 @@ void read_trigger_files(Search_settings *sett,
       
     } // readdir
 
-    // at this point we have sorted candi & candf files on disk
-    // will read in pieces of equall range in fi ( candi[][0] )
-    // the range should be selected such that roughly:
-    // range_size * nframes < biggest_trigger_file_size * 1.7
-    // 
-
   } // dp
 
   
   free(candf);
   free(candi);
   closedir(dp);
-  
-  //trig->frcount = frcount; 
-  //trig->goodcands = goodcands; 
   
   printf("Total number of candidates from all frames: %ld\n", goodcands);
 
@@ -504,7 +433,6 @@ void read_trigger_files(Search_settings *sett,
       printf("Error opening %s\n", fpar[fr].candi_fname);
     }
   }
-  
 
   // determine min fi for all frames
   int chunk=0;
@@ -566,7 +494,6 @@ void read_trigger_files(Search_settings *sett,
     
   } // chunk
 
-  //  printf("\nlast: idx=%ld  fi=%d\n", offset-1L, allcandi[offset-1][0]);
 
   // remove temp files
   printf("removing temporary files\n");
@@ -575,23 +502,12 @@ void read_trigger_files(Search_settings *sett,
     unlink(fpar[fr].candi_fname);
   }
 
-  //  for(ic=fpar[8].ncands-4; ic<fpar[8].ncands; ++ic)
-  //  for(ic=fpar[8].ncands-4; ic<fpar[8].ncands; ++ic)
-  //  printf("allcandi[%d]=%d %d %d %d %d\n", ic,
-  //   allcandi[ic][0], allcandi[ic][1], allcandi[ic][2], allcandi[ic][3], allcandi[ic][4]);
-
 
   // Looking for coincidences (the same integer values) between frames
   //------------------------------------------------------------------
 
   // Sorting the first 4 columns of allcandi
   qsort(allcandi, offset, sizeof(int[ACLEN]), way2compare_4c);
-
-  /*
-  for(ic=0; ic<3; ++ic)
-    printf("after sort allcandi[%d]=%d %d %d %d %d\n", ic,
-	   allcandi[ic][0], allcandi[ic][1], allcandi[ic][2], allcandi[ic][3], allcandi[ic][4]);
-  */
 
   int **imtr;
   int coindx=0, numc;
@@ -634,20 +550,12 @@ void read_trigger_files(Search_settings *sett,
   //-------------------------------
   qsort(imtr, numc, sizeof(int *), way2compare_c1);
 
-  /*
-  for(ic=0; ic<3; ++ic)
-  printf("after sort imtr[%d]=%d %d %d %d %d\n", ic,
-  imtr[ic][0], imtr[ic][1], imtr[ic][2], imtr[ic][3], imtr[ic][4]);
-  */
-
-  //  exit(EXIT_SUCCESS);
-  //#if 0
-  // Coincidences above opts->mincoin threshold 
-  //-------------------------------------------
   char outname[512]; 
   sprintf(outname, "%s/%04d_%s.coi", opts->prefix, opts->shift, opts->trigname);
   data = fopen(outname, "w"); 
   FLOAT_TYPE trigf[TRLEN];
+
+  FILE *coifh = fopen("coi2.txt", "w"); 
 
   int q; 
   for(q=0; q<coindx; q++) {  
@@ -672,10 +580,7 @@ void read_trigger_files(Search_settings *sett,
       fread(trigf, sizeof(trigf), 1, fpar[fr].trig_fh);
 
       trigf[0] = trigf[0] + 2.*trigf[1]*(sett->N)*(opts->refr - allcandi[k][5]);
-      //printf("trigf[%ld] = %.8le %.8le %.8le %.8le %.8le\n", ops[i], 
-      //     trigf[0], trigf[1], trigf[2], trigf[3], trigf[4]);
 
-//#mb 
       for(l=0; l<4; l++)
         mean[l] += trigf[l]; 
 
@@ -693,14 +598,13 @@ void read_trigger_files(Search_settings *sett,
 
     }
  
-    for(l=0; l<4; l++) {
-//      pari[l]  = allcandi[j][l];   
+    for(l=0; l<4; l++) 
       mean[l] /= w; 
-    } 
 
     mean[4] = sqrt(mean[4]); // SNR mean: sqrt of sum of squares  
 
-    for(l=0; l<5; l++) meanf[l] = (float)mean[l]; 
+    for(l=0; l<5; l++) 
+      meanf[l] = (float)mean[l]; 
 
     // writing to binary file 
 
@@ -708,15 +612,16 @@ void read_trigger_files(Search_settings *sett,
     fwrite(&meanf, sizeof(float), 5, data);          
     fwrite(&fra, sizeof(unsigned short int), w, data); 
     fwrite(&ops, sizeof(int), w, data); 
-    /*
-    printf("w %d meanf %15.8e %15.8e %15.8e %15.8e %15.8e \n", 
+
+    fprintf(coifh, "%d %15.8e %15.8e %15.8e %15.8e %15.8e", 
 	   w, mean[0], mean[1], mean[2], mean[3], mean[4]);
     for(i=0; i<w; ++i)
-      printf("fra[%d]=%d \n", i, fra[i]); 
+      fprintf(coifh, " %d", fra[i]); 
     for(i=0; i<w; ++i)
-      printf("ops[%d]=%ld \n", i, ops[i]); 
-    getchar();
-    */
+      fprintf(coifh, " %ld", ops[i]); 
+    fprintf(coifh, "\n"); 
+
+
     // Maximal coincidence (first row of imtr[][])
     //#mb written to stderr 
     if(!q) { 
@@ -728,23 +633,22 @@ void read_trigger_files(Search_settings *sett,
       // Number of candidates from frames that participated in the coincidence 
       for(ii=0; ii<=frcount; ii++)
         for(jj=0; jj<w; jj++)
-	  //          if(trig->frameinfo[ii][0] == fra[jj]) {
           if(fpar[ii+1].num == fra[jj]) {
 	    fprintf(stderr, "%d %ld %ld ",
-		    //fra[jj], trig->frameinfo[ii][1], fpar[ii+1].ncands);
 		    fra[jj], fpar[ii+1].ninband, fpar[ii+1].ncands);
 	    break;
           }
       fprintf(stderr, "\n");  
     }
-    //printf("q=%d\n", q); 
   }
+
   // close files
   fclose(data);
+  fclose(coifh);
   for(fr=1; fr<=frcount; ++fr) fclose(fpar[fr].trig_fh);
+
   // free memory
   free(allcandi);
-  //  free(allcandf);
   for(i=0; i<numc; i++) 
     free(imtr[i]); 
   free(imtr); 
