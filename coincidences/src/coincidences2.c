@@ -120,7 +120,8 @@ void read_trigger_files(Search_settings *sett,
 			Command_line_opts_coinc *opts, 
 			Candidate_triggers *trig) {
   
-  int i, j, current_frame=0, frcount=0;
+  long i, j;
+  int current_frame=0, frcount=0;
   int val, shift[4], scale[4]; 
   long candsize=INICANDSIZE, goodcands=0;
   double sqrN, omsN, v[4][4], be[2];
@@ -150,8 +151,7 @@ void read_trigger_files(Search_settings *sett,
   Frame_params fpar[256];
   int id2frcount[256];
 
-  long filelen, maxfilelen=0;
-  int ic;
+  long ic, filelen, maxfilelen=0;
 
   // random prefix for temp. file names
   char datestr[14];
@@ -163,7 +163,7 @@ void read_trigger_files(Search_settings *sett,
   //trigger record length
 #define TRLEN 5
   // candi record length
-#define CLEN 7
+#define CLEN 6
   // allcandi record length
 #define ACLEN 6
 
@@ -272,8 +272,6 @@ void read_trigger_files(Search_settings *sett,
 	  exit(EXIT_FAILURE);
 	}
 	
-	// do not close the file, trig_fh handle will be used later
-	//fclose(data);
 
 	for(ic=0; ic<candsize; ++ic){
 	  
@@ -306,7 +304,6 @@ void read_trigger_files(Search_settings *sett,
 	      // Saving the original position, frame number and current index
 	      candi[i][4] = ic;
 	      candi[i][5] = current_frame;
-	      candi[i][6] = i; //???
 	      ++i; 
 	      
 	    } // if finband 
@@ -328,7 +325,6 @@ void read_trigger_files(Search_settings *sett,
 	// (it will be reused later)
 	if(frcount==1 || fpar[frcount].ninband > fpar[frcount-1].ninband ){
 	  // if (allcandi) free(allcandi);
-	  // 6th element not needed ??
 	  // allcandi = malloc(sizeof(int[ fpar[frcount].ninband ][ ACLEN ]));
 	  printf("\n[debug] realloc allcandi to %ld for frame %d !!!\n", fpar[frcount].ninband, frcount);
 	  allcandi = realloc(allcandi, sizeof(int[ fpar[frcount].ninband ][ACLEN]));
@@ -402,16 +398,16 @@ void read_trigger_files(Search_settings *sett,
 
   // allocate allcandi 
   // available memory = max(n*GB, candf_size + candi_size)
-  // candf_size+candi_size = candf_size*(1+(7*4)/(5*8)) = 1.7*candf_size
-  // where candf_size is for largest trigger file.
-  // This is max memory we had allocated up to this point. 
+  // candf_size+candi_size = candf_size*(1+(6*4)/(5*8)) = 1.6*candf_size
+  // where candf_size is for the biggest trigger file.
+  // This is max memory we had to allocate up to this point. 
   // If it's less then 4GB let's allocate 4GB because it's still reasonably small :)
 
 #define GB 1073741824L
   long allcandi_size, chunk_size, cand_left, offset=0;
   int fr;
 
-  allcandi_size = ( 4*GB > 1.7*maxfilelen) ? 4*GB : 1.7*maxfilelen;
+  allcandi_size = ( 4*GB > 1.6*maxfilelen) ? 4*GB : 1.7*maxfilelen;
   allcandi_size /= ACLEN*sizeof(int);
   chunk_size = allcandi_size/frcount;
   printf("maxfilelen=%ld   allcandi_size=%ld   chunk_size=%ld\n", maxfilelen, allcandi_size, chunk_size);
