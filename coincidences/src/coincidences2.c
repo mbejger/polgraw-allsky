@@ -228,7 +228,7 @@ void read_trigger_files(Search_settings *sett,
       while((fr = strsep(&epdname, "_"))!=NULL) {
 	if(fr[0] >= '0' && fr[0] <= '9') {
 	  current_frame = atoi(fr);
-	  printf("Reading %s... Frame number %d: ", ep->d_name, current_frame);
+	  printf("Reading %s... ", ep->d_name);
 	  break;
 	}
       }
@@ -255,11 +255,11 @@ void read_trigger_files(Search_settings *sett,
 	filelen = ftell(data);
 	rewind(data);
 	candsize = filelen/(TRLEN*sizeof(FLOAT_TYPE));
-	printf("fr idx=%d  candsize=%ld\n", frcount, candsize);
+	printf("Frame[%04d]=%04d  ", frcount, current_frame);
 
 	if (filelen > maxfilelen) {
 	  maxfilelen = filelen;
-	  printf("\n[debug] realloc candi and candf!!!\n");
+	  //printf("\n[debug] realloc candi and candf!!!\n");
 	  //candf = realloc(candf, sizeof(FLOAT_TYPE[candsize][TRLEN]));
 	  //candi = realloc(candi, sizeof(int[candsize][CLEN]));
 	  free(candf); free(candi);
@@ -326,11 +326,11 @@ void read_trigger_files(Search_settings *sett,
 	if(frcount==1 || fpar[frcount].ninband > fpar[frcount-1].ninband ){
 	  // if (allcandi) free(allcandi);
 	  // allcandi = malloc(sizeof(int[ fpar[frcount].ninband ][ ACLEN ]));
-	  printf("\n[debug] realloc allcandi to %ld for frame %d !!!\n", fpar[frcount].ninband, frcount);
+	  //printf("\n[debug] realloc allcandi to %ld for frame %d !!!\n", fpar[frcount].ninband, frcount);
 	  allcandi = realloc(allcandi, sizeof(int[ fpar[frcount].ninband ][ACLEN]));
 	}
 	
-	int maxsnridx=0, frgoodcands=0;
+	long maxsnridx=0, frgoodcands=0;
 	double candsnr=0.;
 	for (i=0; i<fpar[frcount].ninband; ++i) {
 
@@ -367,11 +367,11 @@ void read_trigger_files(Search_settings *sett,
 	} // i - good candidates
 
 	fpar[frcount].ncands = frgoodcands;
-	printf("goodcands/ninband = %d/%ld\n", frgoodcands, fpar[frcount].ninband);
+	printf("good/ninband/all = %10ld/%10ld/%10ld\n", frgoodcands, fpar[frcount].ninband, candsize);
 
 	// save allcandi to disk
 	sprintf(fpar[frcount].candi_fname, "%s_%s", datestr, ep->d_name); 
-	printf("writing allcandi to file: %s\n", fpar[frcount].candi_fname);
+	printf("Writing temp. allcandi to: %s\n", fpar[frcount].candi_fname);
 	if((data = fopen(fpar[frcount].candi_fname, "w")) != NULL) {
 	  fwrite(allcandi, sizeof(int[frgoodcands][ACLEN]), 1, data);
 	  fclose(data);
@@ -410,9 +410,9 @@ void read_trigger_files(Search_settings *sett,
   allcandi_size = ( 4*GB > 1.6*maxfilelen) ? 4*GB : 1.7*maxfilelen;
   allcandi_size /= ACLEN*sizeof(int);
   chunk_size = allcandi_size/frcount;
-  printf("maxfilelen=%ld   allcandi_size=%ld   chunk_size=%ld\n", maxfilelen, allcandi_size, chunk_size);
+  printf("[debug] maxfilelen=%ld   allcandi_size=%ld   chunk_size=%ld\n", maxfilelen, allcandi_size, chunk_size);
   allcandi = realloc(allcandi, sizeof(int[allcandi_size][ACLEN]));
-  printf("\n[debug] realloc allcandi to %ld (for all frames) = %f GB!!!\n", allcandi_size, sizeof(int[allcandi_size][ACLEN])/(float)GB);
+  printf("\n[debug] realloc allcandi to %ld = %f GB!!!\n", allcandi_size, sizeof(int[allcandi_size][ACLEN])/(float)GB);
 
   // open files and reset i1 to 0
   for(fr=1; fr<=frcount; ++fr) {
@@ -428,7 +428,7 @@ void read_trigger_files(Search_settings *sett,
   int chunk=0;
   //read candidates in chunks of given fi range
   while (++chunk) {
-    printf("\nchunk=%d ", chunk);
+    printf("\n#########################\nchunk=%d ", chunk);
     cand_left=0;
     for(fr=1; fr<=frcount; ++fr) {
       fpar[fr].i2 = fpar[fr].ncands - 1; // the last record
@@ -465,8 +465,8 @@ void read_trigger_files(Search_settings *sett,
       if (cand_left==0) break;
     }
 
-    printf("frame[range] ");
-    for(fr=1; fr<=frcount; ++fr) 
+    printf("frame[range] :");
+    for(fr=1; fr<=frcount; ++fr)
       printf("%d[%ld,%ld] ", fpar[fr].num, fpar[fr].i1, fpar[fr].i2);
 
     // read candi in into all candi , find coincidences
@@ -475,9 +475,9 @@ void read_trigger_files(Search_settings *sett,
       fseek(fpar[fr].candi_fh, fpar[fr].i1, SEEK_SET);
       int chunk_ = fpar[fr].i2-fpar[fr].i1+1;
       fread((void *)(&(allcandi[offset][0])), sizeof(int[chunk_][ACLEN]), 1, fpar[fr].candi_fh);
-      printf("\nrange = %ld - %ld  fi = %d - %d", offset,  offset+chunk_-1, allcandi[offset][0], allcandi[offset+chunk_-1][0]);      
+      printf("\nrange = %10ld - %10ld  fi = %10d - %10d", offset,  offset+chunk_-1, allcandi[offset][0], allcandi[offset+chunk_-1][0]);
       offset += chunk_;
-    }    
+    }
     
     // prepare for the next chunk
     for(fr=1; fr<=frcount; ++fr) fpar[fr].i1 = fpar[fr].i2+1;
@@ -486,7 +486,7 @@ void read_trigger_files(Search_settings *sett,
 
 
   // remove temp files
-  printf("removing temporary files\n");
+  printf("\n[debug] removing temporary files\n");
   for(fr=1; fr<=frcount; ++fr){
     fclose(fpar[fr].candi_fh);
     unlink(fpar[fr].candi_fname);
