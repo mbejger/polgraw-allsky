@@ -30,7 +30,6 @@ int main (int argc, char* argv[]) {
   Search_settings sett;
   Command_line_opts_coinc opts;
   Candidate_triggers trig; 
-  int i, j; 
 
   // Command line options 
   handle_opts_coinc(&sett, &opts, argc, argv);  
@@ -123,13 +122,11 @@ void read_trigger_files(Search_settings *sett,
   
   int i, j, current_frame=0, frcount=0;
   int val, shift[4], scale[4]; 
-  int hemi;
-  long candsize=INICANDSIZE, allcandsize=INICANDSIZE, goodcands=0;
+  long candsize=INICANDSIZE, goodcands=0;
   double sqrN, omsN, v[4][4], be[2];
-  FLOAT_TYPE tmp[4], c[5];
+  FLOAT_TYPE tmp[4];
 
   char dirname[512], filename[512];
-  int nread;
   // Trigger files directory name 
   sprintf (dirname, "%s", opts->dtaprefix); 
 
@@ -147,24 +144,21 @@ void read_trigger_files(Search_settings *sett,
     FILE *candi_fh;        // file handle to candi file
     FILE *trig_fh;         // trigger file handle
   } Frame_params;
-  
-  Frame_params fpar[256];
 
+  
+  // 256 is max no of frames used in struct.h ...
+  Frame_params fpar[256];
   int id2frcount[256];
 
-  // 256 is max no of frames used in struct.h ... - should be changed to cpp parameter
-  char candi_fname[256][512];
   long filelen, maxfilelen=0;
-
   int ic;
 
-  char datestr[16];
-  time_t now = time(NULL);
-  struct tm *t = localtime(&now);
-  sprintf(datestr, "%04d%02d%02d%02d%02d%02d", t->tm_year + 1900, t->tm_mon+1, t->tm_mday, 
-	  t->tm_hour, t->tm_min, t->tm_sec);
-
-  printf("datestr=%s\n", datestr);
+  // random prefix for temp. file names
+  char datestr[14];
+  struct timespec t;
+  clock_gettime(CLOCK_REALTIME, &t);
+  sprintf(datestr, "ctmp_%09ld", t.tv_nsec);
+  printf("tmp prefix : %s\n", datestr);
 
   //trigger record length
 #define TRLEN 5
@@ -296,7 +290,7 @@ void read_trigger_files(Search_settings *sett,
 	      
 	      // Transformation of astronomical to linear coordinates;
 	      // C_EPSMA, an average value of epsm, is defined in settings.h
-	      hemi = ast2lin(candf[ic][3], candf[ic][2], C_EPSMA, be);
+	      ast2lin(candf[ic][3], candf[ic][2], C_EPSMA, be);
 	      
 	      // tmp[2] corresponds to declination (d), tmp[3] to right ascension (a)
 	      tmp[2] = omsN*be[0];
@@ -344,7 +338,7 @@ void read_trigger_files(Search_settings *sett,
 	double candsnr=0.;
 	for (i=0; i<fpar[frcount].ninband; ++i) {
 
-	  int idx, idx1, maxi, diff=1;
+	  int idx, idx1, diff=1;
 	  for(j=0; j<4; ++j)
 	    // using XOR: !(a^b) equals 1 for a=b
 	    diff *= !((candi[i][j])^(candi[i+1][j]));
@@ -415,7 +409,7 @@ void read_trigger_files(Search_settings *sett,
 
 #define GB 1073741824L
   long allcandi_size, chunk_size, cand_left, offset=0;
-  int fr, fi_min=0;
+  int fr;
 
   allcandi_size = ( 4*GB > 1.7*maxfilelen) ? 4*GB : 1.7*maxfilelen;
   allcandi_size /= ACLEN*sizeof(int);
@@ -439,14 +433,14 @@ void read_trigger_files(Search_settings *sett,
   //read candidates in chunks of given fi range
   while (++chunk) {
     printf("\nchunk=%d ", chunk);
-    long cand_left=0;
+    cand_left=0;
     for(fr=1; fr<=frcount; ++fr) {
       fpar[fr].i2 = fpar[fr].ncands - 1; // the last record
       cand_left += fpar[fr].i2 - fpar[fr].i1 + 1;
     }
     if (cand_left > allcandi_size) {
       // find fi_min, set indices
-      int fi_, fimin_ = 0;
+      int fimin_ = 0;
       printf("searching fimin for all frames : ");
       for(fr=1; fr<=frcount; ++fr){
 	fpar[fr].i2 = min(fpar[fr].i1 + chunk_size - 1, fpar[fr].ncands -1);
@@ -511,7 +505,7 @@ void read_trigger_files(Search_settings *sett,
 
   int **imtr;
   int coindx=0, numc;
-  unsigned short int weight=1, maxweight=0;   
+  unsigned short int weight=1;
   
   // Maximal possible amount of coincidences, given a threshold for 
   // a minimum number of interesting coincidences (opts->mincoin)  
@@ -561,7 +555,7 @@ void read_trigger_files(Search_settings *sett,
   for(q=0; q<coindx; q++) {  
  
     j = imtr[q][0];
-    long int pari[4], ops[256];
+    long int ops[256];
     unsigned short int l, w=imtr[q][1], fra[256];  
     double mean[5]; 
     float meanf[5]; 
