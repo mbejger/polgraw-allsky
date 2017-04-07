@@ -9,6 +9,7 @@
 #include <dirent.h>
 #include <time.h>
 #include <unistd.h>
+#include <limits.h>
 
 #include "auxi.h"
 #include "init.h" 
@@ -371,7 +372,7 @@ void read_trigger_files(Search_settings *sett,
 
 	// save allcandi to disk
 	sprintf(fpar[frcount].candi_fname, "%s_%s", datestr, ep->d_name); 
-	printf("Writing temp. allcandi to: %s\n", fpar[frcount].candi_fname);
+	printf("Writing candi to: %s\n", fpar[frcount].candi_fname);
 	if((data = fopen(fpar[frcount].candi_fname, "w")) != NULL) {
 	  fwrite(allcandi, sizeof(int[frgoodcands][ACLEN]), 1, data);
 	  fclose(data);
@@ -404,10 +405,10 @@ void read_trigger_files(Search_settings *sett,
   // If it's less then 4GB let's allocate 4GB because it's still reasonably small :)
 
 #define GB 1073741824L
-  long allcandi_size, chunk_size, cand_left, offset=0;
+  long il, allcandi_size, chunk_size, cand_left, offset=0;
   int fr;
 
-  allcandi_size = ( 4*GB > 1.6*maxfilelen) ? 4*GB : 1.7*maxfilelen;
+  allcandi_size = ( 0.1*GB > 1.6*maxfilelen) ? 4*GB : 1.7*maxfilelen;
   allcandi_size /= ACLEN*sizeof(int);
   chunk_size = allcandi_size/frcount;
   printf("[debug] maxfilelen=%ld   allcandi_size=%ld   chunk_size=%ld\n", maxfilelen, allcandi_size, chunk_size);
@@ -425,7 +426,8 @@ void read_trigger_files(Search_settings *sett,
   }
 
   // determine min fi for all frames
-  int chunk=0;
+  int fimax_, chunk=0;
+  long acoffset=0;
   //read candidates in chunks of given fi range
   while (++chunk) {
     printf("\n#########################\nchunk=%d ", chunk);
@@ -436,28 +438,29 @@ void read_trigger_files(Search_settings *sett,
     }
     if (cand_left > allcandi_size) {
       // find fi_min, set indices
-      int fimin_ = 0;
-      printf("searching fimin for all frames : ");
+      fimax_ = INT_MIN;
       for(fr=1; fr<=frcount; ++fr){
 	fpar[fr].i2 = min(fpar[fr].i1 + chunk_size - 1, fpar[fr].ncands -1);
 	offset = sizeof(int[fpar[fr].i2][ACLEN]);
 	fseek(fpar[fr].candi_fh, offset, SEEK_SET);
 	fread(&fpar[fr].fi2, sizeof(int), 1, fpar[fr].candi_fh);
-	if (fpar[fr].fi2 < fimin_) fimin_ = fpar[fr].fi2;
+	if (fpar[fr].fi2 > fimax_) fimax_ = fpar[fr].fi2;
       }
-      printf(" %d \nrewinding ", fpar[fr].fi2);
-      // rewind to first record with fi < fimin_ , set i2
+      printf("\nrewinding to max fi2 for all frames = %d\n", fimax_);
+      // rewind to first record with fi > fimin_ , set i2
       for(fr=1; fr<=frcount; ++fr){
-	printf(" frame %d  i2: %ld -> ", fr, fpar[fr].i2);
-	for (i=fpar[fr].i2; i>=fpar[fr].i1; --i){
-	  offset = sizeof(int[i][ACLEN]);
+	printf(" frame[%d] i1=%ld  i2=%ld fi2=%d -> ", fr, fpar[fr].i1, fpar[fr].i2, fpar[fr].fi2);
+	for (il=fpar[fr].i2; il>=fpar[fr].i1; --il){
+	  offset = sizeof(int[il][ACLEN]);
 	  fseek(fpar[fr].candi_fh, offset, SEEK_SET);
 	  fread(&fpar[fr].fi2, sizeof(int), 1, fpar[fr].candi_fh);
-	  if (fpar[fr].fi2 == fimin_) continue;
-	  fpar[fr].i2 = i;
-	  break;
+	  //printf("\nfi2[%ld]=%d\n", il, fpar[fr].fi2); getchar();
+	  if (fpar[fr].fi2 > fimax_){
+	    fpar[fr].i2 = il;
+	    break;
+	  }
 	}
-	printf("%ld fi=%d\n", fpar[fr].i2, fpar[fr].fi2);
+	printf("i2=%ld fi2=%d\n", fpar[fr].i2, fpar[fr].fi2);
       }
 	
     } else { // cand_left > chunk_size
@@ -469,18 +472,19 @@ void read_trigger_files(Search_settings *sett,
     for(fr=1; fr<=frcount; ++fr)
       printf("%d[%ld,%ld] ", fpar[fr].num, fpar[fr].i1, fpar[fr].i2);
 
-    // read candi in into all candi , find coincidences
-    offset = 0;
+    // read candi in into allcandi
+    acoffset = 0;
     for(fr=1; fr<=frcount; ++fr){
-      fseek(fpar[fr].candi_fh, fpar[fr].i1, SEEK_SET);
+      fseek(fpar[fr].candi_fh, sizeof(int[fpar[fr].i1][ACLEN]), SEEK_SET);
       int chunk_ = fpar[fr].i2-fpar[fr].i1+1;
-      fread((void *)(&(allcandi[offset][0])), sizeof(int[chunk_][ACLEN]), 1, fpar[fr].candi_fh);
-      printf("\nrange = %10ld - %10ld  fi = %10d - %10d", offset,  offset+chunk_-1, allcandi[offset][0], allcandi[offset+chunk_-1][0]);
-      offset += chunk_;
+      //printf("\n[debug] frame %d: i1=%ld i2=%ld  size=%ld" , fr, fpar[fr].i1,  fpar[fr].i2, sizeof(int[chunk_][ACLEN]) );
+      fread((void *)(&(allcandi[acoffset][0])), sizeof(int[chunk_][ACLEN]), 1, fpar[fr].candi_fh);
+      printf("\ni = %10ld - %10ld  fi = %10d - %10d", acoffset,  acoffset+chunk_-1, allcandi[acoffset][0], allcandi[acoffset+chunk_-1][0]);
+      acoffset += chunk_;
     }
     
     // prepare for the next chunk
-    for(fr=1; fr<=frcount; ++fr) fpar[fr].i1 = fpar[fr].i2+1;
+    for(fr=1; fr<=frcount; ++fr) fpar[fr].i1 = fpar[fr].i2 + 1;
     
   } // chunk
 
@@ -497,7 +501,7 @@ void read_trigger_files(Search_settings *sett,
   //------------------------------------------------------------------
 
   // Sorting the first 4 columns of allcandi
-  qsort(allcandi, offset, sizeof(int[ACLEN]), way2compare_4c);
+  qsort(allcandi, acoffset, sizeof(int[ACLEN]), way2compare_4c);
 
   int **imtr;
   int coindx=0, numc;
@@ -505,12 +509,12 @@ void read_trigger_files(Search_settings *sett,
   
   // Maximal possible amount of coincidences, given a threshold for 
   // a minimum number of interesting coincidences (opts->mincoin)  
-  numc = offset/(opts->mincoin); 
+  numc = acoffset/(opts->mincoin); 
   
   imtr = matrix(numc, 2); 
   
   // Coincidences: counting rows in a sorted table 
-  for (i=0; i<(offset-1); i++) {
+  for (i=0; i<(acoffset-1); i++) {
     
     int diff=1; 
     for(j=0; j<4; j++) 
@@ -613,8 +617,7 @@ void read_trigger_files(Search_settings *sett,
 
 
     // Maximal coincidence (first row of imtr[][])
-    //#mb written to stderr 
-    if(!q) { 
+    if(!q) {
       fprintf(stderr, "%s %04d %5f %5hu %5d %15.8le %5.8le %5.8le %5.8le %5le ", 
 	      opts->trigname, opts->shift, sett->fpo, frcount, w,   
 	      mean[0], mean[1], mean[2], mean[3], mean[4]);
@@ -630,7 +633,7 @@ void read_trigger_files(Search_settings *sett,
           }
       fprintf(stderr, "\n");  
     }
-  }
+  } // q
 
   // close files
   fclose(data);
