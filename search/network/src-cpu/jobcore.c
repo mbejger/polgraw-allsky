@@ -430,6 +430,16 @@ int job_core(int pm,                   // Hemisphere
       // Spindown range defined using Smin and Smax (settings.c)  
       smin = trunc((sett->Smin - nn*sett->M[9] - mm*sett->M[13])/sett->M[5]);
       smax = trunc(-(nn*sett->M[9] + mm*sett->M[13] + sett->Smax)/sett->M[5]);
+
+      // swapping smin and smax in case when grid matrix  
+      // values are defined with opposite signs than ''usual''
+      if(smin > smax) { 
+    
+        smin = smin + smax ;
+        smax = smin - smax ; 
+        smin = smin - smax ; 
+
+      }
   } 
 
   printf ("\n>>%d\t%d\t%d\t[%d..%d]\n", *FNum, mm, nn, smin, smax);
