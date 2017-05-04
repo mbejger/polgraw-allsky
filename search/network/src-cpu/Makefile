@@ -84,7 +84,10 @@ uninstall: clean
 
 sigen: sigen.o settings.o auxi.o
 	$(CC) -o $@ $^ -Wl,-Bdynamic -lc -lrt -lm
-#
+
+bench: bench.o settings.o init.o auxi.o
+	$(CC) -o $@ $^ -Wl,-Bdynamic -lrt -lm -lgsl -lgslcblas -lfftw3 -lc
+
 #gridopt.o: gridopt.c 
 #	$(CC) -c -o $@ $< -O3 -Wall
 #
