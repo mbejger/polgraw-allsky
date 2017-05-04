@@ -92,7 +92,7 @@ void handle_opts( Search_settings *sett,
       {"getrange", required_argument, 0, 'g'},
       // change directory parameter
       {"cwd", required_argument, 0, 'c'},
-      // interpolation method
+      // threshold for the F-statistic
       {"threshold", required_argument, 0, 't'},
       // hemisphere
       {"hemisphere", required_argument, 0, 'h'},
