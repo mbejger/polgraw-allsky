@@ -22,7 +22,7 @@ typedef struct _comm_line_opts {
       help_flag;
   
   int fftinterp;
-  int ident, band, hemi;
+  int ident, band, hemi, nod;
   double trl;
   double fpo_val, narrowdown;
   

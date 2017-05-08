@@ -58,6 +58,9 @@ void handle_opts( Search_settings *sett,
   // Default value of the narrow-down parameter 
   opts->narrowdown=0.5;
 
+  // Initial value of the number of days is set to 0
+  sett->nod = 0; 
+
   opts->help_flag=0;
   opts->white_flag=0;
   opts->s0_flag=0;
@@ -100,6 +103,8 @@ void handle_opts( Search_settings *sett,
       {"fpo", required_argument, 0, 'p'},
       // add signal parameters
       {"addsig", required_argument, 0, 'x'},
+      // number of days in the time-domain segment
+      {"nod", required_argument, 0, 'y'},
       // data sampling time 
       {"dt", required_argument, 0, 's'},
       // Narrow down the frequency band (+- the center of band) 
@@ -125,6 +130,7 @@ void handle_opts( Search_settings *sett,
       printf("-p, -fpo          Reference band frequency fpo value\n");
       printf("-s, -dt           Data sampling time dt (default value: 0.5)\n");
       printf("-x, -addsig       Add signal with parameters from <file>\n");
+      printf("-y, -nod          Number of days\n");
       printf("-n, -narrowdown   Narrow-down the frequency band (range [0, 0.5] +- around center)\n\n");
       printf("Also:\n\n");
       printf("--whitenoise      White Gaussian noise assumed\n");
@@ -137,7 +143,7 @@ void handle_opts( Search_settings *sett,
     }
 
     int option_index = 0;
-    int c = getopt_long_only(argc, argv, "i:b:o:d:l:r:g:c:t:h:p:x:s:n:", 
+    int c = getopt_long_only(argc, argv, "i:b:o:d:l:r:g:c:t:h:p:x:y:s:n:", 
 			     long_options, &option_index);
     if (c == -1)
       break;
@@ -181,6 +187,9 @@ void handle_opts( Search_settings *sett,
     case 'x':
       strcpy(opts->addsig, optarg);
       break;
+    case 'y':
+      sett->nod = atoi(optarg);
+      break;
     case 's':
       sett->dt = atof(optarg);
       break;
@@ -194,6 +203,13 @@ void handle_opts( Search_settings *sett,
     } /* switch c */
   } /* while 1 */
 
+  // Check if sett->nod was set up, if not, exit
+  if(!(sett->nod)) {
+    printf("Number of days not set... Exiting\n");
+    exit(EXIT_FAILURE);
+  }
+  printf("Number of days set to %d\n", sett->nod);
+  
   // Putting the parameter in triggers' frequency range [0, pi] 
   opts->narrowdown *= M_PI; 
 
@@ -295,7 +311,9 @@ void init_arrays(
 		 Aux_arrays *aux_arr
 		 ) {
 
-  int i, status; 
+  int i; 
+  size_t status;
+
   // Allocates and initializes to zero the data, detector ephemeris
   // and the F-statistic arrays
 
