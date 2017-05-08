@@ -410,14 +410,27 @@ int job_core(int pm,                   // Hemisphere
   int bnd = (sett->N/VLEN)*VLEN;
 #endif
 
-  // Check if the signal is added to the data or the range file is given:  
+  // Check if the signal is added to the data 
+  // or the range file is given:  
   // if not, proceed with the wide range of spindowns 
   // if yes, use smin = s_range->sst, smax = s_range->spndr[1]  
   if(!strcmp(opts->addsig, "") && !strcmp(opts->range, "")) {
-    // Spindown range defined using Smin and Smax (settings.c)  
-    smin = trunc((sett->Smin - nn*sett->M[9] - mm*sett->M[13])/sett->M[5]);
-    smax = trunc(-(nn*sett->M[9] + mm*sett->M[13] + sett->Smax)/sett->M[5]);
+
+      // Spindown range defined using Smin and Smax (settings.c)  
+      smin = trunc((sett->Smin - nn*sett->M[9] - mm*sett->M[13])/sett->M[5]);
+      smax = trunc(-(nn*sett->M[9] + mm*sett->M[13] + sett->Smax)/sett->M[5]);
+
+      // swapping smin and smax in case when grid matrix  
+      // values are defined with opposite signs than ''usual''
+      if(smin > smax) { 
+    
+        smin = smin + smax ;
+        smax = smin - smax ; 
+        smin = smin - smax ; 
+
+      }
   } 
+
   
   if(opts->s0_flag) smin = smax;
   // if spindown parameter is taken into account, smin != smax

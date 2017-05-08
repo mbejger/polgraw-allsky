@@ -93,6 +93,8 @@ void handle_opts( Search_settings *sett,
       {"threshold", required_argument, 0, 't'},
       // fpo value
       {"fpo", required_argument, 0, 'p'},
+      // number of days in the time-domain segment 
+      {"nod", required_argument, 0, 'y'},
       // add signal parameters
       {"addsig", required_argument, 0, 'x'},
       // glue frames together
@@ -124,9 +126,10 @@ void handle_opts( Search_settings *sett,
       printf("-s, -dt           data sampling time dt (default value: 0.5)\n");
       printf("-u, -usedet       Use only detectors from string (default is use all available)\n");
 //      printf("-e, -glue		Glue chosen frames together. Names of frames from <file>\n");
+      printf("-y, -nod          Number of days\n");
       printf("-x, -addsig       Add signal with parameters from <file>\n");
       printf("-a, -candidates   As a starting point in followup use parameters from <file>\n");
-      printf("-refr             Reference frame number\n\n");
+      printf("-r, -refr         Reference frame number\n\n");
 
       printf("Also:\n\n");
       printf("--vetolines       Veto known lines from files in data directory\n");
@@ -172,6 +175,9 @@ void handle_opts( Search_settings *sett,
     case 'p':
       sett->fpo = atof(optarg);
       break;
+    case 'y':
+      sett->nod = atoi(optarg);
+      break;
     case 'x':
       strcpy(opts->addsig, optarg);
       break;
@@ -204,6 +210,14 @@ void handle_opts( Search_settings *sett,
   opts->mads_flag = mads_flag;
   opts->gauss_flag = gauss_flag;
   opts->neigh_flag = neigh_flag;
+
+  // Check if sett->nod was set up, if not, exit
+  if(!(sett->nod)) { 
+    printf("Number of days not set... Exiting\n"); 
+    exit(EXIT_FAILURE); 
+  } 
+
+  printf("Number of days is %d\n", sett->nod); 
 
   printf("Input data directory is %s\n", opts->dtaprefix);
   printf("Output directory is %s\n", opts->prefix);
@@ -246,7 +260,8 @@ void handle_opts( Search_settings *sett,
     printf("Gaussian noise will be generated instead of reading data from file\n");
 
   if(opts->neigh_flag) 
-    printf("Area of calculation will be defined as %% from initial value instead of taking it from grid.bin\n");
+//    printf("Area of calculation will be defined as %% from initial value instead of taking it from grid.bin\n");
+    printf("Area of calculation will be defined as +/- from initial value instead of taking it from grid.bin\n");
 
   if(opts->mads_flag) 
     printf("MADS direct maximum search\n");
@@ -313,7 +328,7 @@ void init_arrays(
 
   for(i=0; i<sett->nifo; i++) { 
     ifo[i].sig.xDat = (double *) calloc(sett->N, sizeof(double));
-    if(!opts->gauss){	    
+    if(!opts->gauss_flag){	    
      
      // Input time-domain data handling
      // 
@@ -647,7 +662,8 @@ puts("Adding signal from file");
 	
     // Fscanning for the GW snr, grid size and the reference
     // frame (for which the signal freq. is not spun-down/up)
-    fscanf (data, "%le %d %d", &snr, &gsize, &reffr);    
+//    fscanf (data, "%le %d %d", &snr, &gsize, &reffr);  
+	fscanf (data, "%le %d %d", &h0, &gsize, &reffr);  
 
     // Fscanning signal parameters: f, fdot, delta, alpha (sgnlo[0], ..., sgnlo[3])
     // four amplitudes sgnlo[4], ..., sgnlo[7] 
@@ -702,7 +718,7 @@ puts("Adding signal from file");
     nSource[0] = cosaadd*cosdadd;
     nSource[1] = sinaadd*cosdadd;
     nSource[2] = sindadd;
-					
+
     // adding signal to data (point by point)  								
     for (i=0; i<sett->N; i++) {
       shiftadd = 0.; 					 
@@ -744,7 +760,8 @@ puts("Adding signal from file");
 
 //Signal amplitude
 
-  h0 = (snr*sigma_noise)/(sqrt(sum));
+//  h0 = (snr*sigma_noise)/(sqrt(sum));
+  snr = h0*(sqrt(sum))/sigma_noise;
 
 // Loop for each detector - adding signal to data (point by point)  								
   for(n=0; n<sett->nifo; n++) {
