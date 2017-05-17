@@ -204,11 +204,12 @@ int job_core(int pm,                   // Hemisphere
   int smin = s_range->sst, smax = s_range->spndr[1];
   double al1, al2, sinalt, cosalt, sindelt, cosdelt, sgnlt[NPAR], 
     nSource[3], het0, sgnl0, ft;
-  //  double _tmp1[sett->nifo][sett->N];
-  double **_tmp1;
-  _tmp1 = (double **)malloc(sett->nifo*sizeof(double *));
-  for (n=0; n < sett->nifo; n++) _tmp1[n] = (double *)calloc(sett->N, sizeof(double));
-
+  //double _tmp1[sett->nifo][sett->N];
+  static double **_tmp1;
+  if (!_tmp1) {
+    _tmp1 = (double **)malloc(sett->nifo*sizeof(double *));
+    for (n=0; n < sett->nifo; n++) _tmp1[n] = (double *)calloc(sett->N, sizeof(double));
+  }
 #undef NORMTOMAX
 #ifdef NORMTOMAX
   double blkavg, threshold = 6.;
@@ -472,6 +473,7 @@ int job_core(int pm,                   // Hemisphere
   
     /* Spindown loop  */
 
+    //#pragma omp for schedule(static,4)
 #pragma omp for schedule(static,4)
     for(ss=smin; ss<=smax; ++ss) {
 
