@@ -34,6 +34,7 @@ MS
 #include <gsl/gsl_linalg.h>
 #include <gsl/gsl_math.h>
 #include <gsl/gsl_eigen.h>
+#include <gsl/gsl_blas.h>
 #include <time.h>
 #include <dirent.h>
 #include <omp.h>
@@ -68,6 +69,211 @@ MS
 #endif
 
 #define ZEPS 1e-10
+
+// Allocation of memory for double martix with given number of rows and columns
+double** matrix(int rows, int cols) {
+
+  	int k;
+	double **m;
+  	m = (double **)malloc(rows*sizeof(double *));
+  
+  	for (k=0; k < rows; k++)
+    		m[k] = (double *)calloc(cols, sizeof(double));
+  
+  	return m;
+}
+// Allocation of memory for complex double martix with given number of rows and columns
+complex double** matrix_complex(int rows, int cols) {
+
+  	int k;
+	complex double **m;
+  	m = (complex double **)malloc(rows*sizeof(complex double *));
+  
+  	for (k=0; k < rows; k++)
+    		m[k] = (complex double *)calloc(cols, sizeof(complex double));
+  
+  	return m;
+}
+
+// Allocation of memory for vector and martix with given number of rows and columns
+double * alloc_vector(int cols){
+	return (double *) malloc(sizeof(double) * cols);
+}
+
+int * alloc_vector_int(int cols){
+	return (int*) malloc(sizeof(int) * cols);
+}
+
+void free_vector(double * vector, int cols){
+	free(vector);
+}
+
+void free_vector_int(int * vector, int cols){
+	free(vector);
+}
+
+double ** alloc_matrix(int rows, int cols){
+	int i;
+	double ** matrix = (double **) malloc(sizeof(double *) * rows);
+	for (i = 0; i < rows; i++) matrix[i] = alloc_vector(cols);
+	return matrix;
+}
+void free_matrix(double **matrix, int rows, int cols){
+	int i;
+	for (i = 0; i < rows; i++) free(matrix[i]);
+	free(matrix);
+}
+void free_matrix_complex(complex double **matrix, int rows, int cols){
+	int i;
+	for (i = 0; i < rows; i++) free(matrix[i]);
+	free(matrix);
+}
+
+//generate optimal 4d grid
+void A4opt(double minimalm, int no, double *gam, double **Mopt){
+	int i, j, k, l;
+	double r; // covering radius
+	r = sqrt(1-(minimalm*minimalm));
+
+/* 
+Mo = r*[sqrt(5)    0            0            0;
+        sqrt(5)/2  sqrt(15)/2   0            0;
+        sqrt(5)/2  sqrt(5/3)/2  sqrt(10/3)   0;
+       -sqrt(5)/2 -sqrt(5/3)/2 -sqrt(5/6)/2 -1/(2*sqrt(2))];
+*/
+
+	double V[16];
+	double D[16];
+	double Mg[16];
+	double Moptn[16];
+	double temp;
+
+	double datam[] = { 	r*sqrt(5),		0,		0,		0,
+        			r*sqrt(5)/2,		r*sqrt(15)/2,	0,		0,
+        			r*sqrt(5)/2,		r*sqrt(5/3)/2,	r*sqrt(10/3),	0,
+       				-r*sqrt(5)/2,		-r*sqrt(5/3)/2,	-r*sqrt(5/6)/2,	-r/(2*sqrt(2))};
+	for (i = 0; i < 16; i++){ 
+		D[i] = 0.;
+		V[i] = 0.;
+		Mg[i] = 0.;
+		Moptn[i] = 0.;
+	}
+
+//  	gsl_matrix_view Mogsl = gsl_matrix_view_array (datam, 4, 4);
+  	gsl_matrix_view gamgsl = gsl_matrix_view_array (gam, 4, 4);
+  	gsl_vector *eval = gsl_vector_alloc (4);
+  	gsl_matrix *evec = gsl_matrix_alloc (4, 4);
+  	gsl_eigen_symmv_workspace * w = gsl_eigen_symmv_alloc (4);
+	gsl_eigen_symmv (&gamgsl.matrix, eval, evec, w);
+	gsl_eigen_symmv_free (w);
+//	gsl_eigen_symmv_sort (eval, evec, GSL_EIGEN_SORT_ABS_ASC);
+
+	for (i = 0; i < 4; i++){
+		j = 5 * i;
+		temp = gsl_vector_get(eval, i);
+// D is diagonal matrix with eigenvalues of matrix sett->gamrn
+// that is read from grid.bin
+		D[j] = sqrt(fabs(1/temp));
+//        	gsl_vector_view eveci = gsl_matrix_column (evec, i);
+		for (k = 0; k < 4; k++){
+			j = 4 * i + k;
+			V[j] = gsl_matrix_get (evec, i, k);
+		}
+
+	}
+
+/*    for (i = 0; i < 4; i++)
+      {
+        double eval_i 
+           = gsl_vector_get (eval, i);
+        gsl_vector_view evec_i 
+           = gsl_matrix_column (evec, i);
+
+        printf ("eigenvalue = %g\n", eval_i);
+        printf ("eigenvector = \n");
+        gsl_vector_fprintf (stdout, 
+                            &evec_i.vector, "%g");
+      }
+*/
+//  	gsl_matrix_view Dgsl = gsl_matrix_view_array (D, 4, 4);
+
+// V (evec) is matrix in which columns are eigenvectors of matrix sett->gamrn
+// that is read from grid.bin
+// V * D -> Mg
+//	gsl_matrix_view Vgsl = gsl_matrix_view_array (V, 4, 4);
+//	gsl_blas_dgemm (CblasNoTrans, CblasNoTrans, 1.0, &Vgsl.matrix, &Dgsl.matrix, 0.0, &Mggsl.matrix);
+	
+	for (i = 0; i < 4; i++){
+		for (j = 0; j < 4; j++){
+			Mg[4*i+j] = V[4*i]*D[j] + V[4*i+1]*D[j+4] + V[4*i+2]*D[j+8] + V[4*i+3]*D[j+12]; 
+		
+		}
+	}
+  	gsl_matrix_view Mggsl = gsl_matrix_view_array (Mg, 4, 4);
+	gsl_matrix_transpose(&Mggsl.matrix);
+
+	for (i = 0; i < 4; i++){
+		for (j = 0; j < 4; j++){
+			Moptn[4*i+j] = datam[4*i]*Mg[j] + datam[4*i+1]*Mg[j+4] + datam[4*i+2]*Mg[j+8] + datam[4*i+3]*Mg[j+12]; 
+		
+		}
+	}
+
+//  	gsl_matrix_view Moptngsl = gsl_matrix_view_array (Moptn, 4, 4);
+
+//Mo * Mg -> Moptngsl
+//	gsl_blas_dgemm (CblasNoTrans, CblasNoTrans, 1.0, &Mogsl.matrix, &Mggsl.matrix, 0.0, &Moptngsl.matrix);
+/*puts("Moptn:");
+for (i = 0; i < 16; i++) printf("%le\n ", Moptn[i]); */
+/*
+Mopt(:,1) = Moptn(:,1)/N;
+Mopt(:,2) = Moptn(:,2)/N^2;
+Mopt(:,3) = Moptn(:,3)/N;
+Mopt(:,4) = Moptn(:,4)/N;
+*/
+
+	for (i = 0; i < 4; i++){
+		for (k = 0; k < 4; k++){
+			j = 4 * i + k;
+			Mopt[i][k] = Moptn[j];
+			if (k == 1) Mopt[i][k] = Mopt[i][k]/(no*no);
+			else Mopt[i][k] = Mopt[i][k]/no; 
+		}
+	}
+	gsl_vector_free (eval);
+	gsl_matrix_free (evec);
+}
+
+void InjLoc(int *gri1, double *sl, double ** mx){
+	double vec[16];
+	double inva[16];
+	double nmso[4];
+	int s, i, j, k=0;
+	for (i = 0; i < 4; i++){
+		for (j = 0; j < 4; j++){ 
+			vec[k] = mx[i][j];
+			k++; 
+		}
+	}
+	gsl_matrix_view Mpgsl = gsl_matrix_view_array (vec, 4, 4);
+	gsl_matrix_transpose(&Mpgsl.matrix);
+	gsl_matrix_view inv = gsl_matrix_view_array(inva,4,4);
+	gsl_permutation * p = gsl_permutation_alloc (4);
+	gsl_linalg_LU_decomp (&Mpgsl.matrix, p, &s);
+	gsl_linalg_LU_invert (&Mpgsl.matrix, p, &inv.matrix);
+
+	for (i = 0; i < 4; i++) nmso[i] = 0;
+	for (i = 0; i < 4; i++){
+		for (j = 0; j < 4; j++){
+			nmso[i] += inva[4*i+j]*sl[j];
+		}
+	}
+	for (i = 0; i < 4; i++) gri1[i] = round(nmso[i]);
+//	printf("nmso[1] = %le, gri1[1] = %d, sl[1] = %le \n", nmso[1], gri1[1], sl[1]); 
+//	printf("inva[1] = %le %le %le %le\n", inva[4], inva[5], inva[6], inva[7]);
+	gsl_permutation_free (p);
+
+}
 
 //Function neigh takes candidate parameters and number of bins (as arguments) and creates grid around it.
 //Range is defined as a % value from the candidate's parameters
@@ -202,65 +408,6 @@ void neigh_from_range(double **range, int b, double **arr){
 	}
 
 } 
-
-// Allocation of memory for double martix with given number of rows and columns
-double** matrix(int rows, int cols) {
-
-  	int k;
-	double **m;
-  	m = (double **)malloc(rows*sizeof(double *));
-  
-  	for (k=0; k < rows; k++)
-    		m[k] = (double *)calloc(cols, sizeof(double));
-  
-  	return m;
-}
-// Allocation of memory for complex double martix with given number of rows and columns
-complex double** matrix_complex(int rows, int cols) {
-
-  	int k;
-	complex double **m;
-  	m = (complex double **)malloc(rows*sizeof(complex double *));
-  
-  	for (k=0; k < rows; k++)
-    		m[k] = (complex double *)calloc(cols, sizeof(complex double));
-  
-  	return m;
-}
-
-// Allocation of memory for vector and martix with given number of rows and columns
-double * alloc_vector(int cols){
-	return (double *) malloc(sizeof(double) * cols);
-}
-
-int * alloc_vector_int(int cols){
-	return (int*) malloc(sizeof(int) * cols);
-}
-
-void free_vector(double * vector, int cols){
-	free(vector);
-}
-
-void free_vector_int(int * vector, int cols){
-	free(vector);
-}
-
-double ** alloc_matrix(int rows, int cols){
-	int i;
-	double ** matrix = (double **) malloc(sizeof(double *) * rows);
-	for (i = 0; i < rows; i++) matrix[i] = alloc_vector(cols);
-	return matrix;
-}
-void free_matrix(double **matrix, int rows, int cols){
-	int i;
-	for (i = 0; i < rows; i++) free(matrix[i]);
-	free(matrix);
-}
-void free_matrix_complex(complex double **matrix, int rows, int cols){
-	int i;
-	for (i = 0; i < rows; i++) free(matrix[i]);
-	free(matrix);
-}
 
 // Function calculates F-statistics in given point
 double* Fstatnet(Search_settings *sett, double *sgnlo, double *nSource, double **sigaa, double **sigbb){
@@ -688,12 +835,14 @@ int main (int argc, char *argv[]) {
 	Command_line_opts opts;
   	Aux_arrays aux_arr;
 //  	double *F; 			// F-statistic array
-  	int i, j, r, c, a, b, g, flag; 	
+  	int i, j, r, c, a, b, g, flag=0; 	
+	int k1, k2, k3, k4;
 	int d, o, m, k, s;
 	int bins = 17, ROW, dim = 4;	// neighbourhood of point will be divide into defined number of bins
 	int gsize = 2;			// grid size where followup will be searching maximum
-	int spndr[2], nr[2], mr[2];	// range in linear unities
+	int spndr[2], nr[2], mr[2], fo[2];	// range in linear unities
 	int hemi; 			// hemisphere
+	double minm = 0.999;		// minimal match used in optimal 4d grid generation
 	double pc[4];			// % define neighbourhood around each parameter for initial grid
 	double pc2[4];			// % define neighbourhood around each parameter for direct maximum search (MADS & Simplex)
 	double tol = 1e-10;
@@ -708,15 +857,31 @@ int main (int argc, char *argv[]) {
 	double nearest_point[4];
 	double sgnlol[4]; 
 	double be[2];	
-  	double *MM ; 	 		// Auxiliary array for grid points	 
+	int gri1[4];
+  	double *MM ; 	 		// Auxiliary array for grid points
+	int nof[4];			// Number of points in optimal grid where Fstat will be calculated (in every dim)	 
 	double **arr;			// arr[ROW][COL] - array of points where Fstat will be calculated
 	double nSource[3];
   	double sinalt, cosalt, sindelt, cosdelt;
 	double F_min;
 	double au;
+	double temp1, temp2;
 //	char path[512];
 	double x, y;
-	ROW = pow((bins+1),4);
+
+	if ((!opts.naive_flag)&&(!opts.neigh_flag)){
+// Define on how many grid points Fstat will be calculated  on optimal grid - in every dimension
+		nof[0] = 2;
+		nof[1] = 2;
+		nof[2] = 2;
+		nof[3] = 2;
+
+		ROW = (2*nof[0]+1)*(2*nof[1]+1)*(2*nof[2]+1)*(2*nof[3]+1);
+
+	}
+	else{
+		ROW = pow((bins+1),4);
+	}
 
 	arr = matrix(ROW, 4);
 
@@ -800,6 +965,7 @@ int main (int argc, char *argv[]) {
 	FILE *coi;
 	int z;
 	if ((coi = fopen(opts.candidates, "r")) != NULL) {
+
 //		while(!feof(coi)) {
 
 /*			if(!fread(&w, sizeof(unsigned short int), 1, coi)) { break; } 
@@ -833,8 +999,8 @@ int main (int argc, char *argv[]) {
 					neigh2(mean, pc, bins, arr);
 
 				} //if neigh
-				else{
-
+				else if(opts.naive_flag){
+//if naive or optimal grid -> find closest point on the grid
 //printf("%d %le %le %le %le\n", sett.N, mean[0], mean[1], mean[2], mean[3]);
 
 					cof = sett.oms + mean[0]; 
@@ -847,7 +1013,6 @@ int main (int argc, char *argv[]) {
 // solving a linear system in order to translate 
 // sky position, frequency and spindown (sgnlo parameters) 
 // into the position in the grid
-
 
 					MM = (double *) calloc (16, sizeof (double));
 					for(i=0; i<16; i++) MM[i] = sett.M[i];
@@ -962,7 +1127,84 @@ printf("Closest point on the grid: %d %d %d\n", spndr[0], nr[0], mr[0]);
 						}
 
 					} //if candidate is in good region
-				} //if not neigh
+				} //if naive
+// Optimal grid calculations
+				else if ((!opts.naive_flag)&&(!opts.neigh_flag)){
+
+					double **Mopt;
+					Mopt = matrix(4, 4);
+
+					cof = sett.oms + mean[0]; 
+					for(i=0; i<2; i++) sgnlol[i] = mean[i]; 
+					hemi = ast2lin(mean[3], mean[2], C_EPSMA, be);
+ 
+					sgnlol[2] = be[0]*cof; 
+					sgnlol[3] = be[1]*cof;
+
+					A4opt(minm, sett.N, sett.gamrn, Mopt);
+					InjLoc(gri1, sgnlol, Mopt);
+
+// Define the grid range in which the signal will be looked for
+					fo[0] = gri1[0];
+					spndr[0] = gri1[1];
+					nr[0] = gri1[2];
+					mr[0] = gri1[3];
+					fo[1] = fo[0] + nof[0]; 
+					fo[0] -= nof[0];
+					spndr[1] = spndr[0] + nof[1]; 
+					spndr[0] -= nof[1];
+					nr[1] = nr[0] + nof[2]; 
+					nr[0] -= nof[2];
+					mr[1] = mr[0] + nof[3]; 
+					mr[0] -= nof[3];
+//printf("fo = %d %d; spndr = %d %d; nr = %d %d; mr = %d %d\n", fo[0], fo[1], spndr[0], spndr[1], nr[0], nr[1], mr[0], mr[1]);
+					for (i = 0; i < 2; i++){
+						sgnlo_range[0][i] = fo[i]*Mopt[0][0] + spndr[i]*Mopt[1][0] + nr[i]*Mopt[2][0] + mr[i]*Mopt[3][0];
+						sgnlo_range[1][i] = fo[i]*Mopt[0][1] + spndr[i]*Mopt[1][1] + nr[i]*Mopt[2][1] + mr[i]*Mopt[3][1];
+						sgnlo_range[2][i] = fo[i]*Mopt[0][2] + spndr[i]*Mopt[1][2] + nr[i]*Mopt[2][2] + mr[i]*Mopt[3][2];
+						sgnlo_range[3][i] = fo[i]*Mopt[0][3] + spndr[i]*Mopt[1][3] + nr[i]*Mopt[2][3] + mr[i]*Mopt[3][3];
+
+						lin2ast(sgnlo_range[2][i]/sett.oms, sgnlo_range[3][i]/sett.oms, hemi, sett.sepsm, sett.cepsm, &sinalt, &cosalt, &sindelt, &cosdelt);
+						sgnlo_range[2][i] = asin(sindelt);
+						sgnlo_range[3][i] = fmod(atan2(sinalt, cosalt) + 2.*M_PI, 2.*M_PI);
+					}
+					for (i = 0; i < 4; i++){ 
+						if (sgnlo_range[i][0] > sgnlo_range[i][1]){
+							au = sgnlo_range[i][0];
+							sgnlo_range[i][0] = sgnlo_range[i][1];
+							sgnlo_range[i][1] = au;
+						}
+					}
+					for (i = 0; i < 4; i++)	printf("range[%d][0] = %le, range[%d][1] = %le\n", i, sgnlo_range[i][0], i, sgnlo_range[i][1]);
+
+					i = 0;
+					for (k1 = fo[0]; k1 <= fo[1]; k1++){
+						for (k2 = spndr[0]; k2 <= spndr[1]; k2++){
+							for (k3 = nr[0]; k3 <= nr[1]; k3++){
+								for (k4 = mr[0]; k4 <= mr[1]; k4++){
+									for (j = 0; j < 2; j++) {
+										arr[i][j] = k1*Mopt[0][j] + k2*Mopt[1][j] + k3*Mopt[2][j] + k4*Mopt[3][j];
+									}
+									temp1 = k1*Mopt[0][2] + k2*Mopt[1][2] + k3*Mopt[2][2] + k4*Mopt[3][2];
+									temp2 = k1*Mopt[0][3] + k2*Mopt[1][3] + k3*Mopt[2][3] + k4*Mopt[3][3];
+									lin2ast(temp1/sett.oms, temp2/sett.oms, hemi, sett.sepsm, sett.cepsm, &sinalt, &cosalt, &sindelt, &cosdelt);
+									arr[i][2] = asin(sindelt);
+									arr[i][3] = fmod(atan2(sinalt, cosalt) + 2.*M_PI, 2.*M_PI);
+//									printf("i = %d, k1 = %d, k2 = %d, k3 = %d, k4 = %d\n", i, k1, k2, k3, k4);
+			  						if ((sqr(temp1)+sqr(temp2))/sqr(sett.oms) > 1.){ 
+										arr[i][0] = -1.0;
+										printf("i = %d, crit = %le\n", i, (sqr(arr[i][2])+sqr(arr[i][3]))/sqr(sett.oms));
+									}
+									i++;
+								}							
+							}							
+						}
+					}
+					for (j = 0; j < 4; j++) pc2[j] = (sgnlo_range[j][1] - sgnlo_range[j][0])/(2*nof[j]+1);
+
+//exit(0);
+				} //if optimal grid
+
 				if(flag == 1) continue;
 
 // Output data handling
@@ -991,16 +1233,19 @@ printf("Closest point on the grid: %d %d %d\n", spndr[0], nr[0], mr[0]);
 				results_max[5] = 0.;
 
 // Main loop - over all parameters + parallelisation
-#pragma omp parallel default(shared) private(d, i, sgnlo, sinalt, cosalt, sindelt, cosdelt, nSource, results, maximum)
-{
+//#pragma omp parallel default(shared) private(d, i, sgnlo, sinalt, cosalt, sindelt, cosdelt, nSource, results, maximum)
+//{
 
                        		double **sigaa, **sigbb;   // old aa[nifo][N], bb[nifo][N]
               			sigaa = matrix(sett.nifo, sett.N);
 				sigbb = matrix(sett.nifo, sett.N);
 
-#pragma omp for  
+//#pragma omp for  
 				for (d = 0; d < ROW; ++d){
-
+					if (arr[d][0] < 0.0){ 
+						puts("Inappropriate region of the range! -> going to the next point");
+						continue;
+					}
 					for (i = 0; i < 4; i++){
 						sgnlo[i] = arr[d][i];
 					}
@@ -1024,7 +1269,7 @@ printf("Closest point on the grid: %d %d %d\n", spndr[0], nr[0], mr[0]);
 //printf("%le %le %le %le %le %le\n", results[6], results[7], results[8], results[9], results[5], results[4]);
 
 // Check is it the biggest found value of F-statistic
-#pragma omp critical
+//#pragma omp critical
 					if(results[5] < results_max[5]){
 						for (i = 0; i < 11; i++){
 							results_max[i] = results[i];
@@ -1051,7 +1296,7 @@ printf("Closest point on the grid: %d %d %d\n", spndr[0], nr[0], mr[0]);
 				free_matrix(sigaa, sett.nifo, sett.N);
 				free_matrix(sigbb, sett.nifo, sett.N);
 
-} //pragma
+//} //pragma
 
 				for(g = 0; g < 11; g++) results_first[g] = results_max[g];
 
