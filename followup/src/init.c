@@ -64,8 +64,9 @@ void handle_opts( Search_settings *sett,
   opts->mads_flag=0;
   opts->gauss_flag=0;
   opts->neigh_flag=0;
+  opts->naive_flag=0;
 
-  static int help_flag=0, veto_flag=0, simplex_flag=0, mads_flag=0, gauss_flag=0, neigh_flag=0;
+  static int help_flag=0, veto_flag=0, simplex_flag=0, mads_flag=0, gauss_flag=0, neigh_flag=0, naive_flag=0;
 
   // Reading arguments 
 
@@ -77,6 +78,7 @@ void handle_opts( Search_settings *sett,
       {"mads", no_argument, &mads_flag, 1},
       {"gauss", no_argument, &gauss_flag, 1},
       {"neigh", no_argument, &neigh_flag, 1},
+      {"naive", no_argument, &naive_flag, 1},
       // frame number
       {"ident", required_argument, 0, 'i'},
       // frequency band number
@@ -137,6 +139,7 @@ void handle_opts( Search_settings *sett,
       printf("--mads       	Direct search of maximum using MADS algorithm\n");
       printf("--gauss		Generate Gaussian noise instead of reading data. Amplitude and sigma of the noise declared in init.c\n");
       printf("--neigh		Function neigh() generate area as %% from initial value instead of taking it from grid.bin\n");
+      printf("--naive		Function naive() generate area as +/- points taking it from grid.bin and divide it into smaller grid.\n");
       printf("--help            This help\n");
 
       exit(EXIT_SUCCESS);
@@ -210,6 +213,7 @@ void handle_opts( Search_settings *sett,
   opts->mads_flag = mads_flag;
   opts->gauss_flag = gauss_flag;
   opts->neigh_flag = neigh_flag;
+  opts->naive_flag = naive_flag;
 
   // Check if sett->nod was set up, if not, exit
   if(!(sett->nod)) { 
@@ -263,6 +267,9 @@ void handle_opts( Search_settings *sett,
 //    printf("Area of calculation will be defined as %% from initial value instead of taking it from grid.bin\n");
     printf("Area of calculation will be defined as +/- from initial value instead of taking it from grid.bin\n");
 
+  if(opts->naive_flag) 
+    printf("Area of calculation will be defined as +/- points from grid.bin\n Then area will be divided into bins\n (number of points and bins defined in followup.c)\n");
+
   if(opts->mads_flag) 
     printf("MADS direct maximum search\n");
 
@@ -279,9 +286,11 @@ void read_grid(
 	       Command_line_opts *opts) {
 
   sett->M = (double *) calloc (16, sizeof (double));
+  sett->gamrn = (double *) calloc (16, sizeof (double));
 
   FILE *data;
   char filename[512];
+  int i;
 
   // In case when -usedet option is used for one detector
   // i.e. opts->usedet has a length of 2 (e.g. H1 or V1), 
@@ -301,6 +310,19 @@ void read_grid(
     // M: vector of 16 components consisting of 4 rows
     // of 4x4 grid-generating matrix
     fread ((void *)sett->M, sizeof (double), 16, data);
+    fread ((void *)sett->gamrn, sizeof (double), 16, data);
+/*    for (i = 0; i < 16; i++){
+      if(fabs(sett->M[i]) < 1e-37) sett->M[i] = 0.0;
+      if(fabs(sett->gamrn[i]) <= 1e-37){ 
+        sett->gamrn[i] = 0.0;
+        printf(" i = %d, %le\n", i, sett->gamrn[i]);
+      }
+
+    }
+puts("M matrix:");
+for(i = 0; i < 4; i++) printf("%le %le %le %le\n", sett->M[4*i], sett->M[4*i + 1], sett->M[4*i + 2], sett->M[4*i + 3]);
+puts("gamrn matrix:");
+for(i = 0; i < 4; i++) printf("%le %le %le %le\n", sett->gamrn[4*i], sett->gamrn[4*i + 1], sett->gamrn[4*i + 2], sett->gamrn[4*i + 3]);*/
     fclose (data);
   } else {
     perror (filename);
