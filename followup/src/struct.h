@@ -20,6 +20,8 @@ typedef struct _comm_line_opts {
       mads_flag,		// MADS direct maximum search flag
       gauss_flag,		// Generate Gaussian noise instead of reading data
       neigh_flag,		// Area of calculation will be defined as %% from initial value
+      naive_flag,		// Area of calculation is taken from optimal grid used in search 
+				// and divided into denser, naive (not optimal) grid
       help_flag;		
   
   int ident, band, hemi, refr;
@@ -89,6 +91,8 @@ typedef struct _search_settings {
 
   double *M;      // Grid-generating matrix (or Fisher matrix, 
                   // in case of coincidences) 
+  double *gamrn;  // Another grid from grid.bin to generate
+		  // optimal grid
 
   double lines[MAXL][2]; // Array for lines in given band 
   int numlines_band;     // number of lines in band   
