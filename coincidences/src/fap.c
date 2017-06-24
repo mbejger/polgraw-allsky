@@ -250,10 +250,10 @@ int main (int argc, char *argv[]) {
     // Final result: output to stderr cases when FAP threshold is reached  
     if(FAP < threshold) { 
 
-      for(i=0; i<noc; i++) 
-        fprintf(stderr, "%d %d %d ", frn[i], Nk[i], Nku[i]); 
+//      for(i=0; i<noc; i++) 
+//        fprintf(stderr, "%d %d %d ", frn[i], Nk[i], Nku[i]); 
 
-      fprintf(stderr, "%le %le %le %d %d ", f_min, f_max, FAP, noc, Nkall); 
+      fprintf(stderr, "%04d %le %le %le %d %d ", band, f_min, f_max, FAP, noc, Nkall); 
       
       for(i=0; i<5; i++)
         fprintf(stderr, "%le ", sigpar[i]);
