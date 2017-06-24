@@ -44,6 +44,9 @@ auxi.o: $(SEARCH_DIR)/auxi.c $(SEARCH_DIR)/auxi.h
 	$(CC) $(CFLAGS) -c -o $@ $<
 #$(CC) -c -g -O3 -Wall -o $@ $<
 
+fap: fap.o settings.o auxi.o
+	$(CC) -o $@ $^ -lc -lrt -lm -lgsl -lgslcblas -lfftw3
+
 doc:
 	doxygen ../doc/Doxyfile
 
