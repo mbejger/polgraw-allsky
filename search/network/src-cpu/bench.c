@@ -65,13 +65,13 @@ int main (int argc, char *argv[]) {
       printf("polgraw-allsky periodic GWs benchmark CPU time estimator\n");
       printf("Usage: ./bench -[switch1] <value1> -[switch2] <value2> ...\n") ;
       printf("Switches are:\n\n");
-      printf("-d, -data         Data directory (default is .)\n");
-      printf("-i, -ident        Frame number\n");
-      printf("-b, -band         Band number\n");
-      printf("-t, -time         CPU time\n");
-      printf("-p, -fpo          Reference band frequency fpo value\n");
-      printf("-s, -dt           data sampling time dt (default value: 0.5)\n");
-      printf("-y, -nod          Number of days\n\n");
+      printf("-data         Data directory (default is .)\n");
+      printf("-ident        Frame number\n");
+      printf("-band         Band number\n");
+      printf("-time         CPU time\n");
+      printf("-fpo          Reference band frequency fpo value\n");
+      printf("-dt           data sampling time dt (default value: 2)\n");
+      printf("-nod          Number of days\n\n");
 
 
       printf("Also:\n\n");
