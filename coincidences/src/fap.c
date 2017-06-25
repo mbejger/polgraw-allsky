@@ -15,14 +15,15 @@ static int help_flag=0;
 
 int nchoosek(short, short);
 int *FalseAlarm(int, int, double, int*, double*);
-int *FalseAlarmCFast();  
+int *FalseAlarmCFast(int, int, double, int*, double*);  
 
 int main (int argc, char *argv[]) {
 
   Command_line_opts opts;
   Search_settings sett;
 
-  size_t i; 
+  size_t i;
+  short int noc;  
   int status, band=0, cellsize=4, To; 
   char filename[512], datafile[512], griddir[512];
   double gamrn[16], vetofrac=0, threshold=0.1; 
@@ -222,7 +223,7 @@ int main (int argc, char *argv[]) {
 
   if ((data=fopen (datafile, "r")) != NULL) {
 
-    short i, shift, nof, noc, band, hemi; 
+    short i, shift, nof, band, hemi; 
     double fpofile;  
 
     status = fscanf(data, "%hu_%hu %hu %lf %hu %hu",  
@@ -240,23 +241,24 @@ int main (int argc, char *argv[]) {
       status = fscanf(data, "%d %d %d", &frn[i], &Nk[i], &Nku[i]); 
       Nkall += Nku[i]; 
     } 
-
+    
     double FAP, PFce[2*noc-2]; 
-
     FalseAlarmCFast(2, noc, Nc, &Nku[0], &PFce[0]); 
-
     FAP = PFce[2*noc-3]; 
 
     // Final result: output to stderr cases when FAP threshold is reached  
     if(FAP < threshold) { 
 
-//      for(i=0; i<noc; i++) 
-//        fprintf(stderr, "%d %d %d ", frn[i], Nk[i], Nku[i]); 
-
-      fprintf(stderr, "%04d %le %le %le %d %d ", band, f_min, f_max, FAP, noc, Nkall); 
+      //#mb frame info 
+      /* 
+      for(i=0; i<noc; i++) 
+        fprintf(stderr, "%d %d %d ", frn[i], Nk[i], Nku[i]); 
+      */ 
+ 
+      fprintf(stderr, "%04d %le %le %le %d %d ", 
+        band, f_min, f_max, PFce[2*noc-3], noc, Nkall); 
       
-      for(i=0; i<5; i++)
-        fprintf(stderr, "%le ", sigpar[i]);
+      for(i=0; i<5; i++) fprintf(stderr, "%le ", sigpar[i]);
  
       fprintf(stderr, "%d\n", hemi); 
 
@@ -366,8 +368,22 @@ int *FalseAlarm(int Cmax, int noc, double Nc, int *Nk, double *r) {
 
 int *FalseAlarmCFast(int Cmax, int noc, double Nc, int *Nk, double *r) { 
 
+  short int i, k; 
+
   // Arrays of noc + 2 doubles: PF, NF, pf, C[] array  
   double C0[noc+2], C1[noc+2], C2[noc+2], C3[noc+2], C4[noc+2]; 
+
+/*  double *C0, *C1, *C2, *C3, *C4; 
+  C0 = (double*)(malloc((noc+3)*sizeof(double))); 
+  C1 = (double*)(malloc((noc+3)*sizeof(double))); 
+  C2 = (double*)(malloc((noc+3)*sizeof(double))); 
+  C3 = (double*)(malloc((noc+3)*sizeof(double))); 
+  C4 = (double*)(malloc((noc+3)*sizeof(double))); 
+*/ 
+
+  for(i=0; i<noc+3; i++) { 
+    C0[i] = 0; C1[i] = 0; C2[i] = 0; C3[i] = 0; C4[i] = 0; 
+  } 
 
   FalseAlarm(Cmax, noc, Nc, &Nk[0], &C0[0]);
   FalseAlarm(Cmax, noc, 2*Nc, &Nk[0], &C1[0]);
@@ -376,8 +392,6 @@ int *FalseAlarmCFast(int Cmax, int noc, double Nc, int *Nk, double *r) {
   FalseAlarm(Cmax, noc, 2*2*2*2*Nc, &Nk[0], &C4[0]);
 
   double pfe0[noc], pfe1[noc], pfe2[noc], pfe3[noc], pfe4[noc];
-
-  int i, k;
 
   for(k=0; k<noc; k++) { 
 
