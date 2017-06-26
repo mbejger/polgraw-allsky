@@ -73,6 +73,10 @@
                         </li>
                     
                         <li >
+                            <a href="../fap_coincidences/">False alarm probablity of conicidences</a>
+                        </li>
+                    
+                        <li >
                             <a href="../pipeline_script/">Pipeline script</a>
                         </li>
                     
@@ -94,7 +98,7 @@
                     </a>
                 </li>
                 <li >
-                    <a rel="prev" href="../pipeline_script/">
+                    <a rel="prev" href="../fap_coincidences/">
                         Next <i class="fa fa-arrow-right"></i>
                     </a>
                 </li>
@@ -144,19 +148,21 @@
 <p>Run <code>make coincidences</code>; resulting binary is called <code>coincidences</code>. Modify the <code>Makefile</code> to fit your system.</p>
 <h3 id="8-how-to-run-the-program">8. How to run the program?</h3>
 <p>Sample call of <code>coincidences</code> is as follows:</p>
-<pre><code>&gt; ./coincidences -data . -output 0666-coincidences -mincoin 3 -snrcutoff 5 -trigname triggers_ -refloc 6d_xdat_0.25/010 -refr 010 -fpo 171.296875 -shift 0110 -scale 4444 -dt 2 2&gt;&gt; summary
-</code></pre>
+<div class="codehilite"><pre><span></span>&gt; ./coincidences -data . -output 0666-coincidences -mincoin 3 -snrcutoff 5 -trigname triggers_ -refloc 6d_xdat_0.25/010 -refr 010 -fpo 171.296875 -shift 0110 -scale 4444 -dt 2 2&gt;&gt; summary
+</pre></div>
 
-<p>This assumes that for the band <mathjax>$bbbb=0666$</mathjax> the band frequency <mathjax>$fpo$</mathjax> is 171.296875, because we define 
-<mathjax>$$
+
+<p>This assumes that for the band <script type="math/tex">bbbb=0666</script> the band frequency <script type="math/tex">fpo</script> is 171.296875, because we define 
+<script type="math/tex; mode=display">
 fpo = 10 + (1 - 2^{-5})\cdot bbbb\cdot \frac{1}{2dt}\ \mathrm{[Hz]}.
-$$</mathjax>
+</script>
 The reference grid file <code>grid.bin</code>, corresponding to the reference frame <code>010</code> is located at the <code>-refloc</code> location. Some output is directed to <code>stdin</code>. The highest-coincidence is streamed to the <code>summary</code> file via the <code>stderr</code> (<code>2&gt;&gt; summary</code>). </p>
-<p>In principle one has to run the code 16 times for all the <mathjax>$2^4$</mathjax> shifts (all combinations of <code>0000--1111</code>).   </p>
+<p>In principle one has to run the code 16 times for all the <script type="math/tex">2^4</script> shifts (all combinations of <code>0000--1111</code>).   </p>
 <h4 id="81-full-list-of-switches">8.1. Full list of switches</h4>
 <p>Type </p>
-<pre><code>&gt; ./coincidences --help 
-</code></pre>
+<div class="codehilite"><pre><span></span>&gt; ./coincidences --help 
+</pre></div>
+
 
 <p>to obtain the following description: </p>
 <table>
@@ -234,11 +240,12 @@ The reference grid file <code>grid.bin</code>, corresponding to the reference fr
 </table>
 <h3 id="9-output">9. Output</h3>
 <p>Output to the screen (<code>stdout</code>) in the case of </p>
-<pre><code>&gt; ./coincidences -data . -output 0666-coincidences -mincoin 3 -snrcutoff 5 -trigname triggers_ -refloc 6d_xdat_0.25/010 -refr 010 -fpo 171.296875 -shift 0110 -scale 4444 -dt 2 2&gt;&gt; summary
-</code></pre>
+<div class="codehilite"><pre><span></span>&gt; ./coincidences -data . -output 0666-coincidences -mincoin 3 -snrcutoff 5 -trigname triggers_ -refloc 6d_xdat_0.25/010 -refr 010 -fpo 171.296875 -shift 0110 -scale 4444 -dt 2 2&gt;&gt; summary
+</pre></div>
+
 
 <p>is</p>
-<pre><code>The SNR threshold cutoff is 5.000000000000, corresponding to F-statistic value of 14.500000000000
+<div class="codehilite"><pre><span></span>The SNR threshold cutoff is 5.000000000000, corresponding to F-statistic value of 14.500000000000
 Reading the reference grid.bin at 6d_xdat_0.25/010
 fftpad from the grid file: 1
 Settings dt: 2.000000, oms: 2152.580016
@@ -254,24 +261,33 @@ Reading triggers_014_0666_2.bin... Frame 14: 779/1542
 Reading triggers_006_0666_2.bin... Frame 6: 2884/8822
 Reading triggers_011_0666_2.bin... Frame 11: 918/2896
 Total number of candidates from all frames: 12458
-</code></pre>
+</pre></div>
+
 
 <p>The highest-coincidence is streamed to a <code>summary</code> file via <code>stderr</code>:  </p>
-<pre><code>&gt; cat summary 
+<div class="codehilite"><pre><span></span>&gt; cat summary 
 triggers_ 0110 171.296875 8 8 1.05795986e+00 -7.69412393e-09 -7.42581733e-01 5.39896106e+00 2.417267e+01 5 1879 941 19 1794 1320 3 1920 1512 8 6849 3090 2 1173 1014 14 1542 779 6 8822 2884 11 2896 918
-</code></pre>
+</pre></div>
 
-<p>It contains the <code>trigname</code> identifier, the <code>shift</code> value, the <code>fpo</code> band frequency, the number of files read (8), and the highest coincidence found (8). Next 5 numbers are arithmetic mean values of the frequency <mathjax>$\,f$</mathjax> (in radians), frequency derivative <mathjax>$\,\dot{f}$</mathjax> (spindown), sky positions <mathjax>$\delta$</mathjax> and <mathjax>$\alpha$</mathjax>, and the mean signal-to-noise ratio, <mathjax>$\widetilde{\mathrm{snr}}=\sqrt{\sum_i \mathrm{snr}_i^2}$</mathjax>. The following integers are grouped in threes and denote the triggers/time frame number, number of all candidates in that triggers' file, and the number of unique candidates. </p>
+
+<p>It contains the <code>trigname</code> identifier, the <code>shift</code> value, the <code>fpo</code> band frequency, the number of files read (8), and the highest coincidence found (8). Next 5 numbers are arithmetic mean values of the frequency <script type="math/tex">\,f</script> (in radians), frequency derivative <script type="math/tex">\,\dot{f}</script> (spindown), sky positions <script type="math/tex">\delta</script> and <script type="math/tex">\alpha</script>, and the mean signal-to-noise ratio, <script type="math/tex">\widetilde{\mathrm{snr}}=\sqrt{\sum_i \mathrm{snr}_i^2}</script>. The following integers are grouped in threes and denote the triggers/time frame number, number of all candidates in that triggers' file, and the number of unique candidates. </p>
 <p>Coincidences above <code>mincoin</code> are recorded in a binary file <code>.coi</code>, separately for each shift, in the <code>-output</code> directory. Each coincidence is a set of following numbers: 
-<mathjax>$$
+<script type="math/tex; mode=display">
 N_{coin},\quad\bar{f},\quad\bar{s},\quad\bar{d},\quad\bar{a},\quad\widetilde{\mathrm{snr}},\quad\mathrm{fr}_{1},\,\dots\,\mathrm{fr}_{N_{coin}},\quad\mathrm{p}_{1},\,\dots\,\mathrm{p}_{N_{coin}}
-$$</mathjax>
+</script>
 where </p>
 <ul>
-<li><mathjax>$N_{coin}$</mathjax> is the size of coincidence (written as one <code>unsigned short int</code>), </li>
-<li><mathjax>$\bar{f}$</mathjax>, <mathjax>$\bar{s}$</mathjax>, <mathjax>$\bar{d}$</mathjax>, <mathjax>$\bar{a}$</mathjax> and <mathjax>$\widetilde{\mathrm{snr}}$</mathjax> are the mean parameters of the signal (<mathjax>$5\times$</mathjax><code>float</code>),</li>
-<li><mathjax>$\mathrm{fr}_{1},\,\dots\,\mathrm{fr}_{N_{coin}}$</mathjax> are the frame numbers (<mathjax>$N_{coin}\times$</mathjax><code>unsigned short int</code>), </li>
-<li><mathjax>$\mathrm{p}_{1},\,\dots\,\mathrm{p}_{N_{coin}}$</mathjax> are the positions of candidate signals that took part in the coincidences, in their corresponding trigger files (<mathjax>$N_{coin}\times$</mathjax><code>int</code>) </li>
+<li>
+<script type="math/tex">N_{coin}</script> is the size of coincidence (written as one <code>unsigned short int</code>), </li>
+<li>
+<script type="math/tex">\bar{f}</script>, <script type="math/tex">\bar{s}</script>, <script type="math/tex">\bar{d}</script>, <script type="math/tex">\bar{a}</script> and <script type="math/tex">\widetilde{\mathrm{snr}}</script> are the mean parameters of the signal (<script type="math/tex">5\times</script>
+<code>float</code>),</li>
+<li>
+<script type="math/tex">\mathrm{fr}_{1},\,\dots\,\mathrm{fr}_{N_{coin}}</script> are the frame numbers (<script type="math/tex">N_{coin}\times</script>
+<code>unsigned short int</code>), </li>
+<li>
+<script type="math/tex">\mathrm{p}_{1},\,\dots\,\mathrm{p}_{N_{coin}}</script> are the positions of candidate signals that took part in the coincidences, in their corresponding trigger files (<script type="math/tex">N_{coin}\times</script>
+<code>int</code>) </li>
 </ul>
 <p>in order to be able to recover the actual original candidate signals, if needed. </p></div>
         </div>
@@ -287,7 +303,6 @@ where </p>
         <script src="../js/bootstrap-3.0.3.min.js"></script>
         <script src="../js/highlight.pack.js"></script>
         <script src="../js/base.js"></script>
-        <script src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-MML-AM_HTMLorMML"></script>
-        <script src="../js/mathjaxhelper.js"></script>
+        <script src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS_HTML"></script>
     </body>
 </html>

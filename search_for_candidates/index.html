@@ -73,6 +73,10 @@
                         </li>
                     
                         <li >
+                            <a href="../fap_coincidences/">False alarm probablity of conicidences</a>
+                        </li>
+                    
+                        <li >
                             <a href="../pipeline_script/">Pipeline script</a>
                         </li>
                     
@@ -151,8 +155,9 @@
 <p>Run  <code>make gwsearch-cpu</code> or <code>make</code> in <code>search/network/src-cpu</code> (default <code>C</code> version not-optimized with <code>openMP</code>; for the <code>openMP</code> version see the <code>search/network/src-openmp</code> directory). Resulting  binary is called <code>gwsearch-cpu</code>. Modify the <code>Makefile</code> to fit your system. By default the <code>YEPPP!</code> library is selected. </p>
 <h3 id="3-how-to-run-the-program">3. How to run the program?</h3>
 <p>Minimal call to <code>gwsearch-cpu</code> is as follows (code compiled with the <code>GNUSINCOS</code> option): </p>
-<pre><code>./gwsearch-cpu -d data_dir -o output_dir -i frame -b band
-</code></pre>
+<div class="codehilite"><pre><span></span>./gwsearch-cpu -d data_dir -o output_dir -i frame -b band
+</pre></div>
+
 
 <p>where</p>
 <ul>
@@ -262,16 +267,18 @@
 </table>
 <h4 id="32-network-of-detectors">3.2. Network of detectors</h4>
 <p>For the examplary input data time streams <code>xdatc_001_0101.bin</code> provided in <a href="https://polgraw.camk.edu.pl/polgraw-allsky/data/test-data-network.tar.gz">test-data-network.tar.gz</a>, the call is as follows:</p>
-<pre><code>LD_LIBRARY_PATH=lib/yeppp-1.0.0/binaries/linux/x86_64 ./gwsearch-cpu -data ./test-data-network -ident 001 -band 0101 -usedet H1V1
-</code></pre>
+<div class="codehilite"><pre><span></span>LD_LIBRARY_PATH=lib/yeppp-1.0.0/binaries/linux/x86_64 ./gwsearch-cpu -data ./test-data-network -ident 001 -band 0101 -usedet H1V1
+</pre></div>
+
 
 <p>where the <code>LD_LIBRARY_PATH</code> points to the location of the <code>YEPPP!</code> library. </p>
 <p>The program will proceed assuming that the data directory <code>./test-data-network/001</code> for the time frame <code>001</code> contain subdirectories for the network of detectors (here <code>H1</code> and <code>V1</code>) with input time series <code>xdatc_001_0101.bin</code> and the ephemerids files <code>DetSSB.bin</code> in each subdirectory. The grid of parameters files is expected to be in <code>./test-data-network/001/grid.bin</code>. Switch <code>-usedet H1</code> (<code>-usedet V1</code>) select the appropriate data and performs single detector search. </p>
 <h4 id="_3"></h4>
 <h4 id="33-network-of-detectors-in-spotlight-search-depreciated">3.3. Network of detectors in spotlight search (depreciated)</h4>
 <p>For the <code>H1L1</code> network of detectors, using the <a href="https://polgraw.camk.edu.pl/polgraw-allsky/data/test-data-network-injection.tar.gz">test-data-network-injection.tar.gz</a> to search towards a pre-defined direction (spotlight search) in one 2-day segment:</p>
-<pre><code>LD_LIBRARY_PATH=lib/yeppp-1.0.0/binaries/linux/x86_64 ./search -data ./test-data-network-injection -ident 205 -band 000 -spotlight ./test-data-network-injection/205/spot_J0322+0441.dat -fpo 1391.3 -label J0322+0441 -dt 2  
-</code></pre>
+<div class="codehilite"><pre><span></span>LD_LIBRARY_PATH=lib/yeppp-1.0.0/binaries/linux/x86_64 ./search -data ./test-data-network-injection -ident 205 -band 000 -spotlight ./test-data-network-injection/205/spot_J0322+0441.dat -fpo 1391.3 -label J0322+0441 -dt 2  
+</pre></div>
+
 
 <p>The injection corresponds to a pulsar J0322+0441. Note the differences with respect to the minimal call: </p>
 <ul>
@@ -279,11 +286,11 @@
 <li>the input data is denoted with the pulsar label, hence the <code>-label</code> switch, </li>
 <li>the sampling time <code>dt</code> is now set to <code>2 s</code>,</li>
 <li><code>-spotlight</code> switch points to the location of the spotlight file which contains the list of sky positions, and corresponding number and values of spindowns, in the following format: 
-\begin{equation} 
+<script type="math/tex; mode=display">\begin{equation} 
 h\, N_{sky}\, m_1\, n_1\, N^s_{1}\, s_{1}\, \dots\, s_{N^s_1}\, 
-m_2\, n_2\, N^s_{2}\, s_1\, \dots\, s_{N^s_2}\, \dots,<br />
-\end{equation} 
-where <mathjax>$h$</mathjax> is the hemisphere number (1 or 2), <mathjax>$N_{sky}$</mathjax> is the total number of sky positions in a given spotlight search, <mathjax>$m_i$</mathjax> and <mathjax>$n_i$</mathjax> are the sky positions in linear (grid) coordinates, <mathjax>$N^s_{i}$</mathjax> is the number of spindowns, and <mathjax>$s_{i}\,\dots\, s_{N^s_i}$</mathjax> and the spindowns (in linear coordinates), corresponding to the <mathjax>$i-$</mathjax>th sky position.    </li>
+m_2\, n_2\, N^s_{2}\, s_1\, \dots\, s_{N^s_2}\, \dots,  
+\end{equation}</script> 
+where <script type="math/tex">h</script> is the hemisphere number (1 or 2), <script type="math/tex">N_{sky}</script> is the total number of sky positions in a given spotlight search, <script type="math/tex">m_i</script> and <script type="math/tex">n_i</script> are the sky positions in linear (grid) coordinates, <script type="math/tex">N^s_{i}</script> is the number of spindowns, and <script type="math/tex">s_{i}\,\dots\, s_{N^s_i}</script> and the spindowns (in linear coordinates), corresponding to the <script type="math/tex">i-</script>th sky position.    </li>
 </ul>
 <p>Results are as follows: </p>
 <p><img alt="Results for the network of detectors" src="../img/1det2det.png" /></p>
@@ -303,24 +310,25 @@ from <code>001</code> to <code>068</code>. Frame label is the name of a subfolde
 all narrowband sequences corresponding to that frame, e.g., <code>./042</code>.</p>
 <p>Beginning MJD of each time frame is saved in the <code>nnn/starting_date</code> 
 file:</p>
-<pre><code>   % cat 042/starting_date
-   54320.7760185185
-</code></pre>
+<div class="codehilite"><pre><span></span>   <span class="c">% cat 042/starting_date</span>
+   <span class="mf">54320.7760185185</span>
+</pre></div>
+
 
 <p>Reference band frequency <code>fpo</code> is defined for each band as 
-<mathjax>$$ 
+<script type="math/tex; mode=display"> 
 fpo = 100 + (1 - 2^{-5})\cdot bbb\cdot \frac{1}{2dt}\ \mathrm{[Hz]},
-$$</mathjax>
+</script>
 where <code>bbb</code> is the band number, and <code>dt</code> is the data sampling time (<code>0.5 s</code> for VSR1 data). 
-<code>VSR1</code> database contains 929 narrow (1 Hz, <mathjax>$B=1/(2dt)$</mathjax>) bands, covering the range 
+<code>VSR1</code> database contains 929 narrow (1 Hz, <script type="math/tex">B=1/(2dt)</script>) bands, covering the range 
 100 - 1000 Hz. Neighboring bands overlap by 0.03125 Hz. </p>
 <h3 id="_4"></h3>
 <h4 id="41-o1-change-of-sampling-dt-bandwidth-b-and-data-length">4.1 O1 change of sampling <code>dt</code> (bandwidth <code>B</code>) and data length</h4>
 <p>For the <code>O1</code> data, the bandwidth was chosen to be <code>0.25 Hz</code> (<code>dt</code> was chosen to be equal <code>2 s</code>). Consequently, the reference band frequency <code>fpo</code> is defined as 
-<mathjax>$$
+<script type="math/tex; mode=display">
 fpo = 10 + (1 - 2^{-5})\cdot bbbb\cdot \frac{1}{2dt}\ \mathrm{[Hz]}. 
-$$</mathjax>
-<code>O1</code> data thus contains <mathjax>${\simeq} 2000$</mathjax> narrow <code>0.25 Hz</code> bands in the frequency range <code>10-500 Hz</code>. Because of the sampling time change, the total number of data points in the 2 sideral day long segment is <code>N=86164</code>. For lower frequencies 6 day length segments are used. They contain <code>N=258492</code> double-precision numbers. </p>
+</script>
+<code>O1</code> data thus contains <script type="math/tex">{\simeq} 2000</script> narrow <code>0.25 Hz</code> bands in the frequency range <code>10-500 Hz</code>. Because of the sampling time change, the total number of data points in the 2 sideral day long segment is <code>N=86164</code>. For lower frequencies 6 day length segments are used. They contain <code>N=258492</code> double-precision numbers. </p>
 <h3 id="5-input-data-files">5. Input data files</h3>
 <p>A single run requires 2 data files for each detector <code>DD</code>, stored in <code>data_dir/nnn/DD</code> 
 subdirectory, where <code>DD</code> is <code>H1</code> (Hanford), <code>L1</code> (Livingston), or <code>V1</code> (Virgo Cascina):</p>
@@ -362,7 +370,7 @@ consecutive bytes (5 double numbers), with the following meaning:</p>
 <tbody>
 <tr>
 <td>1</td>
-<td>frequency [radians, between 0 and <mathjax>$\pi$</mathjax>] above <code>fpo</code></td>
+<td>frequency [radians, between 0 and <script type="math/tex">\pi</script>] above <code>fpo</code></td>
 </tr>
 <tr>
 <td>2</td>
@@ -413,7 +421,6 @@ search</a> and a
         <script src="../js/bootstrap-3.0.3.min.js"></script>
         <script src="../js/highlight.pack.js"></script>
         <script src="../js/base.js"></script>
-        <script src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-MML-AM_HTMLorMML"></script>
-        <script src="../js/mathjaxhelper.js"></script>
+        <script src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS_HTML"></script>
     </body>
 </html>

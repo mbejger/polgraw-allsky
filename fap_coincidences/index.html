@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        
+        
+        
+        <link rel="shortcut icon" href="../img/favicon.ico">
+
+	<title>False alarm probablity of conicidences - Polgraw Group</title>
+
+        <link href="../css/bootstrap-3.0.3.min.css" rel="stylesheet">
+        <link href="../css/font-awesome-4.0.3.css" rel="stylesheet">
+        <link rel="stylesheet" href="../css/highlight.css">
+        <link href="../css/base.css" rel="stylesheet">
+
+        <!-- HTML5 shim and Respond.js IE8 support of HTML5 elements and media queries -->
+        <!--[if lt IE 9]>
+            <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+            <script src="https://oss.maxcdn.com/libs/respond.js/1.3.0/respond.min.js"></script>
+        <![endif]-->
+
+        
+    </head>
+
+    <body>
+
+        <div class="navbar navbar-default navbar-fixed-top" role="navigation">
+    <div class="container">
+
+        <!-- Collapsed navigation -->
+        <div class="navbar-header">
+            <!-- Expander button -->
+            <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
+                <span class="sr-only">Toggle navigation</span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+            </button>
+
+            <!-- Main title -->
+            <a class="navbar-brand" href="..">Polgraw Group</a>
+        </div>
+
+        <!-- Expanded navigation -->
+        <div class="navbar-collapse collapse">
+            <!-- Main navigation -->
+            <ul class="nav navbar-nav">
+            
+            
+                <li >
+                    <a href="..">Home</a>
+                </li>
+            
+            
+            
+                <li class="dropdown active">
+                    <a href="#" class="dropdown-toggle" data-toggle="dropdown">Pipeline description <b class="caret"></b></a>
+                    <ul class="dropdown-menu">
+                    
+                        <li >
+                            <a href="../input_data/">Input data generation</a>
+                        </li>
+                    
+                        <li >
+                            <a href="../search_for_candidates/">Search for candidate signals</a>
+                        </li>
+                    
+                        <li >
+                            <a href="../coincidences/">Coincidences between candidates</a>
+                        </li>
+                    
+                        <li class="active">
+                            <a href="./">False alarm probablity of conicidences</a>
+                        </li>
+                    
+                        <li >
+                            <a href="../pipeline_script/">Pipeline script</a>
+                        </li>
+                    
+                        <li >
+                            <a href="../articles/">Literature</a>
+                        </li>
+                    
+                    </ul>
+                </li>
+            
+            
+            </ul>
+
+            <!-- Search, Navigation and Repo links -->
+            <ul class="nav navbar-nav navbar-right">
+                <li >
+                    <a rel="next" href="../coincidences/">
+                        <i class="fa fa-arrow-left"></i> Previous
+                    </a>
+                </li>
+                <li >
+                    <a rel="prev" href="../pipeline_script/">
+                        Next <i class="fa fa-arrow-right"></i>
+                    </a>
+                </li>
+                
+            </ul>
+        </div>
+    </div>
+</div>
+
+        <div class="container">
+            <div class="col-md-3"><div class="bs-sidebar hidden-print affix well" role="complementary">
+    <ul class="nav bs-sidenav">
+    
+        <li class="main active"><a href="#false-alarm-coincidence-probability">False alarm coincidence probability</a></li>
+        
+            <li><a href="#prerequisites">Prerequisites</a></li>
+        
+            <li><a href="#theoretical-description">Theoretical description</a></li>
+        
+            <li><a href="#compilation">Compilation</a></li>
+        
+            <li><a href="#how-to-run-the-program">How to run the program?</a></li>
+        
+            <li><a href="#output">Output</a></li>
+        
+    
+    </ul>
+</div></div>
+            <div class="col-md-9" role="main">
+
+<h1 id="false-alarm-coincidence-probability">False alarm coincidence probability</h1>
+<p>A general formula for probability that is used in the estimation of significance of the coincidences is implemented. The code is available at <a href="https://github.com/mbejger/polgraw-allsky/tree/master">github</a>. Run <code>git clone https://github.com/mbejger/polgraw-allsky.git</code> to get the repository.</p>
+<h4 id="prerequisites">Prerequisites</h4>
+<p>The code is written in standard <code>C</code>. The only dependency is <a href="http://www.gnu.org/software/gsl/">GNU Scientific Library (GSL)</a>, used to manipulate the Fisher matrix (calculate the eigenvectors and eigenvalues), the <script type="math/tex">\Gamma</script> function and for the combinations. </p>
+<h3 id="theoretical-description">Theoretical description</h3>
+<p>This description is a short Appendix version of <a href="http://iopscience.iop.org/0264-9381/31/16/165014/">Implementation of an F-statistic all-sky search for continuous gravitational waves in Virgo VSR1 data</a>. </p>
+<p>For a given frequency band we analyze <script type="math/tex">L</script> non-overlapping time segments: the search in the <script type="math/tex">l</script>th segment produces <script type="math/tex">N_l</script> candidates. The size of the parameter space for each time segment is the same and it can be divided into the number <script type="math/tex">N_{\rm cell}</script> of independent cells. The code tests the null hypothesis that the coincidences among candidates from <script type="math/tex">L</script> segments are accidental.
+The probability for a candidate event to fall into any given coincidence cell is equal to <script type="math/tex">1/N_{\rm cell}</script>. The probability <script type="math/tex">\epsilon_l</script> that a given coincidence cell is populated with one or more candidate events is given by
+<script type="math/tex; mode=display">
+\epsilon_l = 1 - \Big(1 - \frac{1}{N_{\rm cell}}\Big)^{N_l},  
+\quad\text{and for independent candidates (one candidate in one cell) it is}\quad  
+\epsilon_l = \frac{N_l}{N_{\rm cell}}. 
+</script>
+For two or more candidates within a given cell we choose the one with the highest signal-to-noise ratio. The probability <script type="math/tex">p_F(N_{\rm cell})</script> that any given coincidence cell out of the total of <script type="math/tex">N_{\rm cell}</script> cells contains candidate events from <script type="math/tex">C_{max}</script> or more distinct data segments is given by a generalized binomial distribution: 
+<script type="math/tex; mode=display">\begin{eqnarray}
+p_F(N_{\rm cell}) &=& \sum_{n=C_{max}}^{L} \frac{1}{n!(L-n)!} \times \sum_{\sigma\in\Pi(L)} \epsilon_{\sigma(1)}\ldots\epsilon_{\sigma(n)}(1-\epsilon_{\sigma(n+1)})\ldots(1-\epsilon_{\sigma(L)}),
+\end{eqnarray}</script>
+where <script type="math/tex">\sum_{\sigma \in \Pi(L)}</script> is the sum over all permutations of <script type="math/tex">L</script> data sequences.
+Finally the probability <script type="math/tex">P_F</script> that there is <script type="math/tex">{\mathcal C}_{max}</script> or more coincidences
+in one or more of the <script type="math/tex">N_{\rm cell}</script> cells is
+<script type="math/tex; mode=display">\begin{equation}
+P_F = 1 - \left(1 - p_F(N_{\rm cell})\right)^{N_{\rm cell}}.
+\end{equation}</script>
+</p>
+<p>In order to find coincidences the entire cell coincidence grid is shifted by half a cell width in all possible <script type="math/tex">2^4 = 16</script> combinations of the four parameter-space dimensions of <script type="math/tex">(f, \dot{f}, \delta, \alpha)</script>, and coincidences are searched in all the 16 coincidence grids. It does not account for cases when candidate events are located on opposite sides of cell borders, edges, and corners. This leads to a higher number of accidental coincidences, and consequently it underestimates the false alarm probability.</p>
+<p>In the four dimension parameter space of <script type="math/tex">(f, \dot{f}, \delta, \alpha)</script> the formula for the probability <script type="math/tex">P^{\rm shifts}_F</script> that there are <script type="math/tex">{\mathcal C}_{\mathrm{max}}</script> or more independent coincidences in one or more of the <script type="math/tex">N_{\rm cell}</script> cells in all 16 grid shifts is 
+<script type="math/tex; mode=display">\begin{eqnarray}
+\label{eq:FAPs}
+P^{\rm shifts}_F = 1 - \bigg[ 1 - \Big( 2^4 p_F(N_c) 
+- \Big( {4 \choose 1} p_F(2 N_c) + {4 \choose 2} p_F(2^2 N_c) 
++ {4 \choose 3} p_F(2^3 N_c) + {4 \choose 4} p_F(2^4 N_c)   \Big) \\ \nonumber  
+- \Big({4 \choose 2} p_F(2^2 N_c) + {4 \choose 3} p_F(2^3 N_c) 
++ {4 \choose 4} p_F(2^4 N_c) \Big) 
+- \Big( {4 \choose 3} p_F(2^3 N_c) + {4 \choose 4} p_F(2^4 N_c) \Big) 
+- {4 \choose 4} p_F(2^4 N_c)\Big)  \bigg]^{N_c}.
+\end{eqnarray}</script>
+</p>
+<p>By choosing a certain false alarm probability <script type="math/tex">P_F</script>, we can calculate the threshold number <script type="math/tex">{\mathcal C}_{\mathrm{max}}</script> of coincidences. If we obtain more than <script type="math/tex">{\mathcal C}_{\mathrm{max}}</script> coincidences, the null hypothesis that coincidences are accidental is rejected at the significance level of <script type="math/tex">P_F</script>.</p>
+<h3 id="compilation">Compilation</h3>
+<p>Run <code>make fap</code>; resulting binary is called <code>fap</code> (modify the <code>Makefile</code> to fit your system).</p>
+<h3 id="how-to-run-the-program">How to run the program?</h3>
+<p>Sample call of <code>fap</code> is</p>
+<div class="codehilite"><pre><span></span>&gt; ./fap -nod 6 -band 0600 -data test-fap/summary_0600_1.txt -grid test-fap/ -vetofrac 0.222837 -cellsize 4 -threshold 0.2 
+</pre></div>
+
+
+<p>Number of days in the time segment <code>nod</code> equals 6, fraction of the band vetoed <code>vetofrac</code> is 0.222837 and the cell size <code>cellsize</code> is 4. Directory containing the grid matrix file <code>grid.bin</code> should be pointed out by the <code>grid</code> switch. The input data file <code>test-fap/summary_0600_1.txt</code> is a line from the <code>coincidences</code> output: </p>
+<div class="codehilite"><pre><span></span>0600_1 1110 155.312500     8     5  1.46199508e+00 1.30224869e-09 1.09355692e+00 2.08138626e+00 1.198182e+01 3 2020252 1969390 6 2137490 2038513 14 1752761 1666583 8 5526511 3334399 5 1827438 1790517
+</pre></div>
+
+
+<h4 id="full-list-of-switches">Full list of switches</h4>
+<p>Type </p>
+<div class="codehilite"><pre><span></span>&gt; ./fap --help 
+</pre></div>
+
+
+<p>to obtain the following description: </p>
+<table>
+<thead>
+<tr>
+<th>Switch</th>
+<th align="left">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>-band</td>
+<td align="left">Band number</td>
+</tr>
+<tr>
+<td>-cellsize</td>
+<td align="left">Cell size (default value: 4)</td>
+</tr>
+<tr>
+<td>-data</td>
+<td align="left">Coincidence summary file</td>
+</tr>
+<tr>
+<td>-grid</td>
+<td align="left">Grid matrix directory (default value: .)</td>
+</tr>
+<tr>
+<td>-dt</td>
+<td align="left">Data sampling time dt (default value: 2)</td>
+</tr>
+<tr>
+<td>-threshold</td>
+<td align="left">FAP threshold (default value: 0.1)</td>
+</tr>
+<tr>
+<td>-nod</td>
+<td align="left">Number of days</td>
+</tr>
+<tr>
+<td>-vetofrac</td>
+<td align="left">Vetoed fraction of the band (default value: 0)</td>
+</tr>
+</tbody>
+</table>
+<p>Also:</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th align="left"></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>--help</td>
+<td align="left">This help</td>
+</tr>
+</tbody>
+</table>
+<h3 id="output">Output</h3>
+<p>Output to the screen (<code>stdout</code>) in the case of </p>
+<div class="codehilite"><pre><span></span>&gt; ./fap -nod 6 -band 0600 -data test-fap/summary_0600_1.txt -grid test-fap/ -vetofrac 0.222837 -cellsize 4 -threshold 0.2 
+</pre></div>
+
+
+<p>is</p>
+<div class="codehilite"><pre><span></span>Number of days in time segments: 6
+Input data: test-fap/summary_0600_1.txt
+Grid matrix data directory: test-fap/
+Band number: 0600 (veto fraction: 0.222837)
+The reference frequency fpo: 155.312500
+The data sampling time dt: 2.000000
+FAP threshold: 0.200000
+Cell size: 4
+</pre></div>
+
+
+<p>whereas the result (if <code>threshold</code> is reached) is printed to <code>stderr</code>: </p>
+<div class="codehilite"><pre><span></span>#band f_min        f_max        PFshifts      noc Nkall    f s d a hemisphere 
+0600  1.553125e+02 1.555625e+02 1.810747e-01  5   10799402 1.461995e+00 1.302249e-09 1.093557e+00 2.081386e+00 1.198182e+01 1
+</pre></div></div>
+        </div>
+
+	<footer class="col-md-12">
+		<hr>
+		
+		<p>Documentation built with <a href="http://www.mkdocs.org/">MkDocs</a>.</p>
+	</footer>
+
+
+        <script src="../js/jquery-1.10.2.min.js"></script>
+        <script src="../js/bootstrap-3.0.3.min.js"></script>
+        <script src="../js/highlight.pack.js"></script>
+        <script src="../js/base.js"></script>
+        <script src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS_HTML"></script>
+    </body>
+</html>
