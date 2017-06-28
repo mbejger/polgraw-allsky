@@ -216,7 +216,6 @@ void gridr (double *M, int *spndr, int *nr, int *mr, double oms, double Smax) {
   }
 } /* gridr() */
 
-
 double FStat (double *F, int nfft, int nav, int indx) {
   /* FStat Smoothed F-statistic */
 
@@ -244,7 +243,6 @@ double FStat (double *F, int nfft, int nav, int indx) {
   } /* for j */
   return pxout;
 } /* FStat() */
-
 
 int ludcmp (double *a, int n, int *indx, double *d) {
 /*	LU decomposition of a given real matrix a[0..n-1][0..n-1]
@@ -349,7 +347,6 @@ int lubksb (double *a, int n, int *indx, double *b) {
   return 0;
 } /* lubksb() */
 
-
 int invm (const double *a, int N, double *y) {
      /* Inverse of a real matrix a[0..N-1][0..N-1].
 	Input:
@@ -383,7 +380,6 @@ int invm (const double *a, int N, double *y) {
   return 0;
 } /* invm() */
 
-
 double det (const double *a, int N) {
   /* determinant of a real matrix a[0..N-1][0..N-1] */
 
@@ -402,7 +398,6 @@ double det (const double *a, int N) {
   return d;
 } /* det() */
 
-
 int compared2c(const void *a, const void *b) {
 
   double* da = (double*)a;
@@ -411,6 +406,7 @@ int compared2c(const void *a, const void *b) {
   int diff1 = (da[0] > db[0]) - (da[0] < db[0]);
   if (diff1 != 0) return diff1;
   return (da[1] > db[1]) - (da[1] < db[1]);
+
 }
 
 

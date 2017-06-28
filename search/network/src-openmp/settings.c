@@ -32,6 +32,7 @@ void search_settings(Search_settings* sett) {
 
   nfft = 1 << (int)ceil(log(N)/log(2.));    // length of FFT
   s = 1;                                    // No. of spindowns
+
   /*
   Smin = 1000.*C_YEARSEC;                   // Minimum spindown time 
                                             // [sec.]
@@ -106,10 +107,16 @@ void detectors_settings(Search_settings* sett,
   if (dp != NULL) {
     while ((ep = readdir (dp))) { 
 
-      // Subdirectory names: 2 char long
+      // Subdirectory names checkup:
+      // check if it's a dir
+      // name is 2 char long
+      // not a directory name of the type "./" or ".."
+      // if opts->usedet is not set (length equal 0), 
+      // or is set and dir name is substring of it 
       if((ep->d_type == DT_DIR) && 
         (strlen(ep->d_name)==DETNAME_LENGTH) && 
-        strncmp(&ep->d_name[0],".",1)) { 
+        (strncmp(&ep->d_name[0],".",1)) && 
+        (!strlen(opts->usedet) || (strlen(opts->usedet) && (strstr(opts->usedet, ep->d_name))))) { 
 
           FILE *data;
 

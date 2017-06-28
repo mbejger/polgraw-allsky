@@ -277,11 +277,13 @@ int job_core(int pm,                   // Hemisphere
   int nyqst = (sett->nfft)/2 + 1;
 
   // Loop for each detector 
+  for(n=0; n<sett->nifo; ++n) { 
+
   /* Amplitude modulation functions aa and bb 
    * for each detector (in signal sub-struct 
    * of _detector, ifo[n].sig.aa, ifo[n].sig.bb) 
    */
-  for(n=0; n<sett->nifo; ++n) {
+
     modvir(sinalt, cosalt, sindelt, cosdelt,
            sett->N, &ifo[n], aux);
 
@@ -322,6 +324,7 @@ int job_core(int pm,                   // Hemisphere
 	// Matched filter 
 	ifo[n].sig.xDatma[i] = ifo[n].sig.xDat[i]*ifo[n].sig.aa[i]*exph;
 	ifo[n].sig.xDatmb[i] = ifo[n].sig.xDat[i]*ifo[n].sig.bb[i]*exph;
+  
       }
 
       /* Resampling using spline interpolation:
@@ -358,7 +361,6 @@ int job_core(int pm,                   // Hemisphere
       fftw_arr->xa[i] = 0.;
     }
 
-
     for(i=nyqst + sett->Ninterp - sett->nfft, j=nyqst; i<sett->Ninterp; ++i, ++j) {
       fftw_arr->xb[i] = fftw_arr->xb[j];
       //fftw_arr->xb[j] = 0.;
@@ -366,7 +368,6 @@ int job_core(int pm,                   // Hemisphere
     for(i=nyqst; i<nyqst + sett->Ninterp - sett->nfft; ++i) {
       fftw_arr->xb[i] = 0.;
     }
-
 
     // Backward fft (len Ninterp = nfft*interpftpad)
     fftw_execute_dft(plans->pl_inv,fftw_arr->xa,fftw_arr->xa);
@@ -755,6 +756,7 @@ int job_core(int pm,                   // Hemisphere
       } // for i
       
 #else // new version
+    
       imax = -1;
       // find local maxima first
       //printf("nmin=%d   nmax=%d    nfft=%d   nblocks=%d\n", sett->nmin, sett->nmax, nfft, nfft/blksize);

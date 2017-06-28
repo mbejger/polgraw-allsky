@@ -45,6 +45,7 @@ void handle_opts( Search_settings *sett,
   opts->label[0]    = '\0';
   opts->range[0]    = '\0';
   opts->getrange[0] = '\0';
+  opts->usedet[0]   = '\0';
   opts->addsig[0]   = '\0';
 	
   // Initial value of starting frequency set to a negative quantity. 
@@ -106,6 +107,8 @@ void handle_opts( Search_settings *sett,
       // number of days in the time-domain segment
       {"nod", required_argument, 0, 'y'},
       // data sampling time 
+      {"usedet", required_argument, 0, 'u'}, 
+      // data sampling time 
       {"dt", required_argument, 0, 's'},
       // Narrow down the frequency band (+- the center of band) 
       {"narrowdown", required_argument, 0, 'n'},
@@ -117,21 +120,24 @@ void handle_opts( Search_settings *sett,
       printf("polgraw-allsky periodic GWs: search for candidate signals with the F-statistic\n");
       printf("Usage: ./search -[switch1] <value1> -[switch2] <value2> ...\n") ;
       printf("Switches are:\n\n");
-      printf("-d, -data         Data directory (default is .)\n");
-      printf("-o, -output       Output directory (default is ./candidates)\n");
-      printf("-i, -ident        Frame number\n");
-      printf("-b, -band         Band number\n");
-      printf("-l, -label        Custom label for the input and output files\n");
-      printf("-r, -range        Use file with grid range or pulsar position\n");
-      printf("-g, -getrange     Write grid ranges & save fft wisdom & exit (ignore -r)\n");
-      printf("-c, -cwd          Change to directory <dir>\n");
-      printf("-t, -threshold    Threshold for the F-statistic (default is 20)\n");
-      printf("-h, -hemisphere   Hemisphere (default is 0 - does both)\n");
-      printf("-p, -fpo          Reference band frequency fpo value\n");
-      printf("-s, -dt           Data sampling time dt (default value: 0.5)\n");
-      printf("-x, -addsig       Add signal with parameters from <file>\n");
-      printf("-y, -nod          Number of days\n");
-      printf("-n, -narrowdown   Narrow-down the frequency band (range [0, 0.5] +- around center)\n\n");
+      printf("-data         Data directory (default is .)\n");
+      printf("-output       Output directory (default is ./candidates)\n");
+      printf("-ident        Frame number\n");
+      printf("-band         Band number\n");
+      printf("-label        Custom label for the input and output files\n");
+      printf("-range        Use file with grid range or pulsar position\n");
+      printf("-getrange     Write grid ranges & save fft wisdom & exit (ignore -r)\n");
+      printf("-cwd          Change to directory <dir>\n");
+      printf("-threshold    Threshold for the F-statistic (default is 20)\n");
+      printf("-hemisphere   Hemisphere (default is 0 - does both)\n");
+      printf("-fpo          Reference band frequency fpo value\n");
+      printf("-dt           Data sampling time dt (default value: 0.5)\n");
+      printf("-usedet       Use only detectors from string (default is use all available)\n");
+      printf("-addsig       Add signal with parameters from <file>\n");
+      printf("-nod          Number of days\n");
+      printf("-narrowdown   Narrow-down the frequency band (range [0, 0.5] +- around center)\n\n");
+
+
       printf("Also:\n\n");
       printf("--whitenoise      White Gaussian noise assumed\n");
       printf("--nospindown      Spindowns neglected\n");
@@ -143,7 +149,7 @@ void handle_opts( Search_settings *sett,
     }
 
     int option_index = 0;
-    int c = getopt_long_only(argc, argv, "i:b:o:d:l:r:g:c:t:h:p:x:y:s:n:", 
+    int c = getopt_long_only(argc, argv, "i:b:o:d:l:r:g:c:t:h:p:x:y:s:u:n:", 
 			     long_options, &option_index);
     if (c == -1)
       break;
@@ -193,6 +199,9 @@ void handle_opts( Search_settings *sett,
     case 's':
       sett->dt = atof(optarg);
       break;
+    case 'u':
+      strcpy(opts->usedet, optarg);
+      break;
     case 'n':
       opts->narrowdown = atof(optarg);
       break;
@@ -208,7 +217,8 @@ void handle_opts( Search_settings *sett,
     printf("Number of days not set... Exiting\n");
     exit(EXIT_FAILURE);
   }
-  printf("Number of days set to %d\n", sett->nod);
+
+  printf("Number of days is %d\n", sett->nod); 
   
   // Putting the parameter in triggers' frequency range [0, pi] 
   opts->narrowdown *= M_PI; 
@@ -285,8 +295,19 @@ void read_grid(
 
   FILE *data;
   char filename[512];
+
+  // In case when -usedet option is used for one detector
+  // i.e. opts->usedet has a length of 2 (e.g. H1 or V1), 
+  // read grid.bin from this detector subdirectory 
+  // (see detectors_settings() in settings.c for details) 
+  if(strlen(opts->usedet)==2)
+    sprintf (filename, "%s/%03d/%s/grid.bin", opts->dtaprefix, opts->ident, opts->usedet);
+  else 
   sprintf (filename, "%s/%03d/grid.bin", opts->dtaprefix, opts->ident);
+
+
   if ((data=fopen (filename, "r")) != NULL) {
+    printf("Using grid file from %s\n", filename);
     fread ((void *)&sett->fftpad, sizeof (int), 1, data);
 
     printf("Using fftpad from the grid file: %d\n", sett->fftpad); 
@@ -757,7 +778,7 @@ void set_search_range(
 	 s_range->spndr[0], s_range->spndr[1], s_range->nr[0], s_range->nr[1],
 	 s_range->mr[0], s_range->mr[1], s_range->pmr[0], s_range->pmr[1]);
 
-  printf("Smin: %le, Smax: %le\n", sett->Smin, sett->Smax);
+  printf("Smin: %le, -Smax: %le\n", sett->Smin, sett->Smax); 
 
 } // end of set search range 
 
@@ -929,7 +950,8 @@ void cleanup(
 
 
 
-/*	Command line options handling: coincidences   */ 
+	/*	Command line options handling: coincidences  
+	 */ 
 	
 void handle_opts_coinc(
     Search_settings *sett, 
@@ -941,6 +963,9 @@ void handle_opts_coinc(
 	
   strcpy (opts->prefix, TOSTR(PREFIX));
   strcpy (opts->dtaprefix, TOSTR(DTAPREFIX));
+
+  // Initial value of the number of days is set to 0
+  sett->nod = 0;
 
   // Default initial value of the data sampling time 
   sett->dt = 0.5;
@@ -992,6 +1017,8 @@ void handle_opts_coinc(
       {"narrowdown", required_argument, 0, 'n'},
       // Signal-to-noise threshold cutoff  
       {"snrcutoff", required_argument, 0, 'c'},
+      // number of days in the time-domain segment 
+      {"nod", required_argument, 0, 'y'},
       {0, 0, 0, 0}
     };
 
@@ -1011,6 +1038,7 @@ void handle_opts_coinc(
       printf("-refloc       Location of the reference grid.bin and starting_date files\n");
       printf("-mincoin      Minimal number of coincidences recorded\n");
       printf("-narrowdown   Narrow-down the frequency band (range [0, 0.5] +- around center)\n");
+      printf("-nod          Number of days\n");
       printf("-snrcutoff    Signal-to-noise threshold cutoff (default value: 6)\n\n");
 
       printf("Also:\n\n");
@@ -1020,7 +1048,7 @@ void handle_opts_coinc(
     }
 
     int option_index = 0;
-    int c = getopt_long_only (argc, argv, "p:o:d:s:z:r:t:e:g:m:n:c:", long_options, &option_index);
+    int c = getopt_long_only (argc, argv, "p:o:d:s:z:r:t:e:g:m:n:c:y:", long_options, &option_index);
     if (c == -1)
       break;
 
@@ -1061,6 +1089,9 @@ void handle_opts_coinc(
     case 'c':
       opts->snrcutoff = atof(optarg);
       break;
+    case 'y':
+      sett->nod = atoi(optarg);
+      break;
     case '?':
       break;
     default:
@@ -1071,7 +1102,14 @@ void handle_opts_coinc(
   // Putting the parameter in triggers' frequency range [0, pi] 
   opts->narrowdown *= M_PI; 
 
-  printf("#mb add info at the beginning...\n"); 
+  // Check if sett->nod was set up, if not, exit
+  if(!(sett->nod)) { 
+    printf("Number of days not set... Exiting\n"); 
+    exit(EXIT_FAILURE); 
+  } 
+
+  printf("Number of days is %d\n", sett->nod); 
+
   printf("The SNR threshold cutoff is %.12f, ", opts->snrcutoff); 
   printf("corresponding to F-statistic value of %.12f\n", 
     pow(opts->snrcutoff, 2)/2. + 2); 
