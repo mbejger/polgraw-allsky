@@ -117,22 +117,22 @@ void handle_opts( Search_settings *sett,
       printf("polgraw-allsky periodic GWs: search for candidate signals with the F-statistic\n");
       printf("Usage: ./search -[switch1] <value1> -[switch2] <value2> ...\n") ;
       printf("Switches are:\n\n");
-      printf("-d, -data         Data directory (default is .)\n");
-      printf("-o, -output       Output directory (default is ./candidates)\n");
-      printf("-i, -ident        Frame number\n");
-      printf("-b, -band         Band number\n");
-      printf("-l, -label        Custom label for the input and output files\n");
-      printf("-r, -range        Use file with grid range or pulsar position\n");
-      printf("-g, -getrange     Write grid ranges & save fft wisdom & exit (ignore -r)\n");
-      printf("-c, -cwd          Change to directory <dir>\n");
-      printf("-t, -threshold    Threshold for the F-statistic (default is 20)\n");
-      printf("-h, -hemisphere   Hemisphere (default is 0 - does both)\n");
-      printf("-p, -fpo          Reference band frequency fpo value\n");
-      printf("-s, -dt           data sampling time dt (default value: 0.5)\n");
-      printf("-u, -usedet       Use only detectors from string (default is use all available)\n");
-      printf("-x, -addsig       Add signal with parameters from <file>\n");
-      printf("-y, -nod          Number of days\n");
-      printf("-n, -narrowdown   Narrow-down the frequency band (range [0, 0.5] +- around center)\n\n");
+      printf("-data         Data directory (default is .)\n");
+      printf("-output       Output directory (default is ./candidates)\n");
+      printf("-ident        Frame number\n");
+      printf("-band         Band number\n");
+      printf("-label        Custom label for the input and output files\n");
+      printf("-range        Use file with grid range or pulsar position\n");
+      printf("-getrange     Write grid ranges & save fft wisdom & exit (ignore -r)\n");
+      printf("-cwd          Change to directory <dir>\n");
+      printf("-threshold    Threshold for the F-statistic (default is 20)\n");
+      printf("-hemisphere   Hemisphere (default is 0 - does both)\n");
+      printf("-fpo          Reference band frequency fpo value\n");
+      printf("-dt           Data sampling time dt (default value: 0.5)\n");
+      printf("-usedet       Use only detectors from string (default is use all available)\n");
+      printf("-addsig       Add signal with parameters from <file>\n");
+      printf("-nod          Number of days\n");
+      printf("-narrowdown   Narrow-down the frequency band (range [0, 0.5] +- around center)\n\n");
 
 
       printf("Also:\n\n");
@@ -202,14 +202,12 @@ void handle_opts( Search_settings *sett,
     case 'n':
       opts->narrowdown = atof(optarg);
       break;
-
     case '?':
       break;
     default:
       break ;
     } /* switch c */
   } /* while 1 */
-
 
   // Check if sett->nod was set up, if not, exit
   if(!(sett->nod)) { 
@@ -280,7 +278,6 @@ void handle_opts( Search_settings *sett,
   if(opts->veto_flag) 
     printf("Known lines will be vetoed (reading from files in the data directory)\n");
 
-
 } // end of command line options handling 
 
 
@@ -309,6 +306,7 @@ void read_grid(
   if ((data=fopen (filename, "r")) != NULL) {
     printf("Using grid file from %s\n", filename);
     fread ((void *)&sett->fftpad, sizeof (int), 1, data);
+
     printf("Using fftpad from the grid file: %d\n", sett->fftpad); 
 	
     // M: vector of 16 components consisting of 4 rows
@@ -561,7 +559,7 @@ void add_signal(
   s_range->pmr[1] = s_range->pmr[0]; 
   
   printf("add_signal() - the following grid range is used\n");
-  printf("(spndr, nr, mr, pmr pairs): %d %d %d %d %d %d %d %d\n", \
+  printf("(spndr, nr, mr, pmr pairs): %d %d %d %d %d %d %d %d\n",
    s_range->spndr[0], s_range->spndr[1], s_range->nr[0], s_range->nr[1],
    s_range->mr[0], s_range->mr[1], s_range->pmr[0], s_range->pmr[1]);
 
@@ -1176,6 +1174,7 @@ void manage_grid_matrix(
   
   if ((data=fopen (filename, "r")) != NULL) {
     fscanf(data, "%le", &opts->refgps);
+
     printf("Reading the reference starting_date file at %s The GPS time is %12f\n", opts->refloc, opts->refgps);
     fclose (data);
   } else {

@@ -177,7 +177,6 @@ void search(
 
 #ifdef TIMERS
   tend = get_current_time(CLOCK_REALTIME);
-  // printf("tstart = %d . %d\ntend = %d . %d\n", tstart.tv_sec, tstart.tv_usec, tend.tv_sec, tend.tv_usec);
   double time_elapsed = get_time_difference(tstart, tend);
   printf("Time elapsed: %e s\n", time_elapsed);
 #endif
@@ -392,9 +391,6 @@ int job_core(int pm,                   // Hemisphere
     aa += aatemp/ifo[n].sig.sig2; 
     bb += bbtemp/ifo[n].sig.sig2;   
   }
-
-  //  printf("maa=%f,  mbb=%f\n", aa, bb);
-  //  exit(0);
 
 #ifdef YEPPP
 #define VLEN 2048

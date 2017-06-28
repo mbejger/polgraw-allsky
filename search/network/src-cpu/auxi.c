@@ -239,8 +239,7 @@ double FStat (double *F, int nfft, int nav, int indx) {
   return pxout;
 } /* FStat() */
 
-int
-ludcmp (double *a, int n, int *indx, double *d)
+int ludcmp (double *a, int n, int *indx, double *d) { 
 /*	LU decomposition of a given real matrix a[0..n-1][0..n-1]
 	Input:
 	a		- an array containing elements of matrix a
@@ -251,7 +250,7 @@ ludcmp (double *a, int n, int *indx, double *d)
 	d		- +-1 depending on whether the number of rows
 	interchanged was even or odd, respectively
 */
-{
+
   int i, imax = -1, j, k;
   double big, dum, sum, temp;
   double *vv;
@@ -307,8 +306,7 @@ ludcmp (double *a, int n, int *indx, double *d)
   return 0;
 } /* ludcmp() */
 
-int
-lubksb (double *a, int n, int *indx, double *b)
+int lubksb (double *a, int n, int *indx, double *b) { 
 /* Solves the set of n linear equations A X=B.
    Input:
    a[0..n-1][0..n-1] - LU decomposition af a matrix A,
@@ -320,7 +318,7 @@ lubksb (double *a, int n, int *indx, double *b)
    Output:
    b[0..n-1]			- solution vector X
 */
-{
+
   int i, ii=-1, ip, j;
   double sum;
 
@@ -344,8 +342,7 @@ lubksb (double *a, int n, int *indx, double *b)
   return 0;
 } /* lubksb() */
 
-int
-invm (const double *a, int N, double *y)
+int invm (const double *a, int N, double *y) { 
      /* Inverse of a real matrix a[0..N-1][0..N-1].
 	Input:
 		a[0..N-1][0..N-1] - given matrix (saved on exit)
@@ -353,7 +350,7 @@ invm (const double *a, int N, double *y)
         Output:
 		y[0..N-1][0..N-1] - inverse of a
      */
-{
+
   double d, *col, *al;
   int i, j, *indx;
 
@@ -378,10 +375,9 @@ invm (const double *a, int N, double *y)
   return 0;
 } /* invm() */
 
-double
-det (const double *a, int N)
+double det (const double *a, int N) { 
      /* determinant of a real matrix a[0..N-1][0..N-1] */
-{
+
   double d, *al;
   int j, *indx;
 
@@ -397,8 +393,7 @@ det (const double *a, int N)
   return d;
 } /* det() */
 
-int 
-compared2c(const void *a, const void *b) {
+int compared2c(const void *a, const void *b) {
 
   double* da = (double*)a;
   double* db = (double*)b;

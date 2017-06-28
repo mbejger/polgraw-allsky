@@ -113,7 +113,8 @@ void detectors_settings(
       // check if it's a dir
       // name is 2 char long
       // not a directory name of the type "./" or ".."
-      // if usedef is not set (length equal 0), or is set and dir name is substring of it 
+      // if opts->usedet is not set (length equal 0), 
+      // or is set and dir name is substring of it 
       if((ep->d_type == DT_DIR) && 
         (strlen(ep->d_name)==DETNAME_LENGTH) && 
         (strncmp(&ep->d_name[0],".",1)) && 
