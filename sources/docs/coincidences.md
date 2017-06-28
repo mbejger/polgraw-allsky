@@ -8,7 +8,7 @@ The coincidences code is available at [github](https://github.com/mbejger/polgra
 
 The code is written in standard `C`. The only dependency is [GNU Scientific Library (GSL)](http://www.gnu.org/software/gsl/), used to manipulate the Fisher matrix (calculate the eigenvectors and eigenvalues). [GNU struct dirent](http://www.gnu.org/software/libc/manual/html_node/Accessing-Directories.html#Accessing-Directories) objects are used to read the directories. 
  
-#### The idea behind coincidences 
+### The idea behind coincidences 
 
 After finding the candidate signals in different time frames (`search`), we want to confirm the existence of signals with the same parameters along the span of time segments. to further perform a validation search for high-coincidence, or otherwise interesting candidates (the [followup](https://github.com/mbejger/polgraw-allsky/tree/master/followup), currently under construction). To do this, the candidates from a list of trigger files (time frames) are read, and for each trigger file
 
@@ -108,5 +108,5 @@ where
 * $\mathrm{fr}_{1},\,\dots\,\mathrm{fr}_{N_{coin}}$ are the frame numbers ($N_{coin}\times$`unsigned short int`), 
 * $\mathrm{p}_{1},\,\dots\,\mathrm{p}_{N_{coin}}$ are the positions of candidate signals that took part in the coincidences, in their corresponding trigger files ($N_{coin}\times$`int`) 
 
-in order to be able to recover the actual original candidate signals, if needed. 
+in order to be able to recover the actual original candidate signals for further studies. 
 

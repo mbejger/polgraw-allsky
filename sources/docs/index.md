@@ -1,4 +1,4 @@
-# Polgraw all-sky search for almost monochromatic gravitational wave signals. 
+# Polgraw all-sky pipeline: search for almost monochromatic gravitational wave signals 
 
 #### Pipeline flowchart  
 
@@ -10,10 +10,11 @@
 #### Topics
 
 1. [Input data generation](input_data.md) 
-2. [F-statistic CW search for candidate signals](search_for_candidates.md)
-3. [Coincidences among candidate signals](coincidences.md)
-4. [Pipeline script](pipeline_script.md)
-5. [Documents and publications](articles.md)
+2. [F-statistic candidate signal search](search_for_candidates.md)
+3. [Coincidences between candidates](coincidences.md)
+4. [False alarm probability of coincidences](fap_coincidences.md) 
+5. [Pipeline: a minimal example](pipeline_script.md)
+6. [Documents and publications](articles.md)
 
 #### Contributors 
 

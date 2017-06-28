@@ -65,7 +65,7 @@
                         </li>
                     
                         <li >
-                            <a href="../search_for_candidates/">Search for candidate signals</a>
+                            <a href="../search_for_candidates/">F-statistic candidate signal search</a>
                         </li>
                     
                         <li class="active">
@@ -77,11 +77,11 @@
                         </li>
                     
                         <li >
-                            <a href="../pipeline_script/">Pipeline script</a>
+                            <a href="../pipeline_script/">Pipeline: a minimal example</a>
                         </li>
                     
                         <li >
-                            <a href="../articles/">Literature</a>
+                            <a href="../articles/">Documents and publications</a>
                         </li>
                     
                     </ul>
@@ -134,7 +134,7 @@
 <p>The coincidences code is available at <a href="https://github.com/mbejger/polgraw-allsky/tree/master">github</a>. To get it, run <code>git clone https://github.com/mbejger/polgraw-allsky.git</code>.</p>
 <h4 id="prerequisites">Prerequisites</h4>
 <p>The code is written in standard <code>C</code>. The only dependency is <a href="http://www.gnu.org/software/gsl/">GNU Scientific Library (GSL)</a>, used to manipulate the Fisher matrix (calculate the eigenvectors and eigenvalues). <a href="http://www.gnu.org/software/libc/manual/html_node/Accessing-Directories.html#Accessing-Directories">GNU struct dirent</a> objects are used to read the directories. </p>
-<h4 id="the-idea-behind-coincidences">The idea behind coincidences</h4>
+<h3 id="the-idea-behind-coincidences">The idea behind coincidences</h3>
 <p>After finding the candidate signals in different time frames (<code>search</code>), we want to confirm the existence of signals with the same parameters along the span of time segments. to further perform a validation search for high-coincidence, or otherwise interesting candidates (the <a href="https://github.com/mbejger/polgraw-allsky/tree/master/followup">followup</a>, currently under construction). To do this, the candidates from a list of trigger files (time frames) are read, and for each trigger file</p>
 <ul>
 <li>a candidate is transformed to a well-defined time moment (frequency shifted to a reference frame), </li>
@@ -289,7 +289,7 @@ where </p>
 <script type="math/tex">\mathrm{p}_{1},\,\dots\,\mathrm{p}_{N_{coin}}</script> are the positions of candidate signals that took part in the coincidences, in their corresponding trigger files (<script type="math/tex">N_{coin}\times</script>
 <code>int</code>) </li>
 </ul>
-<p>in order to be able to recover the actual original candidate signals, if needed. </p></div>
+<p>in order to be able to recover the actual original candidate signals for further studies. </p></div>
         </div>
 
 	<footer class="col-md-12">

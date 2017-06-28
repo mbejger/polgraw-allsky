@@ -9,7 +9,7 @@
         
         <link rel="shortcut icon" href="../img/favicon.ico">
 
-	<title>Search for candidate signals - Polgraw Group</title>
+	<title>F-statistic candidate signal search - Polgraw Group</title>
 
         <link href="../css/bootstrap-3.0.3.min.css" rel="stylesheet">
         <link href="../css/font-awesome-4.0.3.css" rel="stylesheet">
@@ -65,7 +65,7 @@
                         </li>
                     
                         <li class="active">
-                            <a href="./">Search for candidate signals</a>
+                            <a href="./">F-statistic candidate signal search</a>
                         </li>
                     
                         <li >
@@ -77,11 +77,11 @@
                         </li>
                     
                         <li >
-                            <a href="../pipeline_script/">Pipeline script</a>
+                            <a href="../pipeline_script/">Pipeline: a minimal example</a>
                         </li>
                     
                         <li >
-                            <a href="../articles/">Literature</a>
+                            <a href="../articles/">Documents and publications</a>
                         </li>
                     
                     </ul>
@@ -155,13 +155,14 @@
 <p>Run  <code>make gwsearch-cpu</code> or <code>make</code> in <code>search/network/src-cpu</code> (default <code>C</code> version not-optimized with <code>openMP</code>; for the <code>openMP</code> version see the <code>search/network/src-openmp</code> directory). Resulting  binary is called <code>gwsearch-cpu</code>. Modify the <code>Makefile</code> to fit your system. By default the <code>YEPPP!</code> library is selected. </p>
 <h3 id="3-how-to-run-the-program">3. How to run the program?</h3>
 <p>Minimal call to <code>gwsearch-cpu</code> is as follows (code compiled with the <code>GNUSINCOS</code> option): </p>
-<div class="codehilite"><pre><span></span>./gwsearch-cpu -d data_dir -o output_dir -i frame -b band
+<div class="codehilite"><pre><span></span>./gwsearch-cpu -data data_dir -dt 2 -output output_dir -ident frame -band band
 </pre></div>
 
 
 <p>where</p>
 <ul>
 <li><code>data_dir</code> is the base directory of input data files,</li>
+<li>Sampling time <code>dt</code> is 2 (seconds), </li>
 <li><code>output_dir</code>is a directory to write the output,</li>
 <li><code>frame</code> is the number of time frame to be analyzed,</li>
 <li><code>band</code> is the number of the frequency band (see the <a href="#data_structure">data structure</a> description for details). </li>
@@ -177,63 +178,63 @@
 </thead>
 <tbody>
 <tr>
-<td>-d, -data</td>
+<td>-data</td>
 <td align="left">Data directory (default is <code>.</code>)</td>
 </tr>
 <tr>
-<td>-o, -output</td>
+<td>-output</td>
 <td align="left">Output directory (default is <code>./candidates</code>)</td>
 </tr>
 <tr>
-<td>-i, -ident</td>
+<td>-ident</td>
 <td align="left">Frame number</td>
 </tr>
 <tr>
-<td>-b, -band</td>
+<td>-band</td>
 <td align="left">Band number</td>
 </tr>
 <tr>
-<td>-l, -label</td>
+<td>-label</td>
 <td align="left">Custom label for the input and output files</td>
 </tr>
 <tr>
-<td>-r, -range</td>
+<td>-range</td>
 <td align="left">Use file with grid range or pulsar position</td>
 </tr>
 <tr>
-<td>-g, -getrange</td>
+<td>-getrange</td>
 <td align="left">Write grid ranges &amp; save fft wisdom &amp; exit (ignore -r)</td>
 </tr>
 <tr>
-<td>-c, -cwd</td>
+<td>-cwd</td>
 <td align="left">Change to directory <code>&lt;dir&gt;</code></td>
 </tr>
 <tr>
-<td>-t, -threshold</td>
+<td>-threshold</td>
 <td align="left">Threshold for the F-statistic (default is <code>20</code>)</td>
 </tr>
 <tr>
-<td>-h, -hemisphere</td>
+<td>-hemisphere</td>
 <td align="left">Hemisphere (default is 0 - does both)</td>
 </tr>
 <tr>
-<td>-p, -fpo</td>
+<td>-fpo</td>
 <td align="left">Reference band frequency <code>fpo</code> value</td>
 </tr>
 <tr>
-<td>-s, -dt</td>
+<td>-dt</td>
 <td align="left">Data sampling time dt (default value: <code>0.5</code>)</td>
 </tr>
 <tr>
-<td>-u, -usedet</td>
+<td>-usedet</td>
 <td align="left">Use only detectors from string (default is <code>use all available</code>)</td>
 </tr>
 <tr>
-<td>-x, -addsig</td>
+<td>-addsig</td>
 <td align="left">Add signal with parameters from <code>&lt;file&gt;</code></td>
 </tr>
 <tr>
-<td>-n, -narrowdown</td>
+<td>-narrowdown</td>
 <td align="left">Narrow-down the frequency band (range <code>[0, 0.5] +- around center</code>)</td>
 </tr>
 </tbody>
@@ -267,12 +268,12 @@
 </table>
 <h4 id="32-network-of-detectors">3.2. Network of detectors</h4>
 <p>For the examplary input data time streams <code>xdatc_001_0101.bin</code> provided in <a href="https://polgraw.camk.edu.pl/polgraw-allsky/data/test-data-network.tar.gz">test-data-network.tar.gz</a>, the call is as follows:</p>
-<div class="codehilite"><pre><span></span>LD_LIBRARY_PATH=lib/yeppp-1.0.0/binaries/linux/x86_64 ./gwsearch-cpu -data ./test-data-network -ident 001 -band 0101 -usedet H1V1
+<div class="codehilite"><pre><span></span>LD_LIBRARY_PATH=lib/yeppp-1.0.0/binaries/linux/x86_64 ./gwsearch-cpu -data ./test-data-network -dt 2 -ident 001 -band 0101 -usedet H1V1 --nocheckpoint 
 </pre></div>
 
 
 <p>where the <code>LD_LIBRARY_PATH</code> points to the location of the <code>YEPPP!</code> library. </p>
-<p>The program will proceed assuming that the data directory <code>./test-data-network/001</code> for the time frame <code>001</code> contain subdirectories for the network of detectors (here <code>H1</code> and <code>V1</code>) with input time series <code>xdatc_001_0101.bin</code> and the ephemerids files <code>DetSSB.bin</code> in each subdirectory. The grid of parameters files is expected to be in <code>./test-data-network/001/grid.bin</code>. Switch <code>-usedet H1</code> (<code>-usedet V1</code>) select the appropriate data and performs single detector search. </p>
+<p>The program will proceed assuming that the data directory <code>./test-data-network/001</code> for the time frame <code>001</code> contain subdirectories for the network of detectors (here <code>H1</code> and <code>V1</code>) with input time series <code>xdatc_001_0101.bin</code> and the ephemerids files <code>DetSSB.bin</code> in each subdirectory, with the sampling time <code>dt</code> equal 2 seconds. The grid of parameters files is expected to be in <code>./test-data-network/001/grid.bin</code>. Switch <code>-usedet H1</code> (<code>-usedet V1</code>) select the appropriate data and performs single detector search. The <code>--nocheckpoint</code> disables the checkpointing (writing the last visited position on the grid to the <code>state</code> file).   </p>
 <h4 id="_3"></h4>
 <h4 id="33-network-of-detectors-in-spotlight-search-depreciated">3.3. Network of detectors in spotlight search (depreciated)</h4>
 <p>For the <code>H1L1</code> network of detectors, using the <a href="https://polgraw.camk.edu.pl/polgraw-allsky/data/test-data-network-injection.tar.gz">test-data-network-injection.tar.gz</a> to search towards a pre-defined direction (spotlight search) in one 2-day segment:</p>

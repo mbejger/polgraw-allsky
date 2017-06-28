@@ -9,7 +9,7 @@
         
         <link rel="shortcut icon" href="../img/favicon.ico">
 
-	<title>Pipeline script - Polgraw Group</title>
+	<title>Pipeline: a minimal example - Polgraw Group</title>
 
         <link href="../css/bootstrap-3.0.3.min.css" rel="stylesheet">
         <link href="../css/font-awesome-4.0.3.css" rel="stylesheet">
@@ -65,7 +65,7 @@
                         </li>
                     
                         <li >
-                            <a href="../search_for_candidates/">Search for candidate signals</a>
+                            <a href="../search_for_candidates/">F-statistic candidate signal search</a>
                         </li>
                     
                         <li >
@@ -77,11 +77,11 @@
                         </li>
                     
                         <li class="active">
-                            <a href="./">Pipeline script</a>
+                            <a href="./">Pipeline: a minimal example</a>
                         </li>
                     
                         <li >
-                            <a href="../articles/">Literature</a>
+                            <a href="../articles/">Documents and publications</a>
                         </li>
                     
                     </ul>
@@ -112,7 +112,7 @@
             <div class="col-md-3"><div class="bs-sidebar hidden-print affix well" role="complementary">
     <ul class="nav bs-sidenav">
     
-        <li class="main active"><a href="#pipeline-search-for-candidate-signals-and-coincidences-among-them">Pipeline: search for candidate signals and coincidences among them</a></li>
+        <li class="main active"><a href="#pipeline-a-minimal-example">Pipeline: a minimal example</a></li>
         
             <li><a href="#1-sample-pbstorque-script">1. Sample PBS/Torque script</a></li>
         
@@ -123,7 +123,7 @@
 </div></div>
             <div class="col-md-9" role="main">
 
-<h1 id="pipeline-search-for-candidate-signals-and-coincidences-among-them">Pipeline: search for candidate signals and coincidences among them</h1>
+<h1 id="pipeline-a-minimal-example">Pipeline: a minimal example</h1>
 <h3 id="1-sample-pbstorque-script">1. Sample PBS/Torque script</h3>
 <p>This is a sample <code>pipeline.sh</code> script for the spotlight version of the <code>search</code> code, designed to look for signal around a specific location given by the spotlight range data file for 2-day narrow-band data segments. After the candidate signals are found, the search for coincidences is performed. It is currently used in the Mock Data Challenge with injected signals.  </p>
 <p>This script uses a lower threshold (option <code>-t 10</code>) while searching for candidate signals, looks for coincidences in a <code>[4 4 4 4]</code> cell (see options to <code>coiproc</code>) and prepares the summary of the estimation (<code>summary</code> file) at the end of execution. The binary files <code>*.coi</code> - results of coincidences - are archived with the <code>lz4.gz</code> (<a href="https://code.google.com/p/lz4">lz4</a>) compression to save space, and deleted after the coincidences procedure is done.  </p>

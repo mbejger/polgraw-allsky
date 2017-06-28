@@ -24,12 +24,13 @@ Run  `make gwsearch-cpu` or `make` in `search/network/src-cpu` (default `C` vers
 Minimal call to `gwsearch-cpu` is as follows (code compiled with the `GNUSINCOS` option): 
 
 ```
-./gwsearch-cpu -d data_dir -o output_dir -i frame -b band
+./gwsearch-cpu -data data_dir -dt 2 -output output_dir -ident frame -band band
 ```
 
 where
  
 * `data_dir` is the base directory of input data files,
+*  Sampling time `dt` is 2 (seconds), 
 * `output_dir`is a directory to write the output,
 * `frame` is the number of time frame to be analyzed,
 * `band` is the number of the frequency band (see the [data structure](#data_structure) description for details). 
@@ -37,23 +38,23 @@ where
 ####
 #### 3.1. Full list of switches
 
-| Switch          | Description       |
-|-----------------|:------------------| 
-|-d, -data        | Data directory (default is `.`)
-|-o, -output      | Output directory (default is `./candidates`)
-|-i, -ident       | Frame number
-|-b, -band        | Band number
-|-l, -label       | Custom label for the input and output files
-|-r, -range       | Use file with grid range or pulsar position
-|-g, -getrange    | Write grid ranges & save fft wisdom & exit (ignore -r)
-|-c, -cwd         | Change to directory `<dir>`
-|-t, -threshold   | Threshold for the F-statistic (default is `20`)
-|-h, -hemisphere  | Hemisphere (default is 0 - does both)
-|-p, -fpo         | Reference band frequency `fpo` value
-|-s, -dt          | Data sampling time dt (default value: `0.5`)
-|-u, -usedet      | Use only detectors from string (default is `use all available`)
-|-x, -addsig      | Add signal with parameters from `<file>`
-|-n, -narrowdown  | Narrow-down the frequency band (range `[0, 0.5] +- around center`)
+| Switch      | Description       |
+|-------------|:------------------| 
+|-data        | Data directory (default is `.`)
+|-output      | Output directory (default is `./candidates`)
+|-ident       | Frame number
+|-band        | Band number
+|-label       | Custom label for the input and output files
+|-range       | Use file with grid range or pulsar position
+|-getrange    | Write grid ranges & save fft wisdom & exit (ignore -r)
+|-cwd         | Change to directory `<dir>`
+|-threshold   | Threshold for the F-statistic (default is `20`)
+|-hemisphere  | Hemisphere (default is 0 - does both)
+|-fpo         | Reference band frequency `fpo` value
+|-dt          | Data sampling time dt (default value: `0.5`)
+|-usedet      | Use only detectors from string (default is `use all available`)
+|-addsig      | Add signal with parameters from `<file>`
+|-narrowdown  | Narrow-down the frequency band (range `[0, 0.5] +- around center`)
 
 Also: 
 
@@ -69,12 +70,12 @@ Also:
 For the examplary input data time streams `xdatc_001_0101.bin` provided in [test-data-network.tar.gz](https://polgraw.camk.edu.pl/polgraw-allsky/data/test-data-network.tar.gz), the call is as follows:
 
 ```
-LD_LIBRARY_PATH=lib/yeppp-1.0.0/binaries/linux/x86_64 ./gwsearch-cpu -data ./test-data-network -ident 001 -band 0101 -usedet H1V1
+LD_LIBRARY_PATH=lib/yeppp-1.0.0/binaries/linux/x86_64 ./gwsearch-cpu -data ./test-data-network -dt 2 -ident 001 -band 0101 -usedet H1V1 --nocheckpoint 
 ```
 
 where the `LD_LIBRARY_PATH` points to the location of the `YEPPP!` library. 
 
-The program will proceed assuming that the data directory `./test-data-network/001` for the time frame `001` contain subdirectories for the network of detectors (here `H1` and `V1`) with input time series `xdatc_001_0101.bin` and the ephemerids files `DetSSB.bin` in each subdirectory. The grid of parameters files is expected to be in `./test-data-network/001/grid.bin`. Switch `-usedet H1` (`-usedet V1`) select the appropriate data and performs single detector search. 
+The program will proceed assuming that the data directory `./test-data-network/001` for the time frame `001` contain subdirectories for the network of detectors (here `H1` and `V1`) with input time series `xdatc_001_0101.bin` and the ephemerids files `DetSSB.bin` in each subdirectory, with the sampling time `dt` equal 2 seconds. The grid of parameters files is expected to be in `./test-data-network/001/grid.bin`. Switch `-usedet H1` (`-usedet V1`) select the appropriate data and performs single detector search. The `--nocheckpoint` disables the checkpointing (writing the last visited position on the grid to the `state` file).   
 
 ####
 #### 3.3. Network of detectors in spotlight search (depreciated)

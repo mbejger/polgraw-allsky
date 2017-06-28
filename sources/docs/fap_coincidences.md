@@ -1,4 +1,4 @@
-# False alarm coincidence probability
+# False alarm probability of coincidences
 
 A general formula for probability that is used in the estimation of significance of the coincidences is implemented. The code is available at [github](https://github.com/mbejger/polgraw-allsky/tree/master). Run `git clone https://github.com/mbejger/polgraw-allsky.git` to get the repository.
 

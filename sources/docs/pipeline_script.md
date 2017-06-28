@@ -1,4 +1,4 @@
-# Pipeline: search for candidate signals and coincidences among them 
+# Pipeline: a minimal example 
 
 ### 1. Sample PBS/Torque script
 
