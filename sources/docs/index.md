@@ -1,6 +1,6 @@
 # Polgraw all-sky pipeline: search for almost monochromatic gravitational wave signals 
 
-This is the documentation of a gravitational-wave search pipeline of the [Polgraw](https://polgraw.camk.edu.pl) group. 
+This is the documentation of a gravitational-wave search pipeline of the [Polgraw](https://polgraw.camk.edu.pl/en) group. 
 
 #### Pipeline flowchart  
 
