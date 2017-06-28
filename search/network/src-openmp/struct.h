@@ -27,7 +27,7 @@ typedef struct _comm_line_opts {
   double fpo_val, narrowdown;
   
   char prefix[512], dtaprefix[512], label[512], 
-    range[512], getrange[512], qname[512], addsig[512], *wd;
+    range[512], getrange[512], qname[512], usedet[32], addsig[512], *wd;
   
 } Command_line_opts;
 
@@ -199,7 +199,7 @@ typedef struct _triggers {
   int frameinfo[256][3];    // Info about candidates in frames: 
                             // - [0] frame number, [1] initial number 
                             // of candidates, [2] number of candidates
-                            // after sorting    
+                            // after sorting (unique)
 
   int frcount, goodcands; 
 
