@@ -18,10 +18,6 @@ static int evade_flag=0;
 
 // Default output and data directories
 
-//#ifndef DTAPREFIX
-//#define DTAPREFIX .
-//#endif
-
 double get_rand() ;
 
 int main(int argc, char *argv[]) {
@@ -48,13 +44,14 @@ int main(int argc, char *argv[]) {
   // of the signal is as selected below, not spun-down/up) is 1
   reffr = 1; 
 
-//  strcpy (dtaprefix, TOSTR(DTAPREFIX));
-
   // Initial value of starting frequency 
   // set to a negative quantity. If this is not 
   // changed by the command line value 
   // fpo is calculated from the band number b.
   fpo_val = -1;
+
+  // Initial value of the number of days is set to 0
+  sett.nod = 0; 
   
   while (1) {
     static struct option long_options[] = {
@@ -79,6 +76,8 @@ int main(int argc, char *argv[]) {
       {"dt", required_argument, 0, 's'},
       // reference frame () 
       {"reffr", required_argument, 0, 'r'},
+      // number of days in the time-domain segment 
+      {"nod", required_argument, 0, 'y'}, 
       {0, 0, 0, 0}
     };
 
@@ -87,23 +86,24 @@ int main(int argc, char *argv[]) {
      printf("*** Software injection parameters - cont. GW signal ***\n"); 
      printf("Usage: ./sigen -[switch1] <value1> -[switch2] <value2> ...\n") ;
      printf("Switches are:\n\n"); 
-     printf("-amp   GW amplitude of the injected (mutually exclusive with -snr)\n"); 
-     printf("-snr   SNR of the injected signal (mutually exclusive with -amp)\n"); 
-     printf("-band  Band number\n"); 
-     printf("-cwd   Change to directory <dir>\n");     
-     printf("-data  Data directory in case of lines (default is .)\n"); 
-     printf("-fpo   fpo (starting frequency) value\n");
-     printf("-gsize Grid search range (default value: 2)\n");
-     printf("-dt    Data sampling time dt (default value: 0.5)\n");
-     printf("-reffr Reference frame (default value: 1)\n\n");
+     printf("-amp      GW amplitude of the injected (mutually exclusive with -snr)\n"); 
+     printf("-snr      SNR of the injected signal (mutually exclusive with -amp)\n"); 
+     printf("-band     Band number\n"); 
+     printf("-cwd      Change to directory <dir>\n");     
+     printf("-data     Data directory in case of lines (default is .)\n"); 
+     printf("-fpo      fpo (starting frequency) value\n");
+     printf("-gsize    Grid search range (default value: 2)\n");
+     printf("-dt       Data sampling time dt (default value: 0.5)\n");
+     printf("-nod      Number of days\n");
+     printf("-reffr    Reference frame (default value: 1)\n\n");
 
-     printf("--help		This help\n"); 		
+     printf("--help    This help\n"); 		
      exit (0);
      
   }
 
     int option_index = 0;
-    c = getopt_long_only (argc, argv, "a:n:b:c:d:p:g:s:r:", long_options, &option_index);
+    c = getopt_long_only (argc, argv, "a:n:b:c:d:p:g:s:r:y:", long_options, &option_index);
 
    if (c == -1)
       break;
@@ -136,12 +136,22 @@ int main(int argc, char *argv[]) {
     case 'r':
       reffr = atof(optarg);
       break;
+    case 'y':
+      sett.nod = atoi(optarg);
+      break;
     case '?':
       break;
     default: break ; 
 
     } /* switch c */
   } /* while 1 */
+
+  // Check if sett->nod was set up, if not, exit
+  if(!(sett.nod)) { 
+    printf("Number of days not set... Exiting\n"); 
+    exit(EXIT_FAILURE); 
+  } 
+
 
   if (wd) {
     printf ("Changing working directory to %s\n", wd);
