@@ -1,0 +1,11 @@
+#PBS -m n 
+#PBS -q medium
+#PBS -l mem=3GB
+
+cd $PBS_O_WORKDIR
+
+for d in $(seq -f %03g $start $howmany); do
+
+  bash script.sh $d 1> /dev/null 2> /dev/null
+
+done
