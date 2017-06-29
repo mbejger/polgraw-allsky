@@ -28,8 +28,8 @@ int main(int argc, char *argv[]) {
 	
   int i, numl=0, freq_line_check, c, pm, gsize=2, band=0, reffr; 
   char filename[512], dtaprefix[512], *wd=NULL ; 
-//  double amp;
-  double freql[32768], linew[32768], sgnlo[8], rrn[2], snr, 
+  double amp=0, snr=0;
+  double freql[32768], linew[32768], sgnlo[8], rrn[2], 
 	dvr, fpo_val, be1, be2, fr, lw, freqlp, freqlm, f1, f2,  
 	sepsm, cepsm, sinalt, cosalt, sindelt, cosdelt, 
 	iota, ph_o, psik, hop, hoc ; 
@@ -43,12 +43,6 @@ int main(int argc, char *argv[]) {
 
   // Default data sampling time (s)  
   sett.dt = 0.5; 
-
-  // Default GW amplitude of the injected signal 
-//  amp = 2.e-3; 
-
-  // Default SNR of the injected signal
-  snr = 20.;
 
   // Default reference time frame (frame in which the frequency 
   // of the signal is as selected below, not spun-down/up) is 1
@@ -66,7 +60,7 @@ int main(int argc, char *argv[]) {
     static struct option long_options[] = {
       {"help", no_argument, &help_flag, 1},			
       // GW amplitude 
-//      {"amp", required_argument, 0, 'a'},
+      {"amp", required_argument, 0, 'a'},
       // SNR
       {"snr", required_argument, 0, 'n'},
       // frequency band number 
@@ -93,8 +87,8 @@ int main(int argc, char *argv[]) {
      printf("*** Software injection parameters - cont. GW signal ***\n"); 
      printf("Usage: ./sigen -[switch1] <value1> -[switch2] <value2> ...\n") ;
      printf("Switches are:\n\n"); 
-//     printf("-amp   GW amplitude (default value: 2.e-3)\n"); 
-     printf("-snr   Signal-to-Noise ratio of the injected signal\n"); 
+     printf("-amp   GW amplitude of the injected (mutually exclusive with -snr)\n"); 
+     printf("-snr   SNR of the injected signal (mutually exclusive with -amp)\n"); 
      printf("-band  Band number\n"); 
      printf("-cwd   Change to directory <dir>\n");     
      printf("-data  Data directory in case of lines (default is .)\n"); 
@@ -109,14 +103,14 @@ int main(int argc, char *argv[]) {
   }
 
     int option_index = 0;
-    c = getopt_long_only (argc, argv, "n:b:c:d:p:g:s:r:", long_options, &option_index);
+    c = getopt_long_only (argc, argv, "a:n:b:c:d:p:g:s:r:", long_options, &option_index);
 
    if (c == -1)
       break;
     switch (c) {
-/*    case 'a':
+    case 'a':
       amp  = atof (optarg);
-      break; */
+      break; 
     case 'n':
       snr  = atof (optarg);
       break; 
@@ -156,6 +150,15 @@ int main(int argc, char *argv[]) {
       abort ();
     }
   }
+
+  // Check if the options are consistent with each other 
+  if(!(amp || snr)) { 
+    printf("Options -amp or -snr not given. Exiting...\n"); 
+    exit(0); 
+  } else if(amp && snr) { 
+    printf("Options -amp and -snr are mutually exclusive. Exiting...\n"); 
+    exit(0); 
+  } 
 
   // Starting band frequency: 
   // fpo_val is optionally read from the command line
@@ -343,12 +346,15 @@ int main(int argc, char *argv[]) {
   sgnlo[6] = -cos(2.*psik)*hop*sin(ph_o) - sin(2.*psik)*hoc*cos(ph_o) ;
   sgnlo[7] = -sin(2.*psik)*hop*sin(ph_o) + cos(2.*psik)*hoc*cos(ph_o) ;
 
-  // Output
-  printf("%le\n%d\n%d\n", snr, gsize, reffr);   		 
+  // Output (GW amplitude or signal-to-noise ratio)  
+  if(amp) 
+    printf("amp %le\n%d\n%d\n", amp, gsize, reffr);   		 
+  else if(snr) 
+    printf("snr %le\n%d\n%d\n", snr, gsize, reffr);
+
   printf("%.16le\n%.16le\n%.16le\n%.16le\n%.16le\n%.16le\n%.16le\n%.16le\n", 
 			sgnlo[0], sgnlo[1], sgnlo[2], sgnlo[3], 
 			sgnlo[4], sgnlo[5], sgnlo[6], sgnlo[7]);
-//  printf("%.16le\n%.16le\n", be1, be2); 			 
    
   // Testing printouts	
 /*
@@ -394,7 +400,7 @@ double get_rand() {
 
 	srand (seed);
 	//# value for testing 
-	//return 0.476559 ; 
+  // return 0.24; 
 	return ((double)rand()/(double)(RAND_MAX));
 
 
