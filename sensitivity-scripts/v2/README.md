@@ -26,7 +26,7 @@ cd ../; rm -fr Python-3.4.5*
 
 ### Create virtual environment 
 
-In a selected location, type
+In a selected location (e.g., `/path/to/venvdir`) type
  
 ```bash 
 ${installdir}/bin/pyvenv venv
@@ -34,7 +34,7 @@ ${installdir}/bin/pyvenv venv
 Activate the virtual environment
 
 ```bash
-. /path/to/venv/bin/activate
+. /path/to/venvdir/bin/activate
 ```
 
 (to leave the environment, type `deactivate`). You can now install specific packages using the `pip` installer: 
@@ -86,8 +86,9 @@ e.g.
 ```bash
 $ python summary.py 0165 0.7 100
 ```
-The result will be something as follows: 
+The result will be something as follows (columns are `band` number, amplitude `h`, upper limit `ul`): 
 ```bash
+#band h   ul 
 0165 0.150 0.61
 0165 0.200 0.78
 0165 0.250 0.95
