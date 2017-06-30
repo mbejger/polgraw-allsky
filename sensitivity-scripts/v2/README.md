@@ -1,5 +1,54 @@
 # Monte-Carlo simulations for the sensitivity upper limits 
-This directory contains a set of scripts that prepare and run a pipeline search in a small area in the parameter space around the injected signal. The steps of the procedure is as follows:
+This directory contains a set of scripts that prepare and run a pipeline search in a small area in the parameter space around the injected signal. 
+
+### Prerequisites 
+
+The scripts require `python3`. A working solution is to install a `python` virtual environment (`python3` comes with a built-in `pyvenv` virtual environment software).  
+
+#### Install `python3.4.5` locally
+
+The installation directory is, e.g., 
+```bash 
+installdir=/path/to/installdir
+```
+then 
+```bash 
+mkdir -p ${installdir}; cd ${installdir} 
+wget https://www.python.org/ftp/python/3.4.5/Python-3.4.5.tgz
+tar zxvf Python-3.4.5.tgz
+cd Python-3.4.5
+make clean
+./configure --prefix=$(dirname "${PWD}") 
+make -j4
+make install
+cd ../; rm -fr Python-3.4.5*
+```
+
+### Create virtual environment 
+
+In a selected location, type
+ 
+```bash 
+${installdir}/bin/pyvenv venv
+```
+Activate the virtual environment
+
+```bash
+. /path/to/venv/bin/activate
+```
+
+(to leave the environment, type `deactivate`). You can now install specific packages using the `pip` installer: 
+
+```bash
+pip install nympy
+pip install scipy
+pip install matplotlib
+pip install pandas
+```
+
+### Running the scripts 
+
+The steps of the procedure is as follows:
 
 1. Chose the GW strain amplitude $h_0$,
 2. Randomly chose other signal parameters (with signal generator `sigen`)
