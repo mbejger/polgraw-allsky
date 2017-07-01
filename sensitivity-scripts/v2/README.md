@@ -94,3 +94,14 @@ The result will be something as follows (columns are `band` number, amplitude `h
 0165 0.250 0.95
 0165 0.300 0.99
 ```
+#### Serial (stacked) version for longer jobs 
+
+`script2.py` creates subdirectories and a `job_BAND.sub` file for a list of amplitudes for BAND from `bandlist`, stacked one after another (can be handy to send one band as one job to the queue). Call: 
+
+```bash
+$ python script2.sh config.ini bandlist
+```
+and then (for e.g., band 0165) send it to the queue 
+```bash 
+$ qsub -N 0165 -v howmany=100 job_0165.sub
+```

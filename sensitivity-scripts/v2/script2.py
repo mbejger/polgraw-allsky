@@ -30,12 +30,6 @@ rd = {'GSIZE':  p.get('settings', 'gsize'),
 def replfunc(match):
     return rd[match.group(0)]
 
-# remove run.sh, if present
-if os.path.exists('run.sh'): 
-    os.remove('run.sh')
-
-runsh = open('run.sh', 'a')
-
 # read band-amplitudes file
 with open(sys.argv[2], 'r') as f:
 
@@ -47,6 +41,16 @@ with open(sys.argv[2], 'r') as f:
 
         # amplitudes: removing band from the array 
         h = np.delete(l, 0, axis=None) 
+
+        # remove job_BAND.sub, if present 
+        if os.path.exists('job_'+band+'.sub'): 
+            os.remove('job_'+band+'.sub')
+
+        # PBS jobs for one band and different amplitudes
+        # stacked one after another (to have one longer job)
+        js = open('job_'+band+'.sub', 'a')
+
+        js.write(p.get('pbs', 'header')+'\n\n') 
 
         for a in np.nditer(h, flags=["refs_ok"]):
 
@@ -75,12 +79,21 @@ with open(sys.argv[2], 'r') as f:
                         sums = sum(1 for line in open(di+'/'+file))+1
                 print (di + ' exists! Continuing with sim. #' + str(sums))  
 
-            runsh.write('cd %s/%s; qsub -N %s -v start=%d,howmany=%s job.sub\n' % (os.getcwd(), di, di, sums, p.get('settings', 'howmany')))
+            # At each di, check for job.sub 
+            # if it doesn't exist, create it 
+            if not os.path.exists(di+'/job.sub'): 
+                j = open(di+'/job.sub', 'a') 
+                j.write(p.get('pbs', 'header')+'\n\n') 
+                j.write('cd $PBS_O_WORKDIR\n')
+                j.write(p.get('pbs', 'forloop')+'\n')
+                j.close() 
 
-            from shutil import copyfile
-            copyfile(p.get('paths','scri_path')+'/job.sub', di+'/job.sub')
-
-
-runsh.close()
-#os.system('bash run.sh')
-
+            # This script enters each subdirectory one after another 
+            # and does the loops 
+            js.write('cd %s/%s\n' % (os.getcwd(), di))
+            # the actual bash for loop is defined in the config file 
+            # - variable '$start' is replaced by sums 
+            js.write(p.get('pbs', 'forloop').replace('$start', str(sums)) +'\n\n')
+            
+        js.write('exit 0\n')
+        js.close()
