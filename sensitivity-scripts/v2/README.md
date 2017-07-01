@@ -24,7 +24,7 @@ make install
 cd ../; rm -fr Python-3.4.5*
 ```
 
-### Create virtual environment 
+#### Create virtual environment 
 
 In a selected location (e.g., `/path/to/venvdir`) type
  
@@ -78,7 +78,7 @@ Two other auxiliary files are:
 1. Dummy `bash` script `dummy.sh` with the actual pipeline calls (variables replaced with actual values by `script.py`),
 2. `PBS/Torque` script `job.sub`, launched into the cluster queue, which contains the call to `script.sh`.
 
-Script `script.py` creates a `run.sh` which sends the jobs into the queue. The results are summary files (`.sum`) for the requested number of simulations. In order to process them, call the `summary.py` script
+Script `script.py` creates a `run.sh` file which contains commands to send the jobs into the queue. The results are summary files (`.sum`) for the requested number of simulations. In order to process them, call the `summary.py` script
 ```bash
 $ python summary.py band coincidence_threshold number_of_simulations
 ```
