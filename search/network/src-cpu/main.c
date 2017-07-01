@@ -106,9 +106,10 @@ int main (int argc, char* argv[]) {
     for(k=0; k<sett.numlines_band; k++) 
       printf("%f %f\n", sett.lines[k][0], sett.lines[k][1]);
 
-    check_if_band_is_fully_vetoed(&sett); 
+    fraction_of_band_vetoed(&sett, &opts); 
 
-  } 
+  } else 
+    printf("Veto fraction for band %04d: %f\n", opts.band, 0.);  
 
   // Amplitude modulation functions for each detector  
   for(i=0; i<sett.nifo; i++)   
