@@ -17,7 +17,6 @@ rd = {'GSIZE':  p.get('settings', 'gsize'),
       'LDLP':   p.get('paths', 'ldlp'), 
       'DATA':   p.get('paths', 'data'),
       'LOF':    p.get('paths', 'list_of_frames'), 
-      'LZ4PATH':p.get('paths', 'lz4path'), 
       'SEARCH': p.get('paths', 'sear_path'),
       'SIGEN':  p.get('paths', 'sige_path'),
       'COINCID':p.get('paths', 'coin_path'), 
@@ -54,6 +53,9 @@ with open(sys.argv[2], 'r') as f:
             # subdirectory name 
             di = str(a) + "_" + band
 
+            # starting number of simulations
+            sums=1
+
             # creating subdirectories        
             if not os.path.isdir(di): 
                 print (di + ' does not exist! Creating...')
@@ -66,17 +68,13 @@ with open(sys.argv[2], 'r') as f:
                     for line in fin:
                         fout.write(regex.sub(replfunc,line))
 
-                # starting number of simulations
-                sums=1
-            # 
             else: 
-                print (di + ' already exists! Moving along...')
 
                 import os.path
                 for file in os.listdir(di):
                     if file.endswith('.sum'):
                         sums = sum(1 for line in open(di+'/'+file))+1
-                print (di + ': starting with simulation no. ' + str(sums))  
+                print (di + ' exists! Continuing with sim. #' + str(sums))  
 
 
             runsh.write('cd %s/%s; qsub -N %s -v start=%d,howmany=%s job.sub\n' % (os.getcwd(), di, di, sums, p.get('settings', 'howmany')))
@@ -87,5 +85,5 @@ with open(sys.argv[2], 'r') as f:
 
 runsh.close()
 # run.sh 
-os.system('bash run.sh')
+#os.system('bash run.sh')
 
