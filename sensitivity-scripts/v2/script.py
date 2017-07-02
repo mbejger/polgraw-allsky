@@ -73,9 +73,10 @@ with open(sys.argv[2], 'r') as f:
                 for file in os.listdir(di):
                     if file.endswith('.sum'):
                         sums = sum(1 for line in open(di+'/'+file))+1
-                print (di + ' exists! Continuing with sim. #' + str(sums))  
+                print (di + ' exists ('+ str(sums-1)+'/'+ p.get('settings', 'howmany')+' completed)')  
 
-            runsh.write('cd %s/%s; qsub -N %s -v start=%d,howmany=%s job.sub\n' % (os.getcwd(), di, di, sums, p.get('settings', 'howmany')))
+            if sums < int(p.get('settings', 'howmany')):
+                runsh.write('cd %s/%s; qsub -N %s -v start=%d,howmany=%s job.sub\n' % (os.getcwd(), di, di, sums, p.get('settings', 'howmany')))
 
             from shutil import copyfile
             copyfile(p.get('paths','scri_path')+'/job.sub', di+'/job.sub')
