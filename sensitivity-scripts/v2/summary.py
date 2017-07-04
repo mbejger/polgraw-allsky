@@ -16,18 +16,23 @@ for d in file_names:
         # look for .sum file in a given subdirectory 
         if f.endswith('.sum'):  
             s = os.path.join(d, f) 
+            sums = sum(1 for line in open(s))
 
+            if sums == howmany: 
             # read the file line by line 
-            with open (s, 'r') as sf:
-                for line in sf:
-                    l = line.split(' ')
-
-                    if len(l)>15: 
+                with open (s, 'r') as sf:
+                    for line in sf:
+                        l = line.split(' ')
+	
+                        if len(l)>15: 
                         # check how many crossed the threshold 
-                        # col. 16: number of frames 
-                        # col. 17: number of coincidences 
-                        if (int(l[17]) > thresh*int(l[16])):
-                            m += 1
+        	            # col. 16: number of frames 
+                	    # col. 17: number of coincidences 
+                            if (int(l[17]) > thresh*int(l[16])):
+                                m += 1
     
-    # output the results: band number, h0 amplitude, fraction of significant coincidences 
-    print ('{} {:.3f} {:.2f}'.format(band, float(d.replace('_'+band,'')), m/howmany))         
+                # output the results: band number, h0 amplitude, fraction of significant coincidences 
+                print ('{} {:.3f} {:.2f}'.format(band, float(d.replace('_'+band,'')), m/howmany))
+            else: 
+                print('{} {:.3f} *{}/{:.0f}'.format(band, float(d.replace('_'+band,'')), sums, howmany)) 
+                    
