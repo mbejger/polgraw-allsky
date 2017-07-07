@@ -13,7 +13,7 @@
 
 static int help_flag=0;
 
-int nchoosek(short, short);
+int nchoosek(int, int);
 int *FalseAlarm(int, int, double, int*, double*);
 int *FalseAlarmCFast(int, int, double, int*, double*);  
 
@@ -216,14 +216,14 @@ int main (int argc, char *argv[]) {
   if(vetofrac) 
     Nc = round((1.0 - vetofrac)*Nc/pow(cellsize, 4));
   else 
-    Nc = round(Nc/pow(cellsize, 4)); //#mb round?  
+    Nc = round(Nc/pow(cellsize, 4));
 
   // Read the coincidence data 
   //--------------------------  
 
   if ((data=fopen (datafile, "r")) != NULL) {
 
-    short i, shift, nof, band, hemi; 
+    short int i, shift, nof, band, hemi;
     double fpofile;  
 
     status = fscanf(data, "%hu_%hu %hu %lf %hu %hu",  
@@ -248,12 +248,6 @@ int main (int argc, char *argv[]) {
 
     // Final result: output to stderr cases when FAP threshold is reached  
     if(FAP < threshold) { 
-
-      //#mb frame info 
-      /* 
-      for(i=0; i<noc; i++) 
-        fprintf(stderr, "%d %d %d ", frn[i], Nk[i], Nku[i]); 
-      */ 
  
       fprintf(stderr, "%04d %le %le %le %d %d ", 
         band, f_min, f_max, PFce[2*noc-3], noc, Nkall); 
@@ -280,14 +274,14 @@ int main (int argc, char *argv[]) {
 // Binomial coeficient n choose k 
 //-------------------------------
 
-int nchoosek(short n, short k) { 
+int nchoosek(int n, int k) {
   return gsl_sf_fact(n)/(gsl_sf_fact(k)*gsl_sf_fact(n-k)); 
 } 
 
 
 int *FalseAlarm(int Cmax, int noc, double Nc, int *Nk, double *r) { 
 
-   short i, j, k, L, Nmax;  
+   int i, j, k, L, Nmax;
    double ee[noc]; 
 
    gsl_combination *cp, *cq;
@@ -368,7 +362,7 @@ int *FalseAlarm(int Cmax, int noc, double Nc, int *Nk, double *r) {
 
 int *FalseAlarmCFast(int Cmax, int noc, double Nc, int *Nk, double *r) { 
 
-  short int i, k; 
+  int i, k;
 
   // Arrays of noc + 2 doubles: PF, NF, pf, C[] array  
   double C0[noc+2], C1[noc+2], C2[noc+2], C3[noc+2], C4[noc+2]; 
