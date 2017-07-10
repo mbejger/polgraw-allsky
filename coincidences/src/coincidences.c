@@ -136,7 +136,7 @@ void read_trigger_files(Search_settings *sett,
   int **ti; 
   // 7 columns in a row: fi, si, di, ai, orgpos, fr, i
   for(i=0; i<candsize; i++) 
-    candi[i] = malloc(7*sizeof(int));
+    candi[i] = (int*)calloc(7, sizeof(int));
 
   int **allcandi = malloc(allcandsize*sizeof(int *)); 
   // 7 columns in a row: fi, si, di, ai, orgpos, fr, i
@@ -204,8 +204,8 @@ void read_trigger_files(Search_settings *sett,
 
         // This part looks for the first number in the trigger file name,
         // under the assumption that this is the frame number
-        char *fr, *epdname;
-        epdname = strdup(ep->d_name);
+        char *fr; 
+        char *epdname = ep->d_name;  
 
         while((fr = strsep(&epdname, "_"))!=NULL) {
           if(fr[0] >= '0' && fr[0] <= '9') {
@@ -513,11 +513,12 @@ void read_trigger_files(Search_settings *sett,
     opts->prefix, opts->shift, opts->scale, opts->trigname);
   data = fopen(outname, "w"); 
 
-  int q; 
+  int q, maxcoin = imtr[0][1], maxcoinindex=0; 
+  double maxsnr=0; 
   for(q=0; q<coindx; q++) {  
  
     j = imtr[q][0];
-    int pari[4], ops[256];
+    int ops[256];
     unsigned short int l, w=imtr[q][1], fra[256];  
     double mean[5]; 
     float meanf[5]; 
@@ -551,10 +552,7 @@ void read_trigger_files(Search_settings *sett,
 
     }
  
-    for(l=0; l<4; l++) {
-//      pari[l]  = allcandi[j][l];   
-      mean[l] /= w; 
-    } 
+    for(l=0; l<4; l++) mean[l] /= w;  
 
     mean[4] = sqrt(mean[4]); // SNR mean: sqrt of sum of squares  
 
@@ -562,33 +560,65 @@ void read_trigger_files(Search_settings *sett,
 
     // writing to binary file 
     fwrite(&w, sizeof(unsigned short int), 1, data); 
-//    fwrite(&pari, sizeof(int), 4, data);  
     fwrite(&meanf, sizeof(float), 5, data);          
     fwrite(&fra, sizeof(unsigned short int), w, data); 
     fwrite(&ops, sizeof(int), w, data); 
- 
-    // Maximal coincidence (first row of imtr[][])
-    //#mb written to stderr 
-    if(!q) { 
-    fprintf(stderr, "%s %04d %5f %5hu %5d %15.8le %5.8le %5.8le %5.8le %5le ", 
-      opts->trigname, opts->shift, sett->fpo, trig->frcount, w,   
-      mean[0], mean[1], mean[2], mean[3], mean[4]);
 
-      int ii, jj;
-      // Number of candidates from frames that participated in the coincidence 
-      for(ii=1; ii<=trig->frcount; ii++)
-        for(jj=0; jj<w; jj++)
-          if(trig->frameinfo[ii][0] == fra[jj]) {
-              fprintf(stderr, "%d %d %d ",
-                fra[jj], trig->frameinfo[ii][1], trig->frameinfo[ii][2]);
-              break;
-          }
+    // Looking for a maximal coincidence with a maximal snr
+    if(!q) 
+      maxsnr = mean[4]; 
 
-          fprintf(stderr, "\n");  
-      }
+    if(w==maxcoin && mean[4] > maxsnr) { 
+      maxsnr = mean[4]; 
+      maxcoinindex = q; 
+    } 
+
   }
 
   fclose(data); 
+
+
+  { // Writing out the maximal coincidence with maximal snr to stderr 
+  int ops[256];
+  unsigned short int l, fra[256];  
+  double mean[5]; 
+
+  for(l=0; l<5; l++) mean[l]=0; 
+
+  for(i=0; i<maxcoin; i++) {   
+    int l, k = imtr[maxcoinindex][0] - i; 
+    int f = allcandi[k][6]; 
+  
+    for(l=0; l<4; l++)  
+      mean[l] += allcandf[f][l]; 
+
+    mean[4] += allcandf[f][4]*allcandf[f][4];  
+
+    // ops[i]: position in trigger file #fra[i]
+    ops[i] = allcandi[k][4]; 
+    fra[i] = (unsigned short int)allcandi[k][5]; 
+
+  }
+ 
+  for(l=0; l<4; l++) mean[l] /= maxcoin;  
+
+  mean[4] = sqrt(mean[4]); // SNR mean: sqrt of sum of squares  
+ 
+  fprintf(stderr, "%s %04d %5f %5hu %5d %15.8le %5.8le %5.8le %5.8le %5le ", 
+    opts->trigname, opts->shift, sett->fpo, trig->frcount, maxcoin,   
+    mean[0], mean[1], mean[2], mean[3], mean[4]);
+
+  // Number of candidates from frames that participated in the coincidence 
+  for(i=0; i<=trig->frcount; i++)
+    for(j=0; j<maxcoin; j++)
+      if(trig->frameinfo[i][0] == fra[j]) {
+        fprintf(stderr, "%d %d %d ",
+          fra[j], trig->frameinfo[i][1], trig->frameinfo[i][2]);
+          break;
+      }
+
+  fprintf(stderr, "\n");  
+  } 
 
   // Freeing auxiliary arrays at the end 
   for(i=0; i<candsize; i++) { 
