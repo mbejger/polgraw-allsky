@@ -231,7 +231,7 @@ int main (int argc, char *argv[]) {
     status = fscanf(data, "%hu_%hu %hu %lf %hu %hu",  
              &band, &hemi, &shift, &fpofile, &nof, &noc); 
 
-    int Nk[noc], Nku[noc], frn[noc], Nkall=0; 
+    int Nk[nof], Nku[nof], frn[nof], Nkall=0;
     double sigpar[5]; 
 
     // Coincidence signal parameters (f, s, d, a, snr) 
@@ -277,14 +277,14 @@ int main (int argc, char *argv[]) {
 //-------------------------------
 
 int nchoosek(int n, int k) {
-  return gsl_sf_fact(n)/(gsl_sf_fact(k)*gsl_sf_fact(n-k)); 
+  return gsl_sf_fact(n)/(gsl_sf_fact(k)*gsl_sf_fact(n-k));
 } 
 
 
 int *FalseAlarm(int Cmax, int noc, int L, double Nc, int *Nk, double *r) { 
 
    int i, j, k, Nmax;
-   double ee[noc]; 
+   double ee[L];
 
    gsl_combination *cp, *cq;
 
@@ -306,7 +306,7 @@ int *FalseAlarm(int Cmax, int noc, int L, double Nc, int *Nk, double *r) {
       
       P[k] = 1;   
       for(j=0; j<gsl_combination_k(cp); j++)  
-        P[k] *= ee[gsl_combination_get(cp, j)]; 
+        P[k] *= ee[gsl_combination_get(cp, j)];
       k++;     
 
     } while (gsl_combination_next (cp) == GSL_SUCCESS);
