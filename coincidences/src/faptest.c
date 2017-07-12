@@ -289,7 +289,7 @@ int *FalseAlarm(int Cmax, int noc, int L, double Nc, int *Nk, double *r) {
    gsl_combination *cp, *cq;
 
    for(i=0; i<L; i++)    //#mb length(Nk)  
-      ee[i] = Nk[i]/Nc; 
+      ee[i] = Nk[i]/Nc;
 
   Nmax = min(noc, L);   //#mb min([noc+1 L]) 
 
@@ -297,44 +297,46 @@ int *FalseAlarm(int Cmax, int noc, int L, double Nc, int *Nk, double *r) {
 
   for(i=Cmax; i<=Nmax; i++) {  
     
-    cp = gsl_combination_calloc (Nmax, i);
+    cp = gsl_combination_calloc (L, i);
     
-    double P[nchoosek(Nmax, i)]; 
+    double P[nchoosek(L, i)];
 
     k=0; 
     do {
       
       P[k] = 1;   
-      for(j=0; j<gsl_combination_k(cp); j++)  
+      for(j=0; j<gsl_combination_k(cp); j++)
         P[k] *= ee[gsl_combination_get(cp, j)];
+
       k++;     
 
     } while (gsl_combination_next (cp) == GSL_SUCCESS);
-      
+
     gsl_combination_free (cp);
 
-    cq = gsl_combination_calloc (Nmax, Nmax-i);
+    cq = gsl_combination_calloc (L, L-i);
     
-    double Q[nchoosek(Nmax, Nmax-i)]; 
+    double Q[nchoosek(L, L-i)];
 
     k=0;   
     do {
       
       Q[k] = 1;   
-      for(j=0; j<gsl_combination_k(cq); j++)  
+      for(j=0; j<gsl_combination_k(cq); j++)
         Q[k] *= (1. - ee[gsl_combination_get(cq, j)]); 
+
       k++;     
 
     } while (gsl_combination_next (cq) == GSL_SUCCESS);
-      
+
     gsl_combination_free (cq);
 
     C[i-1] = 0; 
-    for(k=0; k<nchoosek(Nmax, i); k++) 
-      C[i-1] += P[k]*Q[nchoosek(Nmax, i) - 1 - k]; 
+    for(k=0; k<nchoosek(L, i); k++)
+      C[i-1] += P[k]*Q[nchoosek(L, L-i) - (k+1)];
 
     // Probability that a cell cointains Cmax or more coincidences
-    pf += C[i-1]; 
+    pf += C[i-1];
 
   } 
 
