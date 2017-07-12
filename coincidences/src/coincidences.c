@@ -441,23 +441,6 @@ void read_trigger_files(Search_settings *sett,
 
   printf("Total number of candidates from all frames: %d\n", trig->goodcands);
 
-  // Save frameinfo of number of candidates in each 
-  // frame for a given shift and cell size  
-  sprintf(outname, "%s/%04d_%04d_%s.fri", 
-    opts->prefix, opts->shift, opts->scale, opts->trigname);
-
-  data = fopen(outname, "w"); 
-  fprintf(data, "#number_of_frames number_of_all_candidates [frame_number candidates unique_candidates] x number_of_frames\n"); 
-  fprintf(data, "%d %d ", trig->frcount, trig->goodcands); 
-
-  for(i=1; i<=frcount; i++) 
-    fprintf(data, "%d %d %d ", 
-      trig->frameinfo[i][0], trig->frameinfo[i][1], trig->frameinfo[i][2]); 
-  fprintf(data, "\n"); 
-
-  fclose(data); 
-
-
   // Looking for coincidences (the same integer values) among different frames
   //--------------------------------------------------------------------------
 
@@ -577,47 +560,47 @@ void read_trigger_files(Search_settings *sett,
 
   fclose(data); 
 
+  if(maxcoin >= opts->mincoin) { // Writing out the maximal coincidence with maximal snr to stderr 
 
-  { // Writing out the maximal coincidence with maximal snr to stderr 
-  int ops[256];
-  unsigned short int l, fra[256];  
-  double mean[5]; 
+    int ops[256];
+    unsigned short int l, fra[256];  
+    double mean[5]; 
 
-  for(l=0; l<5; l++) mean[l]=0; 
+    for(l=0; l<5; l++) mean[l]=0; 
 
-  for(i=0; i<maxcoin; i++) {   
-    int l, k = imtr[maxcoinindex][0] - i; 
-    int f = allcandi[k][6]; 
+    for(i=0; i<maxcoin; i++) {   
+      int l, k = imtr[maxcoinindex][0] - i; 
+      int f = allcandi[k][6]; 
   
-    for(l=0; l<4; l++)  
-      mean[l] += allcandf[f][l]; 
+      for(l=0; l<4; l++)  
+        mean[l] += allcandf[f][l]; 
 
-    mean[4] += allcandf[f][4]*allcandf[f][4];  
+      mean[4] += allcandf[f][4]*allcandf[f][4];  
 
-    // ops[i]: position in trigger file #fra[i]
-    ops[i] = allcandi[k][4]; 
-    fra[i] = (unsigned short int)allcandi[k][5]; 
+      // ops[i]: position in trigger file #fra[i]
+      ops[i] = allcandi[k][4]; 
+      fra[i] = (unsigned short int)allcandi[k][5]; 
 
-  }
+    }
  
-  for(l=0; l<4; l++) mean[l] /= maxcoin;  
+    for(l=0; l<4; l++) mean[l] /= maxcoin;  
 
-  mean[4] = sqrt(mean[4]); // SNR mean: sqrt of sum of squares  
+    mean[4] = sqrt(mean[4]); // SNR mean: sqrt of sum of squares  
  
-  fprintf(stderr, "%s %04d %5f %5hu %5d %15.8le %5.8le %5.8le %5.8le %5le ", 
-    opts->trigname, opts->shift, sett->fpo, trig->frcount, maxcoin,   
-    mean[0], mean[1], mean[2], mean[3], mean[4]);
+    fprintf(stderr, "%s %04d %5f %5hu %5d %15.8le %5.8le %5.8le %5.8le %5le ", 
+      opts->trigname, opts->shift, sett->fpo, trig->frcount, maxcoin,   
+      mean[0], mean[1], mean[2], mean[3], mean[4]);
 
-  // Number of candidates from frames that participated in the coincidence 
-  for(i=0; i<=trig->frcount; i++)
-    for(j=0; j<maxcoin; j++)
-      if(trig->frameinfo[i][0] == fra[j]) {
-        fprintf(stderr, "%d %d %d ",
-          fra[j], trig->frameinfo[i][1], trig->frameinfo[i][2]);
-          break;
-      }
+    // info about time segments: frame number, all, unique candidates 
+    for(i=1; i<=trig->frcount; i++) 
+      fprintf(stderr, "%d %d %d ", trig->frameinfo[i][0], trig->frameinfo[i][1], trig->frameinfo[i][2]); 
 
-  fprintf(stderr, "\n");  
+    // Frame numbers participating in the coincidence 
+    for(i=0; i<maxcoin; i++)
+      fprintf(stderr, "%d ", fra[i]); 
+
+    fprintf(stderr, "\n"); 
+ 
   } 
 
   // Freeing auxiliary arrays at the end 
