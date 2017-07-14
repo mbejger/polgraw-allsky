@@ -11,11 +11,13 @@
 #include "settings.h"
 #include "struct.h"
 
+#define min(x, y) (((x) < (y)) ? (x) : (y))
+
 static int help_flag=0;
 
 int nchoosek(int, int);
-int *FalseAlarm(int, int, double, int*, double*);
-int *FalseAlarmCFast(int, int, double, int*, double*);  
+int *FalseAlarm(int, int, int, double, int*, double*);
+int *FalseAlarmCFast(int, int, int, double, int*, double*);  
 
 int main (int argc, char *argv[]) {
 
@@ -229,7 +231,7 @@ int main (int argc, char *argv[]) {
     status = fscanf(data, "%hu_%hu %hu %lf %hu %hu",  
              &band, &hemi, &shift, &fpofile, &nof, &noc); 
 
-    int Nk[noc], Nku[noc], frn[noc], Nkall=0; 
+    int Nk[nof], Nku[nof], frn[nof], Nkall=0;
     double sigpar[5]; 
 
     // Coincidence signal parameters (f, s, d, a, snr) 
@@ -237,13 +239,13 @@ int main (int argc, char *argv[]) {
       status = fscanf(data, "%le", &sigpar[i]); 
 
     // Frames information: frame number, no. of candidates, no. of unique candidates 
-    for(i=0; i<noc; i++) { 
+    for(i=0; i<nof; i++) { 
       status = fscanf(data, "%d %d %d", &frn[i], &Nk[i], &Nku[i]); 
       Nkall += Nku[i]; 
     } 
     
     double FAP, PFce[2*noc-2]; 
-    FalseAlarmCFast(2, noc, Nc, &Nku[0], &PFce[0]); 
+    FalseAlarmCFast(2, noc, nof, Nc, &Nku[0], &PFce[0]); 
     FAP = PFce[2*noc-3]; 
 
     // Final result: output to stderr cases when FAP threshold is reached  
@@ -275,66 +277,66 @@ int main (int argc, char *argv[]) {
 //-------------------------------
 
 int nchoosek(int n, int k) {
-  return gsl_sf_fact(n)/(gsl_sf_fact(k)*gsl_sf_fact(n-k)); 
+  return gsl_sf_fact(n)/(gsl_sf_fact(k)*gsl_sf_fact(n-k));
 } 
 
 
-int *FalseAlarm(int Cmax, int noc, double Nc, int *Nk, double *r) { 
+int *FalseAlarm(int Cmax, int noc, int L, double Nc, int *Nk, double *r) { 
 
-   int i, j, k, L, Nmax;
-   double ee[noc]; 
+   int i, j, k, Nmax;
+   double ee[L];
 
    gsl_combination *cp, *cq;
 
-   L = noc;  //#mb length(Nk) 
+   for(i=0; i<L; i++)    //#mb length(Nk)  
+      ee[i] = Nk[i]/Nc;
 
-   for(i=0; i<noc; i++)   
-      ee[i] = Nk[i]/Nc; 
-
-  Nmax = noc; //#mb  
+  Nmax = min(noc, L);  
 
   double C[Nmax], pf=0; 
 
   for(i=Cmax; i<=Nmax; i++) {  
     
-    cp = gsl_combination_calloc (Nmax, i);
+    cp = gsl_combination_calloc (L, i);
     
-    double P[nchoosek(Nmax, i)]; 
+    double P[nchoosek(L, i)];
 
     k=0; 
     do {
       
       P[k] = 1;   
-      for(j=0; j<gsl_combination_k(cp); j++)  
-        P[k] *= ee[gsl_combination_get(cp, j)]; 
+      for(j=0; j<gsl_combination_k(cp); j++)
+        P[k] *= ee[gsl_combination_get(cp, j)];
+
       k++;     
 
     } while (gsl_combination_next (cp) == GSL_SUCCESS);
-      
+
     gsl_combination_free (cp);
 
-    cq = gsl_combination_calloc (Nmax, Nmax-i);
+    cq = gsl_combination_calloc (L, L-i);
     
-    double Q[nchoosek(Nmax, Nmax-i)]; 
+    double Q[nchoosek(L, L-i)];
 
     k=0;   
     do {
       
       Q[k] = 1;   
-      for(j=0; j<gsl_combination_k(cq); j++)  
+      for(j=0; j<gsl_combination_k(cq); j++)
         Q[k] *= (1. - ee[gsl_combination_get(cq, j)]); 
+
       k++;     
 
     } while (gsl_combination_next (cq) == GSL_SUCCESS);
-      
+
     gsl_combination_free (cq);
 
     C[i-1] = 0; 
-    for(k=0; k<nchoosek(Nmax, i); k++) 
-      C[i-1] += P[k]*Q[nchoosek(Nmax, i) - 1 - k]; 
+    for(k=0; k<nchoosek(L, i); k++)
+      C[i-1] += P[k]*Q[nchoosek(L, L-i) - (k+1)];
 
     // Probability that a cell cointains Cmax or more coincidences
-    pf += C[i-1]; 
+    pf += C[i-1];
 
   } 
 
@@ -360,30 +362,22 @@ int *FalseAlarm(int Cmax, int noc, double Nc, int *Nk, double *r) {
 }
 
 
-int *FalseAlarmCFast(int Cmax, int noc, double Nc, int *Nk, double *r) { 
+int *FalseAlarmCFast(int Cmax, int noc, int L, double Nc, int *Nk, double *r) { 
 
   int i, k;
 
   // Arrays of noc + 2 doubles: PF, NF, pf, C[] array  
   double C0[noc+2], C1[noc+2], C2[noc+2], C3[noc+2], C4[noc+2]; 
 
-/*  double *C0, *C1, *C2, *C3, *C4; 
-  C0 = (double*)(malloc((noc+3)*sizeof(double))); 
-  C1 = (double*)(malloc((noc+3)*sizeof(double))); 
-  C2 = (double*)(malloc((noc+3)*sizeof(double))); 
-  C3 = (double*)(malloc((noc+3)*sizeof(double))); 
-  C4 = (double*)(malloc((noc+3)*sizeof(double))); 
-*/ 
-
   for(i=0; i<noc+3; i++) { 
     C0[i] = 0; C1[i] = 0; C2[i] = 0; C3[i] = 0; C4[i] = 0; 
   } 
 
-  FalseAlarm(Cmax, noc, Nc, &Nk[0], &C0[0]);
-  FalseAlarm(Cmax, noc, 2*Nc, &Nk[0], &C1[0]);
-  FalseAlarm(Cmax, noc, 2*2*Nc, &Nk[0], &C2[0]);
-  FalseAlarm(Cmax, noc, 2*2*2*Nc, &Nk[0], &C3[0]);
-  FalseAlarm(Cmax, noc, 2*2*2*2*Nc, &Nk[0], &C4[0]);
+  FalseAlarm(Cmax, noc, L, Nc, &Nk[0], &C0[0]);
+  FalseAlarm(Cmax, noc, L, 2*Nc, &Nk[0], &C1[0]);
+  FalseAlarm(Cmax, noc, L, 2*2*Nc, &Nk[0], &C2[0]);
+  FalseAlarm(Cmax, noc, L, 2*2*2*Nc, &Nk[0], &C3[0]);
+  FalseAlarm(Cmax, noc, L, 2*2*2*2*Nc, &Nk[0], &C4[0]);
 
   double pfe0[noc], pfe1[noc], pfe2[noc], pfe3[noc], pfe4[noc];
 

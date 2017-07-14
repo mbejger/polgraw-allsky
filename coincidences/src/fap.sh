@@ -1,8 +1,8 @@
 #!/bin/bash 
 
-nod=6
+nod=2
 cellsize=4
-threshold=0.2
+threshold=0.1
 
 summaryfile=$1
 vetofracfile=$2
