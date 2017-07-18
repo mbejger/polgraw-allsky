@@ -8,8 +8,9 @@ summaryfile=$1
 vetofracfile=$2
 griddir=$3
 
+# bash fap.sh path/to/summary_file path/to/veto_fraction_file location/of/grid.bin
 # e.g.: 
-# $ bash fap.sh ../../matlabO1/files/summary_0600_0699.txt ../../matlabO1/files/veto_fraction_frame11.txt path/to/grid 
+# $ bash fap.sh fap-test/summary_4444_1.txt fap-test/veto_fraction.txt fap-test 
 
 while read line 
 do 
