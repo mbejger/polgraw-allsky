@@ -1,5 +1,9 @@
-The result should be: 
+The result of 
 
-4444 1.086281e+03 1.086531e+03 3.562996e-04 8 9607899 8.880850e-02 -4.430758e-09 1.092141e+00 4.801314e+00 1.834681e+01 1
+$ bash fap.sh fap-test/summary_6666_1.txt fap-test/veto_fraction.txt fap-test
 
-The 4th number is the False Alarm Probability of coincidence 
+should be: 
+
+6666 1.624422e+03 1.624672e+03 9.997341e-01 5 8619321 2.089096e-01 -1.097288e-07 8.139530e-01 4.463308e+00 1.289528e+01 1
+
+The 4th number is the False Alarm Probability of coincidence. 
