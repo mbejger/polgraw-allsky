@@ -2,7 +2,7 @@
 
 nod=2
 cellsize=4
-threshold=0.1
+threshold=1.0
 
 summaryfile=$1
 vetofracfile=$2
@@ -10,7 +10,7 @@ griddir=$3
 
 # bash fap.sh path/to/summary_file path/to/veto_fraction_file location/of/grid.bin
 # e.g.: 
-# $ bash fap.sh fap-test/summary_4444_1.txt fap-test/veto_fraction.txt fap-test 
+# $ bash fap.sh fap-test/summary_6666_1.txt fap-test/veto_fraction.txt fap-test 
 
 while read line 
 do 
