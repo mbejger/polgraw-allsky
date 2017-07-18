@@ -242,6 +242,7 @@ Mopt(:,4) = Moptn(:,4)/N;
 	}
 	gsl_vector_free (eval);
 	gsl_matrix_free (evec);
+
 }
 
 void InjLoc(int *gri1, double *sl, double ** mx){
@@ -627,16 +628,17 @@ Yep64f* MADS(Search_settings *sett, Aux_arrays *aux, double* in, double *start, 
 
 double ** make_simplex(double * point, int dim, double *pc2){
 	int i, j;
-	double ** simplex = alloc_matrix(dim + 1, dim);
+	double ** simplexm = alloc_matrix(dim + 1, dim);
 	for (i = 0; i < dim + 1; i++){
 		for (j = 0; j < dim; j++){
-			simplex[i][j] = point[j];
+			simplexm[i][j] = point[j];
 		}
 	}
 	for (i = 0; i < dim; i++){
-		simplex[i][i] = simplex[i][i] + pc2[i];
+		simplexm[i][i] = simplexm[i][i] + pc2[i];
 	}
-	return simplex;
+	return simplexm;
+	free_matrix(simplexm, dim + 1, dim);
 }
 
 void evaluate_simplex(double ** simplex, int dim, double ** fx, Search_settings *sett, Aux_arrays *aux, double *nS, double **sigaa_max, double **sigbb_max){
@@ -871,10 +873,10 @@ int main (int argc, char *argv[]) {
 
 	if ((!opts.naive_flag)&&(!opts.neigh_flag)){
 // Define on how many grid points Fstat will be calculated  on optimal grid - in every dimension
-		nof[0] = 2;
-		nof[1] = 2;
-		nof[2] = 2;
-		nof[3] = 2;
+		nof[0] = 4;
+		nof[1] = 4;
+		nof[2] = 4;
+		nof[3] = 4;
 
 		ROW = (2*nof[0]+1)*(2*nof[1]+1)*(2*nof[2]+1)*(2*nof[3]+1);
 
@@ -1067,12 +1069,9 @@ printf("Closest point on the grid: %d %d %d\n", spndr[0], nr[0], mr[0]);
 
 // Loop over min/max values
 						for(i = 0; i < 2; i++){
-//printf("nr = %d %d; mr = %d %d; i = %d\n", nr[0], nr[1], mr[0], mr[1], i);
 
 							al1 = nr[i]*sett.M[10] + mr[i]*sett.M[14];
 							al2 = nr[i]*sett.M[11] + mr[i]*sett.M[15];
-//lin2ast(al1/sett.oms, al2/sett.oms, hemi, sett.sepsm, sett.cepsm, &sinalt, &cosalt, &sindelt, &cosdelt);
-//printf("%le %le %le\n", spndr[i]*sett.M[5] + nr[i]*sett.M[9] + mr[i]*sett.M[13], asin(sindelt), fmod(atan2(sinalt, cosalt) + 2.*M_PI, 2.*M_PI));
 
 // check if the range is in an appropriate region of the grid
 // if not - go to the next candidate 
@@ -1176,7 +1175,7 @@ printf("Closest point on the grid: %d %d %d\n", spndr[0], nr[0], mr[0]);
 						}
 					}
 					for (i = 0; i < 4; i++)	printf("range[%d][0] = %le, range[%d][1] = %le\n", i, sgnlo_range[i][0], i, sgnlo_range[i][1]);
-
+// Put optimal points into array
 					i = 0;
 					for (k1 = fo[0]; k1 <= fo[1]; k1++){
 						for (k2 = spndr[0]; k2 <= spndr[1]; k2++){
@@ -1190,19 +1189,38 @@ printf("Closest point on the grid: %d %d %d\n", spndr[0], nr[0], mr[0]);
 									lin2ast(temp1/sett.oms, temp2/sett.oms, hemi, sett.sepsm, sett.cepsm, &sinalt, &cosalt, &sindelt, &cosdelt);
 									arr[i][2] = asin(sindelt);
 									arr[i][3] = fmod(atan2(sinalt, cosalt) + 2.*M_PI, 2.*M_PI);
-//									printf("i = %d, k1 = %d, k2 = %d, k3 = %d, k4 = %d\n", i, k1, k2, k3, k4);
+
 			  						if ((sqr(temp1)+sqr(temp2))/sqr(sett.oms) > 1.){ 
 										arr[i][0] = -1.0;
-										printf("i = %d, crit = %le\n", i, (sqr(arr[i][2])+sqr(arr[i][3]))/sqr(sett.oms));
+//										printf("i = %d, crit = %le\n", i, (sqr(arr[i][2])+sqr(arr[i][3]))/sqr(sett.oms));
 									}
 									i++;
 								}							
 							}							
 						}
 					}
-					for (j = 0; j < 4; j++) pc2[j] = (sgnlo_range[j][1] - sgnlo_range[j][0])/(2*nof[j]+1);
+// Prepare starting point for simplex
+					if(opts.simplex_flag){
+						fo[1] = gri1[0] + 1;
+						spndr[1] = gri1[1] + 1;
+						nr[1] = gri1[2] + 1;
+						mr[1] = gri1[3] + 1;
+						for (j = 0; j < 2; j++){ 
+							pc2[j] = 2*(fabs(fo[1]*Mopt[0][j] + spndr[1]*Mopt[1][j] + nr[1]*Mopt[2][j] + mr[1]*Mopt[3][j] 
+								 - (fo[0]*Mopt[0][j] + spndr[0]*Mopt[1][j] + nr[0]*Mopt[2][j] + mr[0]*Mopt[3][j])));
+						}
+						temp1 = fo[1]*Mopt[0][2] + spndr[1]*Mopt[1][2] + nr[1]*Mopt[2][2] + mr[1]*Mopt[3][2];
+						temp2 = fo[1]*Mopt[0][3] + spndr[1]*Mopt[1][3] + nr[1]*Mopt[2][3] + mr[1]*Mopt[3][3];
+						lin2ast(temp1/sett.oms, temp2/sett.oms, hemi, sett.sepsm, sett.cepsm, &sinalt, &cosalt, &sindelt, &cosdelt);
+						temp1 = asin(sindelt);
+						temp2 = fmod(atan2(sinalt, cosalt) + 2.*M_PI, 2.*M_PI);
 
-//exit(0);
+						pc2[2] = fo[0]*Mopt[0][2] + spndr[0]*Mopt[1][2] + nr[0]*Mopt[2][2] + mr[0]*Mopt[3][2];
+						pc2[3] = fo[0]*Mopt[0][3] + spndr[0]*Mopt[1][3] + nr[0]*Mopt[2][3] + mr[0]*Mopt[3][3];
+						lin2ast(pc2[2]/sett.oms, pc2[3]/sett.oms, hemi, sett.sepsm, sett.cepsm, &sinalt, &cosalt, &sindelt, &cosdelt);
+						pc2[2] = 2*(fabs(temp1 - asin(sindelt)));
+						pc2[3] = 2*(fabs(temp2 - fmod(atan2(sinalt, cosalt) + 2.*M_PI, 2.*M_PI)));
+					} //if simplex
 				} //if optimal grid
 
 				if(flag == 1) continue;
@@ -1233,14 +1251,14 @@ printf("Closest point on the grid: %d %d %d\n", spndr[0], nr[0], mr[0]);
 				results_max[5] = 0.;
 
 // Main loop - over all parameters + parallelisation
-//#pragma omp parallel default(shared) private(d, i, sgnlo, sinalt, cosalt, sindelt, cosdelt, nSource, results, maximum)
-//{
+#pragma omp parallel default(shared) private(d, i, sgnlo, sinalt, cosalt, sindelt, cosdelt, nSource, results, maximum)
+{
 
                        		double **sigaa, **sigbb;   // old aa[nifo][N], bb[nifo][N]
               			sigaa = matrix(sett.nifo, sett.N);
 				sigbb = matrix(sett.nifo, sett.N);
 
-//#pragma omp for  
+#pragma omp for  
 				for (d = 0; d < ROW; ++d){
 					if (arr[d][0] < 0.0){ 
 						puts("Inappropriate region of the range! -> going to the next point");
@@ -1269,7 +1287,7 @@ printf("Closest point on the grid: %d %d %d\n", spndr[0], nr[0], mr[0]);
 //printf("%le %le %le %le %le %le\n", results[6], results[7], results[8], results[9], results[5], results[4]);
 
 // Check is it the biggest found value of F-statistic
-//#pragma omp critical
+#pragma omp critical
 					if(results[5] < results_max[5]){
 						for (i = 0; i < 11; i++){
 							results_max[i] = results[i];
@@ -1296,7 +1314,7 @@ printf("Closest point on the grid: %d %d %d\n", spndr[0], nr[0], mr[0]);
 				free_matrix(sigaa, sett.nifo, sett.N);
 				free_matrix(sigbb, sett.nifo, sett.N);
 
-//} //pragma
+} //pragma
 
 				for(g = 0; g < 11; g++) results_first[g] = results_max[g];
 
@@ -1324,7 +1342,8 @@ printf("Closest point on the grid: %d %d %d\n", spndr[0], nr[0], mr[0]);
 //Time test
 //				tend = clock();
 //				tdiff = (tend - tstart)/(double)CLOCKS_PER_SEC;
-				puts("Maximum:");
+				puts("Maximum from grid and from simplex:");
+				printf("%le %le %le %le %le %le\n", results_first[6], results_first[7], results_first[8], results_first[9], results_first[5], results_first[4]);
 				printf("%le %le %le %le %le %le\n", results_max[6], results_max[7], results_max[8], results_max[9], results_max[5], results_max[4]);
 
 
@@ -1338,7 +1357,7 @@ printf("Closest point on the grid: %d %d %d\n", spndr[0], nr[0], mr[0]);
 		return 1;
 	}
 
-// Output information
+// Additional output information
 /*	puts("**********************************************************************");
 	printf("***	Maximum value of F-statistic for grid is : (-)%.8le	***\n", -results_first[5]);
 	printf("Sgnlo: %.8le %.8le %.8le %.8le\n", results_first[6], results_first[7], results_first[8], results_first[9]);
@@ -1354,6 +1373,7 @@ if((opts.mads_flag)||(opts.simplex_flag)){
 	printf("Signal-to-noise ratio from estimated amplitudes (for h0 = 1) for true maximum: %.8le\n", maximum[10]);
 	puts("**********************************************************************");
 }*/
+
 // Cleanup & memory free 
 	free(results_max);
 	free(results_first);
@@ -1372,38 +1392,4 @@ if((opts.mads_flag)||(opts.simplex_flag)){
 	return 0;
 }
 
-//old test
-//time LD_LIBRARY_PATH=lib/yeppp-1.0.0/binaries/linux/x86_64 ./followup -data ./data -ident 001 -band 100 -fpo 199.21875 
-// new test: 
-//time LD_LIBRARY_PATH=/home/msieniawska/tests/polgraw-allsky/search/network/src-cpu/lib/yeppp-1.0.0/binaries/linux/x86_64/ ./followup -data /home/msieniawska/tests/polgraw-allsky/followup/src/testdata/ -output /home/msieniawska/tests/polgraw-allsky/followup/src/output -label J0000+1902 -band 1902
-//test for basic testdata:
-//time LD_LIBRARY_PATH=/home/msieniawska/tests/polgraw-allsky/search/network/src-cpu/lib/yeppp-1.0.0/binaries/linux/x86_64/ ./followup -data /home/msieniawska/tests/polgraw-allsky/followup/src/testdata/ -output /home/msieniawska/tests/polgraw-allsky/followup/src/output -band 100 -ident 10 -fpo 199.21875
-//time LD_LIBRARY_PATH=/home/msieniawska/tests/polgraw-allsky/search/network/src-cpu/lib/yeppp-1.0.0/binaries/linux/x86_64/ ./followup -data /home/msieniawska/tests/bigdogdata/mdc_025/ -output /home/polgraw-allsky/followup/src/output -band 100 -ident 10 -fpo 199.21875
-//
-//time LD_LIBRARY_PATH=/work/psk/msieniawska/test_followup/1/polgraw-allsky/search/network/src-cpu/lib/yeppp-1.0.0/binaries/linux/x86_64/ ./followup -data /work/psk/msieniawska/test_followup/data/ -output /work/psk/msieniawska/test_followup/output -band 103 -label 103_10 -fpo 103.0
-//
-//time LD_LIBRARY_PATH=/home/msieniawska/tests/bin_test/1/polgraw-allsky/search/network/src-cpu/lib/yeppp-1.0.0/binaries/linux/x86_64/ ./followup -data /home/msieniawska/tests/bin_test/data -output /home/msieniawska/tests/bin_test/output1 -fpo 124.9453125 -label 103_10 -fpo 103.0 -dt 2.0>& out1.txt
-//
-//time LD_LIBRARY_PATH=/home/msieniawska/tests/gluetest/polgraw-allsky/search/network/src-cpu/lib/yeppp-1.0.0/binaries/linux/x86_64/ ./followup -data /home/msieniawska/tests/gluetest/d1/followup_total_data -output /home/msieniawska/tests/gluetest/output1 -fpo 124.9453125 -label 103_10 -ident 000 -dt 2.0
 
-//time LD_LIBRARY_PATH=/home/msieniawska/tests/addsig/polgraw-allsky/search/network/src-cpu/lib/yeppp-1.0.0/binaries/linux/x86_64 ./followup -data /home/msieniawska/tests/addsig/data -output . -ident 001 -band 0666 -dt 2 -addsig sigfile001 --nocheckpoint
-//time LD_LIBRARY_PATH=/home/msieniawska/tests/addsig/polgraw-allsky/search/network/src-cpu/lib/yeppp-1.0.0/binaries/linux/x86_64 ./followup -data /home/msieniawska/tests/addsig/data -output . -ident 001 -band 0666 -dt 2 -addsig /home/msieniawska/tests/addsig/data/sigfile001 --nocheckpoint
-
-//time LD_LIBRARY_PATH=/home/msieniawska/tests/addsig/polgraw-allsky/search/network/src-cpu/lib/yeppp-1.0.0/binaries/linux/x86_64 ./gwsearch-cpu -data /home/msieniawska/tests/addsig/data -output . -ident 031 -band 0666 -dt 2 -addsig /home/msieniawska/tests/addsig/data/sig1 --nocheckpoint >searchtest.txt
-
-//time LD_LIBRARY_PATH=/home/msieniawska/tests/addsig/polgraw-allsky/test/search/network/src-cpu/lib/yeppp-1.0.0/binaries/linux/x86_64 ./followup -data /home/msieniawska/tests/addsig/data -output . -ident 031 -band 0666 -dt 2 -addsig /home/msieniawska/tests/addsig/data/sig1 -usedet H1 --simplex
-//LD_LIBRARY_PATH=/home/msieniawska/tests/addsig/polgraw-allsky/test/search/network/src-cpu/lib/yeppp-1.0.0/binaries/linux/x86_64 ./gwsearch-cpu -data /home/msieniawska/tests/addsig/test/pulsar8 -output . -ident 001 -band 0747 -dt 2 -usedet H1 -threshold 200 --whitenoise 
-//time LD_LIBRARY_PATH=/home/msieniawska/tests/addsig/polgraw-allsky/test/search/network/src-cpu/lib/yeppp-1.0.0/binaries/linux/x86_64 ./followup -data /home/msieniawska/tests/addsig/test/pulsar8 -output . -ident 010 -band 0747 -dt 2 -usedet H1 --simplex
-
-// LD_LIBRARY_PATH=/home/msieniawska/tests/newglue/search/network/src-cpu/lib/yeppp-1.0.0/binaries/linux/x86_64 ./followup -data /home/msieniawska/tests/newglue/data/notglued -ident 001 -band 0666 -dt 2 -addsig /home/msieniawska/tests/newglue/data/sig20 > /home/msieniawska/tests/newglue/output/6d/followup_6_days.txt
-
-
-// LD_LIBRARY_PATH=/home/magdalena/phd/newglue/newcodes/search/network/src-cpu/lib/yeppp-1.0.0/binaries/linux/x86_64 ./gwsearch-cpu -data /home/magdalena/phd/newglue/data/notglued -output /home/magdalena/phd/newglue/output/test -ident 001 -band 0666 -dt 2 -addsig /home/magdalena/phd/newglue/data/sig20 --nocheckpoint  
-//001: 575 579 34 38 30 34 2 2
-//002: 585 589 35 39 30 34 2 2
-//003: 592 596 35 39 30 34 2 2
-//004: 598 602 35 39 30 34 2 2
-//005: 603 607 35 39 30 34 2 2
-//006: 603 607 35 39 30 34 2 2
-
-//LD_LIBRARY_PATH=/home/magdalena/phd/newglue/newcodes/search/network/src-cpu/lib/yeppp-1.0.0/binaries/linux/x86_64 ./followup -data /home/magdalena/phd/newglue/data/notglued -ident 003 -band 0666 -refr 003 -dt 2 -addsig /home/magdalena/phd/newglue/data/sig20  -candidates /home/magdalena/phd/newglue/output/good/coi20.txt --simplex >> /home/magdalena/phd/newglue/output/test/followup_test20.txt
