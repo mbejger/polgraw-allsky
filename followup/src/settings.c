@@ -17,7 +17,7 @@ void search_settings(
   Search_settings* sett) {
 
   double dt, B, oms, omr, Smin, Smax;
-  int nod, N, nd;
+  int N, nd;
 
 
   dt = sett->dt;                    // data sampling time:  
@@ -29,14 +29,21 @@ void search_settings(
 
   omr = C_OMEGA_R*dt;
 
-  nod = 6;                          // Observation time in days
-  N = round (nod*C_SIDDAY/dt);      // No. of data points
+  N = round (sett->nod*C_SIDDAY/dt);      // No. of data points
 
-  Smin = 1000.*C_YEARSEC;                   // Minimum spindown time 
+//  Smin = 1000.*C_YEARSEC;                   // Minimum spindown time 
                                             // [sec.]
 
   // Maximum spindown (1000 years) [angular, dimensionless]
-  Smax = 2.*M_PI*(sett->fpo + B)*dt*dt/(2.*Smin);   
+//  Smax = 2.*M_PI*(sett->fpo + B)*dt*dt/(2.*Smin);   
+
+  //#mb ranges of spindown (RDC O1) 
+  double fdotmin, fdotmax; 
+  fdotmin = 0.5e-8; 
+  fdotmax = 0.5e-9; 
+
+  Smax = 2.*M_PI*fdotmin*dt*dt; 
+  Smin = 2.*M_PI*fdotmax*dt*dt;
 
   nd = 2;     // Degree of freedom, 
               // (2*nd = deg. no ofrees of freedom for chi^2)
@@ -44,7 +51,6 @@ void search_settings(
   sett->B=B;          	// bandwidth
   sett->oms=oms;      	// dimensionless angular frequency
   sett->omr=omr;      	// C_OMEGA_R * dt
-  sett->nod=nod;      	// number of days of observation
   sett->N=N;          	// number of data points
   sett->Smin=Smin;    	// minimum spindown
   sett->Smax=Smax;    	// maximum spindown
@@ -155,12 +161,17 @@ void detectors_settings(
       // Geographical longitude in radians
       ifo[i].elam = (10.+30./60.+16.1885/3600.)/RAD_TO_DEG;
       // Height h above the Earth ellipsoid in meters
-      ifo[i].eheight = 51.884;
+      ifo[i].eheight = 51.238;
       // Orientation of the detector gamma
       ifo[i].egam = (135. - (19.0+25./60.0+57.96/3600.))/RAD_TO_DEG;
 
-      printf("Using %s IFO as detector #%d... %s as input time series data\n", 
+      if (opts->gauss_flag){  
+	printf("Using %s IFO as detector #%d... Gaussian noise as input time series data\n", ifo[i].name, i);
+      }
+      else {
+	printf("Using %s IFO as detector #%d... %s as input time series data\n", 
         ifo[i].name, i, ifo[i].xdatname);
+      }
 
     // Hanford H1 detector
     } else if(!strcmp("H1", detnames[i])) {
@@ -177,8 +188,13 @@ void detectors_settings(
       // Orientation of the detector gamma
       ifo[i].egam = 170.9994/RAD_TO_DEG;
 
-      printf("Using %s IFO as detector #%d... %s as input time series data\n", 
+      if (opts->gauss_flag){  
+	printf("Using %s IFO as detector #%d... Gaussian noise as input time series data\n", ifo[i].name, i);
+      }
+      else {
+	printf("Using %s IFO as detector #%d... %s as input time series data\n", 
         ifo[i].name, i, ifo[i].xdatname);
+      }
 
     // Livingston L1 detector
     } else if(!strcmp("L1", detnames[i])) {
@@ -195,9 +211,13 @@ void detectors_settings(
       // Orientation of the detector gamma
       ifo[i].egam = 242.7165/RAD_TO_DEG;
 
-      printf("Using %s IFO as detector #%d... %s as input time series data\n", 
+      if (opts->gauss_flag){  
+	printf("Using %s IFO as detector #%d... Gaussian noise as input time series data\n", ifo[i].name, i);
+      }
+      else {
+	printf("Using %s IFO as detector #%d... %s as input time series data\n", 
         ifo[i].name, i, ifo[i].xdatname);
-
+      }
     } else {
 
       printf("Meh, unknown detector %s (see settings.c) Exiting...\n", 
