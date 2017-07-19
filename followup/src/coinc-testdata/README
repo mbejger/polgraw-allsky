@@ -1,2 +1,0 @@
-# Run for the test case: 
-./coincidences -data ./coinc-testdata -trigname triggersnet -refloc ./coinc-testdata -fpo 1094.605469 -shift 0000 -scale_f 4 -scale_s 4 -scale_a 4 -scale_d 4 -refr 100 -dt 2
