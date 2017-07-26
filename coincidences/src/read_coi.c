@@ -25,8 +25,8 @@ int main(int argc, char **argv) {
 		// first pass, set up the value of the highest coincidence 
 		if(!whigh) { whigh = w; }  
 
-		// go out of the loop if coincidences lower than whigh appear  
-		if(w < whigh) { break; } 
+		//#mb uncomment to break out of the loop if coincidences lower than whigh appear  
+    //if(w < whigh) { break; } 
          
 		fread(&mean, sizeof(float), 5, data);
 		fread(&fra, sizeof(unsigned short int), w, data); 
