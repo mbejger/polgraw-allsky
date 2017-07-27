@@ -77,6 +77,10 @@
                         </li>
                     
                         <li >
+                            <a href="../followup/">Followup of interesting outliers</a>
+                        </li>
+                    
+                        <li >
                             <a href="../pipeline_script/">Pipeline: a minimal example</a>
                         </li>
                     
@@ -118,11 +122,9 @@
         
             <li><a href="#the-idea-behind-coincidences">The idea behind coincidences</a></li>
         
-            <li><a href="#7-compilation">7. Compilation</a></li>
+            <li><a href="#compilation">Compilation</a></li>
         
-            <li><a href="#8-how-to-run-the-program">8. How to run the program?</a></li>
-        
-            <li><a href="#9-output">9. Output</a></li>
+            <li><a href="#example">Example</a></li>
         
     
     </ul>
@@ -144,23 +146,11 @@
 <li>duplicates are counted - these are the coincidences. </li>
 </ul>
 <p><em>TODO: describe cell shifts (16 different shifts in total: 0101, 0110, 0010 etc. in f, s, d, a directions) and scaling of cells (used to define the linear parameters for a given cell to subsequently compare the candidate values)</em> </p>
-<h3 id="7-compilation">7. Compilation</h3>
+<h3 id="compilation">Compilation</h3>
 <p>Run <code>make coincidences</code>; resulting binary is called <code>coincidences</code>. Modify the <code>Makefile</code> to fit your system.</p>
-<h3 id="8-how-to-run-the-program">8. How to run the program?</h3>
-<p>Sample call of <code>coincidences</code> is as follows:</p>
-<div class="codehilite"><pre><span></span>&gt; ./coincidences -data . -output 0666-coincidences -mincoin 3 -snrcutoff 5 -trigname triggers_ -refloc 6d_xdat_0.25/010 -refr 010 -fpo 171.296875 -shift 0110 -scale 4444 -dt 2 2&gt;&gt; summary
-</pre></div>
-
-
-<p>This assumes that for the band <script type="math/tex">bbbb=0666</script> the band frequency <script type="math/tex">fpo</script> is 171.296875, because we define 
-<script type="math/tex; mode=display">
-fpo = 10 + (1 - 2^{-5})\cdot bbbb\cdot \frac{1}{2dt}\ \mathrm{[Hz]}.
-</script>
-The reference grid file <code>grid.bin</code>, corresponding to the reference frame <code>010</code> is located at the <code>-refloc</code> location. Some output is directed to <code>stdin</code>. The highest-coincidence is streamed to the <code>summary</code> file via the <code>stderr</code> (<code>2&gt;&gt; summary</code>). </p>
-<p>In principle one has to run the code 16 times for all the <script type="math/tex">2^4</script> shifts (all combinations of <code>0000--1111</code>).   </p>
-<h4 id="81-full-list-of-switches">8.1. Full list of switches</h4>
+<h4 id="full-list-of-switches">Full list of switches</h4>
 <p>Type </p>
-<div class="codehilite"><pre><span></span>&gt; ./coincidences --help 
+<div class="codehilite"><pre><span></span><span class="c">% ./coincidences --help </span>
 </pre></div>
 
 
@@ -238,49 +228,63 @@ The reference grid file <code>grid.bin</code>, corresponding to the reference fr
 </tr>
 </tbody>
 </table>
-<h3 id="9-output">9. Output</h3>
-<p>Output to the screen (<code>stdout</code>) in the case of </p>
-<div class="codehilite"><pre><span></span>&gt; ./coincidences -data . -output 0666-coincidences -mincoin 3 -snrcutoff 5 -trigname triggers_ -refloc 6d_xdat_0.25/010 -refr 010 -fpo 171.296875 -shift 0110 -scale 4444 -dt 2 2&gt;&gt; summary
+<h3 id="example">Example</h3>
+<p>Using the software injection added to 2-day Gaussian noise data segments (see <a href="../../pipeline_script">minimal example of the pipeline</a>):</p>
+<div class="codehilite"><pre><span></span><span class="c">% for s in {0..1}{0..1}{0..1}{0..1}; do ./coincidences -data ../../search/network/src-cpu -output . -shift $s -scale 4444 -refr 4 -dt 2 -trigname 1234_2 -refloc ../../testdata/2d_0.25/004 -nod 2 -fpo 308.859375 -snrcutoff 5; done 2&gt;&gt; summary</span>
 </pre></div>
 
 
-<p>is</p>
-<div class="codehilite"><pre><span></span>The SNR threshold cutoff is 5.000000000000, corresponding to F-statistic value of 14.500000000000
-Reading the reference grid.bin at 6d_xdat_0.25/010
-fftpad from the grid file: 1
-Settings dt: 2.000000, oms: 2152.580016
-Reference frame number: 10
-Cell shifts  in f, s, d, a directions: 0 1 1 0 
-Cell scaling in f, s, d, a directions: 4 4 4 4 
-Reading triggers_005_0666_2.bin... Frame 5: 941/1879
-Reading triggers_019_0666_2.bin... Frame 19: 1320/1794
-Reading triggers_003_0666_2.bin... Frame 3: 1512/1920
-Reading triggers_008_0666_2.bin... Frame 8: 3090/6849
-Reading triggers_002_0666_2.bin... Frame 2: 1014/1173
-Reading triggers_014_0666_2.bin... Frame 14: 779/1542
-Reading triggers_006_0666_2.bin... Frame 6: 2884/8822
-Reading triggers_011_0666_2.bin... Frame 11: 918/2896
-Total number of candidates from all frames: 12458
-</pre></div>
-
-
-<p>The highest-coincidence is streamed to a <code>summary</code> file via <code>stderr</code>:  </p>
-<div class="codehilite"><pre><span></span>&gt; cat summary 
-triggers_ 0110 171.296875 8 8 1.05795986e+00 -7.69412393e-09 -7.42581733e-01 5.39896106e+00 2.417267e+01 5 1879 941 19 1794 1320 3 1920 1512 8 6849 3090 2 1173 1014 14 1542 779 6 8822 2884 11 2896 918
-</pre></div>
-
-
-<p>It contains the <code>trigname</code> identifier, the <code>shift</code> value, the <code>fpo</code> band frequency, the number of files read (8), and the highest coincidence found (8). Next 5 numbers are arithmetic mean values of the frequency <script type="math/tex">\,f</script> (in radians), frequency derivative <script type="math/tex">\,\dot{f}</script> (spindown), sky positions <script type="math/tex">\delta</script> and <script type="math/tex">\alpha</script>, and the mean signal-to-noise ratio, <script type="math/tex">\widetilde{\mathrm{snr}}=\sqrt{\sum_i \mathrm{snr}_i^2}</script>. The following integers are grouped in threes and denote the triggers/time frame number, number of all candidates in that triggers' file, and the number of unique candidates. </p>
-<p>Coincidences above <code>mincoin</code> are recorded in a binary file <code>.coi</code>, separately for each shift, in the <code>-output</code> directory. Each coincidence is a set of following numbers: 
+<p>This assumes that for the band <script type="math/tex">bbbb=1234</script> and the sampling time <script type="math/tex">dt=2</script> the band frequency <script type="math/tex">fpo=308.859375</script>, because 
 <script type="math/tex; mode=display">
-N_{coin},\quad\bar{f},\quad\bar{s},\quad\bar{d},\quad\bar{a},\quad\widetilde{\mathrm{snr}},\quad\mathrm{fr}_{1},\,\dots\,\mathrm{fr}_{N_{coin}},\quad\mathrm{p}_{1},\,\dots\,\mathrm{p}_{N_{coin}}
+fpo = 10 + (1 - 2^{-5})\cdot bbbb\cdot \frac{1}{2dt}\ \mathrm{[Hz]}.
+</script>
+The reference grid file <code>grid.bin</code>, corresponding to the reference frame <code>004</code> (<code>-refr 4</code>) is located at the <code>-refloc</code> location. Signal-to-noise ratio cutoff is set to 5 (<code>-snrcutoff 5</code>). Some output is directed to <code>stdin</code>. For example, the output for shift <code>0000</code> is </p>
+<div class="codehilite"><pre><span></span>Number of days is 2
+The SNR threshold cutoff is 5.000000000000, corresponding to F-statistic value of 14.500000000000
+Reading the reference grid.bin at ../../testdata/2d_0.25/004
+fftpad from the grid file: 1
+Settings dt: 2.000000, oms: 3881.241374
+Reference frame number: 4
+Cell shifts  in f, s, d, a directions: 0 0 0 0 
+Cell scaling in f, s, d, a directions: 4 4 4 4 
+Reading triggers... Frame 5: 1966/2040
+Reading triggers... Frame 1: 2409/2483
+Reading triggers... Frame 4: 2176/2384
+Reading triggers... Frame 3: 2132/2247
+Reading triggers... Frame 8: 2372/2408
+Reading triggers... Frame 2: 2197/2249
+Reading triggers... Frame 6: 2225/2305
+Reading triggers... Frame 7: 2175/2226
+Total number of candidates from all frames: 17652
+</pre></div>
+
+
+<p>The highest multiplicity coincidence for each shift is streamed to the <code>summary</code> file via the <code>stderr</code> (<code>2&gt;&gt; summary</code>). From this list of 16 lines, the highest multiplicity coincidence with the highest signal-to-noise is selected (<code>sort -gk5 -gk10 summary | tail -1</code>):</p>
+<div class="codehilite"><pre><span></span>1234_2 1111 308.859375     8     5  9.95663703e-01 -1.10830358e-09 -1.12585347e-01 1.97463002e+00 1.246469e+01 5 2040 1987 1 2483 2419 4 2384 2193 3 2247 2137 8 2408 2363 2 2249 2172 6 2305 2220 7 2226 2191 6 2 8 3 5
+</pre></div>
+
+
+<p>This output contains the </p>
+<ul>
+<li><code>band_hemisphere</code> identifier (<script type="math/tex">1234\_2</script>), </li>
+<li>the <code>shift</code> value (<script type="math/tex">1111</script>), </li>
+<li>the <code>fpo</code> reference band frequency (<script type="math/tex">308.859375</script>), </li>
+<li>the number of triggers files read (<script type="math/tex">8</script>), </li>
+<li>the multiplicity of coincidence found (<script type="math/tex">N_{coin}=5</script>), </li>
+<li>arithmetic mean values of the frequency <script type="math/tex">\bar{f}</script> (range <script type="math/tex">[0:2\pi]</script>, corresponding to the width of the band), mean frequency derivative <script type="math/tex">\bar{s}</script> (spindown, in <script type="math/tex">Hz/s</script>), equatorial coordinate system sky positions <script type="math/tex">\bar{\delta}</script> (<script type="math/tex">[\pi:-\pi]</script>) and <script type="math/tex">\bar{\alpha}</script> (<script type="math/tex">[0:2\pi]</script>), and the mean signal-to-noise ratio, <script type="math/tex">\widetilde{\mathrm{snr}}=\sqrt{\sum_i \mathrm{snr}_i^2}</script> (<script type="math/tex">5</script> floating-point numbers), </li>
+<li>8 triplets of the frame number, number of all candidates in the corresponding triggers file, and the number of unique candidates after sorting to unique cells (<script type="math/tex">8\times 3</script> integers), </li>
+<li>frame numbers participating in the coincidence (<script type="math/tex">5</script> integers). </li>
+</ul>
+<p>Coincidences larger or equal <code>mincoin</code> (default value <code>3</code>) are recorded in binary files <code>.coi</code>, separately for each shift, in the <code>-output</code> directory. Each coincidence is a set of following numbers: 
+<script type="math/tex; mode=display">
+N_{coin},\quad\bar{f},\quad\bar{s},\quad\bar{\delta},\quad\bar{\alpha},\quad\widetilde{\mathrm{snr}},\quad\mathrm{fr}_{1},\,\dots\,\mathrm{fr}_{N_{coin}},\quad\mathrm{p}_{1},\,\dots\,\mathrm{p}_{N_{coin}}
 </script>
 where </p>
 <ul>
 <li>
-<script type="math/tex">N_{coin}</script> is the size of coincidence (written as one <code>unsigned short int</code>), </li>
+<script type="math/tex">N_{coin}</script> is the multiplicity of coincidence (written as one <code>unsigned short int</code>), </li>
 <li>
-<script type="math/tex">\bar{f}</script>, <script type="math/tex">\bar{s}</script>, <script type="math/tex">\bar{d}</script>, <script type="math/tex">\bar{a}</script> and <script type="math/tex">\widetilde{\mathrm{snr}}</script> are the mean parameters of the signal (<script type="math/tex">5\times</script>
+<script type="math/tex">\bar{f}</script>, <script type="math/tex">\bar{s}</script>, <script type="math/tex">\bar{\delta}</script>, <script type="math/tex">\bar{\alpha}</script> and <script type="math/tex">\widetilde{\mathrm{snr}}</script> are the mean parameters of the signal (<script type="math/tex">5\times</script>
 <code>float</code>),</li>
 <li>
 <script type="math/tex">\mathrm{fr}_{1},\,\dots\,\mathrm{fr}_{N_{coin}}</script> are the frame numbers (<script type="math/tex">N_{coin}\times</script>
@@ -289,7 +293,17 @@ where </p>
 <script type="math/tex">\mathrm{p}_{1},\,\dots\,\mathrm{p}_{N_{coin}}</script> are the positions of candidate signals that took part in the coincidences, in their corresponding trigger files (<script type="math/tex">N_{coin}\times</script>
 <code>int</code>) </li>
 </ul>
-<p>in order to be able to recover the actual original candidate signals for further studies. </p></div>
+<p>in order to recover the information about the original triggers for further studies. <code>.coi</code> files can be read with the auxilary <code>read_coi</code> code: </p>
+<div class="codehilite"><pre><span></span><span class="c">% gcc -o read_coi read_coi.c -lm </span>
+<span class="c">% ./read_coi </span>
+# <span class="n">num_of_coincidences</span>    <span class="n">mean_val_of_pars</span> <span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="n">s</span><span class="p">,</span> <span class="n">d</span><span class="p">,</span> <span class="n">a</span><span class="p">),</span> <span class="n">snr</span>    <span class="n">frame_num</span><span class="p">:</span><span class="n">trigger_num_in_trigger_file</span>
+# <span class="p">(</span><span class="n">see</span> <span class="n">http</span><span class="p">:</span><span class="o">//</span><span class="n">mbejger</span><span class="p">.</span><span class="n">github</span><span class="p">.</span><span class="n">io</span><span class="o">/</span><span class="n">polgraw</span><span class="o">-</span><span class="n">allsky</span><span class="o">/</span><span class="n">coincidences</span> <span class="k">for</span> <span class="n">details</span><span class="p">)</span>
+<span class="mi">5</span> <span class="mf">9.956637e-01</span> <span class="o">-</span><span class="mf">1.108304e-09</span> <span class="o">-</span><span class="mf">1.125853e-01</span> <span class="mf">1.974630e+00</span> <span class="mf">1.246469e+01</span> <span class="mi">6</span><span class="p">:</span><span class="mi">777</span> <span class="mi">2</span><span class="p">:</span><span class="mi">708</span> <span class="mi">8</span><span class="p">:</span><span class="mi">968</span> <span class="mi">3</span><span class="p">:</span><span class="mi">701</span> <span class="mi">5</span><span class="p">:</span><span class="mi">603</span> 
+<span class="mi">3</span> <span class="mf">9.972902e-01</span> <span class="o">-</span><span class="mf">1.174760e-10</span> <span class="o">-</span><span class="mf">1.235594e-01</span> <span class="mf">1.968819e+00</span> <span class="mf">9.154494e+00</span> <span class="mi">8</span><span class="p">:</span><span class="mi">983</span> <span class="mi">3</span><span class="p">:</span><span class="mi">693</span> <span class="mi">1</span><span class="p">:</span><span class="mi">669</span> 
+</pre></div>
+
+
+<p>where the pairs <code>frame-number:candidate-position-in-trigger-file</code> have been arranged for readability.   </p></div>
         </div>
 
 	<footer class="col-md-12">

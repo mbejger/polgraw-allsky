@@ -17,6 +17,11 @@
 
 * [A comparison of methods for the detection of gravitational waves from unknown neutron stars](https://journals.aps.org/prd/abstract/10.1103/PhysRevD.94.124010) [(arXiv)](https://arxiv.org/abs/1606.00660) 
 
+#### LIGO O1 
+
+* [First search for gravitational waves from known pulsars with Advanced LIGO](https://arxiv.org/abs/1701.07709) 
+* [All-sky Search for Periodic Gravitational Waves in the O1 LIGO Data](https://arxiv.org/abs/1707.02667)
+
 #### Resonant bar detectors 
 
 * [All-sky search of NAUTILUS data](http://iopscience.iop.org/article/10.1088/0264-9381/25/18/184012/meta) [(arXiv)](http://arxiv.org/abs/0809.0273)

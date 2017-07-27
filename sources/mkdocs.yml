@@ -7,6 +7,7 @@ pages:
     - 'F-statistic candidate signal search': 'search_for_candidates.md'
     - 'Coincidences between candidates': 'coincidences.md'
     - 'False alarm probablity of conicidences': 'fap_coincidences.md'
+    - 'Followup of interesting outliers': 'followup.md'
     - 'Pipeline: a minimal example': 'pipeline_script.md'
     - 'Documents and publications': 'articles.md'
 

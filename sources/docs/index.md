@@ -15,8 +15,9 @@ This is the documentation of a gravitational-wave search pipeline of the [Polgra
 2. [F-statistic candidate signal search](search_for_candidates.md)
 3. [Coincidences between candidates](coincidences.md)
 4. [False alarm probability of coincidences](fap_coincidences.md) 
-5. [Pipeline: a minimal example](pipeline_script.md)
-6. [Documents and publications](articles.md)
+5. [Followup of interesting outliers](followup.md)
+6. [Pipeline: a minimal example](pipeline_script.md)
+7. [Documents and publications](articles.md)
 
 #### Contributors 
 

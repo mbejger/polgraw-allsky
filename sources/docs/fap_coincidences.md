@@ -49,24 +49,12 @@ By choosing a certain false alarm probability $P_F$, we can calculate the thresh
 
 Run `make fap`; resulting binary is called `fap` (modify the `Makefile` to fit your system).
 
-### How to run the program?
+### Full list of switches 
 
-Sample call of `fap` is
+To obtain the full list of options, type 
 ```
-> ./fap -nod 6 -band 0600 -data test-fap/summary_0600_1.txt -grid test-fap/ -vetofrac 0.222837 -cellsize 4 -threshold 0.2 
+% ./fap --help 
 ```
-Number of days in the time segment `nod` equals 6, fraction of the band vetoed `vetofrac` is 0.222837 and the cell size `cellsize` is 4. Directory containing the grid matrix file `grid.bin` should be pointed out by the `grid` switch. The input data file `test-fap/summary_0600_1.txt` is a line from the `coincidences` output: 
-```
-0600_1 1110 155.312500     8     5  1.46199508e+00 1.30224869e-09 1.09355692e+00 2.08138626e+00 1.198182e+01 3 2020252 1969390 6 2137490 2038513 14 1752761 1666583 8 5526511 3334399 5 1827438 1790517
-```
-
-#### Full list of switches 
-
-Type 
-```
-> ./fap --help 
-```
-to obtain the following description: 
 
 | Switch          | Description       |
 |-----------------|:------------------|
@@ -85,25 +73,41 @@ Also:
 |-----------------|:------------|
 | --help          |This help    |
 
+### Example 
+
+Using the software injection added to 2-day Gaussian noise data segments (see [minimal example of the pipeline](../pipeline_script)): 
+```bash 
+% ./fap -nod 2 -band 1234 -data <(sort -gk5 -gk10 summary | tail -1) -grid ../../testdata/2d_0.25/004 -vetofrac 0.0 -cellsize 4 -threshold 1.0 
+```
+or, with the auxilary `fap.sh` script, 
+```bash 
+% band=1234; bash fap.sh <(sort -gk5 -gk10 summary | tail -1) <(echo $band 0.0) ../../testdata/2d_0.25/004 
+```
+Number of days in the time segment `nod` equals 2, fraction of the band vetoed `vetofrac` is 0 (no lines, Gaussian data) and the cell size scalling factor `cellsize` is 4. Directory containing the grid matrix file `grid.bin` of the reference frame (in this case frame `004`) should be given by the `grid` switch. The input data is the last line of a sorted `summary` file to select the shift giving the best coincidence with the highest signal-to-noise ratio: 
+```
+1234_2 1111 308.859375     8     5  9.95663703e-01 -1.10830358e-09 -1.12585347e-01 1.97463002e+00 1.246469e+01 5 2040 1987 1 2483 2419 4 2384 2193 3 2247 2137 8 2408 2363 2 2249 2172 6 2305 2220 7 2226 2191 6 2 8 3 5
+```
+(see the [coincidences](../coincidences) section for details). 
+
 ### Output
 
-Output to the screen (`stdout`) in the case of 
-```
-> ./fap -nod 6 -band 0600 -data test-fap/summary_0600_1.txt -grid test-fap/ -vetofrac 0.222837 -cellsize 4 -threshold 0.2 
+```bash 
+% ./fap -nod 2 -band 1234 -data <(sort -gk5 -gk10 summary | tail -1) -grid ../../testdata/2d_0.25/004 -vetofrac 0.0 -cellsize 4 -threshold 1.0 
 ```
 is
-```
-Number of days in time segments: 6
-Input data: test-fap/summary_0600_1.txt
-Grid matrix data directory: test-fap/
-Band number: 0600 (veto fraction: 0.222837)
-The reference frequency fpo: 155.312500
+```bash 
+Number of days in time segments: 2
+Input data: /dev/fd/63
+Grid matrix data directory: ../../testdata/2d_0.25/004
+Band number: 1234 (veto fraction: 0.000000)
+The reference frequency fpo: 308.859375
 The data sampling time dt: 2.000000
-FAP threshold: 0.200000
+FAP threshold: 1.000000
 Cell size: 4
+1234 3.088594e+02 3.091094e+02 7.665713e-08 5 17682 9.956637e-01 -1.108304e-09 -1.125853e-01 1.974630e+00 1.246469e+01 2
 ```
-whereas the result (if `threshold` is reached) is printed to `stderr`: 
+The last line (in case the probability `PFshifts` is lower than the `threshold`) is printed to `stderr`. The meaning of this output is the following:  
 ```
-#band f_min        f_max        PFshifts      noc Nkall    f s d a hemisphere 
-0600  1.553125e+02 1.555625e+02 1.810747e-01  5   10799402 1.461995e+00 1.302249e-09 1.093557e+00 2.081386e+00 1.198182e+01 1
+#band f_min       f_max        PFshifts     noc Nkall  f s d a hemisphere 
+1234 3.088594e+02 3.091094e+02 7.665713e-08 5   17682  9.956637e-01 -1.108304e-09 -1.125853e-01 1.974630e+00 1.246469e+01 2
 ```
