@@ -11,8 +11,8 @@ CC = gcc
 CFLAGS = -DPREFIX="./candidates" -DTIMERS -D$(SINCOS)
 CFLAGS += -I$(FFTW_DIR)/include -I$(SEARCH_DIR)
 CFLAGS += -g -Wall -Wno-unused -fno-omit-frame-pointer \
-	-O3 -ffast-math -funsafe-loop-optimizations -funroll-loops \
-	-march=corei7-avx -mtune=corei7-avx -mavx -fopenmp 
+	-O3 -ffast-math -funsafe-loop-optimizations -funroll-loops -fopenmp \
+#	-march=corei7-avx -mtune=corei7-avx -mavx -fopenmp 
 #cpu specific optimizations e.g.: 
 #sandy-bridge (psk)
 	#-march=corei7-avx -mtune=corei7-avx -mavx

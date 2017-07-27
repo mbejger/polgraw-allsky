@@ -10,7 +10,7 @@ CC = gcc -std=gnu11 -static-libgcc
 CFLAGS = -I$(SEARCH_DIR) -I$(FFTW_DIR)/include
 CFLAGS += -g -Wall -Wno-unused -fno-omit-frame-pointer \
 	  -O3 -funsafe-loop-optimizations -funroll-loops \
-	  -march=sandybridge -mtune=sandybridge -mavx
+#	  -march=sandybridge -mtune=sandybridge -mavx
 
 #cpu specific optimizations e.g.: 
 #haswell

@@ -88,7 +88,7 @@ $ python summary.py 0165 0.7 100
 ```
 The result will be something as follows (columns are `band` number, amplitude `h`, upper limit `ul`): 
 ```bash
-#band h   ul 
+band h   ul 
 0165 0.150 0.61
 0165 0.200 0.78
 0165 0.250 0.95
