@@ -42,6 +42,12 @@
     </url>
         
     <url>
+     <loc>/sensitivity_upper_limits/</loc>
+     <lastmod>2017-07-27</lastmod>
+     <changefreq>daily</changefreq>
+    </url>
+        
+    <url>
      <loc>/pipeline_script/</loc>
      <lastmod>2017-07-27</lastmod>
      <changefreq>daily</changefreq>

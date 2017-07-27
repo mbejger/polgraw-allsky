@@ -8,6 +8,7 @@ pages:
     - 'Coincidences between candidates': 'coincidences.md'
     - 'False alarm probablity of conicidences': 'fap_coincidences.md'
     - 'Followup of interesting outliers': 'followup.md'
+    - 'Sensitivity upper limits': 'sensitivity_upper_limits.md'
     - 'Pipeline: a minimal example': 'pipeline_script.md'
     - 'Documents and publications': 'articles.md'
 
