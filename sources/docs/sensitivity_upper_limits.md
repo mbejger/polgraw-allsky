@@ -1,181 +1,135 @@
-# Pipeline: a minimal example 
+# Sensitivity upper limits 
 
-This is a sample instance of the pipeline. 
+This directory contains a set of scripts that prepare and run a pipeline search in a small area in the parameter space around the injected signal. 
 
-The generic directory structure of the input data is
+### Prerequisites 
 
+The scripts require `python3`. A working solution is to install a `python` virtual environment (`python3` comes with a built-in `pyvenv` virtual environment software).  
+
+#### Install `python3.4.5` locally
+
+The installation directory is, e.g., 
 ```bash 
-001
-├── grid.bin
-├── H1
-│   ├── DetSSB.bin
-│   ├── grid.bin
-│   ├── rDet.bin
-│   ├── rSSB.bin
-│   ├── starting_date
-│   └── xdatc_001_1234.bin
-└── L1
-    ├── DetSSB.bin
-    ├── grid.bin
-    ├── rDet.bin
-    ├── rSSB.bin
-    ├── starting_date
-    └── xdatc_001_1234.bin
+installdir=/path/to/installdir
 ```
-(here for two LIGO detectors H1 and L1, and frame `001`). Test data frames $nnn=001-008$ with pure Gaussian noise 2-day time segments with sampling time equal to 2s (`xdatc_nnn_1234.bin`) are [available here](https://polgraw.camk.edu.pl/H1L1_2d_0.25.tar.gz). 
-
-In principle, given the ephemerides (`DetSSB.bin`, `rDet.bin` and `rSSB.bin`) for each detector and frame `001-008`, one can create the grid matrices using the `gridgen` code (see [grid generation](https://github.com/mbejger/polgraw-allsky/tree/master/gridgen) for details): 
-
+then 
 ```bash 
-# grid generation
-cd gridgen
-make
-for ifo in H1 L1; do for d in $(seq -f %03g 1 8); do ./gridgen -m 0.5 -p dfg -d ../testdata/2d_0.25/${d}/${ifo}/ -n 17; done; done
-
-# copying the H1 grid file one level up for the case of the network search 
-for d in $(seq -f %03g 1 8); do cp -v ../testdata/2d_0.25/${d}/H1/grid.bin ../testdata/2d_0.25/${d}; done
-```
-Test Gaussian noise time series data were created as follows:  
-
-```bash 
-#!/bin/bash 
-
-band=1234
-
-# Gaussian data generation
-cd ../search/network/scr-cpu
-gcc gauss-xdat.c -o gauss-xdat -lm -lgsl -lgslcblas
-# 86164: number of points in 2-day segment with 2s sampling time 
-for ifo in H1 L1; do for d in $(seq -f %03g 1 8); do echo $d $ifo; ./gauss-xdat 86164 1 1 ../../../testdata/2d_0.25/${d}/${ifo}/xdatc_${d}_${band}.bin; done; done
-```
-Given the complete input data, this pipeline minimal example consists of 
-
-* Adding an artificial signal to the data (random parameters of the signal generated with `sigen`), 
-* Performing a search around the injection for each time segment (`gwsearch-cpu`), 
-* Looking for coincidences between the candidate signals from different time frames (`coincidences`), 
-* Establishing the false alarm probability of the best coincidence (`fap`).   
-
-#### 
-#### Generating random parameters for the signal 
-
-```bash 
-# Create random parameters of a signal signal
-cd search/network/src-cpu
-make sigen
-band=1234; dt=2; nod=2; ./sigen -amp 4.e-2 -band $band -dt $dt -gsize 10 -reffr 4 -nod $nod 1> sig1 
-```
-Signal parameters used in this example:
-
-```bash 
-% cat sig1 
-amp 4.000000e-02
-10
-4
-9.9791082090028898e-01
--1.6533871297433800e-09
--1.1821269273133420e-01
-1.9839903273071489e+00
-4.7717937494571394e-01
-7.5715524886052021e-01
-7.5154297884129850e-01
--4.7938541489358644e-01
-``` 
-
-#### 
-#### Adding signal to the Gaussian data and searching for candidates
-
-```bash 
-band=1234; dt=2; nod=2; for d in $(seq -f %03g 1 8); do 
-
-  LD_LIBRARY_PATH=lib/yeppp-1.0.0/binaries/linux/x86_64 ./gwsearch-cpu \
-  -data ../../../testdata/2d_0.25/ \
-  -ident ${d} \
-  -band $band \
-  -dt $dt \ 
-  -nod $nod \ 
-  -addsig sig1 \  
-  -output . \
-  -threshold 14.5 \
-  --nocheckpoint \ 
-
-done
-``` 
-
-This produces trigger files for each frame (size in bytes also listed): 
-```
-99320 triggers_001_1234_2.bin
-89960 triggers_002_1234_2.bin
-89880 triggers_003_1234_2.bin
-95360 triggers_004_1234_2.bin
-81600 triggers_005_1234_2.bin
-92200 triggers_006_1234_2.bin
-89040 triggers_007_1234_2.bin
-96320 triggers_008_1234_2.bin
+mkdir -p ${installdir}; cd ${installdir} 
+wget https://www.python.org/ftp/python/3.4.5/Python-3.4.5.tgz
+tar zxvf Python-3.4.5.tgz
+cd Python-3.4.5
+make clean
+./configure --prefix=$(dirname "${PWD}") 
+make -j4
+make install
+cd ../; rm -fr Python-3.4.5*
 ```
 
-First 10 triggers from `triggers_001_1234_2.bin` are 
+#### Create virtual environment 
+
+In a selected location (e.g., `/path/to/venvdir`) type
+ 
+```bash 
+${installdir}/bin/pyvenv venv
+```
+Activate the virtual environment
 
 ```bash
-3.05617018e+00 -3.42376198e-08 -7.68007347e-02 2.59248668e+00 5.06667333e+00 
-1.18243015e+00 -3.20762991e-08 -7.68007347e-02 2.59248668e+00 5.05528873e+00 
-1.08103361e-01 -2.77536578e-08 -7.68007347e-02 2.59248668e+00 5.07085254e+00 
-1.90022435e+00 -2.77536578e-08 -7.68007347e-02 2.59248668e+00 5.15191593e+00 
-1.90000217e+00 -2.55923371e-08 -7.68007347e-02 2.59248668e+00 5.42638039e+00 
-2.09224664e+00 -2.34310165e-08 -7.68007347e-02 2.59248668e+00 5.20879551e+00 
-2.38731576e+00 -2.12696958e-08 -7.68007347e-02 2.59248668e+00 5.31983396e+00 
-3.00543165e+00 -1.91083751e-08 -7.68007347e-02 2.59248668e+00 5.29454616e+00 
-7.49333983e-01 -1.26244131e-08 -7.68007347e-02 2.59248668e+00 5.08724856e+00 
-2.08710778e-01  3.43510887e-10 -7.68007347e-02 2.59248668e+00 5.17537018e+00 
+. /path/to/venvdir/bin/activate
 ```
-#### 
-#### Coincidences among these trigger files 
 
+(to leave the environment, type `deactivate`). You can now install specific packages using the `pip` installer: 
+
+```bash
+pip install nympy
+pip install scipy
+pip install matplotlib
+pip install pandas
+```
+
+### Running the scripts 
+
+The steps of the procedure is as follows:
+
+1. Chose the GW strain amplitude $h_0$,
+2. Randomly chose other signal parameters (with signal generator `sigen`)
+3. Add signal to the data (with the `gwdetect-cpu --addsig` feature) to selected time segments, and perform the search for candidates in each of them,
+4. Perform the search for coincidences (`coincidences/src`)
+5. Find if the signal was detected (find the highest coincidences for a given band and compare them with the number of time segments analyzed).
+
+The script `script.py` creates a subdirectory in which the pipeline will be launched based on the following input files:
+1. `config.ini` which contains the paths to codes and the input data, and the parameters of the search: 
+    * F-statistic threshold, 
+    * how many simulations, 
+    * which detectors to use, 
+    * size of the region to search, 
+    * how to perform the search for coincidences etc. 
+
+2. `bandlist` which is a list of bands with strain amplitudes, e.g. 
+```bash
+0164 2.25e-1 
+0165 1.5e-1 2e-1 2.5e-1 3e-1
+0166 2e-1 4e-1
+```
+The call is
+```bash
+% python script.py config.ini bandlist
+```
+Two other auxiliary files are:
+1. Dummy `bash` script `dummy.sh` with the actual pipeline calls (variables replaced with actual values by `script.py`),
+2. `PBS/Torque` script `job.sub`, launched into the cluster queue, which contains the call to `script.sh` (modify it to fit e.g., the `slurm` scheduler). 
+
+Script `script.py` creates a `run.sh` file which contains commands to send the jobs into the queue. The results are summary files (`.sum`) for the requested number of simulations. In order to process them, call the `summary.py` script
+```bash
+% python summary.py band coincidence_threshold number_of_simulations
+```
+e.g.
+```bash
+% python summary.py 0165 0.7 100
+```
+The result will be something as follows (columns are `band` number, amplitude `h`, upper limit `ul`): 
+```bash
+band h   ul 
+0165 0.150 0.61
+0165 0.200 0.78
+0165 0.250 0.95
+0165 0.300 0.99
+```
+#### Serial (stacked) version for longer jobs 
+
+`script2.py` creates subdirectories and a `job_BAND.sub` file for a list of amplitudes for BAND from `bandlist`, stacked one after another (can be handy to send one band as one job to the queue). Call: 
+
+```bash
+% python script2.sh config.ini bandlist
+```
+and then (for e.g., band 0165) send it to the queue 
 ```bash 
-cd ../../../coincidences/src
-make
-band=1234; dt=2; nod=2; fpo=$(echo $band $dt |awk '{printf("%.6f", 10 + 0.96875*$1/(2.0*$2))}'); for s in {0..1}{0..1}{0..1}{0..1}; do 
+% qsub -N 0165 -v howmany=100 job_0165.sub
+```
+The summary of simulations for a given band (`0165`, say) processed by the [summary.sh](https://github.com/mbejger/polgraw-allsky/blob/master/sensitivity-scripts/summary.sh) result in the following list of `h0` amplitudes followed by the corresponding fractions of significant coincidences (`N_coin/N`):
 
-  ./coincidences \ 
-  -data ../../search/network/src-cpu \ 
-  -output . \ 
-  -shift $s \ 
-  -scale 4444 \ 
-  -refr 4 \ 
-  -dt $dt \ 
-  -trigname ${band}_2 \ 
-  -refloc ../../testdata/2d_0.25/004 \ 
-  -nod $nod \ 
-  -fpo $fpo \ 
-  -snrcutoff 5 \ 
+```bash
+band h   ul 
+0165 0.150 0.61
+0165 0.200 0.78
+0165 0.250 0.95
+0165 0.300 0.99
+```
+
+We are interested in a 95% upper limit i.e. the `h0` corresponding to the fraction 0.95 of significant coincidences in the simulation (`N_coin/N=0.95`). This is obtained by fitting a sigmoid function
+
+```python
+def sigmoid(x, x0, k):
+     y = 1.0 / (1.0 + np.exp(k*(x0-x)))
+     return y
+```
+to the above data. Fitting is done by [ul.py](https://github.com/mbejger/polgraw-allsky/blob/master/sensitivity-scripts/upper-limits/ul.py):
+
+```bash
+% python ul.py 0165_results 0165 0.01 test.pdf
+0165 2.7026e-01
+```
+The output is the band number and `h0` corresponding to the 95% upper limit. Last command-line option [test.pdf](https://github.com/mbejger/polgraw-allsky/blob/master/sensitivity-scripts/upper-limits/test.pdf) is optional. It produces the auxiliary plot, with the 95% upper limit is denoted by red circle: 
+
+![0165 upper limits](img/0165_ul.png)
  
-  done 2>> summary
-
-# best shift (largest snr)
-sort -gk5 -gk10 summary | tail -1
-```
-The highest coincidence with the largest signal-to-noise ratio is  
-```
-1234_2 1111 308.859375     8     5  9.95663703e-01 -1.10830358e-09 -1.12585347e-01 1.97463002e+00 1.246469e+01 5 2040 1987 1 2483 2419 4 2384 2193 3 2247 2137 8 2408 2363 2 2249 2172 6 2305 2220 7 2226 2191 6 2 8 3 5
-```
-
-####
-#### False alarm probability 
-
-```
-make fap 
-fap.sh <(sort -gk5 -gk10 summary | tail -1) <(echo $band 0.0) ../../testdata/2d_0.25/004
-```
-resulting in 
-```
-Number of days in time segments: 2
-Input data: /dev/fd/63
-Grid matrix data directory: ../../testdata/2d_0.25/004
-Band number: 1234 (veto fraction: 0.000000)
-The reference frequency fpo: 308.859375
-The data sampling time dt: 2.000000
-FAP threshold: 1.000000
-Cell size: 4
-1234 3.088594e+02 3.091094e+02 7.665713e-08 5 17682 9.956637e-01 -1.108304e-09 -1.125853e-01 1.974630e+00 1.246469e+01 2
-```
-The false alarm probability in this case is `7.665713e-08`. It's low enough to be an interesting outlier for a [followup](../polgraw-allsky/followup) procedure. 
-
