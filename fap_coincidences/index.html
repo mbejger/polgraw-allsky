@@ -239,7 +239,7 @@ P^{\rm shifts}_F = 1 - \bigg[ 1 - \Big( 2^4 p_F(N_c)
 </tbody>
 </table>
 <h3 id="example">Example</h3>
-<p>Using the software injection added to 2-day Gaussian noise data segments (see <a href="../../pipeline_script">minimal example of the pipeline</a>): </p>
+<p>Using the software injection added to 2-day Gaussian noise data segments (see <a href="../../polgraw-allsky/pipeline_script">minimal example of the pipeline</a>): </p>
 <div class="codehilite"><pre><span></span>% ./fap -nod <span class="m">2</span> -band <span class="m">1234</span> -data &lt;<span class="o">(</span>sort -gk5 -gk10 summary <span class="p">|</span> tail -1<span class="o">)</span> -grid ../../testdata/2d_0.25/004 -vetofrac 0.0 -cellsize <span class="m">4</span> -threshold 1.0 
 </pre></div>
 
@@ -254,7 +254,7 @@ P^{\rm shifts}_F = 1 - \bigg[ 1 - \Big( 2^4 p_F(N_c)
 </pre></div>
 
 
-<p>(see the <a href="../../coincidences">coincidences</a> section for details). </p>
+<p>(see the <a href="../../polgraw-allsky/coincidences">coincidences</a> section for details). </p>
 <h3 id="output">Output</h3>
 <div class="codehilite"><pre><span></span>% ./fap -nod <span class="m">2</span> -band <span class="m">1234</span> -data &lt;<span class="o">(</span>sort -gk5 -gk10 summary <span class="p">|</span> tail -1<span class="o">)</span> -grid ../../testdata/2d_0.25/004 -vetofrac 0.0 -cellsize <span class="m">4</span> -threshold 1.0 
 </pre></div>

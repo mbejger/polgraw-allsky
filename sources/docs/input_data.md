@@ -94,7 +94,7 @@ Frames `nnn` are labelled with three-digit consecutive number. For the `O1` data
 $$
 fpo = 10 + (1 - 2^{-5})\cdot bbbb\cdot \frac{1}{2dt}\ \mathrm{[Hz]}. 
 $$
-Neighboring bands overlap by $2^{-5}/(2dt)\ \mathrm{Hz}$. `O1` data in the frequency range $10-2000\ \mathrm{Hz}$ contains $8220$ narrow `0.25 Hz` bands. With the $dt = 2s$ sampling time, the total number of data points in time segments of 2 sideral day long is `N=86164`. For lower frequencies (`10-475 Hz`, see [documents and publications](../articles)) 6 day length segments are used (`N=258492` double-precision numbers).
+Neighboring bands overlap by $2^{-5}/(2dt)\ \mathrm{Hz}$. `O1` data in the frequency range $10-2000\ \mathrm{Hz}$ contains $8220$ narrow `0.25 Hz` bands. With the $dt = 2s$ sampling time, the total number of data points in time segments of 2 sideral day long is `N=86164`. For lower frequencies (`10-475 Hz`, see [documents and publications](../polgraw-allsky/articles)) 6 day length segments are used (`N=258492` double-precision numbers).
 
 
   

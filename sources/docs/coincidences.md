@@ -55,7 +55,7 @@ Also:
 
 ### Example 
 
-Using the software injection added to 2-day Gaussian noise data segments (see [minimal example of the pipeline](../pipeline_script)):
+Using the software injection added to 2-day Gaussian noise data segments (see [minimal example of the pipeline](../polgraw-allsky/pipeline_script)):
 ```
 % for s in {0..1}{0..1}{0..1}{0..1}; do ./coincidences -data ../../search/network/src-cpu -output . -shift $s -scale 4444 -refr 4 -dt 2 -trigname 1234_2 -refloc ../../testdata/2d_0.25/004 -nod 2 -fpo 308.859375 -snrcutoff 5; done 2>> summary
 ```

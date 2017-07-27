@@ -75,7 +75,7 @@ Also:
 
 ### Example 
 
-Using the software injection added to 2-day Gaussian noise data segments (see [minimal example of the pipeline](../pipeline_script)): 
+Using the software injection added to 2-day Gaussian noise data segments (see [minimal example of the pipeline](../polgraw-allsky/pipeline_script)): 
 ```bash 
 % ./fap -nod 2 -band 1234 -data <(sort -gk5 -gk10 summary | tail -1) -grid ../../testdata/2d_0.25/004 -vetofrac 0.0 -cellsize 4 -threshold 1.0 
 ```
@@ -87,7 +87,7 @@ Number of days in the time segment `nod` equals 2, fraction of the band vetoed `
 ```
 1234_2 1111 308.859375     8     5  9.95663703e-01 -1.10830358e-09 -1.12585347e-01 1.97463002e+00 1.246469e+01 5 2040 1987 1 2483 2419 4 2384 2193 3 2247 2137 8 2408 2363 2 2249 2172 6 2305 2220 7 2226 2191 6 2 8 3 5
 ```
-(see the [coincidences](../coincidences) section for details). 
+(see the [coincidences](../polgraw-allsky/coincidences) section for details). 
 
 ### Output
 

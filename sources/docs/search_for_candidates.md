@@ -71,7 +71,7 @@ where
 * `output_dir`is a directory to write the output (e.g., in current directory, . ) 
 * `ident` is the number of time frame to be analyzed ($001$),
 * `nod` number of days is $2$, 
-* `band` is the number of the frequency band (see the [input data structure](../input_data) for details). 
+* `band` is the number of the frequency band (see the [input data structure](../polgraw-allsky/input_data) for details). 
 
 #### 
 #### Network of detectors 
@@ -101,7 +101,7 @@ The program will proceed assuming that
   * `band` equals to $1234$,  
   * the sampling time `dt` equals $2 s$, 
   * number of days `nod` in $2$, 
-  * the `-addsig` option is used to add a software injection to pure noise Gaussian data. The signal's parameters are randomly generated using the `sigen` code (for more details see the [minimal example](../pipeline_script)).  
+  * the `-addsig` option is used to add a software injection to pure noise Gaussian data. The signal's parameters are randomly generated using the `sigen` code (for more details see the [minimal example](../polgraw-allsky/pipeline_script)).  
   * the threshold for the $\mathcal{F}$-statistic is set to be $14.5$,
   * `-output` is the current directory, 
   * `--nocheckpoint` disables the checkpointing (writing the last visited position on the grid to the `state` file), 

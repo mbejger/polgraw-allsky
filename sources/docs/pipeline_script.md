@@ -24,7 +24,7 @@ The generic directory structure of the input data is
 ```
 (here for two LIGO detectors H1 and L1, and frame `001`). Test data frames $nnn=001-008$ with pure Gaussian noise 2-day time segments with sampling time equal to 2s (`xdatc_nnn_1234.bin`) are [available here](https://polgraw.camk.edu.pl/H1L1_2d_0.25.tar.gz). 
 
-In principle, given the ephemerides (`DetSSB.bin`, `rDet.bin` and `rSSB.bin`) for each detector and frame `001-008`, one can create the grid matrices using the `gridgen` code (see [grid generation](../grid_generation) for details): 
+In principle, given the ephemerides (`DetSSB.bin`, `rDet.bin` and `rSSB.bin`) for each detector and frame `001-008`, one can create the grid matrices using the `gridgen` code (see [grid generation](../polgraw-allsky/grid_generation) for details): 
 
 ```bash 
 # grid generation
@@ -177,5 +177,5 @@ FAP threshold: 1.000000
 Cell size: 4
 1234 3.088594e+02 3.091094e+02 7.665713e-08 5 17682 9.956637e-01 -1.108304e-09 -1.125853e-01 1.974630e+00 1.246469e+01 2
 ```
-The false alarm probability in this case is `7.665713e-08`. It's low enough to be an interesting outlier for a [followup](../followup) procedure. 
+The false alarm probability in this case is `7.665713e-08`. It's low enough to be an interesting outlier for a [followup](../polgraw-allsky/followup) procedure. 
 
