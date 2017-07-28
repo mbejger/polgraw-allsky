@@ -8,7 +8,7 @@ The scripts require `python3`. A working solution is to install a `python` virtu
 
 #### Install `python3.4.5` locally
 
-The installation directory is, e.g., 
+Let's assume the installation directory is  
 ```bash 
 installdir=/path/to/installdir
 ```
@@ -27,7 +27,7 @@ cd ../; rm -fr Python-3.4.5*
 
 #### Create virtual environment 
 
-In a selected location (e.g., `/path/to/venvdir`) type
+In a selected location (`/path/to/venvdir`) type
  
 ```bash 
 ${installdir}/bin/pyvenv venv
@@ -52,9 +52,9 @@ pip install pandas
 The steps of the procedure is as follows:
 
 1. Chose the GW strain amplitude $h_0$,
-2. Randomly chose other signal parameters (with signal generator `sigen`)
-3. Add signal to the data (with the `gwdetect-cpu --addsig` feature) to selected time segments, and perform the search for candidates in each of them,
-4. Perform the search for coincidences (`coincidences/src`)
+2. Randomly chose other signal parameters (with signal generator [sigen](https://github.com/mbejger/polgraw-allsky/blob/master/search/network/src-cpu/sigen.c))
+3. Add signal to the data (with the `gwdetect-cpu --addsig` feature) to selected time segments, and perform the search for candidates in each of them ([gwdetect-cpu](https://github.com/mbejger/polgraw-allsky/blob/master/search/network/src-cpu/main.c)),
+4. Search for coincidences ([coincidences](https://github.com/mbejger/polgraw-allsky/blob/master/coincidences/src/coincidences.c))
 5. Find if the signal was detected (find the highest coincidences for a given band and compare them with the number of time segments analyzed).
 
 The script `script.py` creates a subdirectory in which the pipeline will be launched based on the following input files:
@@ -65,7 +65,7 @@ The script `script.py` creates a subdirectory in which the pipeline will be laun
     * size of the region to search, 
     * how to perform the search for coincidences etc. 
 
-2. `bandlist` which is a list of bands with strain amplitudes, e.g. 
+2. `bandlist` which is a list of bands with strain amplitudes, for example:  
 ```bash
 0164 2.25e-1 
 0165 1.5e-1 2e-1 2.5e-1 3e-1
@@ -76,14 +76,14 @@ The call is
 % python script.py config.ini bandlist
 ```
 Two other auxiliary files are:
-1. Dummy `bash` script `dummy.sh` with the actual pipeline calls (variables replaced with actual values by `script.py`),
-2. `PBS/Torque` script `job.sub`, launched into the cluster queue, which contains the call to `script.sh` (modify it to fit e.g., the `slurm` scheduler). 
+1. Dummy `bash` script `dummy.sh` with the actual pipeline calls (variables replaced with actual values by `script.py` and renamed to `script.sh`),
+2. `PBS/Torque` script `job.sub`, launched into the cluster queue and running `script.sh` (modify it to fit other systems, e.g., the `slurm` scheduler). 
 
 Script `script.py` creates a `run.sh` file which contains commands to send the jobs into the queue. The results are summary files (`.sum`) for the requested number of simulations. In order to process them, call the `summary.py` script
 ```bash
 % python summary.py band coincidence_threshold number_of_simulations
 ```
-e.g.
+for example 
 ```bash
 % python summary.py 0165 0.7 100
 ```

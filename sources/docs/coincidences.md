@@ -59,7 +59,7 @@ Using the software injection added to 2-day Gaussian noise data segments (see [m
 ```
 % for s in {0..1}{0..1}{0..1}{0..1}; do ./coincidences -data ../../search/network/src-cpu -output . -shift $s -scale 4444 -refr 4 -dt 2 -trigname 1234_2 -refloc ../../testdata/2d_0.25/004 -nod 2 -fpo 308.859375 -snrcutoff 5; done 2>> summary
 ```
-This assumes that for the band $bbbb=1234$ and the sampling time $dt=2$ the band frequency $fpo=308.859375$, because 
+This assumes that for the band $bbbb=1234$ and the sampling time $dt=2\ \mathrm{s}$ the band frequency $fpo=308.859375\ \mathrm{Hz}$, because 
 $$
 fpo = 10 + (1 - 2^{-5})\cdot bbbb\cdot \frac{1}{2dt}\ \mathrm{[Hz]}.
 $$
@@ -92,7 +92,7 @@ This output contains the
 
 * `band_hemisphere` identifier ($1234\_2$), 
 * the `shift` value ($1111$), 
-* the `fpo` reference band frequency ($308.859375$), 
+* the `fpo` reference band frequency ($308.859375\ \mathrm{Hz}$), 
 * the number of triggers files read ($8$), 
 * the multiplicity of coincidence found ($N_{coin}=5$), 
 * arithmetic mean values of the frequency $\bar{f}$ (range $[0:2\pi]$, corresponding to the width of the band), mean frequency derivative $\bar{s}$ (spindown, in $Hz/s$), equatorial coordinate system sky positions $\bar{\delta}$ ($[\pi:-\pi]$) and $\bar{\alpha}$ ($[0:2\pi]$), and the mean signal-to-noise ratio, $\widetilde{\mathrm{snr}}=\sqrt{\sum_i \mathrm{snr}_i^2}$ ($5$ floating-point numbers), 

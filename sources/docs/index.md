@@ -2,14 +2,14 @@
 
 This is the documentation of a gravitational-wave search pipeline of the [Polgraw](https://polgraw.camk.edu.pl/en) group. 
 
-#### Pipeline flowchart  
+### Pipeline flowchart  
 
 ##
 <p style="margin-left:50px;">
 ![Code flowchart](img/pipeline.png)
 </p>
 
-#### Topics
+### Topics
 
 1. [Input data generation](input_data.md) 
 2. [F-statistic candidate signal search](search_for_candidates.md)
@@ -20,17 +20,20 @@ This is the documentation of a gravitational-wave search pipeline of the [Polgra
 7. [Pipeline: a minimal example](pipeline_script.md)
 8. [Documents and publications](articles.md)
 
-#### Contributors 
+### Contributors 
 
 In alphabetic order:
 
+* Pia Astone 
 * Michał Bejger
 * Jan Bolek
 * Paweł Ciecieląg
 * Orest Dorosh
 * Aleksander Garus
 * Andrzej Królak
+* Máté Ferenc Nagy-Egri
 * Maciej Piętka
+* Andrzej Pisarski 
 * Gevorg Poghosyan
 * Magdalena Sieniawska 
 * Rafał Skrzypiec

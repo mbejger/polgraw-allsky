@@ -1,6 +1,8 @@
 # Pipeline: a minimal example 
 
-This is a sample instance of the pipeline. 
+This is a demonstration of the pipeline using Gaussian noise test data with randomly-selected signal added to the data (software injection).  
+
+### Structure of the input data 
 
 The generic directory structure of the input data is
 
@@ -55,8 +57,10 @@ Given the complete input data, this pipeline minimal example consists of
 * Looking for coincidences between the candidate signals from different time frames (`coincidences`), 
 * Establishing the false alarm probability of the best coincidence (`fap`).   
 
-#### 
-#### Generating random parameters for the signal 
+### 
+### Generating random parameters for the signal 
+
+Random parameters of the signal are chosen using the [sigen](https://github.com/mbejger/polgraw-allsky/blob/master/search/network/src-cpu/sigen.c) and added to the data time series with the `add_signal()` function in ([init](https://github.com/mbejger/polgraw-allsky/blob/master/search/network/src-cpu/init.c)). 
 
 ```bash 
 # Create random parameters of a signal signal
@@ -81,8 +85,8 @@ amp 4.000000e-02
 -4.7938541489358644e-01
 ``` 
 
-#### 
-#### Adding signal to the Gaussian data and searching for candidates
+### 
+### Adding signal to the Gaussian data and searching for candidates
 
 ```bash 
 band=1234; dt=2; nod=2; for d in $(seq -f %03g 1 8); do 
@@ -127,8 +131,8 @@ First 10 triggers from `triggers_001_1234_2.bin` are
 7.49333983e-01 -1.26244131e-08 -7.68007347e-02 2.59248668e+00 5.08724856e+00 
 2.08710778e-01  3.43510887e-10 -7.68007347e-02 2.59248668e+00 5.17537018e+00 
 ```
-#### 
-#### Coincidences among these trigger files 
+### 
+### Coincidences among these trigger files 
 
 ```bash 
 cd ../../../coincidences/src
@@ -150,7 +154,7 @@ band=1234; dt=2; nod=2; fpo=$(echo $band $dt |awk '{printf("%.6f", 10 + 0.96875*
  
   done 2>> summary
 
-# best shift (largest snr)
+# best shift (highest multiplicity with largest snr)
 sort -gk5 -gk10 summary | tail -1
 ```
 The highest coincidence with the largest signal-to-noise ratio is  
@@ -158,8 +162,8 @@ The highest coincidence with the largest signal-to-noise ratio is
 1234_2 1111 308.859375     8     5  9.95663703e-01 -1.10830358e-09 -1.12585347e-01 1.97463002e+00 1.246469e+01 5 2040 1987 1 2483 2419 4 2384 2193 3 2247 2137 8 2408 2363 2 2249 2172 6 2305 2220 7 2226 2191 6 2 8 3 5
 ```
 
-####
-#### False alarm probability 
+###
+### False alarm probability 
 
 ```
 make fap 

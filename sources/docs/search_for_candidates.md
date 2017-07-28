@@ -25,7 +25,7 @@ Run  `make gwsearch-cpu` or `make` in `search/network/src-cpu`, resulting  binar
 For the full list of options, type
 
 ```bash 
-$ ./gwsearch-cpu --help 
+% ./gwsearch-cpu --help 
 ```
 
 | Switch      | Description       |
@@ -61,7 +61,7 @@ Also:
 Minimal call to `gwsearch-cpu` is as follows (code compiled with the `GNUSINCOS` option): 
 
 ```
-./gwsearch-cpu -data ../../../testdata/2d_0.25 -dt 2 -output . -ident 001 -band 1234 -nod 2  
+% ./gwsearch-cpu -data ../../../testdata/2d_0.25 -dt 2 -output . -ident 001 -band 1234 -nod 2  
 ```
 
 where
@@ -114,7 +114,7 @@ Binary output files, containing trigger candidate events above an arbitrary thre
 Record no.            | 
 --------------------- | ---------------------------- 
 1                     | frequency [radians, between 0 and $\pi$] above `fpo`  
-2                     | spindown [$Hz/s$]  
+2                     | spindown [$\mathrm{Hz/s}$]  
 3                     | declination [radians, between $\pi$ and $-\pi$]
 4                     | right ascension [radians, between 0 and $2\pi$]
 5                     | signal-to-noise ratio

@@ -122,6 +122,8 @@
     
         <li class="main active"><a href="#pipeline-a-minimal-example">Pipeline: a minimal example</a></li>
         
+            <li><a href="#structure-of-the-input-data">Structure of the input data</a></li>
+        
             <li><a href="#generating-random-parameters-for-the-signal">Generating random parameters for the signal</a></li>
         
             <li><a href="#adding-signal-to-the-gaussian-data-and-searching-for-candidates">Adding signal to the Gaussian data and searching for candidates</a></li>
@@ -136,7 +138,8 @@
             <div class="col-md-9" role="main">
 
 <h1 id="pipeline-a-minimal-example">Pipeline: a minimal example</h1>
-<p>This is a sample instance of the pipeline. </p>
+<p>This is a demonstration of the pipeline using Gaussian noise test data with randomly-selected signal added to the data (software injection).  </p>
+<h3 id="structure-of-the-input-data">Structure of the input data</h3>
 <p>The generic directory structure of the input data is</p>
 <div class="codehilite"><pre><span></span>001
 ├── grid.bin
@@ -189,8 +192,9 @@ gcc gauss-xdat.c -o gauss-xdat -lm -lgsl -lgslcblas
 <li>Looking for coincidences between the candidate signals from different time frames (<code>coincidences</code>), </li>
 <li>Establishing the false alarm probability of the best coincidence (<code>fap</code>).   </li>
 </ul>
-<h4 id="_1"></h4>
-<h4 id="generating-random-parameters-for-the-signal">Generating random parameters for the signal</h4>
+<h3 id="_1"></h3>
+<h3 id="generating-random-parameters-for-the-signal">Generating random parameters for the signal</h3>
+<p>Random parameters of the signal are chosen using the <a href="https://github.com/mbejger/polgraw-allsky/blob/master/search/network/src-cpu/sigen.c">sigen</a> and added to the data time series with the <code>add_signal()</code> function in (<a href="https://github.com/mbejger/polgraw-allsky/blob/master/search/network/src-cpu/init.c">init</a>). </p>
 <div class="codehilite"><pre><span></span><span class="c1"># Create random parameters of a signal signal</span>
 <span class="nb">cd</span> search/network/src-cpu
 make sigen
@@ -214,8 +218,8 @@ amp 4.000000e-02
 </pre></div>
 
 
-<h4 id="_2"></h4>
-<h4 id="adding-signal-to-the-gaussian-data-and-searching-for-candidates">Adding signal to the Gaussian data and searching for candidates</h4>
+<h3 id="_2"></h3>
+<h3 id="adding-signal-to-the-gaussian-data-and-searching-for-candidates">Adding signal to the Gaussian data and searching for candidates</h3>
 <div class="codehilite"><pre><span></span><span class="nv">band</span><span class="o">=</span>1234<span class="p">;</span> <span class="nv">dt</span><span class="o">=</span>2<span class="p">;</span> <span class="nv">nod</span><span class="o">=</span>2<span class="p">;</span> <span class="k">for</span> d in <span class="k">$(</span>seq -f %03g <span class="m">1</span> 8<span class="k">)</span><span class="p">;</span> <span class="k">do</span> 
 
   <span class="nv">LD_LIBRARY_PATH</span><span class="o">=</span>lib/yeppp-1.0.0/binaries/linux/x86_64 ./gwsearch-cpu <span class="se">\</span>
@@ -259,8 +263,8 @@ amp 4.000000e-02
 </pre></div>
 
 
-<h4 id="_3"></h4>
-<h4 id="coincidences-among-these-trigger-files">Coincidences among these trigger files</h4>
+<h3 id="_3"></h3>
+<h3 id="coincidences-among-these-trigger-files">Coincidences among these trigger files</h3>
 <div class="codehilite"><pre><span></span><span class="nb">cd</span> ../../../coincidences/src
 make
 <span class="nv">band</span><span class="o">=</span>1234<span class="p">;</span> <span class="nv">dt</span><span class="o">=</span>2<span class="p">;</span> <span class="nv">nod</span><span class="o">=</span>2<span class="p">;</span> <span class="nv">fpo</span><span class="o">=</span><span class="k">$(</span><span class="nb">echo</span> <span class="nv">$band</span> <span class="nv">$dt</span> <span class="p">|</span>awk <span class="s1">&#39;{printf(&quot;%.6f&quot;, 10 + 0.96875*$1/(2.0*$2))}&#39;</span><span class="k">)</span><span class="p">;</span> <span class="k">for</span> s in <span class="o">{</span>0..1<span class="o">}{</span>0..1<span class="o">}{</span>0..1<span class="o">}{</span>0..1<span class="o">}</span><span class="p">;</span> <span class="k">do</span> 
@@ -280,7 +284,7 @@ make
 
   <span class="k">done</span> 2&gt;&gt; summary
 
-<span class="c1"># best shift (largest snr)</span>
+<span class="c1"># best shift (highest multiplicity with largest snr)</span>
 sort -gk5 -gk10 summary <span class="p">|</span> tail -1
 </pre></div>
 
@@ -290,8 +294,8 @@ sort -gk5 -gk10 summary <span class="p">|</span> tail -1
 </pre></div>
 
 
-<h4 id="_4"></h4>
-<h4 id="false-alarm-probability">False alarm probability</h4>
+<h3 id="_4"></h3>
+<h3 id="false-alarm-probability">False alarm probability</h3>
 <div class="codehilite"><pre><span></span><span class="x">make fap </span>
 <span class="x">fap.sh &lt;(sort -gk5 -gk10 summary | tail -1) &lt;(echo </span><span class="p">$</span><span class="nv">band</span><span class="x"> 0.0) ../../testdata/2d_0.25/004</span>
 </pre></div>
