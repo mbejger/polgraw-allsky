@@ -2,6 +2,8 @@
 
 This is the documentation of a gravitational-wave search pipeline of the [Polgraw](https://polgraw.camk.edu.pl/en) group. 
 
+The pipeline's source code is [available here](https://github.com/mbejger/polgraw-allsky). 
+
 ### Pipeline flowchart  
 
 ##

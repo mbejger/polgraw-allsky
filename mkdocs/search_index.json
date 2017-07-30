@@ -2,12 +2,12 @@
     "docs": [
         {
             "location": "/", 
-            "text": "Polgraw all-sky pipeline: search for almost monochromatic gravitational wave signals\n\n\nThis is the documentation of a gravitational-wave search pipeline of the \nPolgraw\n group. \n\n\nPipeline flowchart\n\n\n\n\n\n\n\n\n\n\nTopics\n\n\n\n\nInput data generation\n \n\n\nF-statistic candidate signal search\n\n\nCoincidences between candidates\n\n\nFalse alarm probability of coincidences\n \n\n\nFollowup of interesting outliers\n\n\nSensitivity upper limits\n\n\nPipeline: a minimal example\n\n\nDocuments and publications\n\n\n\n\nContributors\n\n\nIn alphabetic order:\n\n\n\n\nPia Astone \n\n\nMicha\u0142 Bejger\n\n\nJan Bolek\n\n\nPawe\u0142 Cieciel\u0105g\n\n\nOrest Dorosh\n\n\nAleksander Garus\n\n\nAndrzej Kr\u00f3lak\n\n\nM\u00e1t\u00e9 Ferenc Nagy-Egri\n\n\nMaciej Pi\u0119tka\n\n\nAndrzej Pisarski \n\n\nGevorg Poghosyan\n\n\nMagdalena Sieniawska \n\n\nRafa\u0142 Skrzypiec", 
+            "text": "Polgraw all-sky pipeline: search for almost monochromatic gravitational wave signals\n\n\nThis is the documentation of a gravitational-wave search pipeline of the \nPolgraw\n group. \n\n\nThe pipeline's source code is \navailable here\n. \n\n\nPipeline flowchart\n\n\n\n\n\n\n\n\n\n\nTopics\n\n\n\n\nInput data generation\n \n\n\nF-statistic candidate signal search\n\n\nCoincidences between candidates\n\n\nFalse alarm probability of coincidences\n \n\n\nFollowup of interesting outliers\n\n\nSensitivity upper limits\n\n\nPipeline: a minimal example\n\n\nDocuments and publications\n\n\n\n\nContributors\n\n\nIn alphabetic order:\n\n\n\n\nPia Astone \n\n\nMicha\u0142 Bejger\n\n\nJan Bolek\n\n\nPawe\u0142 Cieciel\u0105g\n\n\nOrest Dorosh\n\n\nAleksander Garus\n\n\nAndrzej Kr\u00f3lak\n\n\nM\u00e1t\u00e9 Ferenc Nagy-Egri\n\n\nMaciej Pi\u0119tka\n\n\nAndrzej Pisarski \n\n\nGevorg Poghosyan\n\n\nMagdalena Sieniawska \n\n\nRafa\u0142 Skrzypiec", 
             "title": "Home"
         }, 
         {
             "location": "/#polgraw-all-sky-pipeline-search-for-almost-monochromatic-gravitational-wave-signals", 
-            "text": "This is the documentation of a gravitational-wave search pipeline of the  Polgraw  group.", 
+            "text": "This is the documentation of a gravitational-wave search pipeline of the  Polgraw  group.   The pipeline's source code is  available here .", 
             "title": "Polgraw all-sky pipeline: search for almost monochromatic gravitational wave signals"
         }, 
         {
