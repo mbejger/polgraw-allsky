@@ -21,6 +21,7 @@ typedef struct _comm_line_opts {
       gauss_flag,		// Generate Gaussian noise instead of reading data
       neigh_flag,		// Area of calculation will be defined as %% from initial value
       naive_flag,		// Area of calculation is taken from optimal grid used in search 
+      onepoint_flag,		// Calculate Fstatistic in one point (taken from candidates file)
 				// and divided into denser, naive (not optimal) grid
       help_flag;		
   
