@@ -61,12 +61,13 @@ void handle_opts( Search_settings *sett,
   opts->help_flag=0;
   opts->veto_flag=0; 
   opts->simplex_flag=0;
+  opts->onepoint_flag=0;
   opts->mads_flag=0;
   opts->gauss_flag=0;
   opts->neigh_flag=0;
   opts->naive_flag=0;
 
-  static int help_flag=0, veto_flag=0, simplex_flag=0, mads_flag=0, gauss_flag=0, neigh_flag=0, naive_flag=0;
+  static int help_flag=0, veto_flag=0, simplex_flag=0, onepoint_flag=0, mads_flag=0, gauss_flag=0, neigh_flag=0, naive_flag=0;
 
   // Reading arguments 
 
@@ -75,6 +76,7 @@ void handle_opts( Search_settings *sett,
       {"help", no_argument, &help_flag, 1},
       {"vetolines", no_argument, &veto_flag, 1}, 
       {"simplex", no_argument, &simplex_flag, 1},
+      {"onepoint", no_argument, &onepoint_flag, 1},
       {"mads", no_argument, &mads_flag, 1},
       {"gauss", no_argument, &gauss_flag, 1},
       {"neigh", no_argument, &neigh_flag, 1},
@@ -140,6 +142,7 @@ void handle_opts( Search_settings *sett,
       printf("--gauss		Generate Gaussian noise instead of reading data. Amplitude and sigma of the noise declared in init.c\n");
       printf("--neigh		Function neigh() generate area as %% from initial value instead of taking it from grid.bin\n");
       printf("--naive		Function naive() generate area as +/- points taking it from grid.bin and divide it into smaller grid.\n");
+      printf("--onepoint	Calculate Fstatistic only in one point taken from file with candidates (without generating any grid).\n");
       printf("--help            This help\n");
 
       exit(EXIT_SUCCESS);
@@ -210,6 +213,7 @@ void handle_opts( Search_settings *sett,
 
   opts->veto_flag = veto_flag; 
   opts->simplex_flag = simplex_flag;
+  opts->onepoint_flag = onepoint_flag;
   opts->mads_flag = mads_flag;
   opts->gauss_flag = gauss_flag;
   opts->neigh_flag = neigh_flag;
@@ -275,6 +279,7 @@ void handle_opts( Search_settings *sett,
 
   if(opts->simplex_flag) 
     printf("Simplex direct maximum search\n");
+
 
 } // end of command line options handling 
 
@@ -685,7 +690,7 @@ puts("Adding signal from file");
     // Fscanning for the GW snr, grid size and the reference
     // frame (for which the signal freq. is not spun-down/up)
 //    fscanf (data, "%le %d %d", &snr, &gsize, &reffr);  
-	fscanf (data, "%le %d %d", &h0, &gsize, &reffr);  
+	fscanf (data, "%le %d %d", &snr, &gsize, &reffr);  
 
     // Fscanning signal parameters: f, fdot, delta, alpha (sgnlo[0], ..., sgnlo[3])
     // four amplitudes sgnlo[4], ..., sgnlo[7] 
@@ -782,8 +787,8 @@ puts("Adding signal from file");
 
 //Signal amplitude
 
-//  h0 = (snr*sigma_noise)/(sqrt(sum));
-  snr = h0*(sqrt(sum))/sigma_noise;
+  h0 = (snr*sigma_noise)/(sqrt(sum));
+//  snr = h0*(sqrt(sum))/sigma_noise;
 
 // Loop for each detector - adding signal to data (point by point)  								
   for(n=0; n<sett->nifo; n++) {
@@ -849,6 +854,7 @@ void cleanup_followup(
     free(ifo[i].sig.shft);
   }
   free(sett->M);
+  free(sett->gamrn);
   free(aux->sinmodf);
   free(aux->cosmodf);
   free(aux->t2);
