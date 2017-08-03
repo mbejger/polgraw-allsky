@@ -68,7 +68,7 @@ MS
 #define DTAPREFIX .
 #endif
 
-#define ZEPS 1e-10
+#define ZEPS 1e-14
 
 // Allocation of memory for double martix with given number of rows and columns
 double** matrix(int rows, int cols) {
@@ -807,7 +807,7 @@ double * amoeba(Search_settings *sett, Aux_arrays *aux, double *point, double *n
 			update_simplex(simplex, dim, fx[ihi][5], fx, ihi, midpoint, line, -2.0, sett, aux, nS, sigaa_max, sigbb_max);
 		}
 		else if (fx[ihi][5] > fx[inhi][5]){
-			if (!update_simplex(simplex, dim, fx[ihi][5], fx, ihi, midpoint, line, 0.5, sett, aux, nS, sigaa_max, sigbb_max)){
+			if (!update_simplex(simplex, dim, fx[ihi][5], fx, ihi, midpoint, line, 0.75, sett, aux, nS, sigaa_max, sigbb_max)){
 				contract_simplex(simplex, dim, fx, ilo, ihi, sett, aux, nS, sigaa_max, sigbb_max);
 			}
 		}
@@ -847,7 +847,7 @@ int main (int argc, char *argv[]) {
 	double minm = 0.999;		// minimal match used in optimal 4d grid generation
 	double pc[4];			// % define neighbourhood around each parameter for initial grid
 	double pc2[4];			// % define neighbourhood around each parameter for direct maximum search (MADS & Simplex)
-	double tol = 1e-10;
+	double tol = 1e-7;
 	double cof, al1, al2;
 //	double delta = 1e-5;		// initial step in MADS function
 //	double *results;		// Vector with results from Fstatnet function
@@ -986,244 +986,251 @@ int main (int argc, char *argv[]) {
 					mean[0] += -2.*mean[1]*(sett.N)*(opts.refr - opts.ident); 
 				}
 
+				if(!opts.onepoint_flag){
+
 //Function neighbourhood - generating grid around point
 //Area around starting point is calculating as a percent from initial values
-				if(opts.neigh_flag){
-					pc[0] = 5e-5;
-					pc[1] = 5e-10;
-					pc[2] = 0.015;
-					pc[3] = 0.015;
+					if(opts.neigh_flag){
+						pc[0] = 5e-5;
+						pc[1] = 5e-10;
+						pc[2] = 0.015;
+						pc[3] = 0.015;
 
-					for (i = 0; i < 4; i++){
-						pc2[i] = 2*pc[i]/bins;
-					}
+						for (i = 0; i < 4; i++){
+							pc2[i] = 2*pc[i]/bins;
+						}
 
-					neigh2(mean, pc, bins, arr);
+						neigh2(mean, pc, bins, arr);
 
-				} //if neigh
-				else if(opts.naive_flag){
+					} //if neigh
+					else if(opts.naive_flag){
 //if naive or optimal grid -> find closest point on the grid
 //printf("%d %le %le %le %le\n", sett.N, mean[0], mean[1], mean[2], mean[3]);
 
-					cof = sett.oms + mean[0]; 
-					for(i=0; i<2; i++) sgnlol[i] = mean[i]; 
-					hemi = ast2lin(mean[3], mean[2], C_EPSMA, be);
- 
-					sgnlol[2] = be[0]*cof; 
-					sgnlol[3] = be[1]*cof;
+						cof = sett.oms + mean[0]; 
+						for(i=0; i<2; i++) sgnlol[i] = mean[i]; 
+						hemi = ast2lin(mean[3], mean[2], C_EPSMA, be);
+	 
+						sgnlol[2] = be[0]*cof; 
+						sgnlol[3] = be[1]*cof;
 
 // solving a linear system in order to translate 
 // sky position, frequency and spindown (sgnlo parameters) 
 // into the position in the grid
 
-					MM = (double *) calloc (16, sizeof (double));
-					for(i=0; i<16; i++) MM[i] = sett.M[i];
-					gsl_vector *x = gsl_vector_alloc (4);
-					gsl_matrix_view m = gsl_matrix_view_array (MM, 4, 4);
-					gsl_matrix_transpose (&m.matrix) ; 
-					gsl_vector_view b = gsl_vector_view_array (sgnlol, 4);
-					gsl_permutation *p = gsl_permutation_alloc (4);
-					 
-					gsl_linalg_LU_decomp (&m.matrix, p, &s);
-					gsl_linalg_LU_solve (&m.matrix, p, &b.vector, x);
-					  
-					spndr[0] = round(gsl_vector_get(x,1)); 
-					nr[0] 	= round(gsl_vector_get(x,2));
-					mr[0] 	= round(gsl_vector_get(x,3));
-					  
-					gsl_permutation_free (p);
-					gsl_vector_free (x);
-					free (MM);
+						MM = (double *) calloc (16, sizeof (double));
+						for(i=0; i<16; i++) MM[i] = sett.M[i];
+						gsl_vector *x = gsl_vector_alloc (4);
+						gsl_matrix_view m = gsl_matrix_view_array (MM, 4, 4);
+						gsl_matrix_transpose (&m.matrix) ; 
+						gsl_vector_view b = gsl_vector_view_array (sgnlol, 4);
+						gsl_permutation *p = gsl_permutation_alloc (4);
+						 
+						gsl_linalg_LU_decomp (&m.matrix, p, &s);
+						gsl_linalg_LU_solve (&m.matrix, p, &b.vector, x);
+						  
+						spndr[0] = round(gsl_vector_get(x,1)); 
+						nr[0] 	= round(gsl_vector_get(x,2));
+						mr[0] 	= round(gsl_vector_get(x,3));
+						  
+						gsl_permutation_free (p);
+						gsl_vector_free (x);
+						free (MM);
 
 // Check if calculated point is in an appropriate region
 
-					al1 = nr[0]*sett.M[10] + mr[0]*sett.M[14];
-					al2 = nr[0]*sett.M[11] + mr[0]*sett.M[15];
+						al1 = nr[0]*sett.M[10] + mr[0]*sett.M[14];
+						al2 = nr[0]*sett.M[11] + mr[0]*sett.M[15];
 
-					lin2ast(al1/sett.oms, al2/sett.oms, hemi, sett.sepsm, sett.cepsm, &sinalt, &cosalt, &sindelt, &cosdelt);
+						lin2ast(al1/sett.oms, al2/sett.oms, hemi, sett.sepsm, sett.cepsm, &sinalt, &cosalt, &sindelt, &cosdelt);
 /*printf("Closest point on the grid: %le %le %le\n", spndr[0]*sett.M[5] + nr[0]*sett.M[9] + mr[0]*sett.M[13], asin(sindelt), fmod(atan2(sinalt, cosalt) + 2.*M_PI, 2.*M_PI));
 printf("Closest point on the grid: %d %d %d\n", spndr[0], nr[0], mr[0]);
 */
-					nearest_point[0] = mean[0];	
-					nearest_point[1] = spndr[0]*sett.M[5] + nr[0]*sett.M[9] + mr[0]*sett.M[13];
-					nearest_point[2] = asin(sindelt);
-					nearest_point[3] = fmod(atan2(sinalt, cosalt) + 2.*M_PI, 2.*M_PI);
-  					if ((sqr(al1)+sqr(al2))/sqr(sett.oms) > 1.){ 
-						puts("Current candidate is in an inappropriate region! -> going to the next candidate");
-						continue;
-					}
-					else{
+						nearest_point[0] = mean[0];	
+						nearest_point[1] = spndr[0]*sett.M[5] + nr[0]*sett.M[9] + mr[0]*sett.M[13];
+						nearest_point[2] = asin(sindelt);
+						nearest_point[3] = fmod(atan2(sinalt, cosalt) + 2.*M_PI, 2.*M_PI);
+	  					if ((sqr(al1)+sqr(al2))/sqr(sett.oms) > 1.){ 
+							puts("Current candidate is in an inappropriate region! -> going to the next candidate");
+							continue;
+						}
+						else{
 
 // Define the grid range in which the signal will be looked for
 
-						spndr[1] = spndr[0] + gsize; 
-						spndr[0] -= gsize;
-						nr[1] = nr[0] + gsize; 
-						nr[0] -= gsize;
-						mr[1] = mr[0] + gsize; 
-						mr[0] -= gsize;
+							spndr[1] = spndr[0] + gsize; 
+							spndr[0] -= gsize;
+							nr[1] = nr[0] + gsize; 
+							nr[0] -= gsize;
+							mr[1] = mr[0] + gsize; 
+							mr[0] -= gsize;
 
 // Go back to astrophysical units - calculate range for calculations
 
-						flag = 0;
+							flag = 0;
 
 // Loop over min/max values
-						for(i = 0; i < 2; i++){
+							for(i = 0; i < 2; i++){
 
-							al1 = nr[i]*sett.M[10] + mr[i]*sett.M[14];
-							al2 = nr[i]*sett.M[11] + mr[i]*sett.M[15];
+								al1 = nr[i]*sett.M[10] + mr[i]*sett.M[14];
+								al2 = nr[i]*sett.M[11] + mr[i]*sett.M[15];
 
 // check if the range is in an appropriate region of the grid
 // if not - go to the next candidate 
 
-	  						if ((sqr(al1)+sqr(al2))/sqr(sett.oms) > 1.){ 
-								puts("Inappropriate region of the range! -> changing range");
-								if (i == 0){
-									nr[i] = nr[i] + 1;
-									mr[i] = mr[i] + 1;
-									i = -1;
+		  						if ((sqr(al1)+sqr(al2))/sqr(sett.oms) > 1.){ 
+									puts("Inappropriate region of the range! -> changing range");
+									if (i == 0){
+										nr[i] = nr[i] + 1;
+										mr[i] = mr[i] + 1;
+										i = -1;
+									}
+									if (i == 1){
+										nr[i] = nr[i] - 1;
+										mr[i] = mr[i] - 1;
+										i = 0;
+									}
+									if ((nr[1] == nr[0])&&(mr[1] == mr[0])){
+										flag = 1;
+										continue;
+									}
 								}
-								if (i == 1){
-									nr[i] = nr[i] - 1;
-									mr[i] = mr[i] - 1;
-									i = 0;
+								else{
+
+									lin2ast(al1/sett.oms, al2/sett.oms, hemi, sett.sepsm, 
+										sett.cepsm, &sinalt, &cosalt, &sindelt, &cosdelt);
+
+									sgnlo_range[2][i] = asin(sindelt);
+									sgnlo_range[3][i] = fmod(atan2(sinalt, cosalt) + 2.*M_PI, 2.*M_PI);
+									sgnlo_range[1][i] = spndr[i]*sett.M[5] + nr[i]*sett.M[9] + mr[i]*sett.M[13];
+
 								}
-								if ((nr[1] == nr[0])&&(mr[1] == mr[0])){
-									flag = 1;
-									continue;
-								}
-							}
-							else{
-
-								lin2ast(al1/sett.oms, al2/sett.oms, hemi, sett.sepsm, 
-									sett.cepsm, &sinalt, &cosalt, &sindelt, &cosdelt);
-
-								sgnlo_range[2][i] = asin(sindelt);
-								sgnlo_range[3][i] = fmod(atan2(sinalt, cosalt) + 2.*M_PI, 2.*M_PI);
-								sgnlo_range[1][i] = spndr[i]*sett.M[5] + nr[i]*sett.M[9] + mr[i]*sett.M[13];
-
-							}
 						
-						} //for min/max values
+							} //for min/max values
 
-						if (flag == 0){
-							sgnlo_range[0][0] = mean[0] - 0.005;
-							sgnlo_range[0][1] = mean[0] + 0.005;
+							if (flag == 0){
+								sgnlo_range[0][0] = mean[0] - 0.005;
+								sgnlo_range[0][1] = mean[0] + 0.005;
 
-							for (i = 0; i < 4; i++){ 
-								if (sgnlo_range[i][0] > sgnlo_range[i][1]){
-									au = sgnlo_range[i][0];
-									sgnlo_range[i][0] = sgnlo_range[i][1];
-									sgnlo_range[i][1] = au;
+								for (i = 0; i < 4; i++){ 
+									if (sgnlo_range[i][0] > sgnlo_range[i][1]){
+										au = sgnlo_range[i][0];
+										sgnlo_range[i][0] = sgnlo_range[i][1];
+										sgnlo_range[i][1] = au;
+									}
+
+									printf("range[%d][0] = %le, range[%d][1] = %le\n", i, sgnlo_range[i][0], i, sgnlo_range[i][1]);
 								}
+								neigh_from_range(sgnlo_range, bins, arr);
 
-								printf("range[%d][0] = %le, range[%d][1] = %le\n", i, sgnlo_range[i][0], i, sgnlo_range[i][1]);
+	//							pc2[0] = 0.0006/bins;
+								for (j = 0; j < 4; j++) pc2[j] = (sgnlo_range[j][1] - sgnlo_range[j][0])/(2*bins);
 							}
-							neigh_from_range(sgnlo_range, bins, arr);
 
-//							pc2[0] = 0.0006/bins;
-							for (j = 0; j < 4; j++) pc2[j] = (sgnlo_range[j][1] - sgnlo_range[j][0])/(2*bins);
-						}
-
-					} //if candidate is in good region
-				} //if naive
+						} //if candidate is in good region
+					} //if naive
 // Optimal grid calculations
-				else if ((!opts.naive_flag)&&(!opts.neigh_flag)){
+					else if ((!opts.naive_flag)&&(!opts.neigh_flag)){
 
-					double **Mopt;
-					Mopt = matrix(4, 4);
+						double **Mopt;
+						Mopt = matrix(4, 4);
 
-					cof = sett.oms + mean[0]; 
-					for(i=0; i<2; i++) sgnlol[i] = mean[i]; 
-					hemi = ast2lin(mean[3], mean[2], C_EPSMA, be);
- 
-					sgnlol[2] = be[0]*cof; 
-					sgnlol[3] = be[1]*cof;
+						cof = sett.oms + mean[0]; 
+						for(i=0; i<2; i++) sgnlol[i] = mean[i]; 
+						hemi = ast2lin(mean[3], mean[2], C_EPSMA, be);
+	 
+						sgnlol[2] = be[0]*cof; 
+						sgnlol[3] = be[1]*cof;
 
-					A4opt(minm, sett.N, sett.gamrn, Mopt);
-					InjLoc(gri1, sgnlol, Mopt);
+						A4opt(minm, sett.N, sett.gamrn, Mopt);
+						InjLoc(gri1, sgnlol, Mopt);
 
 // Define the grid range in which the signal will be looked for
-					fo[0] = gri1[0];
-					spndr[0] = gri1[1];
-					nr[0] = gri1[2];
-					mr[0] = gri1[3];
-					fo[1] = fo[0] + nof[0]; 
-					fo[0] -= nof[0];
-					spndr[1] = spndr[0] + nof[1]; 
-					spndr[0] -= nof[1];
-					nr[1] = nr[0] + nof[2]; 
-					nr[0] -= nof[2];
-					mr[1] = mr[0] + nof[3]; 
-					mr[0] -= nof[3];
+						fo[0] = gri1[0];
+						spndr[0] = gri1[1];
+						nr[0] = gri1[2];
+						mr[0] = gri1[3];
+						fo[1] = fo[0] + nof[0]; 
+						fo[0] -= nof[0];
+						spndr[1] = spndr[0] + nof[1]; 
+						spndr[0] -= nof[1];
+						nr[1] = nr[0] + nof[2]; 
+						nr[0] -= nof[2];
+						mr[1] = mr[0] + nof[3]; 
+						mr[0] -= nof[3];
 //printf("fo = %d %d; spndr = %d %d; nr = %d %d; mr = %d %d\n", fo[0], fo[1], spndr[0], spndr[1], nr[0], nr[1], mr[0], mr[1]);
-					for (i = 0; i < 2; i++){
-						sgnlo_range[0][i] = fo[i]*Mopt[0][0] + spndr[i]*Mopt[1][0] + nr[i]*Mopt[2][0] + mr[i]*Mopt[3][0];
-						sgnlo_range[1][i] = fo[i]*Mopt[0][1] + spndr[i]*Mopt[1][1] + nr[i]*Mopt[2][1] + mr[i]*Mopt[3][1];
-						sgnlo_range[2][i] = fo[i]*Mopt[0][2] + spndr[i]*Mopt[1][2] + nr[i]*Mopt[2][2] + mr[i]*Mopt[3][2];
-						sgnlo_range[3][i] = fo[i]*Mopt[0][3] + spndr[i]*Mopt[1][3] + nr[i]*Mopt[2][3] + mr[i]*Mopt[3][3];
+						for (i = 0; i < 2; i++){
+							sgnlo_range[0][i] = fo[i]*Mopt[0][0] + spndr[i]*Mopt[1][0] + nr[i]*Mopt[2][0] + mr[i]*Mopt[3][0];
+							sgnlo_range[1][i] = fo[i]*Mopt[0][1] + spndr[i]*Mopt[1][1] + nr[i]*Mopt[2][1] + mr[i]*Mopt[3][1];
+							sgnlo_range[2][i] = fo[i]*Mopt[0][2] + spndr[i]*Mopt[1][2] + nr[i]*Mopt[2][2] + mr[i]*Mopt[3][2];
+							sgnlo_range[3][i] = fo[i]*Mopt[0][3] + spndr[i]*Mopt[1][3] + nr[i]*Mopt[2][3] + mr[i]*Mopt[3][3];
 
-						lin2ast(sgnlo_range[2][i]/sett.oms, sgnlo_range[3][i]/sett.oms, hemi, sett.sepsm, sett.cepsm, &sinalt, &cosalt, &sindelt, &cosdelt);
-						sgnlo_range[2][i] = asin(sindelt);
-						sgnlo_range[3][i] = fmod(atan2(sinalt, cosalt) + 2.*M_PI, 2.*M_PI);
-					}
-					for (i = 0; i < 4; i++){ 
-						if (sgnlo_range[i][0] > sgnlo_range[i][1]){
-							au = sgnlo_range[i][0];
-							sgnlo_range[i][0] = sgnlo_range[i][1];
-							sgnlo_range[i][1] = au;
+							lin2ast(sgnlo_range[2][i]/sett.oms, sgnlo_range[3][i]/sett.oms, hemi, sett.sepsm, sett.cepsm, &sinalt, &cosalt, &sindelt, &cosdelt);
+							sgnlo_range[2][i] = asin(sindelt);
+							sgnlo_range[3][i] = fmod(atan2(sinalt, cosalt) + 2.*M_PI, 2.*M_PI);
 						}
-					}
-					for (i = 0; i < 4; i++)	printf("range[%d][0] = %le, range[%d][1] = %le\n", i, sgnlo_range[i][0], i, sgnlo_range[i][1]);
+						for (i = 0; i < 4; i++){ 
+							if (sgnlo_range[i][0] > sgnlo_range[i][1]){
+								au = sgnlo_range[i][0];
+								sgnlo_range[i][0] = sgnlo_range[i][1];
+								sgnlo_range[i][1] = au;
+							}
+						}
+						for (i = 0; i < 4; i++)	printf("range[%d][0] = %le, range[%d][1] = %le\n", i, sgnlo_range[i][0], i, sgnlo_range[i][1]);
 // Put optimal points into array
-					i = 0;
-					for (k1 = fo[0]; k1 <= fo[1]; k1++){
-						for (k2 = spndr[0]; k2 <= spndr[1]; k2++){
-							for (k3 = nr[0]; k3 <= nr[1]; k3++){
-								for (k4 = mr[0]; k4 <= mr[1]; k4++){
-									for (j = 0; j < 2; j++) {
-										arr[i][j] = k1*Mopt[0][j] + k2*Mopt[1][j] + k3*Mopt[2][j] + k4*Mopt[3][j];
-									}
-									temp1 = k1*Mopt[0][2] + k2*Mopt[1][2] + k3*Mopt[2][2] + k4*Mopt[3][2];
-									temp2 = k1*Mopt[0][3] + k2*Mopt[1][3] + k3*Mopt[2][3] + k4*Mopt[3][3];
-									lin2ast(temp1/sett.oms, temp2/sett.oms, hemi, sett.sepsm, sett.cepsm, &sinalt, &cosalt, &sindelt, &cosdelt);
-									arr[i][2] = asin(sindelt);
-									arr[i][3] = fmod(atan2(sinalt, cosalt) + 2.*M_PI, 2.*M_PI);
+						i = 0;
+						for (k1 = fo[0]; k1 <= fo[1]; k1++){
+							for (k2 = spndr[0]; k2 <= spndr[1]; k2++){
+								for (k3 = nr[0]; k3 <= nr[1]; k3++){
+									for (k4 = mr[0]; k4 <= mr[1]; k4++){
+										for (j = 0; j < 2; j++) {
+											arr[i][j] = k1*Mopt[0][j] + k2*Mopt[1][j] + k3*Mopt[2][j] + k4*Mopt[3][j];
+										}
+										temp1 = k1*Mopt[0][2] + k2*Mopt[1][2] + k3*Mopt[2][2] + k4*Mopt[3][2];
+										temp2 = k1*Mopt[0][3] + k2*Mopt[1][3] + k3*Mopt[2][3] + k4*Mopt[3][3];
+										lin2ast(temp1/sett.oms, temp2/sett.oms, hemi, sett.sepsm, sett.cepsm, &sinalt, &cosalt, &sindelt, &cosdelt);
+										arr[i][2] = asin(sindelt);
+										arr[i][3] = fmod(atan2(sinalt, cosalt) + 2.*M_PI, 2.*M_PI);
 
-			  						if ((sqr(temp1)+sqr(temp2))/sqr(sett.oms) > 1.){ 
-										arr[i][0] = -1.0;
-//										printf("i = %d, crit = %le\n", i, (sqr(arr[i][2])+sqr(arr[i][3]))/sqr(sett.oms));
-									}
-									i++;
+				  						if ((sqr(temp1)+sqr(temp2))/sqr(sett.oms) > 1.){ 
+											arr[i][0] = -1.0;
+//											printf("i = %d, crit = %le\n", i, (sqr(arr[i][2])+sqr(arr[i][3]))/sqr(sett.oms));
+										}
+										i++;
+									}							
 								}							
-							}							
+							}
 						}
-					}
 // Prepare starting point for simplex
-					if(opts.simplex_flag){
-						fo[1] = gri1[0] + 1;
-						spndr[1] = gri1[1] + 1;
-						nr[1] = gri1[2] + 1;
-						mr[1] = gri1[3] + 1;
-						for (j = 0; j < 2; j++){ 
-							pc2[j] = 2*(fabs(fo[1]*Mopt[0][j] + spndr[1]*Mopt[1][j] + nr[1]*Mopt[2][j] + mr[1]*Mopt[3][j] 
-								 - (fo[0]*Mopt[0][j] + spndr[0]*Mopt[1][j] + nr[0]*Mopt[2][j] + mr[0]*Mopt[3][j])));
-						}
-						temp1 = fo[1]*Mopt[0][2] + spndr[1]*Mopt[1][2] + nr[1]*Mopt[2][2] + mr[1]*Mopt[3][2];
-						temp2 = fo[1]*Mopt[0][3] + spndr[1]*Mopt[1][3] + nr[1]*Mopt[2][3] + mr[1]*Mopt[3][3];
-						lin2ast(temp1/sett.oms, temp2/sett.oms, hemi, sett.sepsm, sett.cepsm, &sinalt, &cosalt, &sindelt, &cosdelt);
-						temp1 = asin(sindelt);
-						temp2 = fmod(atan2(sinalt, cosalt) + 2.*M_PI, 2.*M_PI);
+						if(opts.simplex_flag){
+/*							fo[1] = gri1[0] + 1;
+							spndr[1] = gri1[1] + 1;
+							nr[1] = gri1[2] + 1;
+							mr[1] = gri1[3] + 1;
+							for (j = 0; j < 2; j++){ 
+								pc2[j] = 2*(fabs(fo[1]*Mopt[0][j] + spndr[1]*Mopt[1][j] + nr[1]*Mopt[2][j] + mr[1]*Mopt[3][j] 
+									 - (fo[0]*Mopt[0][j] + spndr[0]*Mopt[1][j] + nr[0]*Mopt[2][j] + mr[0]*Mopt[3][j])));
+							}
+							temp1 = fo[1]*Mopt[0][2] + spndr[1]*Mopt[1][2] + nr[1]*Mopt[2][2] + mr[1]*Mopt[3][2];
+							temp2 = fo[1]*Mopt[0][3] + spndr[1]*Mopt[1][3] + nr[1]*Mopt[2][3] + mr[1]*Mopt[3][3];
+							lin2ast(temp1/sett.oms, temp2/sett.oms, hemi, sett.sepsm, sett.cepsm, &sinalt, &cosalt, &sindelt, &cosdelt);
+							temp1 = asin(sindelt);
+							temp2 = fmod(atan2(sinalt, cosalt) + 2.*M_PI, 2.*M_PI);
 
-						pc2[2] = fo[0]*Mopt[0][2] + spndr[0]*Mopt[1][2] + nr[0]*Mopt[2][2] + mr[0]*Mopt[3][2];
-						pc2[3] = fo[0]*Mopt[0][3] + spndr[0]*Mopt[1][3] + nr[0]*Mopt[2][3] + mr[0]*Mopt[3][3];
-						lin2ast(pc2[2]/sett.oms, pc2[3]/sett.oms, hemi, sett.sepsm, sett.cepsm, &sinalt, &cosalt, &sindelt, &cosdelt);
-						pc2[2] = 2*(fabs(temp1 - asin(sindelt)));
-						pc2[3] = 2*(fabs(temp2 - fmod(atan2(sinalt, cosalt) + 2.*M_PI, 2.*M_PI)));
-					} //if simplex
-				} //if optimal grid
+							pc2[2] = fo[0]*Mopt[0][2] + spndr[0]*Mopt[1][2] + nr[0]*Mopt[2][2] + mr[0]*Mopt[3][2];
+							pc2[3] = fo[0]*Mopt[0][3] + spndr[0]*Mopt[1][3] + nr[0]*Mopt[2][3] + mr[0]*Mopt[3][3];
+							lin2ast(pc2[2]/sett.oms, pc2[3]/sett.oms, hemi, sett.sepsm, sett.cepsm, &sinalt, &cosalt, &sindelt, &cosdelt);
+							pc2[2] = 2*(fabs(temp1 - asin(sindelt)));
+							pc2[3] = 2*(fabs(temp2 - fmod(atan2(sinalt, cosalt) + 2.*M_PI, 2.*M_PI)));
+*/
+							pc2[0] = 3e-5;
+							pc2[1] = 4e-10;
+							pc2[2] = 0.001;
+							pc2[3] = 0.005;
+						} //if simplex
+					} //if optimal grid
 
-				if(flag == 1) continue;
+					if(flag == 1) continue;
 
 // Output data handling
 /*  				struct stat buffer;
@@ -1248,26 +1255,88 @@ printf("Closest point on the grid: %d %d %d\n", spndr[0], nr[0], mr[0]);
 //omp_set_num_threads(1);
 
 
-				results_max[5] = 0.;
+					results_max[5] = 0.;
 
 // Main loop - over all parameters + parallelisation
 #pragma omp parallel default(shared) private(d, i, sgnlo, sinalt, cosalt, sindelt, cosdelt, nSource, results, maximum)
 {
 
-                       		double **sigaa, **sigbb;   // old aa[nifo][N], bb[nifo][N]
-              			sigaa = matrix(sett.nifo, sett.N);
-				sigbb = matrix(sett.nifo, sett.N);
+		               		double **sigaa, **sigbb;   // old aa[nifo][N], bb[nifo][N]
+		      			sigaa = matrix(sett.nifo, sett.N);
+					sigbb = matrix(sett.nifo, sett.N);
 
 #pragma omp for  
-				for (d = 0; d < ROW; ++d){
-					if (arr[d][0] < 0.0){ 
-						puts("Inappropriate region of the range! -> going to the next point");
-						continue;
-					}
+					for (d = 0; d < ROW; ++d){
+						if (arr[d][0] < 0.0){ 
+							puts("Inappropriate region of the range! -> going to the next point");
+							continue;
+						}
+						for (i = 0; i < 4; i++){
+							sgnlo[i] = arr[d][i];
+						}
+	 
+						sinalt = sin(sgnlo[3]);
+						cosalt = cos(sgnlo[3]);
+						sindelt = sin(sgnlo[2]);
+						cosdelt = cos(sgnlo[2]);
+
+						nSource[0] = cosalt*cosdelt;
+						nSource[1] = sinalt*cosdelt;
+						nSource[2] = sindelt;
+
+						for (i = 0; i < sett.nifo; ++i){
+							modvir(sinalt, cosalt, sindelt, cosdelt, 
+						   		sett.N, &ifo[i], &aux_arr, sigaa[i], sigbb[i]);  
+						}
+// F-statistic in given point
+
+						results = Fstatnet(&sett, sgnlo, nSource, sigaa, sigbb);
+//printf("%le %le %le %le %le %le\n", results[6], results[7], results[8], results[9], results[5], results[4]);
+
+// Check is it the biggest found value of F-statistic
+#pragma omp critical
+						if(results[5] < results_max[5]){
+							for (i = 0; i < 11; i++){
+								results_max[i] = results[i];
+							}
+							if(opts.simplex_flag){
+								for (i = 0; i < 4; i ++){
+									sgnlo_max[i] = sgnlo[i];
+								}
+								for (i = 0; i < 3; i++){
+									nSource_max[i] = nSource[i];
+								}
+								for (g = 0; g < sett.nifo; g++){
+									for (i = 0; i < sett.N; i++){
+										sigaa_max[g][i] = sigaa[g][i];
+										sigbb_max[g][i] = sigbb[g][i];
+									}
+								}
+							} //if --simplex
+
+						} // if results < results_max
+
+
+					} // d - main outside loop
+					free_matrix(sigaa, sett.nifo, sett.N);
+					free_matrix(sigbb, sett.nifo, sett.N);
+
+} //pragma
+
+					for(g = 0; g < 11; g++) results_first[g] = results_max[g];
+				} // if not onepoint
+				else{
+					double **sigaa, **sigbb;   // old aa[nifo][N], bb[nifo][N]
+		      			sigaa = matrix(sett.nifo, sett.N);
+					sigbb = matrix(sett.nifo, sett.N);
+					pc2[0] = 3e-5;
+					pc2[1] = 4e-10;
+					pc2[2] = 0.001;
+					pc2[3] = 0.005;
+
 					for (i = 0; i < 4; i++){
-						sgnlo[i] = arr[d][i];
+						sgnlo[i] = mean[i];
 					}
- 
 					sinalt = sin(sgnlo[3]);
 					cosalt = cos(sgnlo[3]);
 					sindelt = sin(sgnlo[2]);
@@ -1281,42 +1350,25 @@ printf("Closest point on the grid: %d %d %d\n", spndr[0], nr[0], mr[0]);
 						modvir(sinalt, cosalt, sindelt, cosdelt, 
 					   		sett.N, &ifo[i], &aux_arr, sigaa[i], sigbb[i]);  
 					}
-// F-statistic in given point
-
 					results = Fstatnet(&sett, sgnlo, nSource, sigaa, sigbb);
-//printf("%le %le %le %le %le %le\n", results[6], results[7], results[8], results[9], results[5], results[4]);
-
-// Check is it the biggest found value of F-statistic
-#pragma omp critical
-					if(results[5] < results_max[5]){
-						for (i = 0; i < 11; i++){
-							results_max[i] = results[i];
+					for (i = 0; i < 11; i++){
+						results_max[i] = results[i];
+					}
+					if(opts.simplex_flag){
+						for (i = 0; i < 4; i ++){
+							sgnlo_max[i] = sgnlo[i];
 						}
-						if(opts.simplex_flag){
-							for (i = 0; i < 4; i ++){
-								sgnlo_max[i] = sgnlo[i];
+						for (i = 0; i < 3; i++){
+							nSource_max[i] = nSource[i];
+						}
+						for (g = 0; g < sett.nifo; g++){
+							for (i = 0; i < sett.N; i++){
+								sigaa_max[g][i] = sigaa[g][i];
+								sigbb_max[g][i] = sigbb[g][i];
 							}
-							for (i = 0; i < 3; i++){
-								nSource_max[i] = nSource[i];
-							}
-							for (g = 0; g < sett.nifo; g++){
-								for (i = 0; i < sett.N; i++){
-									sigaa_max[g][i] = sigaa[g][i];
-									sigbb_max[g][i] = sigbb[g][i];
-								}
-							}
-						} //if --simplex
-
-					} // if results < results_max
-
-
-				} // d - main outside loop
-				free_matrix(sigaa, sett.nifo, sett.N);
-				free_matrix(sigbb, sett.nifo, sett.N);
-
-} //pragma
-
-				for(g = 0; g < 11; g++) results_first[g] = results_max[g];
+						}
+					} //if --simplex
+				} // if onepoint
 
 // Maximum search using MADS algorithm
   				if(opts.mads_flag) {
