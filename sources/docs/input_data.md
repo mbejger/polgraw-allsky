@@ -64,7 +64,7 @@ A single run requires 2 data files for each detector `DD`, stored in `data_dir/n
 
 Third file is the sky positions-frequency-spindown grid file in linear coordinates (common for all the detectors), stored in `data_dir/nnn` in case of the network search (one grid file is used by all the detectors) or in each detector directory separately (in case of single-detector searches): 
 
-   * `grid.bin` - generator matrix of an optimal grid of templates (defining the parameter space). 
+   * `grid.bin` - generator matrix of an optimal grid of templates (defining the parameter space; see [here](../polgraw-allsky/grid_generation) for details).  
 
 An example for two LIGO detectors H1 and L1, and data frame segments $nnn=001-008$ with pure Gaussian noise 2-day time segments with sampling time equal to 2s for a fiducial narrow band number $bbbb=1234$ (`xdatc_nnn_1234.bin`) coresponding the the band frequency $fpo=308.859375$ is [available here](https://polgraw.camk.edu.pl/H1L1_2d_0.25.tar.gz). 
 
