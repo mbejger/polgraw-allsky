@@ -12,7 +12,7 @@ C compiler & standard C libraries (`math.h`). Links to the PSS library (created 
 ### Example   
 
 ```
-$ extract_band < input_file
+% extract_band < input_file
 ```
 where `input_file` is an ASCII file containing the following rows:  
 
@@ -87,7 +87,7 @@ A typical directory structure is as follows:
 
 Beginning of each time frame is saved in the `nnn/DD/starting_date` file, e.g., 
 ```
-$ cat 2d_0.25/001/H1/starting_date
+% cat 2d_0.25/001/H1/starting_date
 1.1260846080e+09
 ```
 Frames `nnn` are labelled with three-digit consecutive number. For the `O1` data, the bandwidth is `0.25 Hz` ($dt = 2s$). For a given $dt$, the reference band frequency `fpo` is defined as 
@@ -109,19 +109,19 @@ C compiler and standard libraries (`math.h`, `sys/time.h` for `gettimeofday`). T
 ### Compilation  
 
 ```bash 
-$ gcc gauss-xdat.c -o gauss-xdat -lm -lgsl -lgslcblas
+% gcc gauss-xdat.c -o gauss-xdat -lm -lgsl -lgslcblas
 ```
 
 ### Example
 
 The program takes input values from the command line: 
 ```bash 
-$ ./gauss-xdat N amplitude sigma output-file 
+% ./gauss-xdat N amplitude sigma output-file 
 ```
 e.g., 
 
 ```bash 
-$ ./gauss-xdat 86164 1 1 ../../../testdata/2d_0.25/001/H1/xdatc_001_1234.bin
+% ./gauss-xdat 86164 1 1 ../../../testdata/2d_0.25/001/H1/xdatc_001_1234.bin
 ```
 The output is a binary file containing `N` double-precision numbers. 
 

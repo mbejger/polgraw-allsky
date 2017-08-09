@@ -26,7 +26,7 @@ The generic directory structure of the input data is
 ```
 (here for two LIGO detectors H1 and L1, and frame `001`). Test data frames $nnn=001-008$ with pure Gaussian noise 2-day time segments with sampling time equal to 2s (`xdatc_nnn_1234.bin`) are [available here](https://polgraw.camk.edu.pl/H1L1_2d_0.25.tar.gz). 
 
-In principle, given the ephemerides (`DetSSB.bin`, `rDet.bin` and `rSSB.bin`) for each detector and frame `001-008`, one can create the grid matrices using the `gridgen` code (see [grid generation](https://github.com/mbejger/polgraw-allsky/tree/master/gridgen) for details): 
+In principle, given the ephemerides (`DetSSB.bin`, `rDet.bin` and `rSSB.bin`) for each detector and frame `001-008`, one can create the grid matrices using the [gridgen](../polgraw-allsky/grid_generation) implementation (see the [code](https://github.com/mbejger/polgraw-allsky/tree/master/gridgen) for details): 
 
 ```bash 
 # grid generation
