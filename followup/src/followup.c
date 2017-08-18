@@ -35,6 +35,7 @@ MS
 #include <gsl/gsl_math.h>
 #include <gsl/gsl_eigen.h>
 #include <gsl/gsl_blas.h>
+#include <gsl/gsl_multimin.h>
 #include <time.h>
 #include <dirent.h>
 #include <omp.h>
@@ -537,47 +538,70 @@ double* Fstatnet(Search_settings *sett, double *sgnlo, double *nSource, double *
 
 
 //mesh adaptive direct search (MADS) maximum search declaration
-Yep64f* MADS(Search_settings *sett, Aux_arrays *aux, double* in, double *start, double delta, double *pc, int bins){
+Yep64f* MADS(Search_settings *sett, Aux_arrays *aux, double* sgnl, double* rslts, double tol, double *p2){
 
 	int i, j, k, l, m, n, o, r, a = 0;
   	double sinalt, cosalt, sindelt, cosdelt;
 	double param[4]; 			//initial size of mesh
-	double smallest = 100;
-        double **sigaa, **sigbb;   // aa[nifo][N]
-        sigaa = matrix(sett->nifo, sett->N);
-	sigbb = matrix(sett->nifo, sett->N);
+	double smallest = 2.0;
+//        double **sigaa, **sigbb;   // aa[nifo][N]
+//        sigaa = matrix(sett->nifo, sett->N);
+//	sigbb = matrix(sett->nifo, sett->N);
+	double array[9][4];
+	double scale = 0.95;
+	double p[4];
+	double nSource[3];
+/*	double out[11];
+	double extr[11];
+	double res[11]; */
 	for(r = 0; r < 4;r++){
-		param[r] = pc[r]/bins;
+		param[r] = p2[r];
 	}
-	for(r = 0; r < 4; r++){
+/*	for(r = 0; r < 4; r++){
 		if(param[r] < smallest) smallest = param[r];
-	}
-
+	} */
 #ifdef YEPPP
     yepLibrary_Init();
-    Yep64f *p = (Yep64f*)malloc(sizeof(Yep64f)*4);
+//    Yep64f *p = (Yep64f*)malloc(sizeof(Yep64f)*4);
     Yep64f *out = (Yep64f*)malloc(sizeof(Yep64f)*11);
-    Yep64f *nSource = (Yep64f*)malloc(sizeof(Yep64f)*3); 
+//    Yep64f *nSource = (Yep64f*)malloc(sizeof(Yep64f)*3); 
     Yep64f *extr = (Yep64f*)malloc(sizeof(Yep64f)*11); 
     Yep64f *res = (Yep64f*)malloc(sizeof(Yep64f)*11);
     enum YepStatus status;
 
 #endif
+
 //	puts("MADS");
 
-	for(i = 0; i < 11; i++) extr[i] = in[i];
-	while(smallest >= delta){  	//when to end computations
+	while(smallest >= tol){  	//when to end computations
 		k = 0;
+		for(i = 0; i < 11; i++) extr[i] = rslts[i];
 		for(j = 0; j < 8; j++){
-			for(i = 0; i < 4; i++) p[i] = in[6+i];
 			if(j < 4){
-				p[k] = in[6+k] - start[k]*(param[k] - delta);
-				k++;
+				for(k = 0; k < 4; k++){
+					array[j][k] = extr[6+k] - param[k];
+				}
 			}
 			else { 
-				k--;
-				p[k] = in[6+k] + start[k]*(param[k] - delta);
+				for(k = 0; k < 4; k++){
+					array[j][k] = extr[6+k] + param[k];
+				}
 			}
+		}
+		for (k = 0; k < 4; k++){
+			array[8][k] = extr[6+k];
+		}
+#pragma omp parallel default(shared) private(j, o, p, i, sinalt, cosalt, sindelt, cosdelt, nSource, res)
+{
+		double **sigaa, **sigbb;   // old aa[nifo][N], bb[nifo][N]
+		sigaa = matrix(sett->nifo, sett->N);
+		sigbb = matrix(sett->nifo, sett->N);
+#pragma omp for
+		for(j = 0; j < 9; j++){
+			for(i = 0; i < 4; i++){ 
+				p[i] = array[j][i];
+			}
+
 			sinalt = sin(p[3]);
 			cosalt = cos(p[3]);
 			sindelt = sin(p[2]);
@@ -586,41 +610,49 @@ Yep64f* MADS(Search_settings *sett, Aux_arrays *aux, double* in, double *start, 
 			nSource[0] = cosalt*cosdelt;
 			nSource[1] = sinalt*cosdelt;
 			nSource[2] = sindelt;
-
 			for (o = 0; o < sett->nifo; ++o){
 				modvir(sinalt, cosalt, sindelt, cosdelt, 
 			   		sett->N, &ifo[o], aux, sigaa[o], sigbb[o]);  
 			}
 			res = Fstatnet(sett, p, nSource, sigaa, sigbb); //Fstat function for mesh points
 
+#pragma omp critical
 			if (res[5] < extr[5]){
-				for (l = 0; l < 11; l++){ 
-					extr[l] = res[l];
+				for (i = 0; i < 11; i++){ 
+					extr[i] = res[i];
 				}
 			}
 
 		} //j
-		if (extr[5] == in[5]){
-			smallest = smallest - delta;
-			for(r = 0; r < 4; r++){
-				param[r] = param[r] - delta;
-			}
+		free_matrix(sigaa, sett->nifo, sett->N);
+		free_matrix(sigbb, sett->nifo, sett->N);
+} //pragma
+
+		if (fabs(extr[5] - rslts[5]) <= smallest){
+			smallest = smallest*scale;
+			for(r = 0; r < 4; r++) param[r] = scale*param[r];
 		}
 		else{
-			for(m = 0; m < 4; m++) p[m] = extr[6+m];
-			for(m = 0; m < 11; m++) in[m] = extr[m];
+			if(extr[5] < rslts[5]){
+				for(j = 0; j < 11; j++) rslts[j] = extr[j];
+			}
+			else{
+				smallest = smallest*scale;
+				for(r = 0; r < 4; r++) param[r] = scale*param[r];
+			}
 		}
+
 	} // while
+
 	for (n= 0; n < 11; n++){
-		out[n] = extr[n];
+		out[n] = rslts[n];
 	}
 
-	free(p);
-	free(nSource);
+//	free(p);
+//	free(nSource);
 	free(extr);
 	free(res);
-	free_matrix(sigaa, sett->nifo, sett->N);
-	free_matrix(sigbb, sett->nifo, sett->N);
+
 	return out;
 }
 
@@ -807,7 +839,7 @@ double * amoeba(Search_settings *sett, Aux_arrays *aux, double *point, double *n
 			update_simplex(simplex, dim, fx[ihi][5], fx, ihi, midpoint, line, -2.0, sett, aux, nS, sigaa_max, sigbb_max);
 		}
 		else if (fx[ihi][5] > fx[inhi][5]){
-			if (!update_simplex(simplex, dim, fx[ihi][5], fx, ihi, midpoint, line, 0.75, sett, aux, nS, sigaa_max, sigbb_max)){
+			if (!update_simplex(simplex, dim, fx[ihi][5], fx, ihi, midpoint, line, 0.5, sett, aux, nS, sigaa_max, sigbb_max)){
 				contract_simplex(simplex, dim, fx, ilo, ihi, sett, aux, nS, sigaa_max, sigbb_max);
 			}
 		}
@@ -847,7 +879,7 @@ int main (int argc, char *argv[]) {
 	double minm = 0.999;		// minimal match used in optimal 4d grid generation
 	double pc[4];			// % define neighbourhood around each parameter for initial grid
 	double pc2[4];			// % define neighbourhood around each parameter for direct maximum search (MADS & Simplex)
-	double tol = 1e-7;
+	double tol = 1e-5;
 	double cof, al1, al2;
 //	double delta = 1e-5;		// initial step in MADS function
 //	double *results;		// Vector with results from Fstatnet function
@@ -870,22 +902,7 @@ int main (int argc, char *argv[]) {
 	double temp1, temp2;
 //	char path[512];
 	double x, y;
-
-	if ((!opts.naive_flag)&&(!opts.neigh_flag)){
-// Define on how many grid points Fstat will be calculated  on optimal grid - in every dimension
-		nof[0] = 4;
-		nof[1] = 4;
-		nof[2] = 4;
-		nof[3] = 4;
-
-		ROW = (2*nof[0]+1)*(2*nof[1]+1)*(2*nof[2]+1)*(2*nof[3]+1);
-
-	}
-	else{
-		ROW = pow((bins+1),4);
-	}
-
-	arr = matrix(ROW, 4);
+	double sc;
 
 #ifdef YEPPP
     	yepLibrary_Init();
@@ -919,7 +936,24 @@ int main (int argc, char *argv[]) {
 // Array initialization
   	init_arrays(&sett, &opts, &aux_arr);
 
-	if(opts.simplex_flag){
+	if ((!opts.naive_flag)&&(!opts.neigh_flag)){
+// Define on how many grid points Fstat will be calculated  on optimal grid - in every dimension
+		nof[0] = 6;
+		nof[1] = 6;
+		nof[2] = 6;
+		nof[3] = 6;
+
+		ROW = (2*nof[0]+1)*(2*nof[1]+1)*(2*nof[2]+1)*(2*nof[3]+1);
+
+	}
+	else{
+		ROW = pow((bins+1),4);
+	}
+
+	arr = matrix(ROW, 4);
+	sc = 6./sett.nod;
+
+	if((opts.simplex_flag)||(opts.mads_flag)){
 		sigaa_max = matrix(sett.nifo, sett.N);
 		sigbb_max = matrix(sett.nifo, sett.N);
 	}
@@ -1202,7 +1236,7 @@ printf("Closest point on the grid: %d %d %d\n", spndr[0], nr[0], mr[0]);
 							}
 						}
 // Prepare starting point for simplex
-						if(opts.simplex_flag){
+						if(opts.simplex_flag||opts.mads_flag){
 /*							fo[1] = gri1[0] + 1;
 							spndr[1] = gri1[1] + 1;
 							nr[1] = gri1[2] + 1;
@@ -1223,10 +1257,11 @@ printf("Closest point on the grid: %d %d %d\n", spndr[0], nr[0], mr[0]);
 							pc2[2] = 2*(fabs(temp1 - asin(sindelt)));
 							pc2[3] = 2*(fabs(temp2 - fmod(atan2(sinalt, cosalt) + 2.*M_PI, 2.*M_PI)));
 */
-							pc2[0] = 3e-5;
-							pc2[1] = 4e-10;
-							pc2[2] = 0.001;
-							pc2[3] = 0.005;
+
+							pc2[0] = 0.01*sc;
+							pc2[1] = 1e-9*sc;
+							pc2[2] = 0.01*sc;
+							pc2[3] = 0.01*sc;
 						} //if simplex
 					} //if optimal grid
 
@@ -1299,7 +1334,7 @@ printf("Closest point on the grid: %d %d %d\n", spndr[0], nr[0], mr[0]);
 							for (i = 0; i < 11; i++){
 								results_max[i] = results[i];
 							}
-							if(opts.simplex_flag){
+							if(opts.simplex_flag||opts.mads_flag){
 								for (i = 0; i < 4; i ++){
 									sgnlo_max[i] = sgnlo[i];
 								}
@@ -1329,10 +1364,11 @@ printf("Closest point on the grid: %d %d %d\n", spndr[0], nr[0], mr[0]);
 					double **sigaa, **sigbb;   // old aa[nifo][N], bb[nifo][N]
 		      			sigaa = matrix(sett.nifo, sett.N);
 					sigbb = matrix(sett.nifo, sett.N);
-					pc2[0] = 3e-5;
-					pc2[1] = 4e-10;
-					pc2[2] = 0.001;
-					pc2[3] = 0.005;
+
+					pc2[0] = 0.01*sc;
+					pc2[1] = 1e-9*sc;
+					pc2[2] = 0.01*sc;
+					pc2[3] = 0.01*sc;
 
 					for (i = 0; i < 4; i++){
 						sgnlo[i] = mean[i];
@@ -1354,7 +1390,7 @@ printf("Closest point on the grid: %d %d %d\n", spndr[0], nr[0], mr[0]);
 					for (i = 0; i < 11; i++){
 						results_max[i] = results[i];
 					}
-					if(opts.simplex_flag){
+					if((opts.simplex_flag)||(opts.mads_flag)){
 						for (i = 0; i < 4; i ++){
 							sgnlo_max[i] = sgnlo[i];
 						}
@@ -1373,13 +1409,14 @@ printf("Closest point on the grid: %d %d %d\n", spndr[0], nr[0], mr[0]);
 // Maximum search using MADS algorithm
   				if(opts.mads_flag) {
 //					puts("MADS");
-					maximum = MADS(&sett, &aux_arr, results_max, mean, tol, pc2, bins);
-				}
+					maximum = MADS(&sett, &aux_arr, sgnlo_max, results_max, tol, pc2);
+				} //mads
 
 // Maximum search using simplex algorithm
 				if(opts.simplex_flag){
 					puts("Simplex");
 					maximum = amoeba(&sett, &aux_arr, sgnlo_max, nSource_max, results_max, dim, tol, pc2, sigaa_max, sigbb_max);
+				} //simplex
 //printf("Amoeba: %le %le %le %le %le %le\n", maximum[6], maximum[7], maximum[8], maximum[9], maximum[5], maximum[4]);
 
 // Maximum value in points searching
@@ -1389,12 +1426,12 @@ printf("Closest point on the grid: %d %d %d\n", spndr[0], nr[0], mr[0]);
 						}
 					}
 
-				} //simplex
+				
 
 //Time test
 //				tend = clock();
 //				tdiff = (tend - tstart)/(double)CLOCKS_PER_SEC;
-				puts("Maximum from grid and from simplex:");
+				puts("Maximum from grid and from simplex/mads:");
 				printf("%le %le %le %le %le %le\n", results_first[6], results_first[7], results_first[8], results_first[9], results_first[5], results_first[4]);
 				printf("%le %le %le %le %le %le\n", results_max[6], results_max[7], results_max[8], results_max[9], results_max[5], results_max[4]);
 
