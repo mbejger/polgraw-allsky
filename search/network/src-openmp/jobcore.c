@@ -594,8 +594,8 @@ int job_core(int pm,                   // Hemisphere
 	
 	  for(j=0; j<VECTLENDP; ++j){
 	    exph = _c[j] - I*_p[j];
-	    fxa[i+j] = ifo[n].sig.xDatma[i+j]*exph;
-	    fxb[i+j] = ifo[n].sig.xDatmb[i+j]*exph;
+	    fxa[i+j] += ifo[n].sig.xDatma[i+j]*exph;
+	    fxb[i+j] += ifo[n].sig.xDatmb[i+j]*exph;
 	  }
 	} 
 #elif defined(YEPPP)
