@@ -1,7 +1,7 @@
 CC = cc
-LAL_FLAGS = -DUSE_LAL -I/scratch2/LAL/lalpulsar/include -I/scratch2/LAL/lal/include
+LAL_FLAGS = -DUSE_LAL -I/usr/share/lalpulsar/include -I/usr/include/lal/include
 #LAL_FLAGS = 
-LAL_LIBS = -llalpulsar -L/scratch2/LAL/lalpulsar/lib
+LAL_LIBS = -llalpulsar -L/usr/share/lalpulsar/lib
 #LAL_LIBS =
 INIPARSER_DIR = iniparser
 INIPARSER_FLAGS = -I$(INIPARSER_DIR)/src
