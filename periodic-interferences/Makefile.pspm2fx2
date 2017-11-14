@@ -1,0 +1,11 @@
+TARGET = pspm2fx2
+
+CC = gcc
+
+CFLAGS = -lfftw3 -lm 
+
+all:
+	$(CC) $(CFLAGS) pspm2fx2.c -o $(TARGET)
+
+clean:
+	rm -f *.o

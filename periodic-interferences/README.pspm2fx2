@@ -1,0 +1,86 @@
+NAME
+
+pspm2fx2 - detect  monochromatic signals in data sequence  xdat_nn_fff.bin  
+                   and estimate their parameters.
+
+
+The spectrum of the data is divided into blocks of NAV bins 
+in order to account for colored noise. ALPHA is 
+the false alarm probability, P is the zero-padding factor 
+(P times length of the data  xdat  is the number of zeros 
+added to the signal in order to obtain a finer sampling 
+of the spectrum of the data). EXC number of bins is removed on each side
+of the specrum to account for frequency domain filters to smooth 
+the band edges.
+
+
+COMPILING
+
+The program should be compiled with C compiller.
+
+The program use C-libraries: math, FFTw. 
+
+
+SYNOPSIS
+
+pspm2fx2 [OPTION] xdat_nn_fff.bin
+
+*   xdat_nn_fff.bin - time-domain  narrow-band data sequence,
+     nn is  the number  of time  frame, fff  is the number of frequency band
+
+DESCRIPTION
+
+ --fine (default is not to do fine estimation of frequency)
+
+     fine estimation of the frequency of signals
+    (parabolic interpolation is used for finding the local extremum of function 
+     by three points values)  
+
+ --alpha value 
+
+    false alarm probability  (default 0.01)
+
+ --nav value 
+
+    size of the block of bins of the spectrum  for normalization  (default 2^14)
+
+ --exc value
+
+    number of bins removed on each edge of the band  (default 2^13)
+
+ --P value 
+
+    zero-padding factor (default 1)
+
+ --fpo 
+    
+    starting frequency
+    
+ 
+EXAMPLE
+
+  ./pspm2fx2 --dt 2 --fine  --fpo 499.2187500  -r /storage/O1_2d_xdat_0.25/001/H1/xdatc_001_2020.bin
+
+Result is printed to standart output
+
+% Summary for the file xdatc_001_2020.bin
+% Fine search
+% fpo = 499.218750
+% dt = 2.000000
+% alpha = 0.0100
+% nav = 16384
+% exc = 8192 
+% P = 1
+%   Nr.    Frequency      Amplitude    h  SNR          Phase
+    1      499.270891      0.32742      7.37561     -0.98927
+    2      499.270899      0.28296      6.33423      0.79595
+
+
+
+Useful one-liner for generating lines from many data 
+
+files from time frame nn:  
+
+for f in $(ls xdat_nn_*.bin); do ./pspm2fx2 --dt x --fine  --fpo xxx.xxx  -r $f; done; 
+
+
