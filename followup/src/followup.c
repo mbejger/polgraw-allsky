@@ -15,7 +15,6 @@ Ver. 5.0
 Function neigh moved to followup.c
 All vectors/arrays declarated using yeppp! library 
  = FASTER!
-
 MS
 */
 
@@ -189,7 +188,6 @@ Mo = r*[sqrt(5)    0            0            0;
            = gsl_vector_get (eval, i);
         gsl_vector_view evec_i 
            = gsl_matrix_column (evec, i);
-
         printf ("eigenvalue = %g\n", eval_i);
         printf ("eigenvector = \n");
         gsl_vector_fprintf (stdout, 
@@ -539,16 +537,16 @@ double* Fstatnet(Search_settings *sett, double *sgnlo, double *nSource, double *
 
 //mesh adaptive direct search (MADS) maximum search declaration
 Yep64f* MADS(Search_settings *sett, Aux_arrays *aux, double* sgnl, double* rslts, double tol, double *p2){
-
 	int i, j, k, l, m, n, o, r, a = 0;
+	int count=0, limit = 2000;
   	double sinalt, cosalt, sindelt, cosdelt;
 	double param[4]; 			//initial size of mesh
-	double smallest = 2.0;
+	double smallest = 10.0;
 //        double **sigaa, **sigbb;   // aa[nifo][N]
 //        sigaa = matrix(sett->nifo, sett->N);
 //	sigbb = matrix(sett->nifo, sett->N);
-	double array[9][4];
-	double scale = 0.95;
+	double array[25][4];
+	double scale = 0.97;
 	double p[4];
 	double nSource[3];
 /*	double out[11];
@@ -574,9 +572,10 @@ Yep64f* MADS(Search_settings *sett, Aux_arrays *aux, double* sgnl, double* rslts
 //	puts("MADS");
 
 	while(smallest >= tol){  	//when to end computations
+		count ++;
 		k = 0;
 		for(i = 0; i < 11; i++) extr[i] = rslts[i];
-		for(j = 0; j < 8; j++){
+/*		for(j = 0; j < 8; j++){
 			if(j < 4){
 				for(k = 0; k < 4; k++){
 					array[j][k] = extr[6+k] - param[k];
@@ -588,16 +587,109 @@ Yep64f* MADS(Search_settings *sett, Aux_arrays *aux, double* sgnl, double* rslts
 				}
 			}
 		}
-		for (k = 0; k < 4; k++){
-			array[8][k] = extr[6+k];
+*/
+		for(j = 0; j < 8; j++){
+			for(k = 0; k < 4; k++){
+				array[j][k] = extr[6+k];
+			}
 		}
+		for (k = 0; k < 4; k++){
+			array[k][k] = array[k][k] + param[k];
+		}
+		for (k = 0; k < 4; k++){
+			j = 4 + k;
+			array[j][k] = array[j][k] - param[k];
+		}
+		for(k = 8; k < 16; k++){
+			array[k][0] = extr[6] + param[0];
+			for (j = 8; j < 12; j++){
+				array[j][1] = extr[7] + param[1];
+				for (l = 8; l < 10; l++){
+					array[l][2] = extr[8] + param[2];
+				}
+				array[8][3] = extr[9] + param[3];
+				array[9][3] = extr[9] - param[3];
+				for (l = 10; l < 12; l++){
+					array[l][2] = extr[8] - param[2];
+				}
+				array[10][3] = extr[9] + param[3];
+				array[11][3] = extr[9] - param[3];
+			}
+			for (j = 12; j < 16; j++){
+				array[j][1] = extr[7] - param[1];
+				for (l = 12; l < 14; l++){
+					array[l][2] = extr[8] + param[2];
+				}
+				array[12][3] = extr[9] + param[3];
+				array[13][3] = extr[9] - param[3];
+				for (l = 14; l < 16; l++){
+					array[l][2] = extr[8] - param[2];
+				}
+				array[14][3] = extr[9] + param[3];
+				array[15][3] = extr[9] - param[3];
+			}
+		}
+		for(k = 16; k < 24; k++){
+			array[k][0] = extr[6] - param[0];
+			for (j = 16; j < 20; j++){
+				array[j][1] = extr[7] + param[1];
+				for (l = 16; l < 18; l++){
+					array[l][2] = extr[8] + param[2];
+				}
+				array[16][3] = extr[9] + param[3];
+				array[17][3] = extr[9] - param[3];
+				for (l = 18; l < 20; l++){
+					array[l][2] = extr[8] - param[2];
+				}
+				array[18][3] = extr[9] + param[3];
+				array[19][3] = extr[9] - param[3];
+			}
+			for (j = 20; j < 24; j++){
+				array[j][1] = extr[7] - param[1];
+				for (l = 20; l < 22; l++){
+					array[l][2] = extr[8] + param[2];
+				}
+				array[20][3] = extr[9] + param[3];
+				array[21][3] = extr[9] - param[3];
+				for (l = 22; l < 24; l++){
+					array[l][2] = extr[8] - param[2];
+				}
+				array[22][3] = extr[9] + param[3];
+				array[23][3] = extr[9] - param[3];
+			}
+		}
+//for (k = 0; k < 25; k ++) printf("%d: %le %le %le %le\n", k, array[k][0], array[k][1], array[k][2], array[k][3]);
+		for (k = 0; k < 4; k++){
+			array[24][k] = extr[6+k];
+		}
+		double **saa, **sbb;   // old aa[nifo][N], bb[nifo][N]
+		saa = matrix(sett->nifo, sett->N);
+		sbb = matrix(sett->nifo, sett->N);
+		for(i = 0; i < 4; i++){ 
+			p[i] = array[24][i];
+		}
+		sinalt = sin(p[3]);
+		cosalt = cos(p[3]);
+		sindelt = sin(p[2]);
+		cosdelt = cos(p[2]);
+
+		nSource[0] = cosalt*cosdelt;
+		nSource[1] = sinalt*cosdelt;
+		nSource[2] = sindelt;
+		for (o = 0; o < sett->nifo; ++o){
+			modvir(sinalt, cosalt, sindelt, cosdelt, 
+		   		sett->N, &ifo[o], aux, saa[o], sbb[o]);  
+		}
+		extr = Fstatnet(sett, p, nSource, saa, sbb);
+//printf("extr: %le %le %le %le %le, SNR = %le\n", extr[5], extr[6], extr[7], extr[8], extr[9], extr[4]);
+//for (k = 0; k < 25; k ++) printf("%d: %le %le %le %le\n", k, array[k][0], array[k][1], array[k][2], array[k][3]);
 #pragma omp parallel default(shared) private(j, o, p, i, sinalt, cosalt, sindelt, cosdelt, nSource, res)
 {
 		double **sigaa, **sigbb;   // old aa[nifo][N], bb[nifo][N]
 		sigaa = matrix(sett->nifo, sett->N);
 		sigbb = matrix(sett->nifo, sett->N);
 #pragma omp for
-		for(j = 0; j < 9; j++){
+		for(j = 0; j < 24; j++){
 			for(i = 0; i < 4; i++){ 
 				p[i] = array[j][i];
 			}
@@ -617,6 +709,7 @@ Yep64f* MADS(Search_settings *sett, Aux_arrays *aux, double* sgnl, double* rslts
 			res = Fstatnet(sett, p, nSource, sigaa, sigbb); //Fstat function for mesh points
 
 #pragma omp critical
+//printf("res: %le %le %le %le %le, SNR = %le\n", res[5], res[6], res[7], res[8], res[9], res[4]);
 			if (res[5] < extr[5]){
 				for (i = 0; i < 11; i++){ 
 					extr[i] = res[i];
@@ -628,19 +721,16 @@ Yep64f* MADS(Search_settings *sett, Aux_arrays *aux, double* sgnl, double* rslts
 		free_matrix(sigbb, sett->nifo, sett->N);
 } //pragma
 
-		if (fabs(extr[5] - rslts[5]) <= smallest){
+		if(extr[5] >= rslts[5]){
 			smallest = smallest*scale;
+//printf("smallest = %le\n", smallest);
 			for(r = 0; r < 4; r++) param[r] = scale*param[r];
+//printf("%f, %le\n", smallest, extr[5]);
 		}
 		else{
-			if(extr[5] < rslts[5]){
-				for(j = 0; j < 11; j++) rslts[j] = extr[j];
-			}
-			else{
-				smallest = smallest*scale;
-				for(r = 0; r < 4; r++) param[r] = scale*param[r];
-			}
+			for(j = 0; j < 11; j++) rslts[j] = extr[j];
 		}
+	if(count >= limit) smallest = 0.0;
 
 	} // while
 
@@ -776,7 +866,7 @@ int update_simplex(double ** simplex, int dim, double  fmax, double ** fx, int i
 	return update;
 }
 
-void contract_simplex(double ** simplex, int dim, double ** fx, int ilo, int ihi, Search_settings *sett, Aux_arrays *aux, double *nS, double **sigaa_max, double **sigbb_max){
+void contract_simplex(double ** simplex, int dim, double ** fx, int ilo, int ihi, Search_settings *sett, Aux_arrays *aux, double *nS, double **sigaa_max, double **sigbb_max, double scal){
 //puts("Contract simplex");
   	double sinalt, cosalt, sindelt, cosdelt;
 	double *fx3= alloc_vector(11);
@@ -784,7 +874,7 @@ void contract_simplex(double ** simplex, int dim, double ** fx, int ilo, int ihi
 
 	for (i = 0; i < dim + 1; i++){
 		if (i != ilo){
-			for (j = 0; j < dim; j++) simplex[i][j] = (simplex[ilo][j]+simplex[i][j])*0.5;
+			for (j = 0; j < dim; j++) simplex[i][j] = (simplex[ilo][j]+simplex[i][j])*scal;
 			sinalt = sin(simplex[i][3]);
 			cosalt = cos(simplex[i][3]);
 			sindelt = sin(simplex[i][2]);
@@ -836,11 +926,11 @@ double * amoeba(Search_settings *sett, Aux_arrays *aux, double *point, double *n
 		if(check_tol(fx[ihi][5], fx[ilo][5], tol)) break;
 		update_simplex(simplex, dim, fx[ihi][5], fx, ihi, midpoint, line, -1.0, sett, aux, nS, sigaa_max, sigbb_max);
 		if (fx[ihi][5] < fx[ilo][5]){
-			update_simplex(simplex, dim, fx[ihi][5], fx, ihi, midpoint, line, -2.0, sett, aux, nS, sigaa_max, sigbb_max);
+			update_simplex(simplex, dim, fx[ihi][5], fx, ihi, midpoint, line, -3.0, sett, aux, nS, sigaa_max, sigbb_max);
 		}
 		else if (fx[ihi][5] > fx[inhi][5]){
 			if (!update_simplex(simplex, dim, fx[ihi][5], fx, ihi, midpoint, line, 0.5, sett, aux, nS, sigaa_max, sigbb_max)){
-				contract_simplex(simplex, dim, fx, ilo, ihi, sett, aux, nS, sigaa_max, sigbb_max);
+				contract_simplex(simplex, dim, fx, ilo, ihi, sett, aux, nS, sigaa_max, sigbb_max, 0.5);
 			}
 		}
 	}
@@ -876,10 +966,10 @@ int main (int argc, char *argv[]) {
 	int gsize = 2;			// grid size where followup will be searching maximum
 	int spndr[2], nr[2], mr[2], fo[2];	// range in linear unities
 	int hemi; 			// hemisphere
-	double minm = 0.999;		// minimal match used in optimal 4d grid generation
+	double minm = 0.9;		// minimal match used in optimal 4d grid generation
 	double pc[4];			// % define neighbourhood around each parameter for initial grid
 	double pc2[4];			// % define neighbourhood around each parameter for direct maximum search (MADS & Simplex)
-	double tol = 1e-5;
+	double tol = 1e-2;
 	double cof, al1, al2;
 //	double delta = 1e-5;		// initial step in MADS function
 //	double *results;		// Vector with results from Fstatnet function
@@ -938,10 +1028,10 @@ int main (int argc, char *argv[]) {
 
 	if ((!opts.naive_flag)&&(!opts.neigh_flag)){
 // Define on how many grid points Fstat will be calculated  on optimal grid - in every dimension
-		nof[0] = 6;
-		nof[1] = 6;
-		nof[2] = 6;
-		nof[3] = 6;
+		nof[0] = 5;
+		nof[1] = 5;
+		nof[2] = 5;
+		nof[3] = 5;
 
 		ROW = (2*nof[0]+1)*(2*nof[1]+1)*(2*nof[2]+1)*(2*nof[3]+1);
 
@@ -951,7 +1041,8 @@ int main (int argc, char *argv[]) {
 	}
 
 	arr = matrix(ROW, 4);
-	sc = 6./sett.nod;
+//	sc = 6./sett.nod;
+	sc = 1.;
 
 	if((opts.simplex_flag)||(opts.mads_flag)){
 		sigaa_max = matrix(sett.nifo, sett.N);
@@ -971,7 +1062,6 @@ int main (int argc, char *argv[]) {
 
 // Output data handling
 /*  struct stat buffer;
-
   if (stat(opts.prefix, &buffer) == -1) {
     if (errno == ENOENT) {
       // Output directory apparently does not exist, try to create one
@@ -992,7 +1082,6 @@ int main (int argc, char *argv[]) {
 //Glue function
 /*	if(strlen(opts.glue)) {
 		glue(&opts);
-
 		sprintf(opts.dtaprefix, "./data_total");
 		sprintf(opts.dtaprefix, "%s/followup_total_data", opts.prefix); 
 		opts.ident = 000;
@@ -1008,7 +1097,6 @@ int main (int argc, char *argv[]) {
 		  	fread(&mean, sizeof(float), 5, coi);
 		  	fread(&fra, sizeof(unsigned short int), w, coi); 
 		  	fread(&ops, sizeof(int), w, coi);
-
 			if((fread(&mean, sizeof(float), 4, coi)) == 4){
 */
 			while(fscanf(coi, "%le %le %le %le", &mean[0], &mean[1], &mean[2], &mean[3]) == 4){
@@ -1250,7 +1338,6 @@ printf("Closest point on the grid: %d %d %d\n", spndr[0], nr[0], mr[0]);
 							lin2ast(temp1/sett.oms, temp2/sett.oms, hemi, sett.sepsm, sett.cepsm, &sinalt, &cosalt, &sindelt, &cosdelt);
 							temp1 = asin(sindelt);
 							temp2 = fmod(atan2(sinalt, cosalt) + 2.*M_PI, 2.*M_PI);
-
 							pc2[2] = fo[0]*Mopt[0][2] + spndr[0]*Mopt[1][2] + nr[0]*Mopt[2][2] + mr[0]*Mopt[3][2];
 							pc2[3] = fo[0]*Mopt[0][3] + spndr[0]*Mopt[1][3] + nr[0]*Mopt[2][3] + mr[0]*Mopt[3][3];
 							lin2ast(pc2[2]/sett.oms, pc2[3]/sett.oms, hemi, sett.sepsm, sett.cepsm, &sinalt, &cosalt, &sindelt, &cosdelt);
@@ -1259,9 +1346,9 @@ printf("Closest point on the grid: %d %d %d\n", spndr[0], nr[0], mr[0]);
 */
 
 							pc2[0] = 0.01*sc;
-							pc2[1] = 1e-9*sc;
+							pc2[1] = 2e-8*sc;
 							pc2[2] = 0.01*sc;
-							pc2[3] = 0.01*sc;
+							pc2[3] = 0.1*sc;
 						} //if simplex
 					} //if optimal grid
 
@@ -1269,7 +1356,6 @@ printf("Closest point on the grid: %d %d %d\n", spndr[0], nr[0], mr[0]);
 
 // Output data handling
 /*  				struct stat buffer;
-
   				if (stat(opts.prefix, &buffer) == -1) {
     					if (errno == ENOENT) {
 // Output directory apparently does not exist, try to create one
@@ -1366,9 +1452,9 @@ printf("Closest point on the grid: %d %d %d\n", spndr[0], nr[0], mr[0]);
 					sigbb = matrix(sett.nifo, sett.N);
 
 					pc2[0] = 0.01*sc;
-					pc2[1] = 1e-9*sc;
+					pc2[1] = 2e-8*sc;
 					pc2[2] = 0.01*sc;
-					pc2[3] = 0.01*sc;
+					pc2[3] = 0.1*sc;
 
 					for (i = 0; i < 4; i++){
 						sgnlo[i] = mean[i];
@@ -1408,7 +1494,7 @@ printf("Closest point on the grid: %d %d %d\n", spndr[0], nr[0], mr[0]);
 
 // Maximum search using MADS algorithm
   				if(opts.mads_flag) {
-//					puts("MADS");
+					puts("MADS");
 					maximum = MADS(&sett, &aux_arr, sgnlo_max, results_max, tol, pc2);
 				} //mads
 
@@ -1480,5 +1566,3 @@ if((opts.mads_flag)||(opts.simplex_flag)){
   	cleanup_followup(&sett, &opts, &aux_arr);
 	return 0;
 }
-
-
