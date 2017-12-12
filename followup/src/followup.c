@@ -534,19 +534,237 @@ double* Fstatnet(Search_settings *sett, double *sgnlo, double *nSource, double *
 }
 
 
-
-//mesh adaptive direct search (MADS) maximum search declaration
-Yep64f* MADS(Search_settings *sett, Aux_arrays *aux, double* sgnl, double* rslts, double tol, double *p2){
+Yep64f* invertedMADS(Search_settings *sett, Aux_arrays *aux, double* sgnl, double* rslts, double tolmads, double *p2){
 	int i, j, k, l, m, n, o, r, a = 0;
-	int count=0, limit = 2000;
+	int count=0, limit = 300;
+  	double sinalt, cosalt, sindelt, cosdelt;
+	double paramfin[4]; 			//final size of mesh
+	double paramstart[4];			//initial size of mesh
+	double param[4];
+	double array[81][4];
+	double scale = 0.993;
+	double p[4];
+	double nSource[3];
+	double incr[4];
+	double fp, fm, sp, sm, dp, dm, ap, am;
+	incr[0] = incr[2] = incr[3] = 5e-4;
+	incr[1] = 2e-10;
+	for(r = 0; r < 4;r++){
+		paramfin[r] = p2[r];
+		paramstart[r] = param[r] = (1.0 - scale)*p2[r];
+//		paramstart[r] = param[r] = incr[r];
+	}
+#ifdef YEPPP
+    yepLibrary_Init();
+    Yep64f *out = (Yep64f*)malloc(sizeof(Yep64f)*11);
+    Yep64f *extr = (Yep64f*)malloc(sizeof(Yep64f)*11); 
+    Yep64f *res = (Yep64f*)malloc(sizeof(Yep64f)*11);
+    Yep64f *maxres = (Yep64f*)malloc(sizeof(Yep64f)*11);
+    enum YepStatus status;
+
+#endif
+
+	while((param[0] <= paramfin[0]) || (param[1] <= paramfin[1]) || (param[2] <= paramfin[2]) || (param[3] <= paramfin[3])){  	//when to end computations
+//	while(param[1] <= paramfin[1]){
+		count ++;
+		for (i = 0; i < 11; i++) maxres[i] = extr[i] = rslts[i];
+		for (k = 0; k < 4; k++){
+			array[0][k] = extr[6+k];
+		}
+		fp = extr[6] + param[0];
+		fm = extr[6] - param[0];
+		sp = extr[7] + param[1];
+		sm = extr[7] - param[1];
+		dp = extr[8] + param[2];
+		dm = extr[8] - param[2];
+		ap = extr[9] + param[3];
+		am = extr[9] - param[3];
+// vertices 
+		for (j = 1; j < 9; j++) array[j][0] = fp;
+		for (j = 9; j < 17; j++) array[j][0] = fm;
+
+		for (j = 1; j < 5; j++) array[j][1] = array[j+8][1] = sp;
+		for (j = 5; j < 9; j++) array[j][1] = array[j+8][1] = sm;
+
+		for (j = 1; j < 3; j++) array[j][2] = array[j+4][2] = array[j+8][2] = array[j+12][2] = dp;
+		for (j = 3; j < 5; j++) array[j][2] = array[j+4][2] = array[j+8][2] = array[j+12][2] = dm;
+
+		for (j = 1; j < 17; j = j + 2) array[j][3] = ap;
+		for (j = 2; j < 17; j = j + 2) array[j][3] = am;
+
+// edges
+		for (j = 17; j < 25; j++) array[j][0] = extr[6];
+		for (j = 25; j < 33; j++) array[j][1] = extr[7];
+		for (j = 33; j < 41; j++) array[j][2] = extr[8];
+		for (j = 41; j < 49; j++) array[j][3] = extr[9];
+
+		for (j = 25; j < 29; j++) array[j][0] = array[j+8][0] = array[j+16][0] = fp;
+		for (j = 29; j < 33; j++) array[j][0] = array[j+8][0] = array[j+16][0] = fm;
+
+		for (j = 17; j < 21; j++) array[j][1] = sp;
+		for (j = 21; j < 25; j++) array[j][1] = sm;
+		for (j = 33; j < 35; j++) array[j][1] = array[j+4][1] = array[j+8][1] = array[j+12][1] = sp;
+		for (j = 35; j < 37; j++) array[j][1] = array[j+4][1] = array[j+8][1] = array[j+12][1] = sm;
+
+		for (j = 17; j < 19; j++) array[j][2] = array[j+4][2] = array[j+8][2] = array[j+12][2] = dp;
+		for (j = 19; j < 21; j++) array[j][2] = array[j+4][2] = array[j+8][2] = array[j+12][2] = dm;
+		for (j = 41; j < 49; j = j + 2) array[j][2] = dp;
+		for (j = 42; j < 49; j = j + 2) array[j][2] = dm;
+
+		for (j = 17; j < 41; j = j + 2) array[j][3] = ap;
+		for (j = 18; j < 41; j = j + 2) array[j][3] = am;
+		
+
+// faces
+
+		for (j = 49; j < 61; j++) array[j][0] = extr[6];
+		for (j = 49; j < 53; j++) array[j][1] = array[j+12][1] = array[j+18][1] = extr[7];
+		for (j = 53; j < 55; j++) array[j][2] = array[j+4][2] = array[j+8][2] = array[j+12][2] = array[j+14][2] = array[j+18][2] = extr[8];
+		for (j = 55; j < 57; j++) array[j][3] = array[j+4][3] = array[j+8][3] = array[j+10][3] = array[j+14][3] = array[j+16][3] = extr[9];
+
+		for (j = 61; j < 67; j++) array[j][0] = fp;
+		for (j = 67; j < 73; j++) array[j][0] = fm;
+		
+		for (j = 53; j < 57; j++) array[j][1] = sp;
+		for (j = 57; j < 61; j++) array[j][1] = sm;
+		array[65][1] = array[71][1] = sp;
+		array[66][1] = array[72][1] = sm;
+
+		for (j = 49; j < 51; j++) array[j][2] = dp;
+		for (j = 51; j < 53; j++) array[j][2] = dm;
+		for (j = 55; j < 65; j = j + 4) array[j][2] = dp;
+		for (j = 56; j < 65; j = j + 4) array[j][2] = dm;
+		array[69][2] = dp;
+		array[70][2] = dm;
+
+		for (j = 49; j < 55; j = j + 2) array[j][3] = ap;
+		for (j = 50; j < 55; j = j + 2) array[j][3] = am;
+		array[57][3] = array[61][3] = array[67][3] = ap; 
+		array[58][3] = array[62][3] = array[68][3] = am; 
+
+// Cells
+
+		for (j = 73; j < 79; j++) array[j][0] = extr[6];
+		for (j = 75; j < 81; j++) array[j][1] = extr[7];
+		for (j = 73; j < 77; j++) array[j][2] = extr[8];
+		for (j = 79; j < 81; j++) array[j][2] = extr[8];
+		for (j = 73; j < 75; j++) array[j][3] = extr[9];
+		for (j = 77; j < 81; j++) array[j][3] = extr[9];
+
+		array[79][0] = fp;
+		array[80][0] = fm;
+
+		array[73][1] = sp;
+		array[74][1] = sm;
+
+		array[77][2] = dp;
+		array[78][2] = dm;
+
+		array[75][3] = ap;
+		array[76][3] = am;
+
+//for (k = 0; k < 73; k ++) printf("count = %d, %d: %le %le %le %le\n", count, k, array[k][0], array[k][1], array[k][2], array[k][3]);
+		double **saa, **sbb;   // old aa[nifo][N], bb[nifo][N]
+		saa = matrix(sett->nifo, sett->N);
+		sbb = matrix(sett->nifo, sett->N);
+		for(i = 0; i < 4; i++){ 
+			p[i] = array[0][i];
+		}
+		sinalt = sin(p[3]);
+		cosalt = cos(p[3]);
+		sindelt = sin(p[2]);
+		cosdelt = cos(p[2]);
+
+		nSource[0] = cosalt*cosdelt;
+		nSource[1] = sinalt*cosdelt;
+		nSource[2] = sindelt;
+		for (o = 0; o < sett->nifo; ++o){
+			modvir(sinalt, cosalt, sindelt, cosdelt, 
+		   		sett->N, &ifo[o], aux, saa[o], sbb[o]);  
+		}
+		extr = Fstatnet(sett, p, nSource, saa, sbb);
+		for (i = 0; i < 11; i++) maxres[i] = extr[i];
+
+//printf("extr: %le %le %le %le %le, SNR = %le\n", extr[5], extr[6], extr[7], extr[8], extr[9], extr[4]);
+//for (k = 0; k < 25; k ++) printf("%d: %le %le %le %le\n", k, array[k][0], array[k][1], array[k][2], array[k][3]);
+#pragma omp parallel default(shared) private(j, o, p, i, sinalt, cosalt, sindelt, cosdelt, nSource, res)
+{
+		double **sigaa, **sigbb;   // old aa[nifo][N], bb[nifo][N]
+		sigaa = matrix(sett->nifo, sett->N);
+		sigbb = matrix(sett->nifo, sett->N);
+#pragma omp for
+		for(j = 1; j < 81; j++){
+			for(i = 0; i < 4; i++){ 
+				p[i] = array[j][i];
+			}
+
+			sinalt = sin(p[3]);
+			cosalt = cos(p[3]);
+			sindelt = sin(p[2]);
+			cosdelt = cos(p[2]);
+
+			nSource[0] = cosalt*cosdelt;
+			nSource[1] = sinalt*cosdelt;
+			nSource[2] = sindelt;
+			for (o = 0; o < sett->nifo; ++o){
+				modvir(sinalt, cosalt, sindelt, cosdelt, 
+			   		sett->N, &ifo[o], aux, sigaa[o], sigbb[o]);  
+			}
+			res = Fstatnet(sett, p, nSource, sigaa, sigbb); //Fstat function for mesh points
+//printf("res: %le %le %le %le %le, SNR = %le\n", res[5], res[6], res[7], res[8], res[9], res[4]);
+
+#pragma omp critical
+			if (res[5] < maxres[5]){
+				for (i = 0; i < 11; i++){ 
+					maxres[i] = res[i];
+				}
+			}
+		} //j
+		free_matrix(sigaa, sett->nifo, sett->N);
+		free_matrix(sigbb, sett->nifo, sett->N);
+} //pragma
+//printf("count = %d, extr = %le, maxres = %le\n", count, extr[5], maxres[5]);
+		if(extr[5] <= maxres[5]){
+//printf("smallest = %le\n", smallest);
+			for(r = 0; r < 4; r++) param[r] = param[r] + (1.0 - scale)*p2[r];
+//			for(r = 0; r < 4; r++) param[r] = param[r] + incr[r];
+			for(j = 0; j < 11; j++) rslts[j] = extr[j];
+//printf("%f, %le\n", smallest, extr[5]);
+		}
+		else{
+			for(j = 0; j < 11; j++) rslts[j] = maxres[j];
+			for(r = 0; r < 4; r++) param[r] = paramstart[r];
+//puts("move");
+		}
+	if(count >= limit){
+		for(r = 0; r < 4; r++) param[r] = paramfin[r];
+	}
+
+	} // while
+
+	for (n= 0; n < 11; n++){
+		out[n] = rslts[n];
+	}
+
+//	free(p);
+//	free(nSource);
+	free(extr);
+	free(res);
+
+	return out;
+}
+//mesh adaptive direct search (MADS) maximum search declaration
+Yep64f* MADS(Search_settings *sett, Aux_arrays *aux, double* sgnl, double* rslts, double tolmads, double *p2){
+	int i, j, k, l, m, n, o, r, a = 0;
+	int count=0, limit = 600;
   	double sinalt, cosalt, sindelt, cosdelt;
 	double param[4]; 			//initial size of mesh
-	double smallest = 10.0;
+	double smallest = 25.0;
 //        double **sigaa, **sigbb;   // aa[nifo][N]
 //        sigaa = matrix(sett->nifo, sett->N);
 //	sigbb = matrix(sett->nifo, sett->N);
 	double array[25][4];
-	double scale = 0.97;
+	double scale = 0.997;
 	double p[4];
 	double nSource[3];
 /*	double out[11];
@@ -565,16 +783,17 @@ Yep64f* MADS(Search_settings *sett, Aux_arrays *aux, double* sgnl, double* rslts
 //    Yep64f *nSource = (Yep64f*)malloc(sizeof(Yep64f)*3); 
     Yep64f *extr = (Yep64f*)malloc(sizeof(Yep64f)*11); 
     Yep64f *res = (Yep64f*)malloc(sizeof(Yep64f)*11);
+    Yep64f *maxres = (Yep64f*)malloc(sizeof(Yep64f)*11);
     enum YepStatus status;
 
 #endif
 
 //	puts("MADS");
 
-	while(smallest >= tol){  	//when to end computations
+	while(smallest >= tolmads){  	//when to end computations
 		count ++;
 		k = 0;
-		for(i = 0; i < 11; i++) extr[i] = rslts[i];
+		for(i = 0; i < 11; i++) maxres[i] = extr[i] = rslts[i];
 /*		for(j = 0; j < 8; j++){
 			if(j < 4){
 				for(k = 0; k < 4; k++){
@@ -712,7 +931,7 @@ Yep64f* MADS(Search_settings *sett, Aux_arrays *aux, double* sgnl, double* rslts
 //printf("res: %le %le %le %le %le, SNR = %le\n", res[5], res[6], res[7], res[8], res[9], res[4]);
 			if (res[5] < extr[5]){
 				for (i = 0; i < 11; i++){ 
-					extr[i] = res[i];
+					maxres[i] = res[i];
 				}
 			}
 
@@ -720,15 +939,16 @@ Yep64f* MADS(Search_settings *sett, Aux_arrays *aux, double* sgnl, double* rslts
 		free_matrix(sigaa, sett->nifo, sett->N);
 		free_matrix(sigbb, sett->nifo, sett->N);
 } //pragma
-
-		if(extr[5] >= rslts[5]){
+//printf("count = %d, extr = %le, maxres = %le\n", count, extr[5], maxres[5]);
+		if(extr[5] <= maxres[5]){
 			smallest = smallest*scale;
 //printf("smallest = %le\n", smallest);
 			for(r = 0; r < 4; r++) param[r] = scale*param[r];
+			for(j = 0; j < 11; j++) rslts[j] = extr[j];
 //printf("%f, %le\n", smallest, extr[5]);
 		}
 		else{
-			for(j = 0; j < 11; j++) rslts[j] = extr[j];
+			for(j = 0; j < 11; j++) rslts[j] = maxres[j];
 		}
 	if(count >= limit) smallest = 0.0;
 
@@ -926,7 +1146,7 @@ double * amoeba(Search_settings *sett, Aux_arrays *aux, double *point, double *n
 		if(check_tol(fx[ihi][5], fx[ilo][5], tol)) break;
 		update_simplex(simplex, dim, fx[ihi][5], fx, ihi, midpoint, line, -1.0, sett, aux, nS, sigaa_max, sigbb_max);
 		if (fx[ihi][5] < fx[ilo][5]){
-			update_simplex(simplex, dim, fx[ihi][5], fx, ihi, midpoint, line, -3.0, sett, aux, nS, sigaa_max, sigbb_max);
+			update_simplex(simplex, dim, fx[ihi][5], fx, ihi, midpoint, line, -2.0, sett, aux, nS, sigaa_max, sigbb_max);
 		}
 		else if (fx[ihi][5] > fx[inhi][5]){
 			if (!update_simplex(simplex, dim, fx[ihi][5], fx, ihi, midpoint, line, 0.5, sett, aux, nS, sigaa_max, sigbb_max)){
@@ -966,10 +1186,11 @@ int main (int argc, char *argv[]) {
 	int gsize = 2;			// grid size where followup will be searching maximum
 	int spndr[2], nr[2], mr[2], fo[2];	// range in linear unities
 	int hemi; 			// hemisphere
-	double minm = 0.9;		// minimal match used in optimal 4d grid generation
+	double minm = 0.95;		// minimal match used in optimal 4d grid generation
 	double pc[4];			// % define neighbourhood around each parameter for initial grid
 	double pc2[4];			// % define neighbourhood around each parameter for direct maximum search (MADS & Simplex)
-	double tol = 1e-2;
+	double tol = 1e-7;
+	double tolmads = 1e-2;
 	double cof, al1, al2;
 //	double delta = 1e-5;		// initial step in MADS function
 //	double *results;		// Vector with results from Fstatnet function
@@ -1026,12 +1247,15 @@ int main (int argc, char *argv[]) {
 // Array initialization
   	init_arrays(&sett, &opts, &aux_arr);
 
+//	sc = 6./sett.nod;
+	sc = 1.;
+
 	if ((!opts.naive_flag)&&(!opts.neigh_flag)){
 // Define on how many grid points Fstat will be calculated  on optimal grid - in every dimension
-		nof[0] = 5;
-		nof[1] = 5;
-		nof[2] = 5;
-		nof[3] = 5;
+		nof[0] = 7;
+		nof[1] = 7;
+		nof[2] = 7;
+		nof[3] = 7;
 
 		ROW = (2*nof[0]+1)*(2*nof[1]+1)*(2*nof[2]+1)*(2*nof[3]+1);
 
@@ -1041,8 +1265,6 @@ int main (int argc, char *argv[]) {
 	}
 
 	arr = matrix(ROW, 4);
-//	sc = 6./sett.nod;
-	sc = 1.;
 
 	if((opts.simplex_flag)||(opts.mads_flag)){
 		sigaa_max = matrix(sett.nifo, sett.N);
@@ -1345,10 +1567,10 @@ printf("Closest point on the grid: %d %d %d\n", spndr[0], nr[0], mr[0]);
 							pc2[3] = 2*(fabs(temp2 - fmod(atan2(sinalt, cosalt) + 2.*M_PI, 2.*M_PI)));
 */
 
-							pc2[0] = 0.01*sc;
-							pc2[1] = 2e-8*sc;
-							pc2[2] = 0.01*sc;
-							pc2[3] = 0.1*sc;
+						pc2[0] = 0.01*sc;
+						pc2[1] = 5e-8*sc;
+						pc2[2] = 0.05*sc;
+						pc2[3] = 0.1*sc;
 						} //if simplex
 					} //if optimal grid
 
@@ -1452,9 +1674,9 @@ printf("Closest point on the grid: %d %d %d\n", spndr[0], nr[0], mr[0]);
 					sigbb = matrix(sett.nifo, sett.N);
 
 					pc2[0] = 0.01*sc;
-					pc2[1] = 2e-8*sc;
-					pc2[2] = 0.01*sc;
-					pc2[3] = 0.1*sc;
+					pc2[1] = 5e-8*sc;
+					pc2[2] = 0.05*sc;
+					pc2[3] = 0.05*sc;
 
 					for (i = 0; i < 4; i++){
 						sgnlo[i] = mean[i];
@@ -1489,13 +1711,14 @@ printf("Closest point on the grid: %d %d %d\n", spndr[0], nr[0], mr[0]);
 								sigbb_max[g][i] = sigbb[g][i];
 							}
 						}
-					} //if --simplex
+					} //if --simplex or --mads
 				} // if onepoint
 
 // Maximum search using MADS algorithm
   				if(opts.mads_flag) {
 					puts("MADS");
-					maximum = MADS(&sett, &aux_arr, sgnlo_max, results_max, tol, pc2);
+//					maximum = MADS(&sett, &aux_arr, sgnlo_max, results_max, tolmads, pc2);
+					maximum = invertedMADS(&sett, &aux_arr, sgnlo_max, results_max, tolmads, pc2);
 				} //mads
 
 // Maximum search using simplex algorithm
