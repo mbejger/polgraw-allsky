@@ -690,7 +690,7 @@ puts("Adding signal from file");
     // Fscanning for the GW snr, grid size and the reference
     // frame (for which the signal freq. is not spun-down/up)
 //    fscanf (data, "%le %d %d", &snr, &gsize, &reffr);  
-	fscanf (data, "%le %d %d", &snr, &gsize, &reffr);  
+	fscanf (data, "%le %d %d", &h0, &gsize, &reffr);  
 
     // Fscanning signal parameters: f, fdot, delta, alpha (sgnlo[0], ..., sgnlo[3])
     // four amplitudes sgnlo[4], ..., sgnlo[7] 
@@ -787,8 +787,8 @@ puts("Adding signal from file");
 
 //Signal amplitude
 
-  h0 = (snr*sigma_noise)/(sqrt(sum));
-//  snr = h0*(sqrt(sum))/sigma_noise;
+//  h0 = (snr*sigma_noise)/(sqrt(sum));
+  snr = h0*(sqrt(sum))/sigma_noise;
 
 // Loop for each detector - adding signal to data (point by point)  								
   for(n=0; n<sett->nifo; n++) {
