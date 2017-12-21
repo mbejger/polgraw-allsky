@@ -8,21 +8,20 @@
         
         
         <link rel="shortcut icon" href="../img/favicon.ico">
-
-	<title>F-statistic candidate signal search - Polgraw group</title>
-
-        <link href="../css/bootstrap-3.0.3.min.css" rel="stylesheet">
-        <link href="../css/font-awesome-4.0.3.css" rel="stylesheet">
-        <link rel="stylesheet" href="../css/highlight.css">
+        <title>F-statistic candidate signal search - Polgraw group</title>
+        <link href="../css/bootstrap-custom.min.css" rel="stylesheet">
+        <link href="../css/font-awesome-4.5.0.css" rel="stylesheet">
         <link href="../css/base.css" rel="stylesheet">
-
+        <link rel="stylesheet" href="../css/highlight.css">
         <!-- HTML5 shim and Respond.js IE8 support of HTML5 elements and media queries -->
         <!--[if lt IE 9]>
             <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
             <script src="https://oss.maxcdn.com/libs/respond.js/1.3.0/respond.min.js"></script>
         <![endif]-->
 
-        
+        <script src="../js/jquery-1.10.2.min.js"></script>
+        <script src="../js/bootstrap-3.0.3.min.js"></script>
+        <script src="../js/highlight.pack.js"></script> 
     </head>
 
     <body>
@@ -39,107 +38,92 @@
                 <span class="icon-bar"></span>
                 <span class="icon-bar"></span>
             </button>
-
-            <!-- Main title -->
             <a class="navbar-brand" href="..">Polgraw group</a>
         </div>
 
         <!-- Expanded navigation -->
         <div class="navbar-collapse collapse">
-            <!-- Main navigation -->
-            <ul class="nav navbar-nav">
-            
-            
-                <li >
-                    <a href="..">Home</a>
-                </li>
-            
-            
-            
-                <li class="dropdown active">
-                    <a href="#" class="dropdown-toggle" data-toggle="dropdown">Pipeline description <b class="caret"></b></a>
-                    <ul class="dropdown-menu">
-                    
-                        <li >
-                            <a href="../input_data/">Input data generation</a>
-                        </li>
-                    
-                        <li >
-                            <a href="../grid_generation/">Grid generation</a>
-                        </li>
-                    
-                        <li class="active">
-                            <a href="./">F-statistic candidate signal search</a>
-                        </li>
-                    
-                        <li >
-                            <a href="../coincidences/">Coincidences between candidates</a>
-                        </li>
-                    
-                        <li >
-                            <a href="../fap_coincidences/">False alarm probablity of conicidences</a>
-                        </li>
-                    
-                        <li >
-                            <a href="../followup/">Followup of interesting outliers</a>
-                        </li>
-                    
-                        <li >
-                            <a href="../sensitivity_upper_limits/">Sensitivity upper limits</a>
-                        </li>
-                    
-                        <li >
-                            <a href="../pipeline_script/">Pipeline: a minimal example</a>
-                        </li>
-                    
-                        <li >
-                            <a href="../articles/">Documents and publications</a>
-                        </li>
-                    
-                    </ul>
-                </li>
-            
-            
-            </ul>
+                <!-- Main navigation -->
+                <ul class="nav navbar-nav">
+                    <li >
+                        <a href="..">Home</a>
+                    </li>
+                    <li class="dropdown active">
+                        <a href="#" class="dropdown-toggle" data-toggle="dropdown">Pipeline description <b class="caret"></b></a>
+                        <ul class="dropdown-menu">
+                            
+<li >
+    <a href="../input_data/">Input data generation</a>
+</li>
+                            
+<li >
+    <a href="../grid_generation/">Grid generation</a>
+</li>
+                            
+<li class="active">
+    <a href="./">F-statistic candidate signal search</a>
+</li>
+                            
+<li >
+    <a href="../coincidences/">Coincidences between candidates</a>
+</li>
+                            
+<li >
+    <a href="../fap_coincidences/">False alarm probablity of conicidences</a>
+</li>
+                            
+<li >
+    <a href="../followup/">Followup of interesting outliers</a>
+</li>
+                            
+<li >
+    <a href="../sensitivity_upper_limits/">Sensitivity upper limits</a>
+</li>
+                            
+<li >
+    <a href="../pipeline_script/">Pipeline: a minimal example</a>
+</li>
+                            
+<li >
+    <a href="../articles/">Documents and publications</a>
+</li>
+                        </ul>
+                    </li>
+                </ul>
 
-            <!-- Search, Navigation and Repo links -->
             <ul class="nav navbar-nav navbar-right">
-                <li >
-                    <a rel="next" href="../grid_generation/">
-                        <i class="fa fa-arrow-left"></i> Previous
+                <li>
+                    <a href="#" data-toggle="modal" data-target="#mkdocs_search_modal">
+                        <i class="fa fa-search"></i> Search
                     </a>
                 </li>
-                <li >
-                    <a rel="prev" href="../coincidences/">
-                        Next <i class="fa fa-arrow-right"></i>
-                    </a>
-                </li>
-                
+                    <li >
+                        <a rel="next" href="../grid_generation/">
+                            <i class="fa fa-arrow-left"></i> Previous
+                        </a>
+                    </li>
+                    <li >
+                        <a rel="prev" href="../coincidences/">
+                            Next <i class="fa fa-arrow-right"></i>
+                        </a>
+                    </li>
             </ul>
         </div>
     </div>
 </div>
 
         <div class="container">
-            <div class="col-md-3"><div class="bs-sidebar hidden-print affix well" role="complementary">
+                <div class="col-md-3"><div class="bs-sidebar hidden-print affix well" role="complementary">
     <ul class="nav bs-sidenav">
-    
         <li class="main active"><a href="#f-statistic-candidate-signal-search">F-statistic candidate signal search</a></li>
-        
             <li><a href="#algorithm-flowchart">Algorithm flowchart</a></li>
-        
             <li><a href="#prerequisites">Prerequisites</a></li>
-        
             <li><a href="#compilation">Compilation</a></li>
-        
             <li><a href="#example">Example</a></li>
-        
             <li><a href="#output-files">Output files</a></li>
-        
-    
     </ul>
 </div></div>
-            <div class="col-md-9" role="main">
+                <div class="col-md-9" role="main">
 
 <h1 id="f-statistic-candidate-signal-search">F-statistic candidate signal search</h1>
 <p>Production serial code for a network of detectors is available at <a href="https://github.com/mbejger/polgraw-allsky/tree/master/search/network/src-cpu">here</a>. <code>OpenMP</code> version is at <a href="https://github.com/mbejger/polgraw-allsky/tree/master/search/network/src-openmp">this location</a>. To get the whole pipeline, run <code>git clone https://github.com/mbejger/polgraw-allsky.git</code>. </p>
@@ -154,8 +138,7 @@
 <h4 id="_2"></h4>
 <h4 id="full-list-of-switches">Full list of switches</h4>
 <p>For the full list of options, type</p>
-<div class="codehilite"><pre>% ./gwsearch-cpu --help 
-</pre></div>
+<pre class="codehilite"><code class="language-bash">% ./gwsearch-cpu --help </code></pre>
 
 
 <table>
@@ -257,8 +240,7 @@
 </table>
 <h3 id="example">Example</h3>
 <p>Minimal call to <code>gwsearch-cpu</code> is as follows (code compiled with the <code>GNUSINCOS</code> option): </p>
-<div class="codehilite"><pre><span class="c">% ./gwsearch-cpu -data ../../../testdata/2d_0.25 -dt 2 -output . -ident 001 -band 1234 -nod 2  </span>
-</pre></div>
+<pre class="codehilite"><code>% ./gwsearch-cpu -data ../../../testdata/2d_0.25 -dt 2 -output . -ident 001 -band 1234 -nod 2  </code></pre>
 
 
 <p>where</p>
@@ -274,17 +256,16 @@
 <h4 id="network-of-detectors">Network of detectors</h4>
 <p>Test data frames <script type="math/tex">nnn=001-008</script> with pure Gaussian noise 2-day time segments with sampling time equal to 2s (<code>xdatc_nnn_1234.bin</code>) for two LIGO detectors H1 and L1 are <a href="https://polgraw.camk.edu.pl/H1L1_2d_0.25.tar.gz">available here</a>. </p>
 <p>A sample call is </p>
-<div class="codehilite"><pre>% <span class="nv">LD_LIBRARY_PATH</span><span class="o">=</span>lib/yeppp-1.0.0/binaries/linux/x86_64 ./gwsearch-cpu <span class="se">\</span>
-  -data ../../../testdata/2d_0.25/ <span class="se">\</span>
-  -ident <span class="m">001</span> <span class="se">\</span>
-  -band <span class="m">1234</span> <span class="se">\</span>
-  -dt <span class="m">2</span> <span class="se">\ </span>
-  -nod <span class="m">2</span> <span class="se">\ </span>
-  -addsig sig1 <span class="se">\ </span> 
-  -output . <span class="se">\</span>
-  -threshold 14.5 <span class="se">\</span>
-  --nocheckpoint
-</pre></div>
+<pre class="codehilite"><code class="language-bash">% LD_LIBRARY_PATH=lib/yeppp-1.0.0/binaries/linux/x86_64 ./gwsearch-cpu \
+  -data ../../../testdata/2d_0.25/ \
+  -ident 001 \
+  -band 1234 \
+  -dt 2 \ 
+  -nod 2 \ 
+  -addsig sig1 \  
+  -output . \
+  -threshold 14.5 \
+  --nocheckpoint</code></pre>
 
 
 <p>where the <code>LD_LIBRARY_PATH</code> points to the location of the <code>YEPPP!</code> library. </p>
@@ -303,38 +284,15 @@
 <h3 id="output-files">Output files</h3>
 <p>Binary output files, containing trigger candidate events above an arbitrary threshold (option <code>-threshold</code> for the <script type="math/tex">\mathcal{F}</script>-statistic, default 20), are written to the <code>output_dir</code> directory. There are two output files for every input data sequence: <code>triggers_nnn_bbbb_1.bin</code> and
 <code>triggers_nnn_bbbb_2.bin</code>,  where  <code>1</code> and  <code>2</code> correspond to the northern and southern ecliptic hemisphere. Each trigger (candidate) event occupies <code>40</code> consecutive bytes (5 double numbers), with the following meaning:</p>
-<table>
-<thead>
-<tr>
-<th>Record no.</th>
-<th></th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>1</td>
-<td>frequency [radians, between 0 and <script type="math/tex">\pi</script>] above <code>fpo</code></td>
-</tr>
-<tr>
-<td>2</td>
-<td>spindown [<script type="math/tex">\mathrm{Hz/s}</script>]</td>
-</tr>
-<tr>
-<td>3</td>
-<td>declination [radians, between <script type="math/tex">\pi</script> and <script type="math/tex">-\pi</script>]</td>
-</tr>
-<tr>
-<td>4</td>
-<td>right ascension [radians, between 0 and <script type="math/tex">2\pi</script>]</td>
-</tr>
-<tr>
-<td>5</td>
-<td>signal-to-noise ratio</td>
-</tr>
-</tbody>
-</table>
+<p>Record no.            | 
+--------------------- | ---------------------------- 
+1                     | frequency [radians, between 0 and <script type="math/tex">\pi</script>] above <code>fpo</code><br />
+2                     | spindown [<script type="math/tex">\mathrm{Hz/s}</script>]<br />
+3                     | declination [radians, between <script type="math/tex">\pi</script> and <script type="math/tex">-\pi</script>]
+4                     | right ascension [radians, between 0 and <script type="math/tex">2\pi</script>]
+5                     | signal-to-noise ratio</p>
 <p>For the example above, the first 10 triggers from <code>triggers_001_1234_2.bin</code> are </p>
-<div class="codehilite"><pre>3.05617018e+00 -3.42376198e-08 -7.68007347e-02 2.59248668e+00 5.06667333e+00 
+<pre class="codehilite"><code class="language-bash">3.05617018e+00 -3.42376198e-08 -7.68007347e-02 2.59248668e+00 5.06667333e+00 
 1.18243015e+00 -3.20762991e-08 -7.68007347e-02 2.59248668e+00 5.05528873e+00 
 1.08103361e-01 -2.77536578e-08 -7.68007347e-02 2.59248668e+00 5.07085254e+00 
 1.90022435e+00 -2.77536578e-08 -7.68007347e-02 2.59248668e+00 5.15191593e+00 
@@ -343,8 +301,7 @@
 2.38731576e+00 -2.12696958e-08 -7.68007347e-02 2.59248668e+00 5.31983396e+00 
 3.00543165e+00 -1.91083751e-08 -7.68007347e-02 2.59248668e+00 5.29454616e+00 
 7.49333983e-01 -1.26244131e-08 -7.68007347e-02 2.59248668e+00 5.08724856e+00 
-2.08710778e-01  3.43510887e-10 -7.68007347e-02 2.59248668e+00 5.17537018e+00 
-</pre></div>
+2.08710778e-01  3.43510887e-10 -7.68007347e-02 2.59248668e+00 5.17537018e+00 </code></pre>
 
 
 <h4 id="_4"></h4>
@@ -359,17 +316,80 @@
 </ul></div>
         </div>
 
-	<footer class="col-md-12">
-		<hr>
-		
-		<p>Documentation built with <a href="http://www.mkdocs.org/">MkDocs</a>.</p>
-	</footer>
-
-
-        <script src="../js/jquery-1.10.2.min.js"></script>
-        <script src="../js/bootstrap-3.0.3.min.js"></script>
-        <script src="../js/highlight.pack.js"></script>
+        <footer class="col-md-12">
+            <hr>
+            <p>Documentation built with <a href="http://www.mkdocs.org/">MkDocs</a>.</p>
+        </footer>
+        <script>var base_url = '..';</script>
         <script src="../js/base.js"></script>
         <script src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS_HTML"></script>
+        <script src="../search/require.js"></script>
+        <script src="../search/search.js"></script>
+
+        <div class="modal" id="mkdocs_search_modal" tabindex="-1" role="dialog" aria-labelledby="Search Modal" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
+                <h4 class="modal-title" id="exampleModalLabel">Search</h4>
+            </div>
+            <div class="modal-body">
+                <p>
+                    From here you can search these documents. Enter
+                    your search terms below.
+                </p>
+                <form role="form">
+                    <div class="form-group">
+                        <input type="text" class="form-control" placeholder="Search..." id="mkdocs-search-query">
+                    </div>
+                </form>
+                <div id="mkdocs-search-results"></div>
+            </div>
+            <div class="modal-footer">
+            </div>
+        </div>
+    </div>
+</div><div class="modal" id="mkdocs_keyboard_modal" tabindex="-1" role="dialog" aria-labelledby="Keyboard Shortcuts Modal" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
+                <h4 class="modal-title" id="exampleModalLabel">Keyboard Shortcuts</h4>
+            </div>
+            <div class="modal-body">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th style="width: 20%;">Keys</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><kbd>?</kbd></td>
+                    <td>Open this help</td>
+                  </tr>
+                  <tr>
+                    <td><kbd>&larr;</kbd></td>
+                    <td>Previous page</td>
+                  </tr>
+                  <tr>
+                    <td><kbd>&rarr;</kbd></td>
+                    <td>Next page</td>
+                  </tr>
+                  <tr>
+                    <td><kbd>s</kbd></td>
+                    <td>Search</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="modal-footer">
+            </div>
+        </div>
+    </div>
+</div>
+
+
     </body>
 </html>

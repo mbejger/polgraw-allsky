@@ -8,21 +8,20 @@
         
         
         <link rel="shortcut icon" href="../img/favicon.ico">
-
-	<title>Sensitivity upper limits - Polgraw group</title>
-
-        <link href="../css/bootstrap-3.0.3.min.css" rel="stylesheet">
-        <link href="../css/font-awesome-4.0.3.css" rel="stylesheet">
-        <link rel="stylesheet" href="../css/highlight.css">
+        <title>Sensitivity upper limits - Polgraw group</title>
+        <link href="../css/bootstrap-custom.min.css" rel="stylesheet">
+        <link href="../css/font-awesome-4.5.0.css" rel="stylesheet">
         <link href="../css/base.css" rel="stylesheet">
-
+        <link rel="stylesheet" href="../css/highlight.css">
         <!-- HTML5 shim and Respond.js IE8 support of HTML5 elements and media queries -->
         <!--[if lt IE 9]>
             <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
             <script src="https://oss.maxcdn.com/libs/respond.js/1.3.0/respond.min.js"></script>
         <![endif]-->
 
-        
+        <script src="../js/jquery-1.10.2.min.js"></script>
+        <script src="../js/bootstrap-3.0.3.min.js"></script>
+        <script src="../js/highlight.pack.js"></script> 
     </head>
 
     <body>
@@ -39,101 +38,89 @@
                 <span class="icon-bar"></span>
                 <span class="icon-bar"></span>
             </button>
-
-            <!-- Main title -->
             <a class="navbar-brand" href="..">Polgraw group</a>
         </div>
 
         <!-- Expanded navigation -->
         <div class="navbar-collapse collapse">
-            <!-- Main navigation -->
-            <ul class="nav navbar-nav">
-            
-            
-                <li >
-                    <a href="..">Home</a>
-                </li>
-            
-            
-            
-                <li class="dropdown active">
-                    <a href="#" class="dropdown-toggle" data-toggle="dropdown">Pipeline description <b class="caret"></b></a>
-                    <ul class="dropdown-menu">
-                    
-                        <li >
-                            <a href="../input_data/">Input data generation</a>
-                        </li>
-                    
-                        <li >
-                            <a href="../grid_generation/">Grid generation</a>
-                        </li>
-                    
-                        <li >
-                            <a href="../search_for_candidates/">F-statistic candidate signal search</a>
-                        </li>
-                    
-                        <li >
-                            <a href="../coincidences/">Coincidences between candidates</a>
-                        </li>
-                    
-                        <li >
-                            <a href="../fap_coincidences/">False alarm probablity of conicidences</a>
-                        </li>
-                    
-                        <li >
-                            <a href="../followup/">Followup of interesting outliers</a>
-                        </li>
-                    
-                        <li class="active">
-                            <a href="./">Sensitivity upper limits</a>
-                        </li>
-                    
-                        <li >
-                            <a href="../pipeline_script/">Pipeline: a minimal example</a>
-                        </li>
-                    
-                        <li >
-                            <a href="../articles/">Documents and publications</a>
-                        </li>
-                    
-                    </ul>
-                </li>
-            
-            
-            </ul>
+                <!-- Main navigation -->
+                <ul class="nav navbar-nav">
+                    <li >
+                        <a href="..">Home</a>
+                    </li>
+                    <li class="dropdown active">
+                        <a href="#" class="dropdown-toggle" data-toggle="dropdown">Pipeline description <b class="caret"></b></a>
+                        <ul class="dropdown-menu">
+                            
+<li >
+    <a href="../input_data/">Input data generation</a>
+</li>
+                            
+<li >
+    <a href="../grid_generation/">Grid generation</a>
+</li>
+                            
+<li >
+    <a href="../search_for_candidates/">F-statistic candidate signal search</a>
+</li>
+                            
+<li >
+    <a href="../coincidences/">Coincidences between candidates</a>
+</li>
+                            
+<li >
+    <a href="../fap_coincidences/">False alarm probablity of conicidences</a>
+</li>
+                            
+<li >
+    <a href="../followup/">Followup of interesting outliers</a>
+</li>
+                            
+<li class="active">
+    <a href="./">Sensitivity upper limits</a>
+</li>
+                            
+<li >
+    <a href="../pipeline_script/">Pipeline: a minimal example</a>
+</li>
+                            
+<li >
+    <a href="../articles/">Documents and publications</a>
+</li>
+                        </ul>
+                    </li>
+                </ul>
 
-            <!-- Search, Navigation and Repo links -->
             <ul class="nav navbar-nav navbar-right">
-                <li >
-                    <a rel="next" href="../followup/">
-                        <i class="fa fa-arrow-left"></i> Previous
+                <li>
+                    <a href="#" data-toggle="modal" data-target="#mkdocs_search_modal">
+                        <i class="fa fa-search"></i> Search
                     </a>
                 </li>
-                <li >
-                    <a rel="prev" href="../pipeline_script/">
-                        Next <i class="fa fa-arrow-right"></i>
-                    </a>
-                </li>
-                
+                    <li >
+                        <a rel="next" href="../followup/">
+                            <i class="fa fa-arrow-left"></i> Previous
+                        </a>
+                    </li>
+                    <li >
+                        <a rel="prev" href="../pipeline_script/">
+                            Next <i class="fa fa-arrow-right"></i>
+                        </a>
+                    </li>
             </ul>
         </div>
     </div>
 </div>
 
         <div class="container">
-            <div class="col-md-3"><div class="bs-sidebar hidden-print affix well" role="complementary">
+                <div class="col-md-3"><div class="bs-sidebar hidden-print affix well" role="complementary">
     <ul class="nav bs-sidenav">
-    
         <li class="main active"><a href="#sensitivity-upper-limits">Sensitivity upper limits</a></li>
-        
             <li><a href="#prerequisites">Prerequisites</a></li>
-        
             <li><a href="#running-the-scripts">Running the scripts</a></li>
-        
-    
     </ul>
 </div></div>
-            <div class="col-md-9" role="main">
+                <div class="col-md-9" role="main">
 
 <h1 id="sensitivity-upper-limits">Sensitivity upper limits</h1>
 <p>This directory contains a set of scripts that prepare and run a pipeline search in a small area in the parameter space around the injected signal. </p>
@@ -141,40 +128,35 @@
 <p>The scripts require <code>python3</code>. A working solution is to install a <code>python</code> virtual environment (<code>python3</code> comes with a built-in <code>pyvenv</code> virtual environment software).  </p>
 <h4 id="install-python345-locally">Install <code>python3.4.5</code> locally</h4>
 <p>Let's assume the installation directory is  </p>
-<div class="codehilite"><pre><span class="nv">installdir</span><span class="o">=</span>/path/to/installdir
-</pre></div>
+<pre class="codehilite"><code class="language-bash">installdir=/path/to/installdir</code></pre>
 
 
 <p>then </p>
-<div class="codehilite"><pre>mkdir -p <span class="si">${</span><span class="nv">installdir</span><span class="si">}</span><span class="p">;</span> <span class="nb">cd</span> <span class="si">${</span><span class="nv">installdir</span><span class="si">}</span> 
+<pre class="codehilite"><code class="language-bash">mkdir -p ${installdir}; cd ${installdir} 
 wget https://www.python.org/ftp/python/3.4.5/Python-3.4.5.tgz
 tar zxvf Python-3.4.5.tgz
-<span class="nb">cd</span> Python-3.4.5
+cd Python-3.4.5
 make clean
-./configure --prefix<span class="o">=</span><span class="k">$(</span>dirname <span class="s2">&quot;</span><span class="si">${</span><span class="nv">PWD</span><span class="si">}</span><span class="s2">&quot;</span><span class="k">)</span> 
+./configure --prefix=$(dirname &quot;${PWD}&quot;) 
 make -j4
 make install
-<span class="nb">cd</span> ../<span class="p">;</span> rm -fr Python-3.4.5*
-</pre></div>
+cd ../; rm -fr Python-3.4.5*</code></pre>
 
 
 <h4 id="create-virtual-environment">Create virtual environment</h4>
 <p>In a selected location (<code>/path/to/venvdir</code>) type</p>
-<div class="codehilite"><pre><span class="si">${</span><span class="nv">installdir</span><span class="si">}</span>/bin/pyvenv venv
-</pre></div>
+<pre class="codehilite"><code class="language-bash">${installdir}/bin/pyvenv venv</code></pre>
 
 
 <p>Activate the virtual environment</p>
-<div class="codehilite"><pre>. /path/to/venvdir/bin/activate
-</pre></div>
+<pre class="codehilite"><code class="language-bash">. /path/to/venvdir/bin/activate</code></pre>
 
 
 <p>(to leave the environment, type <code>deactivate</code>). You can now install specific packages using the <code>pip</code> installer: </p>
-<div class="codehilite"><pre>pip install nympy
+<pre class="codehilite"><code class="language-bash">pip install nympy
 pip install scipy
 pip install matplotlib
-pip install pandas
-</pre></div>
+pip install pandas</code></pre>
 
 
 <h3 id="running-the-scripts">Running the scripts</h3>
@@ -196,87 +178,140 @@ pip install pandas
 <ol>
 <li><code>bandlist</code> which is a list of bands with strain amplitudes, for example:  </li>
 </ol>
-<div class="codehilite"><pre><span class="m">0164</span> 2.25e-1 
-<span class="m">0165</span> 1.5e-1 2e-1 2.5e-1 3e-1
-<span class="m">0166</span> 2e-1 4e-1
-</pre></div>
+<pre class="codehilite"><code class="language-bash">0164 2.25e-1 
+0165 1.5e-1 2e-1 2.5e-1 3e-1
+0166 2e-1 4e-1</code></pre>
 
 
 <p>The call is</p>
-<div class="codehilite"><pre>% python script.py config.ini bandlist
-</pre></div>
+<pre class="codehilite"><code class="language-bash">% python script.py config.ini bandlist</code></pre>
 
 
 <p>Two other auxiliary files are:
 1. Dummy <code>bash</code> script <code>dummy.sh</code> with the actual pipeline calls (variables replaced with actual values by <code>script.py</code> and renamed to <code>script.sh</code>),
 2. <code>PBS/Torque</code> script <code>job.sub</code>, launched into the cluster queue and running <code>script.sh</code> (modify it to fit other systems, e.g., the <code>slurm</code> scheduler). </p>
 <p>Script <code>script.py</code> creates a <code>run.sh</code> file which contains commands to send the jobs into the queue. The results are summary files (<code>.sum</code>) for the requested number of simulations. In order to process them, call the <code>summary.py</code> script</p>
-<div class="codehilite"><pre>% python summary.py band coincidence_threshold number_of_simulations
-</pre></div>
+<pre class="codehilite"><code class="language-bash">% python summary.py band coincidence_threshold number_of_simulations</code></pre>
 
 
 <p>for example </p>
-<div class="codehilite"><pre>% python summary.py <span class="m">0165</span> 0.7 100
-</pre></div>
+<pre class="codehilite"><code class="language-bash">% python summary.py 0165 0.7 100</code></pre>
 
 
 <p>The result will be something as follows (columns are <code>band</code> number, amplitude <code>h</code>, upper limit <code>ul</code>): </p>
-<div class="codehilite"><pre>band h   ul 
-<span class="m">0165</span> 0.150 0.61
-<span class="m">0165</span> 0.200 0.78
-<span class="m">0165</span> 0.250 0.95
-<span class="m">0165</span> 0.300 0.99
-</pre></div>
+<pre class="codehilite"><code class="language-bash">band h   ul 
+0165 0.150 0.61
+0165 0.200 0.78
+0165 0.250 0.95
+0165 0.300 0.99</code></pre>
 
 
 <h4 id="serial-stacked-version-for-longer-jobs">Serial (stacked) version for longer jobs</h4>
 <p><code>script2.py</code> creates subdirectories and a <code>job_BAND.sub</code> file for a list of amplitudes for BAND from <code>bandlist</code>, stacked one after another (can be handy to send one band as one job to the queue). Call: </p>
-<div class="codehilite"><pre>% python script2.sh config.ini bandlist
-</pre></div>
+<pre class="codehilite"><code class="language-bash">% python script2.sh config.ini bandlist</code></pre>
 
 
 <p>and then (for e.g., band 0165) send it to the queue </p>
-<div class="codehilite"><pre>% qsub -N <span class="m">0165</span> -v <span class="nv">howmany</span><span class="o">=</span><span class="m">100</span> job_0165.sub
-</pre></div>
+<pre class="codehilite"><code class="language-bash">% qsub -N 0165 -v howmany=100 job_0165.sub</code></pre>
 
 
 <p>The summary of simulations for a given band (<code>0165</code>, say) processed by the <a href="https://github.com/mbejger/polgraw-allsky/blob/master/sensitivity-scripts/summary.sh">summary.sh</a> result in the following list of <code>h0</code> amplitudes followed by the corresponding fractions of significant coincidences (<code>N_coin/N</code>):</p>
-<div class="codehilite"><pre>band h   ul 
-<span class="m">0165</span> 0.150 0.61
-<span class="m">0165</span> 0.200 0.78
-<span class="m">0165</span> 0.250 0.95
-<span class="m">0165</span> 0.300 0.99
-</pre></div>
+<pre class="codehilite"><code class="language-bash">band h   ul 
+0165 0.150 0.61
+0165 0.200 0.78
+0165 0.250 0.95
+0165 0.300 0.99</code></pre>
 
 
 <p>We are interested in a 95% upper limit i.e. the <code>h0</code> corresponding to the fraction 0.95 of significant coincidences in the simulation (<code>N_coin/N=0.95</code>). This is obtained by fitting a sigmoid function</p>
-<div class="codehilite"><pre><span class="k">def</span> <span class="nf">sigmoid</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">x0</span><span class="p">,</span> <span class="n">k</span><span class="p">):</span>
-     <span class="n">y</span> <span class="o">=</span> <span class="mf">1.0</span> <span class="o">/</span> <span class="p">(</span><span class="mf">1.0</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">k</span><span class="o">*</span><span class="p">(</span><span class="n">x0</span><span class="o">-</span><span class="n">x</span><span class="p">)))</span>
-     <span class="k">return</span> <span class="n">y</span>
-</pre></div>
+<pre class="codehilite"><code class="language-python">def sigmoid(x, x0, k):
+     y = 1.0 / (1.0 + np.exp(k*(x0-x)))
+     return y</code></pre>
 
 
 <p>to the above data. Fitting is done by <a href="https://github.com/mbejger/polgraw-allsky/blob/master/sensitivity-scripts/upper-limits/ul.py">ul.py</a>:</p>
-<div class="codehilite"><pre>% python ul.py 0165_results <span class="m">0165</span> 0.01 test.pdf
-<span class="m">0165</span> 2.7026e-01
-</pre></div>
+<pre class="codehilite"><code class="language-bash">% python ul.py 0165_results 0165 0.01 test.pdf
+0165 2.7026e-01</code></pre>
 
 
 <p>The output is the band number and <code>h0</code> corresponding to the 95% upper limit. Last command-line option <a href="https://github.com/mbejger/polgraw-allsky/blob/master/sensitivity-scripts/upper-limits/test.pdf">test.pdf</a> is optional. It produces the auxiliary plot, with the 95% upper limit is denoted by red circle: </p>
 <p><img alt="0165 upper limits" src="../img/0165_ul.png" /></p></div>
         </div>
 
-	<footer class="col-md-12">
-		<hr>
-		
-		<p>Documentation built with <a href="http://www.mkdocs.org/">MkDocs</a>.</p>
-	</footer>
-
-
-        <script src="../js/jquery-1.10.2.min.js"></script>
-        <script src="../js/bootstrap-3.0.3.min.js"></script>
-        <script src="../js/highlight.pack.js"></script>
+        <footer class="col-md-12">
+            <hr>
+            <p>Documentation built with <a href="http://www.mkdocs.org/">MkDocs</a>.</p>
+        </footer>
+        <script>var base_url = '..';</script>
         <script src="../js/base.js"></script>
         <script src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS_HTML"></script>
+        <script src="../search/require.js"></script>
+        <script src="../search/search.js"></script>
+
+        <div class="modal" id="mkdocs_search_modal" tabindex="-1" role="dialog" aria-labelledby="Search Modal" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
+                <h4 class="modal-title" id="exampleModalLabel">Search</h4>
+            </div>
+            <div class="modal-body">
+                <p>
+                    From here you can search these documents. Enter
+                    your search terms below.
+                </p>
+                <form role="form">
+                    <div class="form-group">
+                        <input type="text" class="form-control" placeholder="Search..." id="mkdocs-search-query">
+                    </div>
+                </form>
+                <div id="mkdocs-search-results"></div>
+            </div>
+            <div class="modal-footer">
+            </div>
+        </div>
+    </div>
+</div><div class="modal" id="mkdocs_keyboard_modal" tabindex="-1" role="dialog" aria-labelledby="Keyboard Shortcuts Modal" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
+                <h4 class="modal-title" id="exampleModalLabel">Keyboard Shortcuts</h4>
+            </div>
+            <div class="modal-body">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th style="width: 20%;">Keys</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><kbd>?</kbd></td>
+                    <td>Open this help</td>
+                  </tr>
+                  <tr>
+                    <td><kbd>&larr;</kbd></td>
+                    <td>Previous page</td>
+                  </tr>
+                  <tr>
+                    <td><kbd>&rarr;</kbd></td>
+                    <td>Next page</td>
+                  </tr>
+                  <tr>
+                    <td><kbd>s</kbd></td>
+                    <td>Search</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="modal-footer">
+            </div>
+        </div>
+    </div>
+</div>
+
+
     </body>
 </html>

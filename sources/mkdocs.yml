@@ -13,7 +13,6 @@ pages:
     - 'Pipeline: a minimal example': 'pipeline_script.md'
     - 'Documents and publications': 'articles.md'
 
-theme_dir: 'custom_theme'
 markdown_extensions: ['extra', 'mathjax', 'iconfonts(base=fa,prefix=fa)']
 
 #the third-party extenison mdx_math.py comes with a setup.py script
@@ -27,6 +26,4 @@ markdown_extensions:
 
 # Required to load the MathJax javascript for the mdx_math.py
 extra_javascript: ['https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS_HTML']
-
-theme: bootstrap
 

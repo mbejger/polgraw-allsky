@@ -8,21 +8,20 @@
         
         
         <link rel="shortcut icon" href="../img/favicon.ico">
-
-	<title>Grid generation - Polgraw group</title>
-
-        <link href="../css/bootstrap-3.0.3.min.css" rel="stylesheet">
-        <link href="../css/font-awesome-4.0.3.css" rel="stylesheet">
-        <link rel="stylesheet" href="../css/highlight.css">
+        <title>Grid generation - Polgraw group</title>
+        <link href="../css/bootstrap-custom.min.css" rel="stylesheet">
+        <link href="../css/font-awesome-4.5.0.css" rel="stylesheet">
         <link href="../css/base.css" rel="stylesheet">
-
+        <link rel="stylesheet" href="../css/highlight.css">
         <!-- HTML5 shim and Respond.js IE8 support of HTML5 elements and media queries -->
         <!--[if lt IE 9]>
             <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
             <script src="https://oss.maxcdn.com/libs/respond.js/1.3.0/respond.min.js"></script>
         <![endif]-->
 
-        
+        <script src="../js/jquery-1.10.2.min.js"></script>
+        <script src="../js/bootstrap-3.0.3.min.js"></script>
+        <script src="../js/highlight.pack.js"></script> 
     </head>
 
     <body>
@@ -39,99 +38,88 @@
                 <span class="icon-bar"></span>
                 <span class="icon-bar"></span>
             </button>
-
-            <!-- Main title -->
             <a class="navbar-brand" href="..">Polgraw group</a>
         </div>
 
         <!-- Expanded navigation -->
         <div class="navbar-collapse collapse">
-            <!-- Main navigation -->
-            <ul class="nav navbar-nav">
-            
-            
-                <li >
-                    <a href="..">Home</a>
-                </li>
-            
-            
-            
-                <li class="dropdown active">
-                    <a href="#" class="dropdown-toggle" data-toggle="dropdown">Pipeline description <b class="caret"></b></a>
-                    <ul class="dropdown-menu">
-                    
-                        <li >
-                            <a href="../input_data/">Input data generation</a>
-                        </li>
-                    
-                        <li class="active">
-                            <a href="./">Grid generation</a>
-                        </li>
-                    
-                        <li >
-                            <a href="../search_for_candidates/">F-statistic candidate signal search</a>
-                        </li>
-                    
-                        <li >
-                            <a href="../coincidences/">Coincidences between candidates</a>
-                        </li>
-                    
-                        <li >
-                            <a href="../fap_coincidences/">False alarm probablity of conicidences</a>
-                        </li>
-                    
-                        <li >
-                            <a href="../followup/">Followup of interesting outliers</a>
-                        </li>
-                    
-                        <li >
-                            <a href="../sensitivity_upper_limits/">Sensitivity upper limits</a>
-                        </li>
-                    
-                        <li >
-                            <a href="../pipeline_script/">Pipeline: a minimal example</a>
-                        </li>
-                    
-                        <li >
-                            <a href="../articles/">Documents and publications</a>
-                        </li>
-                    
-                    </ul>
-                </li>
-            
-            
-            </ul>
+                <!-- Main navigation -->
+                <ul class="nav navbar-nav">
+                    <li >
+                        <a href="..">Home</a>
+                    </li>
+                    <li class="dropdown active">
+                        <a href="#" class="dropdown-toggle" data-toggle="dropdown">Pipeline description <b class="caret"></b></a>
+                        <ul class="dropdown-menu">
+                            
+<li >
+    <a href="../input_data/">Input data generation</a>
+</li>
+                            
+<li class="active">
+    <a href="./">Grid generation</a>
+</li>
+                            
+<li >
+    <a href="../search_for_candidates/">F-statistic candidate signal search</a>
+</li>
+                            
+<li >
+    <a href="../coincidences/">Coincidences between candidates</a>
+</li>
+                            
+<li >
+    <a href="../fap_coincidences/">False alarm probablity of conicidences</a>
+</li>
+                            
+<li >
+    <a href="../followup/">Followup of interesting outliers</a>
+</li>
+                            
+<li >
+    <a href="../sensitivity_upper_limits/">Sensitivity upper limits</a>
+</li>
+                            
+<li >
+    <a href="../pipeline_script/">Pipeline: a minimal example</a>
+</li>
+                            
+<li >
+    <a href="../articles/">Documents and publications</a>
+</li>
+                        </ul>
+                    </li>
+                </ul>
 
-            <!-- Search, Navigation and Repo links -->
             <ul class="nav navbar-nav navbar-right">
-                <li >
-                    <a rel="next" href="../input_data/">
-                        <i class="fa fa-arrow-left"></i> Previous
+                <li>
+                    <a href="#" data-toggle="modal" data-target="#mkdocs_search_modal">
+                        <i class="fa fa-search"></i> Search
                     </a>
                 </li>
-                <li >
-                    <a rel="prev" href="../search_for_candidates/">
-                        Next <i class="fa fa-arrow-right"></i>
-                    </a>
-                </li>
-                
+                    <li >
+                        <a rel="next" href="../input_data/">
+                            <i class="fa fa-arrow-left"></i> Previous
+                        </a>
+                    </li>
+                    <li >
+                        <a rel="prev" href="../search_for_candidates/">
+                            Next <i class="fa fa-arrow-right"></i>
+                        </a>
+                    </li>
             </ul>
         </div>
     </div>
 </div>
 
         <div class="container">
-            <div class="col-md-3"><div class="bs-sidebar hidden-print affix well" role="complementary">
+                <div class="col-md-3"><div class="bs-sidebar hidden-print affix well" role="complementary">
     <ul class="nav bs-sidenav">
-    
         <li class="main active"><a href="#grid-generation">Grid generation</a></li>
-        
             <li><a href="#implementation-of-optimal-grid-of-templates">Implementation of optimal grid of templates</a></li>
-        
-    
     </ul>
 </div></div>
-            <div class="col-md-9" role="main">
+                <div class="col-md-9" role="main">
 
 <h1 id="grid-generation">Grid generation</h1>
 <h2 id="implementation-of-optimal-grid-of-templates">Implementation of optimal grid of templates</h2>
@@ -140,8 +128,7 @@
 <p>C++ compiler.</p>
 <h3 id="example">Example</h3>
 <p>Using the <a href="https://polgraw.camk.edu.pl/H1L1_2d_0.25.tar.gz">test Gaussian data</a>:  </p>
-<div class="codehilite"><pre><span class="c">% ./gridgen -m 0.5 -p dfg -d ../testdata/2d_0.25/001/H1/ -n 17 </span>
-</pre></div>
+<pre class="codehilite"><code>% ./gridgen -m 0.5 -p dfg -d ../testdata/2d_0.25/001/H1/ -n 17 </code></pre>
 
 
 <p>where   </p>
@@ -152,7 +139,7 @@
 <li><code>-p</code> denotes the full output (density of covering, Fisher and grid matrices)</li>
 </ul>
 <p>The output is </p>
-<div class="codehilite"><pre>grid.bin will be saved in ../testdata/2d_0.25/001/H1/grid.bin
+<pre class="codehilite"><code class="language-bash">grid.bin will be saved in ../testdata/2d_0.25/001/H1/grid.bin
 Covariance, Density of covering
 Density of covering: 0.25 1.76768559133
 fftpad: 1
@@ -172,74 +159,73 @@ Grid matrix:
 4.130435018981e+00      0.000000000000e+00      0.000000000000e+00      0.000000000000e+00
 -1.501354357073e+01     1.604615232547e+01      0.000000000000e+00      0.000000000000e+00
 -2.136051820725e+03     -1.250522487924e+01     2.204621622171e+07      0.000000000000e+00
-8.277470103070e+02      2.303068516072e+01      -1.138557378658e+07     1.673054937411e+07
-</pre></div>
+8.277470103070e+02      2.303068516072e+01      -1.138557378658e+07     1.673054937411e+07</code></pre>
 
 
 <h3 id="full-description-of-options">Full description of options</h3>
-<div class="codehilite"><pre>DESCRIPTION
-         GridsGenerator <span class="o">(</span>GG<span class="o">)</span> is designated to be used in all-sky narrow-band
+<pre class="codehilite"><code class="language-bash">DESCRIPTION
+         GridsGenerator (GG) is designated to be used in all-sky narrow-band
          searches of continuous gravitational waves. Program allow to:
-         - generate efficient grid<span class="o">(</span>s<span class="o">)</span> <span class="k">for</span> chosen initial <span class="nb">time</span> of observation <span class="o">(</span>1<span class="o">)</span>.
-         - generate reduced Fisher matrix <span class="k">for</span> chosen initial <span class="nb">time</span> of observation <span class="o">(</span>1<span class="o">)</span>,
-         - generate density of covering <span class="o">(</span>2<span class="o">)</span>.
-         <span class="o">(</span>1<span class="o">)</span> To get result, ephemeris must be provided.
-         <span class="o">(</span>2<span class="o">)</span> Result can be get without ephemeris <span class="o">(</span><span class="k">for</span> more information see flags: -nd
-         <span class="o">(</span>--ndata<span class="o">))</span>.
+         - generate efficient grid(s) for chosen initial time of observation (1).
+         - generate reduced Fisher matrix for chosen initial time of observation (1),
+         - generate density of covering (2).
+         (1) To get result, ephemeris must be provided.
+         (2) Result can be get without ephemeris (for more information see flags: -nd
+         (--ndata)).
 
 FLAGS
-   Flags with <span class="o">(</span>optional<span class="o">)</span> argument<span class="o">(</span>s<span class="o">)</span>:
+   Flags with (optional) argument(s):
          -c or --covariance &lt;min&gt; &lt;max&gt; &lt;step&gt;
-                 Covariance. Flag -c is required <span class="o">(</span>even without argument<span class="o">)</span> to get result.
-                 &lt;min&gt; - minimum value of covariance but not less than 0<span class="p">;</span>
+                 Covariance. Flag -c is required (even without argument) to get result.
+                 &lt;min&gt; - minimum value of covariance but not less than 0;
                  default set: 0.75.
                  &lt;max&gt; - optional maximum value of covariance but less than 1.
-                 &lt;step&gt; - optional step value of covariance<span class="p">;</span>
+                 &lt;step&gt; - optional step value of covariance;
                  default set: 0.01.
 
-                 <span class="c1"># Calculation are preform only in two cases:</span>
-                 <span class="c1"># 1. No flag are provided. Sets are read from file &#39;gg.ini&#39;.</span>
-                 <span class="c1"># Result(s) is(are) printed to file(s) - see configuration file: &#39;gg.ini&#39;.</span>
-                 <span class="c1"># 2. Flag -c (--covariance) or -m (--match) is used.</span>
-                 <span class="c1"># Result(s) is(are) printed to tty.</span>
+                 # Calculation are preform only in two cases:
+                 # 1. No flag are provided. Sets are read from file 'gg.ini'.
+                 # Result(s) is(are) printed to file(s) - see configuration file: 'gg.ini'.
+                 # 2. Flag -c (--covariance) or -m (--match) is used.
+                 # Result(s) is(are) printed to tty.
 
          -m or --match &lt;min&gt; &lt;max&gt; &lt;step&gt;
-                 Minimal match <span class="o">(</span>MM^2 <span class="o">==</span> covariance<span class="o">)</span>.
-                 &lt;min&gt; - minimum value of minimal match but not less than 0<span class="p">;</span>
-                 default set: MM^2 <span class="o">=</span> 0.75.
+                 Minimal match (MM^2 == covariance).
+                 &lt;min&gt; - minimum value of minimal match but not less than 0;
+                 default set: MM^2 = 0.75.
                  &lt;max&gt; - optional maximum value of minimal match but less than 1.
-                 &lt;step&gt; - optional step value of minimal match<span class="p">;</span>
+                 &lt;step&gt; - optional step value of minimal match;
                  default set: 0.1.
-                 <span class="c1">## If flags -c (--covariance) and -m (--match) provided simultaneously,</span>
-                 <span class="c1">## program will read options from -c flag only.</span>
+                 ## If flags -c (--covariance) and -m (--match) provided simultaneously,
+                 ## program will read options from -c flag only.
 
 
          -d or --directory &lt;path&gt;
-                 Directory containing ephemeris <span class="o">(</span>need to contain binary files:
-                 <span class="s1">&#39;rSSB.bin&#39;</span>, <span class="s1">&#39;rDet.bin&#39;</span>, <span class="s1">&#39;rDetSSB.bin&#39;</span><span class="o">)</span>.
+                 Directory containing ephemeris (need to contain binary files:
+                 'rSSB.bin', 'rDet.bin', 'rDetSSB.bin').
                  &lt;path&gt; - take path to directory.
-                 E.g. -d 001: directory <span class="s1">&#39;001&#39;</span> located inside folder with GridsGenerator.
+                 E.g. -d 001: directory '001' located inside folder with GridsGenerator.
                  If directory is not provided, program will try to find ephemeris
                  in directory with GridsGenerator.
 
          -i or --initial &lt;min&gt; &lt;max&gt; &lt;step&gt;
-                 Initial <span class="nb">time</span> of observation.
-                 &lt;min&gt; - minimum value of initial time<span class="p">;</span>
+                 Initial time of observation.
+                 &lt;min&gt; - minimum value of initial time;
                  default set: 0.5.
                  &lt;max&gt; - optional maximum value of initial time.
-                 &lt;step&gt; - optional step value of minimal match<span class="p">;</span>
-                 <span class="k">if</span> not provided step will be <span class="nb">set</span> on <span class="nv">step</span> <span class="o">=</span> max - min.
+                 &lt;step&gt; - optional step value of minimal match;
+                 if not provided step will be set on step = max - min.
 
 
          -a or --algorithm &lt;type&gt;
-                 Algorithm <span class="nb">type</span> to choose.
+                 Algorithm type to choose.
                  &lt;type&gt; take option: s1, s2, a. Algorithms:
                  s1 - based on fully analytic formula,
                  s2 - partially numeric formula.
-                 Accuracy <span class="k">for</span> algorithm <span class="s1">&#39;s2&#39;</span> depended on -na <span class="o">(</span>--nalpha<span class="o">)</span> and -nr <span class="o">(</span>--nradius<span class="o">)</span>
+                 Accuracy for algorithm 's2' depended on -na (--nalpha) and -nr (--nradius)
                  flags.
-                 a - automatically choose algorithm <span class="s1">&#39;s1&#39;</span> or <span class="s1">&#39;s2&#39;</span>. Use this argument to allow
-                 GridsGenerator to decide which algorithm <span class="o">(</span><span class="k">for</span> given parameters<span class="o">)</span> should be
+                 a - automatically choose algorithm 's1' or 's2'. Use this argument to allow
+                 GridsGenerator to decide which algorithm (for given parameters) should be
                  used to get grid with better density of covering.
                  Information about implemented algorithms can be found in article:
                  http://dx.doi.org/10.1088/0264-9381/32/14/145014
@@ -247,107 +233,169 @@ FLAGS
 
          -n or --nfft &lt;int&gt;
                  Number of Fourier bins.
-                 &lt;int&gt; take positive integer number without zero <span class="o">(</span>exponent<span class="o">)</span>.
+                 &lt;int&gt; take positive integer number without zero (exponent).
                  E.g. to get grid destined to work with discreet
-                 Fourier transform <span class="o">(</span>DFT, FFT<span class="o">)</span> with length <span class="m">1024</span> put same exponent of 2: 10
-                 <span class="o">(</span><span class="nv">1024</span> <span class="o">==</span> 2^10<span class="o">)</span>.
-                 Default set: <span class="m">20</span> <span class="o">(</span><span class="nv">1048576</span> <span class="o">=</span> 2^20<span class="o">)</span>.
+                 Fourier transform (DFT, FFT) with length 1024 put same exponent of 2: 10
+                 (1024 == 2^10).
+                 Default set: 20 (1048576 = 2^20).
 
          -nd or --ndata &lt;int&gt;
-                 Number of data <span class="o">(</span>data length collected by detector, equal to length
-                 of ephemeris<span class="o">)</span>.
+                 Number of data (data length collected by detector, equal to length
+                 of ephemeris).
                  &lt;int&gt; take positive integer number including zero.
-                 If &lt;int&gt; is <span class="nb">set</span> to zero data length will be <span class="nb">read</span> from ephemeris*.
+                 If &lt;int&gt; is set to zero data length will be read from ephemeris*.
                  If &lt;int&gt; is bigger than zero program will able to obtain density of
                  covering only**.
                  Default set: 0.
-                 * With this <span class="nb">set</span> <span class="o">(</span>-nd <span class="m">0</span> or -ndata 0<span class="o">)</span> density is obtained without using
-                 information stored in file <span class="s1">&#39;dataS2.txt&#39;</span>.
-                 <span class="c1">### With this set density of covering for algorithm &#39;s2&#39; is always</span>
-                 <span class="c1">### obtaining with maximal accuracy, depending only from flags: -na, -nr.</span>
-                 <span class="c1">### Density of covering for algorithm &#39;s1&#39; is always obtained with maximal</span>
-                 <span class="c1">### accuracy regardless to sets of -nd flag.</span>
-                 ** Ephemeris are not used and because of that grid<span class="o">(</span>s<span class="o">)</span> and reduced Fisher
-                 matrix can<span class="s1">&#39;t be obtained. Density of covering for algorithm &#39;</span>s2<span class="s1">&#39; will be</span>
-<span class="s1">                 be obtained in approximated way based on information*** collected (in </span>
-<span class="s1">                 &#39;</span>dataS2.txt<span class="s1">&#39; file) during previous runs with ephemeris. File &#39;</span>dataS2.txt<span class="s1">&#39;</span>
-<span class="s1">                 collect information about coverings only for algorithm &#39;</span>s2<span class="s1">&#39;.</span>
-<span class="s1">                 Program inform which algorithm has been used only when work without</span>
-<span class="s1">                 ephemeris (&lt;int&gt; bigger that zero).</span>
-<span class="s1">                 E.g. (without ephemeris) -nd 344656:</span>
-<span class="s1">                 Covariance, Density, Algorithm</span>
-<span class="s1">                 0.86      1.82      s2</span>
-<span class="s1">                 0.87      1.8494      s1</span>
-<span class="s1">                 0.88      1.77685      s1</span>
-<span class="s1">                 E.g. (data length taken from ephemeris) -nd 0:</span>
-<span class="s1">                 Covariance, Density of covering</span>
-<span class="s1">                 0.86 1.82299890516</span>
-<span class="s1">                 0.87 1.84940429814</span>
-<span class="s1">                 0.88 1.77685017541</span>
-<span class="s1">                 *** Information stored in file &#39;</span>dataS2.txt<span class="s1">&#39; are independent of ephemeris.</span>
-<span class="s1">                 Based on this information density of covering can be obtained fast but</span>
-<span class="s1">                 in approximated way (generally speaking more collected data allows</span>
-<span class="s1">                 to get more accurate results).</span>
+                 * With this set (-nd 0 or -ndata 0) density is obtained without using
+                 information stored in file 'dataS2.txt'.
+                 ### With this set density of covering for algorithm 's2' is always
+                 ### obtaining with maximal accuracy, depending only from flags: -na, -nr.
+                 ### Density of covering for algorithm 's1' is always obtained with maximal
+                 ### accuracy regardless to sets of -nd flag.
+                 ** Ephemeris are not used and because of that grid(s) and reduced Fisher
+                 matrix can't be obtained. Density of covering for algorithm 's2' will be
+                 be obtained in approximated way based on information*** collected (in 
+                 'dataS2.txt' file) during previous runs with ephemeris. File 'dataS2.txt'
+                 collect information about coverings only for algorithm 's2'.
+                 Program inform which algorithm has been used only when work without
+                 ephemeris (&lt;int&gt; bigger that zero).
+                 E.g. (without ephemeris) -nd 344656:
+                 Covariance, Density, Algorithm
+                 0.86      1.82      s2
+                 0.87      1.8494      s1
+                 0.88      1.77685      s1
+                 E.g. (data length taken from ephemeris) -nd 0:
+                 Covariance, Density of covering
+                 0.86 1.82299890516
+                 0.87 1.84940429814
+                 0.88 1.77685017541
+                 *** Information stored in file 'dataS2.txt' are independent of ephemeris.
+                 Based on this information density of covering can be obtained fast but
+                 in approximated way (generally speaking more collected data allows
+                 to get more accurate results).
 
-<span class="s1">         -na or --nalpha &lt;int&gt;</span>
-<span class="s1">                 Number of loops (incrementation deep) in root finding algorithm.</span>
-<span class="s1">                 &lt;int&gt; take positive integer number without zero.</span>
-<span class="s1">                 This flag affect only on &#39;</span>s2<span class="s1">&#39; algorithm.</span>
-<span class="s1">                 Default set: 35.</span>
+         -na or --nalpha &lt;int&gt;
+                 Number of loops (incrementation deep) in root finding algorithm.
+                 &lt;int&gt; take positive integer number without zero.
+                 This flag affect only on 's2' algorithm.
+                 Default set: 35.
 
-<span class="s1">         -nr or --nradius &lt;int&gt;</span>
-<span class="s1">                 Number of loops in covering radius (deep hole) finding algorithm.</span>
-<span class="s1">                 &lt;int&gt; take positive integer number without zero.</span>
-<span class="s1">                 This flag affect only on &#39;</span>s2<span class="s1">&#39; algorithm.</span>
-<span class="s1">                 Default set: 20.</span>
+         -nr or --nradius &lt;int&gt;
+                 Number of loops in covering radius (deep hole) finding algorithm.
+                 &lt;int&gt; take positive integer number without zero.
+                 This flag affect only on 's2' algorithm.
+                 Default set: 20.
 
-<span class="s1">         -cv or --convert &lt;bool&gt;</span>
-<span class="s1">                 Convert grid from space with hyper-sphere to hyper-ellipsoid space.</span>
-<span class="s1">                 &lt;bool&gt; take argument: t (true), f (false).</span>
-<span class="s1">                 Default set: t.</span>
+         -cv or --convert &lt;bool&gt;
+                 Convert grid from space with hyper-sphere to hyper-ellipsoid space.
+                 &lt;bool&gt; take argument: t (true), f (false).
+                 Default set: t.
 
-<span class="s1">         -ch or --chop &lt;bool&gt;</span>
-<span class="s1">                 Chop result to zero if value of result is smaller than |10^-12|.</span>
-<span class="s1">                 &lt;bool&gt; take argument: t (true), f (false).</span>
-<span class="s1">                 Default set: f.</span>
+         -ch or --chop &lt;bool&gt;
+                 Chop result to zero if value of result is smaller than |10^-12|.
+                 &lt;bool&gt; take argument: t (true), f (false).
+                 Default set: f.
 
-<span class="s1">         -p or --print &lt;string&gt;</span>
-<span class="s1">                 Print result(s).</span>
-<span class="s1">                 &lt;string&gt; take argument(s): d, f, g.</span>
-<span class="s1">                 d - density of covering,</span>
-<span class="s1">                 f - Fisher reduced matrix,</span>
-<span class="s1">                 g - grid.</span>
-<span class="s1">                 Option can be joined (order is not important), e.g. df, dg, fg, dfg.</span>
-<span class="s1">                 Default set: g.</span>
-<span class="s1">                 #### If argument of flag -nd is set to be bigger than zero, flag -p</span>
-<span class="s1">                 #### can accept only &#39;</span>d<span class="err">&#39;</span> argument.
+         -p or --print &lt;string&gt;
+                 Print result(s).
+                 &lt;string&gt; take argument(s): d, f, g.
+                 d - density of covering,
+                 f - Fisher reduced matrix,
+                 g - grid.
+                 Option can be joined (order is not important), e.g. df, dg, fg, dfg.
+                 Default set: g.
+                 #### If argument of flag -nd is set to be bigger than zero, flag -p
+                 #### can accept only 'd' argument.
 
    Flags with no arguments:
          -h or --help
                  Display this help.
 
          -ht or --helptxt
-                 Print this <span class="nb">help</span> to text file.
+                 Print this help to text file.
 
          -v or --version
                  Display information about version of GridsGenerator.
 
          -aa or --author
-                 About author<span class="o">(</span>s<span class="o">)</span>. Display information about developer<span class="o">(</span>s<span class="o">)</span>.
-</pre></div></div>
+                 About author(s). Display information about developer(s).</code></pre></div>
         </div>
 
-	<footer class="col-md-12">
-		<hr>
-		
-		<p>Documentation built with <a href="http://www.mkdocs.org/">MkDocs</a>.</p>
-	</footer>
-
-
-        <script src="../js/jquery-1.10.2.min.js"></script>
-        <script src="../js/bootstrap-3.0.3.min.js"></script>
-        <script src="../js/highlight.pack.js"></script>
+        <footer class="col-md-12">
+            <hr>
+            <p>Documentation built with <a href="http://www.mkdocs.org/">MkDocs</a>.</p>
+        </footer>
+        <script>var base_url = '..';</script>
         <script src="../js/base.js"></script>
         <script src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS_HTML"></script>
+        <script src="../search/require.js"></script>
+        <script src="../search/search.js"></script>
+
+        <div class="modal" id="mkdocs_search_modal" tabindex="-1" role="dialog" aria-labelledby="Search Modal" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
+                <h4 class="modal-title" id="exampleModalLabel">Search</h4>
+            </div>
+            <div class="modal-body">
+                <p>
+                    From here you can search these documents. Enter
+                    your search terms below.
+                </p>
+                <form role="form">
+                    <div class="form-group">
+                        <input type="text" class="form-control" placeholder="Search..." id="mkdocs-search-query">
+                    </div>
+                </form>
+                <div id="mkdocs-search-results"></div>
+            </div>
+            <div class="modal-footer">
+            </div>
+        </div>
+    </div>
+</div><div class="modal" id="mkdocs_keyboard_modal" tabindex="-1" role="dialog" aria-labelledby="Keyboard Shortcuts Modal" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
+                <h4 class="modal-title" id="exampleModalLabel">Keyboard Shortcuts</h4>
+            </div>
+            <div class="modal-body">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th style="width: 20%;">Keys</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><kbd>?</kbd></td>
+                    <td>Open this help</td>
+                  </tr>
+                  <tr>
+                    <td><kbd>&larr;</kbd></td>
+                    <td>Previous page</td>
+                  </tr>
+                  <tr>
+                    <td><kbd>&rarr;</kbd></td>
+                    <td>Next page</td>
+                  </tr>
+                  <tr>
+                    <td><kbd>s</kbd></td>
+                    <td>Search</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="modal-footer">
+            </div>
+        </div>
+    </div>
+</div>
+
+
     </body>
 </html>

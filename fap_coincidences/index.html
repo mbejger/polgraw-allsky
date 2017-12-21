@@ -8,21 +8,20 @@
         
         
         <link rel="shortcut icon" href="../img/favicon.ico">
-
-	<title>False alarm probablity of conicidences - Polgraw group</title>
-
-        <link href="../css/bootstrap-3.0.3.min.css" rel="stylesheet">
-        <link href="../css/font-awesome-4.0.3.css" rel="stylesheet">
-        <link rel="stylesheet" href="../css/highlight.css">
+        <title>False alarm probablity of conicidences - Polgraw group</title>
+        <link href="../css/bootstrap-custom.min.css" rel="stylesheet">
+        <link href="../css/font-awesome-4.5.0.css" rel="stylesheet">
         <link href="../css/base.css" rel="stylesheet">
-
+        <link rel="stylesheet" href="../css/highlight.css">
         <!-- HTML5 shim and Respond.js IE8 support of HTML5 elements and media queries -->
         <!--[if lt IE 9]>
             <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
             <script src="https://oss.maxcdn.com/libs/respond.js/1.3.0/respond.min.js"></script>
         <![endif]-->
 
-        
+        <script src="../js/jquery-1.10.2.min.js"></script>
+        <script src="../js/bootstrap-3.0.3.min.js"></script>
+        <script src="../js/highlight.pack.js"></script> 
     </head>
 
     <body>
@@ -39,109 +38,93 @@
                 <span class="icon-bar"></span>
                 <span class="icon-bar"></span>
             </button>
-
-            <!-- Main title -->
             <a class="navbar-brand" href="..">Polgraw group</a>
         </div>
 
         <!-- Expanded navigation -->
         <div class="navbar-collapse collapse">
-            <!-- Main navigation -->
-            <ul class="nav navbar-nav">
-            
-            
-                <li >
-                    <a href="..">Home</a>
-                </li>
-            
-            
-            
-                <li class="dropdown active">
-                    <a href="#" class="dropdown-toggle" data-toggle="dropdown">Pipeline description <b class="caret"></b></a>
-                    <ul class="dropdown-menu">
-                    
-                        <li >
-                            <a href="../input_data/">Input data generation</a>
-                        </li>
-                    
-                        <li >
-                            <a href="../grid_generation/">Grid generation</a>
-                        </li>
-                    
-                        <li >
-                            <a href="../search_for_candidates/">F-statistic candidate signal search</a>
-                        </li>
-                    
-                        <li >
-                            <a href="../coincidences/">Coincidences between candidates</a>
-                        </li>
-                    
-                        <li class="active">
-                            <a href="./">False alarm probablity of conicidences</a>
-                        </li>
-                    
-                        <li >
-                            <a href="../followup/">Followup of interesting outliers</a>
-                        </li>
-                    
-                        <li >
-                            <a href="../sensitivity_upper_limits/">Sensitivity upper limits</a>
-                        </li>
-                    
-                        <li >
-                            <a href="../pipeline_script/">Pipeline: a minimal example</a>
-                        </li>
-                    
-                        <li >
-                            <a href="../articles/">Documents and publications</a>
-                        </li>
-                    
-                    </ul>
-                </li>
-            
-            
-            </ul>
+                <!-- Main navigation -->
+                <ul class="nav navbar-nav">
+                    <li >
+                        <a href="..">Home</a>
+                    </li>
+                    <li class="dropdown active">
+                        <a href="#" class="dropdown-toggle" data-toggle="dropdown">Pipeline description <b class="caret"></b></a>
+                        <ul class="dropdown-menu">
+                            
+<li >
+    <a href="../input_data/">Input data generation</a>
+</li>
+                            
+<li >
+    <a href="../grid_generation/">Grid generation</a>
+</li>
+                            
+<li >
+    <a href="../search_for_candidates/">F-statistic candidate signal search</a>
+</li>
+                            
+<li >
+    <a href="../coincidences/">Coincidences between candidates</a>
+</li>
+                            
+<li class="active">
+    <a href="./">False alarm probablity of conicidences</a>
+</li>
+                            
+<li >
+    <a href="../followup/">Followup of interesting outliers</a>
+</li>
+                            
+<li >
+    <a href="../sensitivity_upper_limits/">Sensitivity upper limits</a>
+</li>
+                            
+<li >
+    <a href="../pipeline_script/">Pipeline: a minimal example</a>
+</li>
+                            
+<li >
+    <a href="../articles/">Documents and publications</a>
+</li>
+                        </ul>
+                    </li>
+                </ul>
 
-            <!-- Search, Navigation and Repo links -->
             <ul class="nav navbar-nav navbar-right">
-                <li >
-                    <a rel="next" href="../coincidences/">
-                        <i class="fa fa-arrow-left"></i> Previous
+                <li>
+                    <a href="#" data-toggle="modal" data-target="#mkdocs_search_modal">
+                        <i class="fa fa-search"></i> Search
                     </a>
                 </li>
-                <li >
-                    <a rel="prev" href="../followup/">
-                        Next <i class="fa fa-arrow-right"></i>
-                    </a>
-                </li>
-                
+                    <li >
+                        <a rel="next" href="../coincidences/">
+                            <i class="fa fa-arrow-left"></i> Previous
+                        </a>
+                    </li>
+                    <li >
+                        <a rel="prev" href="../followup/">
+                            Next <i class="fa fa-arrow-right"></i>
+                        </a>
+                    </li>
             </ul>
         </div>
     </div>
 </div>
 
         <div class="container">
-            <div class="col-md-3"><div class="bs-sidebar hidden-print affix well" role="complementary">
+                <div class="col-md-3"><div class="bs-sidebar hidden-print affix well" role="complementary">
     <ul class="nav bs-sidenav">
-    
         <li class="main active"><a href="#false-alarm-probability-of-coincidences">False alarm probability of coincidences</a></li>
-        
             <li><a href="#prerequisites">Prerequisites</a></li>
-        
             <li><a href="#theoretical-description">Theoretical description</a></li>
-        
             <li><a href="#compilation">Compilation</a></li>
-        
             <li><a href="#full-list-of-switches">Full list of switches</a></li>
-        
             <li><a href="#example">Example</a></li>
-        
             <li><a href="#output">Output</a></li>
-        
-    
     </ul>
 </div></div>
-            <div class="col-md-9" role="main">
+                <div class="col-md-9" role="main">
 
 <h1 id="false-alarm-probability-of-coincidences">False alarm probability of coincidences</h1>
 <p>A general formula for probability that is used in the estimation of significance of the coincidences is implemented. The code is available at <a href="https://github.com/mbejger/polgraw-allsky/tree/master">github</a>. Run <code>git clone https://github.com/mbejger/polgraw-allsky.git</code> to get the repository.</p>
@@ -185,8 +168,7 @@ P^{\rm shifts}_F = 1 - \bigg[ 1 - \Big( 2^4 p_F(N_c)
 <p>Run <code>make fap</code>; resulting binary is called <code>fap</code> (modify the <code>Makefile</code> to fit your system).</p>
 <h3 id="full-list-of-switches">Full list of switches</h3>
 <p>To obtain the full list of options, type </p>
-<div class="codehilite"><pre><span class="c">% ./fap --help </span>
-</pre></div>
+<pre class="codehilite"><code>% ./fap --help </code></pre>
 
 
 <table>
@@ -248,56 +230,113 @@ P^{\rm shifts}_F = 1 - \bigg[ 1 - \Big( 2^4 p_F(N_c)
 </table>
 <h3 id="example">Example</h3>
 <p>Using the software injection added to 2-day Gaussian noise data segments (see <a href="../../polgraw-allsky/pipeline_script">minimal example of the pipeline</a>): </p>
-<div class="codehilite"><pre>% ./fap -nod <span class="m">2</span> -band <span class="m">1234</span> -data &lt;<span class="o">(</span>sort -gk5 -gk10 summary <span class="p">|</span> tail -1<span class="o">)</span> -grid ../../testdata/2d_0.25/004 -vetofrac 0.0 -cellsize <span class="m">4</span> -threshold 1.0 
-</pre></div>
+<pre class="codehilite"><code class="language-bash">% ./fap -nod 2 -band 1234 -data &lt;(sort -gk5 -gk10 summary | tail -1) -grid ../../testdata/2d_0.25/004 -vetofrac 0.0 -cellsize 4 -threshold 1.0 </code></pre>
 
 
 <p>or, with the auxilary <code>fap.sh</code> script, </p>
-<div class="codehilite"><pre>% <span class="nv">band</span><span class="o">=</span>1234<span class="p">;</span> bash fap.sh &lt;<span class="o">(</span>sort -gk5 -gk10 summary <span class="p">|</span> tail -1<span class="o">)</span> &lt;<span class="o">(</span><span class="nb">echo</span> <span class="nv">$ba</span>nd 0.0<span class="o">)</span> ../../testdata/2d_0.25/004 
-</pre></div>
+<pre class="codehilite"><code class="language-bash">% band=1234; bash fap.sh &lt;(sort -gk5 -gk10 summary | tail -1) &lt;(echo $band 0.0) ../../testdata/2d_0.25/004 </code></pre>
 
 
 <p>Number of days in the time segment <code>nod</code> equals 2, fraction of the band vetoed <code>vetofrac</code> is 0 (no lines, Gaussian data) and the cell size scalling factor <code>cellsize</code> is 4. Directory containing the grid matrix file <code>grid.bin</code> of the reference frame (in this case frame <code>004</code>) should be given by the <code>grid</code> switch. The input data is the last line of a sorted <code>summary</code> file to select the shift giving the best coincidence with the highest signal-to-noise ratio: </p>
-<div class="codehilite"><pre>1234_2 1111 308.859375     8     5  9.95663703e-01 -1.10830358e-09 -1.12585347e-01 1.97463002e+00 1.246469e+01 5 2040 1987 1 2483 2419 4 2384 2193 3 2247 2137 8 2408 2363 2 2249 2172 6 2305 2220 7 2226 2191 6 2 8 3 5
-</pre></div>
+<pre class="codehilite"><code>1234_2 1111 308.859375     8     5  9.95663703e-01 -1.10830358e-09 -1.12585347e-01 1.97463002e+00 1.246469e+01 5 2040 1987 1 2483 2419 4 2384 2193 3 2247 2137 8 2408 2363 2 2249 2172 6 2305 2220 7 2226 2191 6 2 8 3 5</code></pre>
 
 
 <p>(see the <a href="../../polgraw-allsky/coincidences">coincidences</a> section for details). </p>
 <h3 id="output">Output</h3>
-<div class="codehilite"><pre>% ./fap -nod <span class="m">2</span> -band <span class="m">1234</span> -data &lt;<span class="o">(</span>sort -gk5 -gk10 summary <span class="p">|</span> tail -1<span class="o">)</span> -grid ../../testdata/2d_0.25/004 -vetofrac 0.0 -cellsize <span class="m">4</span> -threshold 1.0 
-</pre></div>
+<pre class="codehilite"><code class="language-bash">% ./fap -nod 2 -band 1234 -data &lt;(sort -gk5 -gk10 summary | tail -1) -grid ../../testdata/2d_0.25/004 -vetofrac 0.0 -cellsize 4 -threshold 1.0 </code></pre>
 
 
 <p>is</p>
-<div class="codehilite"><pre>Number of days in <span class="nb">time</span> segments: 2
+<pre class="codehilite"><code class="language-bash">Number of days in time segments: 2
 Input data: /dev/fd/63
 Grid matrix data directory: ../../testdata/2d_0.25/004
-Band number: <span class="m">1234</span> <span class="o">(</span>veto fraction: 0.000000<span class="o">)</span>
+Band number: 1234 (veto fraction: 0.000000)
 The reference frequency fpo: 308.859375
-The data sampling <span class="nb">time</span> dt: 2.000000
+The data sampling time dt: 2.000000
 FAP threshold: 1.000000
 Cell size: 4
-<span class="m">1234</span> 3.088594e+02 3.091094e+02 7.665713e-08 <span class="m">5</span> <span class="m">17682</span> 9.956637e-01 -1.108304e-09 -1.125853e-01 1.974630e+00 1.246469e+01 2
-</pre></div>
+1234 3.088594e+02 3.091094e+02 7.665713e-08 5 17682 9.956637e-01 -1.108304e-09 -1.125853e-01 1.974630e+00 1.246469e+01 2</code></pre>
 
 
 <p>The last line (in case the probability <code>PFshifts</code> is lower than the <code>threshold</code>) is printed to <code>stderr</code>. The meaning of this output is the following:  </p>
-<div class="codehilite"><pre>#band f_min       f_max        PFshifts     noc Nkall  f s d a hemisphere 
-1234 3.088594e+02 3.091094e+02 7.665713e-08 5   17682  9.956637e-01 -1.108304e-09 -1.125853e-01 1.974630e+00 1.246469e+01 2
-</pre></div></div>
+<pre class="codehilite"><code>#band f_min       f_max        PFshifts     noc Nkall  f s d a hemisphere 
+1234 3.088594e+02 3.091094e+02 7.665713e-08 5   17682  9.956637e-01 -1.108304e-09 -1.125853e-01 1.974630e+00 1.246469e+01 2</code></pre></div>
         </div>
 
-	<footer class="col-md-12">
-		<hr>
-		
-		<p>Documentation built with <a href="http://www.mkdocs.org/">MkDocs</a>.</p>
-	</footer>
-
-
-        <script src="../js/jquery-1.10.2.min.js"></script>
-        <script src="../js/bootstrap-3.0.3.min.js"></script>
-        <script src="../js/highlight.pack.js"></script>
+        <footer class="col-md-12">
+            <hr>
+            <p>Documentation built with <a href="http://www.mkdocs.org/">MkDocs</a>.</p>
+        </footer>
+        <script>var base_url = '..';</script>
         <script src="../js/base.js"></script>
         <script src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS_HTML"></script>
+        <script src="../search/require.js"></script>
+        <script src="../search/search.js"></script>
+
+        <div class="modal" id="mkdocs_search_modal" tabindex="-1" role="dialog" aria-labelledby="Search Modal" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
+                <h4 class="modal-title" id="exampleModalLabel">Search</h4>
+            </div>
+            <div class="modal-body">
+                <p>
+                    From here you can search these documents. Enter
+                    your search terms below.
+                </p>
+                <form role="form">
+                    <div class="form-group">
+                        <input type="text" class="form-control" placeholder="Search..." id="mkdocs-search-query">
+                    </div>
+                </form>
+                <div id="mkdocs-search-results"></div>
+            </div>
+            <div class="modal-footer">
+            </div>
+        </div>
+    </div>
+</div><div class="modal" id="mkdocs_keyboard_modal" tabindex="-1" role="dialog" aria-labelledby="Keyboard Shortcuts Modal" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
+                <h4 class="modal-title" id="exampleModalLabel">Keyboard Shortcuts</h4>
+            </div>
+            <div class="modal-body">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th style="width: 20%;">Keys</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><kbd>?</kbd></td>
+                    <td>Open this help</td>
+                  </tr>
+                  <tr>
+                    <td><kbd>&larr;</kbd></td>
+                    <td>Previous page</td>
+                  </tr>
+                  <tr>
+                    <td><kbd>&rarr;</kbd></td>
+                    <td>Next page</td>
+                  </tr>
+                  <tr>
+                    <td><kbd>s</kbd></td>
+                    <td>Search</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="modal-footer">
+            </div>
+        </div>
+    </div>
+</div>
+
+
     </body>
 </html>
