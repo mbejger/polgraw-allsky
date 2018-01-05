@@ -121,7 +121,41 @@
                 <div class="col-md-9" role="main">
 
 <h1 id="followup">Followup</h1>
-<p>TESTTEXT!!! Currently work in progress; for the present state of the code see <a href="https://github.com/mbejger/polgraw-allsky/tree/master/followup">here</a>. </p></div>
+<p>Currently work in progress; for the present state of the code see <a href="https://github.com/mbejger/polgraw-allsky/tree/master/followup">here</a>. </p>
+<p> On the last stage we can precisely estimate signal parameters. At this stage we focus only on a very narrow space around a candidate. Our goal is to find the maximum of the F-statistic and the corresponding signal parameters. To increase the efficiency of the code, we use special libraries (<code>GSL</code>, <code>Yeppp!</code>) and parallelisation (<code>OpenMP</code>). We already implemented few algorithms to do this: Simplex algorithm, Mesh Adaptive Direct Search - MADS and modified MADS (called 'inverted MADS').</p>
+<p> To compile a code, go to the <code>followup/src</code> and run:</p>
+<pre class="codehilite"><code class="language-bash">% make followup </code></pre>
+<p>Switches:</p>
+
+<pre>
+-d, -data         Data directory (default is .)
+-o, -output       Output directory (default is ./candidates)
+-i, -ident        Frame number
+-b, -band         Band number
+-l, -label        Custom label for the input and output files
+-c, -cwd          Change to directory <dir>
+-t, -threshold    Threshold for the F-statistic (default is 20)
+-p, -fpo          Reference band frequency fpo value
+-s, -dt           data sampling time dt (default value: 0.5)
+-u, -usedet       Use only detectors from string (default is use all available)
+-y, -nod          Number of days
+-x, -addsig       Add signal with parameters from <file>
+-a, -candidates   As a starting point in followup use parameters from <file>
+-r, -refr         Reference frame number
+
+Also:
+
+--vetolines     Veto known lines from files in data directory
+--simplex       Direct search of maximum using Nelder-Mead (simplex) algorithm
+--mads          Direct search of maximum using MADS algorithm
+--gauss         Generate Gaussian noise instead of reading data. Amplitude and sigma of the noise declared in init.c
+--neigh         Function neigh() generate area as % from initial value instead of taking it from grid.bin
+--naive         Function naive() generate area as +/- points taking it from grid.bin and divide it into smaller grid.
+--onepoint      Calculate Fstatistic only in one point taken from file with candidates (without generating any grid).
+--help          This help
+</pre>
+
+</div>
         </div>
 
         <footer class="col-md-12">
