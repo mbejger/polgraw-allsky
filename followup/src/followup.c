@@ -536,13 +536,13 @@ double* Fstatnet(Search_settings *sett, double *sgnlo, double *nSource, double *
 
 Yep64f* invertedMADS(Search_settings *sett, Aux_arrays *aux, double* sgnl, double* rslts, double tolmads, double *p2){
 	int i, j, k, l, m, n, o, r, a = 0;
-	int count=0, limit = 300;
+	int count=0, limit = 700;
   	double sinalt, cosalt, sindelt, cosdelt;
 	double paramfin[4]; 			//final size of mesh
 	double paramstart[4];			//initial size of mesh
 	double param[4];
 	double array[81][4];
-	double scale = 0.993;
+	double scale = 1.0 - (0.01*6.0/sett->nod);
 	double p[4];
 	double nSource[3];
 	double incr[4];
@@ -566,7 +566,7 @@ Yep64f* invertedMADS(Search_settings *sett, Aux_arrays *aux, double* sgnl, doubl
 
 	while((param[0] <= paramfin[0]) || (param[1] <= paramfin[1]) || (param[2] <= paramfin[2]) || (param[3] <= paramfin[3])){  	//when to end computations
 //	while(param[1] <= paramfin[1]){
-		count ++;
+		count++;
 		for (i = 0; i < 11; i++) maxres[i] = extr[i] = rslts[i];
 		for (k = 0; k < 4; k++){
 			array[0][k] = extr[6+k];
@@ -736,9 +736,9 @@ Yep64f* invertedMADS(Search_settings *sett, Aux_arrays *aux, double* sgnl, doubl
 			for(r = 0; r < 4; r++) param[r] = paramstart[r];
 //puts("move");
 		}
-	if(count >= limit){
-		for(r = 0; r < 4; r++) param[r] = paramfin[r];
-	}
+		if(count >= limit){
+			for(r = 0; r < 4; r++) param[r] = 100.0;
+		}
 
 	} // while
 
@@ -750,7 +750,7 @@ Yep64f* invertedMADS(Search_settings *sett, Aux_arrays *aux, double* sgnl, doubl
 //	free(nSource);
 	free(extr);
 	free(res);
-
+printf("count = %d\n", count);
 	return out;
 }
 //mesh adaptive direct search (MADS) maximum search declaration
@@ -1186,7 +1186,7 @@ int main (int argc, char *argv[]) {
 	int gsize = 2;			// grid size where followup will be searching maximum
 	int spndr[2], nr[2], mr[2], fo[2];	// range in linear unities
 	int hemi; 			// hemisphere
-	double minm = 0.95;		// minimal match used in optimal 4d grid generation
+	double minm = 0.97;		// minimal match used in optimal 4d grid generation
 	double pc[4];			// % define neighbourhood around each parameter for initial grid
 	double pc2[4];			// % define neighbourhood around each parameter for direct maximum search (MADS & Simplex)
 	double tol = 1e-7;
