@@ -252,16 +252,91 @@ int fisher(Search_settings *sett,
 
     } 
 
-
+    // Symmetrize mFl 
     for(k=1; k<8; k++) 
       for(j=0; j<k; j++)
         mFl[k][j] = mFl[j][k]; 
 
-    for(k=0; k<8; k++) { 
-      for(j=0; j<8; j++)  
-        printf("%.8f ", 0.5*mFl[k][j]);   
+    // Calculate the inverse 
+    int s; 
+    int x = 0, y = 4, nn = 4; 
+    gsl_matrix *m = gsl_matrix_alloc (nn, nn);
+    gsl_matrix *inverse = gsl_matrix_alloc (nn, nn);
+    gsl_permutation *perm = gsl_permutation_alloc (nn);
+  
+    // Fill the matrix
+    printf("\n1-4 4x4 part\n"); 
+    for(k=x; k<y; k++) {  
+      for(j=x; j<y; j++) { 
+        gsl_matrix_set (m, k, j, 0.5*mFl[k][j]);
+        printf("%.6f ", gsl_matrix_get (m, k, j));   
+      } 
       printf("\n"); 
     } 
+
+    // Make LU decomposition of matrix m
+    gsl_linalg_LU_decomp (m, perm, &s);
+  
+    // Invert the matrix m
+    gsl_linalg_LU_invert (m, perm, inverse);
+ 
+    printf("\nIts inverse:\n"); 
+
+    for(k=x; k<y; k++) { 
+      for(j=x; j<y; j++)  
+        printf("%.6e ", gsl_matrix_get (inverse, k, j));   
+      printf("\n"); 
+    } 
+
+    printf("\nDiagonal values:\n"); 
+
+    for(k=x; k<y; k++) { 
+        printf("%.6e ", gsl_matrix_get (inverse, k, k));   
+    } 
+
+    printf("\n"); 
+
+
+    // Calculate the inverse 
+    x = 4; 
+    y = 8; 
+
+    // Fill the matrix
+    printf("\n5-8 4x4 part\n");
+    for(k=x; k<y; k++) {  
+      for(j=x; j<y; j++) { 
+        gsl_matrix_set (m, k-nn, j-nn, 0.5*mFl[k][j]);
+        printf("%.6f ", gsl_matrix_get (m, k-nn, j-nn));   
+      } 
+      printf("\n"); 
+    } 
+
+    // Make LU decomposition of matrix m
+    gsl_linalg_LU_decomp (m, perm, &s);
+  
+    // Invert the matrix m
+    gsl_linalg_LU_invert (m, perm, inverse);
+ 
+    printf("\nIts inverse:\n");
+
+    for(k=x; k<y; k++) { 
+      for(j=x; j<y; j++)  
+        printf("%.6e ", gsl_matrix_get (inverse, k-nn, j-nn));   
+      printf("\n"); 
+    } 
+
+    printf("\nDiagonal values:\n");
+
+    for(k=x; k<y; k++) { 
+        printf("%.6e ", gsl_matrix_get (inverse, k-nn, k-nn));   
+    } 
+
+    printf("\n"); 
+
+    gsl_matrix_free(m); 
+    gsl_matrix_free(inverse); 
+    gsl_permutation_free(perm); 
+
 
 
   } 
