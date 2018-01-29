@@ -10,6 +10,7 @@
 #include <fcntl.h>
 #include <getopt.h>
 #include <gsl/gsl_linalg.h>
+#include <gsl/gsl_blas.h>
 #include <time.h>
 #include <dirent.h>
 
@@ -152,7 +153,7 @@ int fisher(Search_settings *sett,
 	   sett->N, &ifo[n], aux);
 
 
-   for(i=0; i<sett->N; ++i) {
+   for(i=0; i<666; ++i) {
 
       double dpdf, dpds, dpdd, dpda, xet, yet, zet, a, b, t; 
 
@@ -257,21 +258,37 @@ int fisher(Search_settings *sett,
       for(j=0; j<k; j++)
         mFl[k][j] = mFl[j][k]; 
 
+    for(k=0; k<8; k++) { 
+      printf("[");
+      for(j=0; j<8; j++)
+        printf("%.16f, ", 0.5*mFl[k][j]);
+      printf("],\n");
+    }
+
+
+    printf("\nSubmatrices:\n"); 
+
     // Calculate the inverse 
     int s; 
     int x = 0, y = 4, nn = 4; 
     gsl_matrix *m = gsl_matrix_alloc (nn, nn);
+    gsl_matrix *m2 = gsl_matrix_alloc (nn, nn);
+    gsl_matrix *mtest = gsl_matrix_alloc (nn, nn);
+
+
     gsl_matrix *inverse = gsl_matrix_alloc (nn, nn);
     gsl_permutation *perm = gsl_permutation_alloc (nn);
   
     // Fill the matrix
     printf("\n1-4 4x4 part\n"); 
     for(k=x; k<y; k++) {  
+      printf("["); 
       for(j=x; j<y; j++) { 
         gsl_matrix_set (m, k, j, 0.5*mFl[k][j]);
-        printf("%.6f ", gsl_matrix_get (m, k, j));   
+        gsl_matrix_set (m2, k, j, 0.5*mFl[k][j]);
+        printf("%.16f, ", gsl_matrix_get (m, k, j));   
       } 
-      printf("\n"); 
+      printf("],\n"); 
     } 
 
     // Make LU decomposition of matrix m
@@ -294,8 +311,15 @@ int fisher(Search_settings *sett,
         printf("%.6e ", gsl_matrix_get (inverse, k, k));   
     } 
 
-    printf("\n"); 
+    printf("\n\nTest:\n"); 
 
+    gsl_blas_dgemm(CblasNoTrans, CblasNoTrans, 1.0, m2, inverse, 0.0, mtest);
+
+    for(k=x; k<y; k++) { 
+      for(j=x; j<y; j++)  
+        printf("%.6e ", gsl_matrix_get (mtest, k, j));   
+      printf("\n"); 
+    } 
 
     // Calculate the inverse 
     x = 4; 
@@ -334,6 +358,8 @@ int fisher(Search_settings *sett,
     printf("\n"); 
 
     gsl_matrix_free(m); 
+    gsl_matrix_free(m2); 
+    gsl_matrix_free(mtest); 
     gsl_matrix_free(inverse); 
     gsl_permutation_free(perm); 
 
