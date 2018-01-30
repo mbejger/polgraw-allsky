@@ -153,7 +153,7 @@ int fisher(Search_settings *sett,
 	   sett->N, &ifo[n], aux);
 
 
-   for(i=0; i<666; ++i) {
+   for(i=0; i<sett->N; ++i) {
 
       double dpdf, dpds, dpdd, dpda, xet, yet, zet, a, b, t; 
 
