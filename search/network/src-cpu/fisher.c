@@ -126,10 +126,10 @@ int fisher(Search_settings *sett,
       mFl[k][j] = 0; 
     }
 
-  omega0 = sgnlo[0]/sett->dt; 
+  omega0 = sgnlo[0]; // /sett->dt; 
   omega1 = sgnlo[1]; 
 
-  domega = 2*M_PI*sett->fpo*sett->dt; 
+  domega = sett->oms; // 2*M_PI*sett->fpo*sett->dt; 
 
   sindelt = sin(sgnlo[2]); 
   cosdelt = cos(sgnlo[2]); 
@@ -149,30 +149,40 @@ int fisher(Search_settings *sett,
      * of _detector, ifo[n].sig.aa, ifo[n].sig.bb) 
      */
 
-    modvir(sinalt, cosalt, sindelt, cosdelt,
-	   sett->N, &ifo[n], aux);
+    modvir(sinalt, cosalt, sindelt, cosdelt, 
+        sett->N, &ifo[n], aux);
 
+    double sumhsq = 0; 
 
-   for(i=0; i<sett->N; ++i) {
+    for(i=0; i<sett->N; ++i) {
 
-      double dpdf, dpds, dpdd, dpda, xet, yet, zet, a, b, t; 
+      double psi, dpdf, dpds, dpdd, dpda, xet, yet, zet, a, b, h; 
 
       xet = ifo[n].sig.DetSSB[i*3]; 
       yet = ifo[n].sig.DetSSB[i*3+1]; 
       zet = ifo[n].sig.DetSSB[i*3+2]; 
 
+      // amplitude modulation function at given time step i 
       a = ifo[n].sig.aa[i]; 
       b = ifo[n].sig.bb[i]; 
 
-      t = i*sett->dt; 
-      
-      dpdf = t + xet*cosalt*cosdelt + yet*cosdelt*sinalt + zet*sindelt;  
-      dpds = t*t;   
+      // phase 
+      psi = omega0*i + omega1*aux->t2[i] 
+          + (cosalt*cosdelt*xet + sinalt*cosalt*yet + sindelt*zet)*(omega0 + domega); 
+
+      // phase derivatives w.r.t. freq., spindown, delta and alpha parameters       
+      dpdf = i + xet*cosalt*cosdelt + yet*cosdelt*sinalt + zet*sindelt;  
+      dpds = aux->t2[i];   
       dpdd = (domega + omega0)*(zet*cosdelt - (xet*cosalt + yet*sinalt)*sindelt); 
       dpda = (domega + omega0)*cosdelt*(yet*cosalt - xet*sinalt); 
 
+      // amplitude 
+      h = (a1*a + a2*b)*cos(psi) + (a3*a + a4*b)*sin(psi); 
 
-      // Matrix element calculation 
+      // sum of h squares 
+      sumhsq += h*h; 
+
+      // Fisher matrix elements 
       ma[0][0] = (a*a*a1*a1*dpdf*dpdf)/2 + (a*a*a3*a3*dpdf*dpdf)/2. + a*a1*a2*b*dpdf*dpdf + a*a3*a4*b*dpdf*dpdf + (a2*a2*b*b*dpdf*dpdf)/2. + (a4*a4*b*b*dpdf*dpdf)/2.; 
  
       ma[0][1] = (a*a*a1*a1*dpds*dpdf)/2 + (a*a*a3*a3*dpds*dpdf)/2. + a*a1*a2*b*dpds*dpdf + a*a3*a4*b*dpds*dpdf + (a2*a2*b*b*dpds*dpdf)/2. + (a4*a4*b*b*dpds*dpdf)/2.;
@@ -258,14 +268,19 @@ int fisher(Search_settings *sett,
       for(j=0; j<k; j++)
         mFl[k][j] = mFl[j][k]; 
 
+    printf("\nsumhsq, sqrt(sumhsq), N: %f %f %d\n", sumhsq, sqrt(sumhsq), sett->N); 
+
+    printf("\nFisher matrix:\n\n"); 
+
     for(k=0; k<8; k++) { 
-      printf("[");
+//      printf("[");
       for(j=0; j<8; j++)
-        printf("%.16f, ", 0.5*mFl[k][j]);
-      printf("],\n");
+        printf("%.16e ", 0.5*mFl[k][j]);
+      printf("\n");
     }
 
 
+/*
     printf("\nSubmatrices:\n"); 
 
     // Calculate the inverse 
@@ -363,7 +378,7 @@ int fisher(Search_settings *sett,
     gsl_matrix_free(inverse); 
     gsl_permutation_free(perm); 
 
-
+*/
 
   } 
 
