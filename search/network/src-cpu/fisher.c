@@ -10,7 +10,6 @@
 #include <fcntl.h>
 #include <getopt.h>
 #include <gsl/gsl_linalg.h>
-#include <gsl/gsl_blas.h>
 #include <time.h>
 #include <dirent.h>
 
@@ -18,6 +17,9 @@
 #include "settings.h"
 #include "struct.h"
 #include "init.h"
+
+#include "arb.h"
+#include "arb_mat.h" 
 
 #ifndef CODEVER
 #define CODEVER unknown
@@ -36,7 +38,8 @@ int fisher (
 void cleanup_fisher(
 	Search_settings *sett,
 	Command_line_opts *opts,
-	Aux_arrays *aux);
+	Aux_arrays *aux,
+  double *F);
 
 
 void handle_opts_fisher (
@@ -84,7 +87,7 @@ int main (int argc, char* argv[]) {
 
 
   // Cleanup & memory free 
-  cleanup_fisher(&sett, &opts, &aux_arr);
+  cleanup_fisher(&sett, &opts, &aux_arr, F);
 
   return 0; 
 	
@@ -95,7 +98,7 @@ int fisher(Search_settings *sett,
            Aux_arrays *aux) { 
 
 
-  int i, j, k, n; 
+  int i, j, k, n, dim=8; 
 
   // Signal parameters: f, fdot, delta, alpha, a1, a2, a3, a4
   // (see Phys. Rev. D 82, 022005 2010, Eqs. 2.13a-d) 
@@ -106,7 +109,7 @@ int fisher(Search_settings *sett,
   // Reading signal parameters 
   if ((data=fopen (opts->addsig, "r")) != NULL) {
 
-    for(i=0; i<8; i++)
+    for(i=0; i<dim; i++)
       fscanf(data, "%le",i+sgnlo); 
     
     fclose (data);
@@ -116,12 +119,12 @@ int fisher(Search_settings *sett,
   }
 
   
-  double ma[8][8], mFl[8][8]; 
+  double ma[dim][dim], mFl[dim][dim]; 
   double omega0, omega1, domega, a1, a2, a3, a4; 
   double sindelt, cosdelt, sinalt, cosalt; 
 
-  for(k=0; k<8; k++) 
-    for(j=0; j<8; j++) { 
+  for(k=0; k<dim; k++) 
+    for(j=0; j<dim; j++) { 
       ma[k][j] = 0; 
       mFl[k][j] = 0; 
     }
@@ -257,128 +260,58 @@ int fisher(Search_settings *sett,
 
 
       // mFl 
-      for(k=0; k<8; k++) 
-        for(j=0; j<8; j++) 
+      for(k=0; k<dim; k++) 
+        for(j=0; j<dim; j++) 
           mFl[k][j] += ma[k][j];
 
     } 
 
     // Symmetrize mFl 
-    for(k=1; k<8; k++) 
+    for(k=1; k<dim; k++) 
       for(j=0; j<k; j++)
         mFl[k][j] = mFl[j][k]; 
 
-    printf("\nsumhsq, sqrt(sumhsq), N: %f %f %d\n", sumhsq, sqrt(sumhsq), sett->N); 
+    //#mb printf("\nsumhsq, sqrt(sumhsq), N: %f %f %d\n", sumhsq, sqrt(sumhsq), sett->N); 
 
-    printf("\nFisher matrix:\n\n"); 
+    printf("Inverting the Fisher matrix...\n"); 
 
-    for(k=0; k<8; k++) { 
+    int r; 
+    arb_mat_t A, T; 
+    arb_t t; 
+
+    arb_mat_init(A, dim, dim); 
+    arb_mat_init(T, dim, dim); 
+
+    arb_init(t); 
+
+    for(k=0; k<dim; k++) { 
 //      printf("[");
-      for(j=0; j<8; j++)
-        printf("%.16e ", 0.5*mFl[k][j]);
-      printf("\n");
+      for(j=0; j<dim; j++) { 
+  //      printf("%.16e, ", 0.5*mFl[k][j]);
+        arb_set_d(arb_mat_entry(A, k, j), 0.5*mFl[k][j]);
+      } 
+    //  printf("],\n");
     }
 
+    r = arb_mat_spd_inv(T, A, 128);
 
-/*
-    printf("\nSubmatrices:\n"); 
-
-    // Calculate the inverse 
-    int s; 
-    int x = 0, y = 4, nn = 4; 
-    gsl_matrix *m = gsl_matrix_alloc (nn, nn);
-    gsl_matrix *m2 = gsl_matrix_alloc (nn, nn);
-    gsl_matrix *mtest = gsl_matrix_alloc (nn, nn);
-
-
-    gsl_matrix *inverse = gsl_matrix_alloc (nn, nn);
-    gsl_permutation *perm = gsl_permutation_alloc (nn);
-  
-    // Fill the matrix
-    printf("\n1-4 4x4 part\n"); 
-    for(k=x; k<y; k++) {  
-      printf("["); 
-      for(j=x; j<y; j++) { 
-        gsl_matrix_set (m, k, j, 0.5*mFl[k][j]);
-        gsl_matrix_set (m2, k, j, 0.5*mFl[k][j]);
-        printf("%.16f, ", gsl_matrix_get (m, k, j));   
-      } 
-      printf("],\n"); 
-    } 
-
-    // Make LU decomposition of matrix m
-    gsl_linalg_LU_decomp (m, perm, &s);
-  
-    // Invert the matrix m
-    gsl_linalg_LU_invert (m, perm, inverse);
- 
-    printf("\nIts inverse:\n"); 
-
-    for(k=x; k<y; k++) { 
-      for(j=x; j<y; j++)  
-        printf("%.6e ", gsl_matrix_get (inverse, k, j));   
-      printf("\n"); 
-    } 
-
-    printf("\nDiagonal values:\n"); 
-
-    for(k=x; k<y; k++) { 
-        printf("%.6e ", gsl_matrix_get (inverse, k, k));   
-    } 
-
-    printf("\n\nTest:\n"); 
-
-    gsl_blas_dgemm(CblasNoTrans, CblasNoTrans, 1.0, m2, inverse, 0.0, mtest);
-
-    for(k=x; k<y; k++) { 
-      for(j=x; j<y; j++)  
-        printf("%.6e ", gsl_matrix_get (mtest, k, j));   
-      printf("\n"); 
-    } 
-
-    // Calculate the inverse 
-    x = 4; 
-    y = 8; 
-
-    // Fill the matrix
-    printf("\n5-8 4x4 part\n");
-    for(k=x; k<y; k++) {  
-      for(j=x; j<y; j++) { 
-        gsl_matrix_set (m, k-nn, j-nn, 0.5*mFl[k][j]);
-        printf("%.6f ", gsl_matrix_get (m, k-nn, j-nn));   
-      } 
-      printf("\n"); 
-    } 
-
-    // Make LU decomposition of matrix m
-    gsl_linalg_LU_decomp (m, perm, &s);
-  
-    // Invert the matrix m
-    gsl_linalg_LU_invert (m, perm, inverse);
- 
-    printf("\nIts inverse:\n");
-
-    for(k=x; k<y; k++) { 
-      for(j=x; j<y; j++)  
-        printf("%.6e ", gsl_matrix_get (inverse, k-nn, j-nn));   
-      printf("\n"); 
-    } 
-
-    printf("\nDiagonal values:\n");
-
-    for(k=x; k<y; k++) { 
-        printf("%.6e ", gsl_matrix_get (inverse, k-nn, k-nn));   
+    if(r) {
+      
+      printf("Diagonal elements of the covariance matrix:\n");  
+      for(k=0; k<dim; k++) { 
+        arb_set(t, arb_mat_entry(T, k, k)); 
+        printf("%le ", arf_get_d(arb_midref(t), ARF_RND_DOWN));
+      }
+    } else { 
+    
+      printf("Failed to invert the Fisher matrix.\n"); 
     } 
 
     printf("\n"); 
 
-    gsl_matrix_free(m); 
-    gsl_matrix_free(m2); 
-    gsl_matrix_free(mtest); 
-    gsl_matrix_free(inverse); 
-    gsl_permutation_free(perm); 
+    arb_mat_clear(A);
+    arb_mat_clear(T); 
 
-*/
 
   } 
 
@@ -394,20 +327,26 @@ int fisher(Search_settings *sett,
 void cleanup_fisher(
 	Search_settings *sett,
 	Command_line_opts *opts,
-	Aux_arrays *aux) {
+	Aux_arrays *aux, 
+  double *F) {
 
   int i; 
 
   for(i=0; i<sett->nifo; i++) {
     free(ifo[i].sig.xDat);
+    free(ifo[i].sig.xDatma);
+    free(ifo[i].sig.xDatmb); 
     free(ifo[i].sig.DetSSB);
     free(ifo[i].sig.aa);
     free(ifo[i].sig.bb);
+    free(ifo[i].sig.shftf);
+    free(ifo[i].sig.shft);
   } 
 	
   free(aux->sinmodf);
   free(aux->cosmodf);
   free(aux->t2);
+  free(F);  
 
 
 } // end of cleanup & memory free 
@@ -425,6 +364,9 @@ void handle_opts_fisher( Search_settings *sett,
   strcpy (opts->prefix, TOSTR(PREFIX));
   strcpy (opts->dtaprefix, TOSTR(DTAPREFIX));
 
+  opts->label[0]    = '\0';
+  opts->range[0]    = '\0';
+  opts->getrange[0] = '\0';
   opts->usedet[0]   = '\0';
   opts->addsig[0]   = '\0';
 	

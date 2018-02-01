@@ -4,8 +4,10 @@ VER := $(shell git rev-parse HEAD)
 
 # FFTW_DIR - fftw location, remember to compile it with optimizations (e.g. avx)
 # SINCOS = {YEPPP or SLEEF or GNUSINCOS or NOSINCOS}
+# ARB_DIR = location of the arb libs and headers (source: http://arblib.org) 
 FFTW_DIR = /opt/fftw/3.3.4/gnu-omp-devtoolset3
 SINCOS =  YEPPP #YEPPP or SLEEF or GNUSINCOS or NOSINCOS
+ARB_DIR = /path/to/arb
 
 CC = gcc -std=gnu11
 
@@ -88,8 +90,10 @@ sigen: sigen.o settings.o auxi.o
 bench: bench.o settings.o init.o auxi.o
 	$(CC) -o $@ $^ -Wl,-Bdynamic -lrt -lm -lgsl -lgslcblas -lfftw3 -lc
 
+CFLAGS += -I$(ARB_DIR)/include
+
 fisher: fisher.o settings.o init.o auxi.o
-	$(CC) -o $@ $^ -Wl,-Bdynamic -lrt -lm -lgsl -lgslcblas -lfftw3 -lc
+	$(CC) -o $@ $^ -Wl,-Bdynamic,-rpath,$(ARB_DIR)/lib/ -lrt -lm -lgsl -lgslcblas -lfftw3 -lc -L$(ARB_DIR)/lib -larb -lflint
 
 #gridopt.o: gridopt.c 
 #	$(CC) -c -o $@ $< -O3 -Wall
