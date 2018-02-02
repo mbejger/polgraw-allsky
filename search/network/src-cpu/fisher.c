@@ -171,13 +171,13 @@ int fisher(Search_settings *sett,
 
       // phase 
       psi = omega0*i + omega1*aux->t2[i] 
-          + (cosalt*cosdelt*xet + sinalt*cosalt*yet + sindelt*zet)*(omega0 + domega); 
+          + (cosalt*cosdelt*xet + sinalt*cosalt*yet + sindelt*zet)*(omega0 + 2*omega1*i + domega); 
 
       // phase derivatives w.r.t. freq., spindown, delta and alpha parameters       
       dpdf = i + xet*cosalt*cosdelt + yet*cosdelt*sinalt + zet*sindelt;  
-      dpds = aux->t2[i];   
-      dpdd = (domega + omega0)*(zet*cosdelt - (xet*cosalt + yet*sinalt)*sindelt); 
-      dpda = (domega + omega0)*cosdelt*(yet*cosalt - xet*sinalt); 
+      dpds = aux->t2[i] + 2*i*(cosalt*cosdelt*xet + sinalt*cosalt*yet + sindelt*zet);   
+      dpdd = (domega + omega0 + 2*omega1*i)*(zet*cosdelt - (xet*cosalt + yet*sinalt)*sindelt); 
+      dpda = (domega + omega0 + 2*omega1*i)*cosdelt*(yet*cosalt - xet*sinalt); 
 
       // amplitude 
       h = (a1*a + a2*b)*cos(psi) + (a3*a + a4*b)*sin(psi); 
@@ -273,7 +273,7 @@ int fisher(Search_settings *sett,
 
     //#mb printf("\nsumhsq, sqrt(sumhsq), N: %f %f %d\n", sumhsq, sqrt(sumhsq), sett->N); 
 
-    printf("Inverting the Fisher matrix...\n"); 
+    printf("The Fisher matrix:\n"); 
 
     int r; 
     arb_mat_t A, T; 
@@ -287,11 +287,13 @@ int fisher(Search_settings *sett,
     for(k=0; k<dim; k++) { 
 //      printf("[");
       for(j=0; j<dim; j++) { 
-  //      printf("%.16e, ", 0.5*mFl[k][j]);
-        arb_set_d(arb_mat_entry(A, k, j), 0.5*mFl[k][j]);
+        printf("%.16e, ", mFl[k][j]);
+        arb_set_d(arb_mat_entry(A, k, j), mFl[k][j]);
       } 
-    //  printf("],\n");
+      printf("],\n");
     }
+
+    printf("Inverting the Fisher matrix...\n"); 
 
     r = arb_mat_spd_inv(T, A, 128);
 
