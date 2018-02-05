@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        
+        
+        
+        <link rel="shortcut icon" href="../img/favicon.ico">
+        <title>Followup of interesting outliers - Polgraw group</title>
+        <link href="../css/bootstrap-custom.min.css" rel="stylesheet">
+        <link href="../css/font-awesome-4.5.0.css" rel="stylesheet">
+        <link href="../css/base.css" rel="stylesheet">
+        <link rel="stylesheet" href="../css/highlight.css">
+        <!-- HTML5 shim and Respond.js IE8 support of HTML5 elements and media queries -->
+        <!--[if lt IE 9]>
+            <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+            <script src="https://oss.maxcdn.com/libs/respond.js/1.3.0/respond.min.js"></script>
+        <![endif]-->
+
+        <script src="../js/jquery-1.10.2.min.js"></script>
+        <script src="../js/bootstrap-3.0.3.min.js"></script>
+        <script src="../js/highlight.pack.js"></script> 
+    </head>
+
+    <body>
+
+        <div class="navbar navbar-default navbar-fixed-top" role="navigation">
+    <div class="container">
+
+        <!-- Collapsed navigation -->
+        <div class="navbar-header">
+            <!-- Expander button -->
+            <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
+                <span class="sr-only">Toggle navigation</span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+            </button>
+            <a class="navbar-brand" href="..">Polgraw group</a>
+        </div>
+
+        <!-- Expanded navigation -->
+        <div class="navbar-collapse collapse">
+                <!-- Main navigation -->
+                <ul class="nav navbar-nav">
+                    <li >
+                        <a href="..">Home</a>
+                    </li>
+                    <li class="dropdown active">
+                        <a href="#" class="dropdown-toggle" data-toggle="dropdown">Pipeline description <b class="caret"></b></a>
+                        <ul class="dropdown-menu">
+                            
+<li >
+    <a href="../input_data/">Input data generation</a>
+</li>
+                            
+<li >
+    <a href="../grid_generation/">Grid generation</a>
+</li>
+                            
+<li >
+    <a href="../search_for_candidates/">F-statistic candidate signal search</a>
+</li>
+                            
+<li >
+    <a href="../coincidences/">Coincidences between candidates</a>
+</li>
+                            
+<li >
+    <a href="../fap_coincidences/">False alarm probablity of conicidences</a>
+</li>
+                            
+<li class="active">
+    <a href="./">Followup of interesting outliers</a>
+</li>
+                            
+<li >
+    <a href="../sensitivity_upper_limits/">Sensitivity upper limits</a>
+</li>
+                            
+<li >
+    <a href="../pipeline_script/">Pipeline: a minimal example</a>
+</li>
+                            
+<li >
+    <a href="../articles/">Documents and publications</a>
+</li>
+                        </ul>
+                    </li>
+                </ul>
+
+            <ul class="nav navbar-nav navbar-right">
+                <li>
+                    <a href="#" data-toggle="modal" data-target="#mkdocs_search_modal">
+                        <i class="fa fa-search"></i> Search
+                    </a>
+                </li>
+                    <li >
+                        <a rel="next" href="../fap_coincidences/">
+                            <i class="fa fa-arrow-left"></i> Previous
+                        </a>
+                    </li>
+                    <li >
+                        <a rel="prev" href="../sensitivity_upper_limits/">
+                            Next <i class="fa fa-arrow-right"></i>
+                        </a>
+                    </li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+        <div class="container">
+                <div class="col-md-3"><div class="bs-sidebar hidden-print affix well" role="complementary">
+    <ul class="nav bs-sidenav">
+        <li class="main active"><a href="#followup">Followup</a></li>
+    </ul>
+</div></div>
+                <div class="col-md-9" role="main">
+
+<h1 id="followup">Followup</h1>
+<p>Currently work in progress; for the present state of the code see <a href="https://github.com/mbejger/polgraw-allsky/tree/master/followup">here</a>. </p>
+<p> On the last stage we can precisely estimate signal parameters. At this stage we focus only on a very narrow space around a candidate. Our goal is to find the maximum of the F-statistic and the corresponding signal parameters. To increase the efficiency of the code, we use special libraries (<code>GSL</code>, <code>Yeppp!</code>) and parallelisation (<code>OpenMP</code>). We already implemented few algorithms to do this: Simplex algorithm, Mesh Adaptive Direct Search - MADS and modified MADS (called 'inverted MADS').</p>
+<p> To compile a code, go to the <code>followup/src</code> and run:</p>
+<pre class="codehilite"><code class="language-bash">% make followup </code></pre>
+<p>Switches:</p>
+
+<pre>
+-d, -data         Data directory (default is .)
+-o, -output       Output directory (default is ./candidates)
+-i, -ident        Frame number
+-b, -band         Band number
+-l, -label        Custom label for the input and output files
+-c, -cwd          Change to directory [dir]
+-t, -threshold    Threshold for the F-statistic (default is 20)
+-p, -fpo          Reference band frequency fpo value
+-s, -dt           data sampling time dt (default value: 0.5)
+-u, -usedet       Use only detectors from string (default is use all available)
+-y, -nod          Number of days
+-x, -addsig       Add signal with parameters from [file]
+-a, -candidates   As a starting point in followup use parameters from [file]
+-r, -refr         Reference frame number
+
+Also:
+
+--vetolines     Veto known lines from files in data directory
+--simplex       Direct search of maximum using Nelder-Mead (simplex) algorithm
+--mads          Direct search of maximum using MADS algorithm
+--gauss         Generate Gaussian noise instead of reading data. Amplitude and sigma of the noise declared in init.c
+--neigh         Function neigh() generate area as % from initial value instead of taking it from grid.bin
+--naive         Function naive() generate area as +/- points taking it from grid.bin and divide it into smaller grid.
+--onepoint      Calculate Fstatistic only in one point taken from file with candidates (without generating any grid).
+--help          This help
+</pre>
+<p>Initial point of the calculations (switch <code>-candidates</code>) is required. Usually the best result from coincidences (previous step of the pipeline) is taken. Parameters of the candidate need to be written into the file, as:</p>
+<pre>
+frequency spin-down declination right_ascension
+</pre>
+<p>By default code is searching maximum of the F-statistic on the optimal, 4-dimensional grid (parameters of the grid, like e.g. minimal match, ale defined inside the code, in <code> followup.c</code>). Main idea was to search on a denser grid than in <code>search</code> code, but to focus only on a few points around candidate. Additionally, when the point (on the optimal grid) with the maximal value of the F-statistic is established, one can run one of the direct maximum search algorithm: Nelder-Mead (<code>--simplex</code> switch) or MADS (<code>--mads</code> switch), to determine parameters of the maximum more precisely. In the current version of the code, by using <code>--mads</code> switch, one will use modified, 'inverted' MADS. To skip calculations on the optimal grid and run one of the algorithms directly from the initial point, use <code>--onepoint</code> switch.</p>
+<p>Files required to run the code: <code>xdatc*</code>, <code>DetSSB.bin</code> and <code>grid.bin</code>. Path to the directory is taken from <code>-data</code> switch; there directories named as <code>iii/H1</code>, <code>iii/L1</code> etc. are expected, where <code>iii</code> is a frame number taken from <code>-ident</code> switch. </p>
+<p>Minimal example how to run a code:</p>
+<pre class="codehilite"><code class="language-bash">% LD_LIBRARY_PATH=../../search/network/src-cpu/lib/yeppp-1.0.0/binaries/linux/x86_64 ./followup -data data_path/ -band 0666 -dt 16 -candidates path_to_candidate/candidate.txt -ident 001 -nod 6 --mads --onepoint > output.txt </code></pre>
+As a result (last line in the output file) one can get parameters of the found maximum:
+<pre>
+frequency spin-down declination right_ascension F-statistic_value SNR
+</pre>
+</div>
+        </div>
+
+        <footer class="col-md-12">
+            <hr>
+            <p>Documentation built with <a href="http://www.mkdocs.org/">MkDocs</a>.</p>
+        </footer>
+        <script>var base_url = '..';</script>
+        <script src="../js/base.js"></script>
+        <script src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS_HTML"></script>
+        <script src="../search/require.js"></script>
+        <script src="../search/search.js"></script>
+
+        <div class="modal" id="mkdocs_search_modal" tabindex="-1" role="dialog" aria-labelledby="Search Modal" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
+                <h4 class="modal-title" id="exampleModalLabel">Search</h4>
+            </div>
+            <div class="modal-body">
+                <p>
+                    From here you can search these documents. Enter
+                    your search terms below.
+                </p>
+                <form role="form">
+                    <div class="form-group">
+                        <input type="text" class="form-control" placeholder="Search..." id="mkdocs-search-query">
+                    </div>
+                </form>
+                <div id="mkdocs-search-results"></div>
+            </div>
+            <div class="modal-footer">
+            </div>
+        </div>
+    </div>
+</div><div class="modal" id="mkdocs_keyboard_modal" tabindex="-1" role="dialog" aria-labelledby="Keyboard Shortcuts Modal" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
+                <h4 class="modal-title" id="exampleModalLabel">Keyboard Shortcuts</h4>
+            </div>
+            <div class="modal-body">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th style="width: 20%;">Keys</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><kbd>?</kbd></td>
+                    <td>Open this help</td>
+                  </tr>
+                  <tr>
+                    <td><kbd>&larr;</kbd></td>
+                    <td>Previous page</td>
+                  </tr>
+                  <tr>
+                    <td><kbd>&rarr;</kbd></td>
+                    <td>Next page</td>
+                  </tr>
+                  <tr>
+                    <td><kbd>s</kbd></td>
+                    <td>Search</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="modal-footer">
+            </div>
+        </div>
+    </div>
+</div>
+
+
+    </body>
+</html>
