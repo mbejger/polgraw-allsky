@@ -116,57 +116,145 @@
                 <div class="col-md-3"><div class="bs-sidebar hidden-print affix well" role="complementary">
     <ul class="nav bs-sidenav">
         <li class="main active"><a href="#followup">Followup</a></li>
+            <li><a href="#introduction">Introduction</a></li>
+            <li><a href="#compilation">Compilation</a></li>
+            <li><a href="#switches">Switches</a></li>
+            <li><a href="#input-data">Input data</a></li>
+            <li><a href="#minimal-example-how-to-run-a-code">Minimal example how to run a code</a></li>
     </ul>
 </div></div>
                 <div class="col-md-9" role="main">
 
 <h1 id="followup">Followup</h1>
 <p>Currently work in progress; for the present state of the code see <a href="https://github.com/mbejger/polgraw-allsky/tree/master/followup">here</a>. </p>
-<p> On the last stage we can precisely estimate signal parameters. At this stage we focus only on a very narrow space around a candidate. Our goal is to find the maximum of the F-statistic and the corresponding signal parameters. To increase the efficiency of the code, we use special libraries (<code>GSL</code>, <code>Yeppp!</code>) and parallelisation (<code>OpenMP</code>). We already implemented few algorithms to do this: Simplex algorithm, Mesh Adaptive Direct Search - MADS and modified MADS (called 'inverted MADS').</p>
-<p> To compile a code, go to the <code>followup/src</code> and run:</p>
-<pre class="codehilite"><code class="language-bash">% make followup </code></pre>
-<p>Switches:</p>
-
-<pre>
--d, -data         Data directory (default is .)
--o, -output       Output directory (default is ./candidates)
--i, -ident        Frame number
--b, -band         Band number
--l, -label        Custom label for the input and output files
--c, -cwd          Change to directory [dir]
--t, -threshold    Threshold for the F-statistic (default is 20)
--p, -fpo          Reference band frequency fpo value
--s, -dt           data sampling time dt (default value: 0.5)
--u, -usedet       Use only detectors from string (default is use all available)
--y, -nod          Number of days
--x, -addsig       Add signal with parameters from [file]
--a, -candidates   As a starting point in followup use parameters from [file]
--r, -refr         Reference frame number
-
-Also:
-
---vetolines     Veto known lines from files in data directory
---simplex       Direct search of maximum using Nelder-Mead (simplex) algorithm
---mads          Direct search of maximum using MADS algorithm
---gauss         Generate Gaussian noise instead of reading data. Amplitude and sigma of the noise declared in init.c
---neigh         Function neigh() generate area as % from initial value instead of taking it from grid.bin
---naive         Function naive() generate area as +/- points taking it from grid.bin and divide it into smaller grid.
---onepoint      Calculate Fstatistic only in one point taken from file with candidates (without generating any grid).
---help          This help
-</pre>
-<p>Initial point of the calculations (switch <code>-candidates</code>) is required. Usually the best result from coincidences (previous step of the pipeline) is taken. Parameters of the candidate need to be written into the file, as:</p>
-<pre>
-frequency spin-down declination right_ascension
-</pre>
+<h2 id="introduction">Introduction</h2>
+<p>On the last stage we can precisely estimate signal parameters. At this stage we focus only on a very narrow space around a candidate. Our goal is to find the maximum of the F-statistic and the corresponding signal parameters. To increase the efficiency of the code, we use special libraries (<a href="http://www.gnu.org/software/gsl/">GNU Scientific Library (GSL)</a>, <a href="http://www.yeppp.info">YEPPP!</a>) and parallelisation (<a href="http://www.openmp.org/">OpenMP</a>). We already implemented few algorithms to do this: Simplex algorithm, Mesh Adaptive Direct Search - MADS and modified MADS (called 'inverted MADS').</p>
+<h2 id="compilation">Compilation</h2>
+<p>To compile a code, go to the <code>followup/src</code> and run: <code>make followup</code></p>
+<h2 id="switches">Switches</h2>
+<p>Run <code>./followup --help</code></p>
+<table>
+<thead>
+<tr>
+<th>Switch</th>
+<th align="left">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>-d, -data</td>
+<td align="left">Data directory (default is .)</td>
+</tr>
+<tr>
+<td>-o, -output</td>
+<td align="left">Output directory (default is ./candidates)</td>
+</tr>
+<tr>
+<td>-i, -ident</td>
+<td align="left">Frame number</td>
+</tr>
+<tr>
+<td>-b, -band</td>
+<td align="left">Band number</td>
+</tr>
+<tr>
+<td>-l, -label</td>
+<td align="left">Custom label for the input and output files</td>
+</tr>
+<tr>
+<td>-c, -cwd</td>
+<td align="left">Change to directory [dir]</td>
+</tr>
+<tr>
+<td>-t, -threshold</td>
+<td align="left">Threshold for the F-statistic (default is 20)</td>
+</tr>
+<tr>
+<td>-p, -fpo</td>
+<td align="left">Reference band frequency fpo value</td>
+</tr>
+<tr>
+<td>-s, -dt</td>
+<td align="left">Data sampling time dt (default value: 0.5)</td>
+</tr>
+<tr>
+<td>-u, -usedet</td>
+<td align="left">Use only detectors from string (default is use all available)</td>
+</tr>
+<tr>
+<td>-y, -nod</td>
+<td align="left">Number of days</td>
+</tr>
+<tr>
+<td>-x, -addsig</td>
+<td align="left">Add signal with parameters from [file]</td>
+</tr>
+<tr>
+<td>-a, -candidates</td>
+<td align="left">As a starting point in followup use parameters from [file]</td>
+</tr>
+<tr>
+<td>-r, -refr</td>
+<td align="left">Reference frame number</td>
+</tr>
+</tbody>
+</table>
+<p>Also:</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th align="left"></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>--vetolines</td>
+<td align="left">Veto known lines from files in data directory</td>
+</tr>
+<tr>
+<td>--simplex</td>
+<td align="left">Direct search of maximum using Nelder-Mead (simplex) algorithm</td>
+</tr>
+<tr>
+<td>--mads</td>
+<td align="left">Direct search of maximum using MADS algorithm</td>
+</tr>
+<tr>
+<td>--gauss</td>
+<td align="left">Generate Gaussian noise instead of reading data. Amplitude and sigma of the noise declared in init.c</td>
+</tr>
+<tr>
+<td>--neigh</td>
+<td align="left">Function neigh() generate area as % from initial value instead of taking it from grid.bin</td>
+</tr>
+<tr>
+<td>--naive</td>
+<td align="left">Function naive() generate area as +/- points taking it from grid.bin and divide it into smaller grid.</td>
+</tr>
+<tr>
+<td>--onepoint</td>
+<td align="left">Calculate Fstatistic only in one point taken from file with candidates (without generating any grid).</td>
+</tr>
+<tr>
+<td>--help</td>
+<td align="left">This help</td>
+</tr>
+</tbody>
+</table>
 <p>By default code is searching maximum of the F-statistic on the optimal, 4-dimensional grid (parameters of the grid, like e.g. minimal match, ale defined inside the code, in <code>followup.c</code>). Main idea was to search on a denser grid than in <code>search</code> code, but to focus only on a few points around candidate. Additionally, when the point (on the optimal grid) with the maximal value of the F-statistic is established, one can run one of the direct maximum search algorithm: Nelder-Mead (<code>--simplex</code> switch) or MADS (<code>--mads</code> switch), to determine parameters of the maximum more precisely. In the current version of the code, by using <code>--mads</code> switch, one will use modified, 'inverted' MADS. To skip calculations on the optimal grid and run one of the algorithms directly from the initial point, use <code>--onepoint</code> switch.</p>
-<p>Files required to run the code: <code>xdatc*</code>, <code>DetSSB.bin</code> and <code>grid.bin</code>. Path to the directory is taken from <code>-data</code> switch; there directories named as <code>iii/H1</code>, <code>iii/L1</code> etc. are expected, where <code>iii</code> is a frame number taken from <code>-ident</code> switch. </p>
-<p>Minimal example how to run a code:</p>
-<pre class="codehilite"><code class="language-bash">% LD_LIBRARY_PATH=../../search/network/src-cpu/lib/yeppp-1.0.0/binaries/linux/x86_64 ./followup -data data_path/ -band 0666 -dt 16 -candidates path_to_candidate/candidate.txt -ident 001 -nod 6 --mads> output.txt </code></pre>
-As a result (last line in the output file) one can get parameters of the found maximum:
-<pre>
-frequency spin-down declination right_ascension F-statistic_value SNR
-</pre>
-</div>
+<h2 id="input-data">Input data</h2>
+<p>Files required to run the code: <code>xdatc*</code>, <code>DetSSB.bin</code> and <code>grid.bin</code>. Path to the directory is taken from <code>-data</code> switch; there directories named as <code>iii/H1</code>,<code>iii/L1</code> etc. are expected, where <code>iii</code> is a frame number taken from <code>-ident</code> switch.</p>
+<p>Initial point of the calculations (switch <code>-candidates</code>) is required. Usually the best result from coincidences (previous step of the pipeline) is taken. Parameters of the candidate need to be written into the file, as:</p>
+<p><code>frequency spin-down declination right_ascension</code></p>
+<h2 id="minimal-example-how-to-run-a-code">Minimal example how to run a code</h2>
+<p>Run: </p>
+<div class="codehilite"><pre><span></span><span class="nv">LD_LIBRARY_PATH</span><span class="o">=</span>../../search/network/src-cpu/lib/yeppp-1.0.0/binaries/linux/x86_64 ./followup -data data_path/ -band <span class="m">0666</span> -dt <span class="m">16</span> -candidates path_to_candidate/candidate.txt -ident <span class="m">001</span> -nod <span class="m">6</span> --mads&gt; output.txt 
+</pre></div>
+
+
+<p>As a result (last line in the output file) one can get parameters of the found maximum:</p>
+<p><code>frequency spin-down declination right_ascension F-statistic_value SNR</code></p></div>
         </div>
 
         <footer class="col-md-12">
