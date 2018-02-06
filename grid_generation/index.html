@@ -18,8 +18,8 @@
             <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
             <script src="https://oss.maxcdn.com/libs/respond.js/1.3.0/respond.min.js"></script>
         <![endif]-->
-
-        <script src="../js/jquery-1.10.2.min.js"></script>
+	
+	<script src="../js/jquery-1.10.2.min.js"></script>
         <script src="../js/bootstrap-3.0.3.min.js"></script>
         <script src="../js/highlight.pack.js"></script> 
     </head>
@@ -81,6 +81,10 @@
 </li>
                             
 <li >
+    <a href="../fisher/">Fisher matrix calculation</a>
+</li>
+                            
+<li >
     <a href="../pipeline_script/">Pipeline: a minimal example</a>
 </li>
                             
@@ -128,7 +132,8 @@
 <p>C++ compiler.</p>
 <h3 id="example">Example</h3>
 <p>Using the <a href="https://polgraw.camk.edu.pl/H1L1_2d_0.25.tar.gz">test Gaussian data</a>:  </p>
-<pre class="codehilite"><code>% ./gridgen -m 0.5 -p dfg -d ../testdata/2d_0.25/001/H1/ -n 17 </code></pre>
+<div class="codehilite"><pre><span></span><span class="c">% ./gridgen -m 0.5 -p dfg -d ../testdata/2d_0.25/001/H1/ -n 17 </span>
+</pre></div>
 
 
 <p>where   </p>
@@ -139,7 +144,7 @@
 <li><code>-p</code> denotes the full output (density of covering, Fisher and grid matrices)</li>
 </ul>
 <p>The output is </p>
-<pre class="codehilite"><code class="language-bash">grid.bin will be saved in ../testdata/2d_0.25/001/H1/grid.bin
+<div class="codehilite"><pre><span></span>grid.bin will be saved in ../testdata/2d_0.25/001/H1/grid.bin
 Covariance, Density of covering
 Density of covering: 0.25 1.76768559133
 fftpad: 1
@@ -159,73 +164,74 @@ Grid matrix:
 4.130435018981e+00      0.000000000000e+00      0.000000000000e+00      0.000000000000e+00
 -1.501354357073e+01     1.604615232547e+01      0.000000000000e+00      0.000000000000e+00
 -2.136051820725e+03     -1.250522487924e+01     2.204621622171e+07      0.000000000000e+00
-8.277470103070e+02      2.303068516072e+01      -1.138557378658e+07     1.673054937411e+07</code></pre>
+8.277470103070e+02      2.303068516072e+01      -1.138557378658e+07     1.673054937411e+07
+</pre></div>
 
 
 <h3 id="full-description-of-options">Full description of options</h3>
-<pre class="codehilite"><code class="language-bash">DESCRIPTION
-         GridsGenerator (GG) is designated to be used in all-sky narrow-band
+<div class="codehilite"><pre><span></span>DESCRIPTION
+         GridsGenerator <span class="o">(</span>GG<span class="o">)</span> is designated to be used in all-sky narrow-band
          searches of continuous gravitational waves. Program allow to:
-         - generate efficient grid(s) for chosen initial time of observation (1).
-         - generate reduced Fisher matrix for chosen initial time of observation (1),
-         - generate density of covering (2).
-         (1) To get result, ephemeris must be provided.
-         (2) Result can be get without ephemeris (for more information see flags: -nd
-         (--ndata)).
+         - generate efficient grid<span class="o">(</span>s<span class="o">)</span> <span class="k">for</span> chosen initial <span class="nb">time</span> of observation <span class="o">(</span>1<span class="o">)</span>.
+         - generate reduced Fisher matrix <span class="k">for</span> chosen initial <span class="nb">time</span> of observation <span class="o">(</span>1<span class="o">)</span>,
+         - generate density of covering <span class="o">(</span>2<span class="o">)</span>.
+         <span class="o">(</span>1<span class="o">)</span> To get result, ephemeris must be provided.
+         <span class="o">(</span>2<span class="o">)</span> Result can be get without ephemeris <span class="o">(</span><span class="k">for</span> more information see flags: -nd
+         <span class="o">(</span>--ndata<span class="o">))</span>.
 
 FLAGS
-   Flags with (optional) argument(s):
+   Flags with <span class="o">(</span>optional<span class="o">)</span> argument<span class="o">(</span>s<span class="o">)</span>:
          -c or --covariance &lt;min&gt; &lt;max&gt; &lt;step&gt;
-                 Covariance. Flag -c is required (even without argument) to get result.
-                 &lt;min&gt; - minimum value of covariance but not less than 0;
+                 Covariance. Flag -c is required <span class="o">(</span>even without argument<span class="o">)</span> to get result.
+                 &lt;min&gt; - minimum value of covariance but not less than 0<span class="p">;</span>
                  default set: 0.75.
                  &lt;max&gt; - optional maximum value of covariance but less than 1.
-                 &lt;step&gt; - optional step value of covariance;
+                 &lt;step&gt; - optional step value of covariance<span class="p">;</span>
                  default set: 0.01.
 
-                 # Calculation are preform only in two cases:
-                 # 1. No flag are provided. Sets are read from file 'gg.ini'.
-                 # Result(s) is(are) printed to file(s) - see configuration file: 'gg.ini'.
-                 # 2. Flag -c (--covariance) or -m (--match) is used.
-                 # Result(s) is(are) printed to tty.
+                 <span class="c1"># Calculation are preform only in two cases:</span>
+                 <span class="c1"># 1. No flag are provided. Sets are read from file &#39;gg.ini&#39;.</span>
+                 <span class="c1"># Result(s) is(are) printed to file(s) - see configuration file: &#39;gg.ini&#39;.</span>
+                 <span class="c1"># 2. Flag -c (--covariance) or -m (--match) is used.</span>
+                 <span class="c1"># Result(s) is(are) printed to tty.</span>
 
          -m or --match &lt;min&gt; &lt;max&gt; &lt;step&gt;
-                 Minimal match (MM^2 == covariance).
-                 &lt;min&gt; - minimum value of minimal match but not less than 0;
-                 default set: MM^2 = 0.75.
+                 Minimal match <span class="o">(</span>MM^2 <span class="o">==</span> covariance<span class="o">)</span>.
+                 &lt;min&gt; - minimum value of minimal match but not less than 0<span class="p">;</span>
+                 default set: MM^2 <span class="o">=</span> 0.75.
                  &lt;max&gt; - optional maximum value of minimal match but less than 1.
-                 &lt;step&gt; - optional step value of minimal match;
+                 &lt;step&gt; - optional step value of minimal match<span class="p">;</span>
                  default set: 0.1.
-                 ## If flags -c (--covariance) and -m (--match) provided simultaneously,
-                 ## program will read options from -c flag only.
+                 <span class="c1">## If flags -c (--covariance) and -m (--match) provided simultaneously,</span>
+                 <span class="c1">## program will read options from -c flag only.</span>
 
 
          -d or --directory &lt;path&gt;
-                 Directory containing ephemeris (need to contain binary files:
-                 'rSSB.bin', 'rDet.bin', 'rDetSSB.bin').
+                 Directory containing ephemeris <span class="o">(</span>need to contain binary files:
+                 <span class="s1">&#39;rSSB.bin&#39;</span>, <span class="s1">&#39;rDet.bin&#39;</span>, <span class="s1">&#39;rDetSSB.bin&#39;</span><span class="o">)</span>.
                  &lt;path&gt; - take path to directory.
-                 E.g. -d 001: directory '001' located inside folder with GridsGenerator.
+                 E.g. -d 001: directory <span class="s1">&#39;001&#39;</span> located inside folder with GridsGenerator.
                  If directory is not provided, program will try to find ephemeris
                  in directory with GridsGenerator.
 
          -i or --initial &lt;min&gt; &lt;max&gt; &lt;step&gt;
-                 Initial time of observation.
-                 &lt;min&gt; - minimum value of initial time;
+                 Initial <span class="nb">time</span> of observation.
+                 &lt;min&gt; - minimum value of initial time<span class="p">;</span>
                  default set: 0.5.
                  &lt;max&gt; - optional maximum value of initial time.
-                 &lt;step&gt; - optional step value of minimal match;
-                 if not provided step will be set on step = max - min.
+                 &lt;step&gt; - optional step value of minimal match<span class="p">;</span>
+                 <span class="k">if</span> not provided step will be <span class="nb">set</span> on <span class="nv">step</span> <span class="o">=</span> max - min.
 
 
          -a or --algorithm &lt;type&gt;
-                 Algorithm type to choose.
+                 Algorithm <span class="nb">type</span> to choose.
                  &lt;type&gt; take option: s1, s2, a. Algorithms:
                  s1 - based on fully analytic formula,
                  s2 - partially numeric formula.
-                 Accuracy for algorithm 's2' depended on -na (--nalpha) and -nr (--nradius)
+                 Accuracy <span class="k">for</span> algorithm <span class="s1">&#39;s2&#39;</span> depended on -na <span class="o">(</span>--nalpha<span class="o">)</span> and -nr <span class="o">(</span>--nradius<span class="o">)</span>
                  flags.
-                 a - automatically choose algorithm 's1' or 's2'. Use this argument to allow
-                 GridsGenerator to decide which algorithm (for given parameters) should be
+                 a - automatically choose algorithm <span class="s1">&#39;s1&#39;</span> or <span class="s1">&#39;s2&#39;</span>. Use this argument to allow
+                 GridsGenerator to decide which algorithm <span class="o">(</span><span class="k">for</span> given parameters<span class="o">)</span> should be
                  used to get grid with better density of covering.
                  Information about implemented algorithms can be found in article:
                  http://dx.doi.org/10.1088/0264-9381/32/14/145014
@@ -233,93 +239,94 @@ FLAGS
 
          -n or --nfft &lt;int&gt;
                  Number of Fourier bins.
-                 &lt;int&gt; take positive integer number without zero (exponent).
+                 &lt;int&gt; take positive integer number without zero <span class="o">(</span>exponent<span class="o">)</span>.
                  E.g. to get grid destined to work with discreet
-                 Fourier transform (DFT, FFT) with length 1024 put same exponent of 2: 10
-                 (1024 == 2^10).
-                 Default set: 20 (1048576 = 2^20).
+                 Fourier transform <span class="o">(</span>DFT, FFT<span class="o">)</span> with length <span class="m">1024</span> put same exponent of 2: 10
+                 <span class="o">(</span><span class="nv">1024</span> <span class="o">==</span> 2^10<span class="o">)</span>.
+                 Default set: <span class="m">20</span> <span class="o">(</span><span class="nv">1048576</span> <span class="o">=</span> 2^20<span class="o">)</span>.
 
          -nd or --ndata &lt;int&gt;
-                 Number of data (data length collected by detector, equal to length
-                 of ephemeris).
+                 Number of data <span class="o">(</span>data length collected by detector, equal to length
+                 of ephemeris<span class="o">)</span>.
                  &lt;int&gt; take positive integer number including zero.
-                 If &lt;int&gt; is set to zero data length will be read from ephemeris*.
+                 If &lt;int&gt; is <span class="nb">set</span> to zero data length will be <span class="nb">read</span> from ephemeris*.
                  If &lt;int&gt; is bigger than zero program will able to obtain density of
                  covering only**.
                  Default set: 0.
-                 * With this set (-nd 0 or -ndata 0) density is obtained without using
-                 information stored in file 'dataS2.txt'.
-                 ### With this set density of covering for algorithm 's2' is always
-                 ### obtaining with maximal accuracy, depending only from flags: -na, -nr.
-                 ### Density of covering for algorithm 's1' is always obtained with maximal
-                 ### accuracy regardless to sets of -nd flag.
-                 ** Ephemeris are not used and because of that grid(s) and reduced Fisher
-                 matrix cannot be obtained. Density of covering for algorithm 's2' will be
-                 be obtained in approximated way based on information*** collected (in 
-                 'dataS2.txt' file) during previous runs with ephemeris. File 'dataS2.txt'
-                 collect information about coverings only for algorithm 's2'.
+                 * With this <span class="nb">set</span> <span class="o">(</span>-nd <span class="m">0</span> or -ndata 0<span class="o">)</span> density is obtained without using
+                 information stored in file <span class="s1">&#39;dataS2.txt&#39;</span>.
+                 <span class="c1">### With this set density of covering for algorithm &#39;s2&#39; is always</span>
+                 <span class="c1">### obtaining with maximal accuracy, depending only from flags: -na, -nr.</span>
+                 <span class="c1">### Density of covering for algorithm &#39;s1&#39; is always obtained with maximal</span>
+                 <span class="c1">### accuracy regardless to sets of -nd flag.</span>
+                 ** Ephemeris are not used and because of that grid<span class="o">(</span>s<span class="o">)</span> and reduced Fisher
+                 matrix cannot be obtained. Density of covering <span class="k">for</span> algorithm <span class="s1">&#39;s2&#39;</span> will be
+                 be obtained in approximated way based on information*** collected <span class="o">(</span>in 
+                 <span class="s1">&#39;dataS2.txt&#39;</span> file<span class="o">)</span> during previous runs with ephemeris. File <span class="s1">&#39;dataS2.txt&#39;</span>
+                 collect information about coverings only <span class="k">for</span> algorithm <span class="s1">&#39;s2&#39;</span>.
                  Program inform which algorithm has been used only when work without
-                 ephemeris (&lt;int&gt; bigger that zero).
-                 E.g. (without ephemeris) -nd 344656:
+                 ephemeris <span class="o">(</span>&lt;int&gt; bigger that zero<span class="o">)</span>.
+                 E.g. <span class="o">(</span>without ephemeris<span class="o">)</span> -nd 344656:
                  Covariance, Density, Algorithm
                  0.86      1.82      s2
                  0.87      1.8494      s1
                  0.88      1.77685      s1
-                 E.g. (data length taken from ephemeris) -nd 0:
+                 E.g. <span class="o">(</span>data length taken from ephemeris<span class="o">)</span> -nd 0:
                  Covariance, Density of covering
                  0.86 1.82299890516
                  0.87 1.84940429814
                  0.88 1.77685017541
-                 *** Information stored in file 'dataS2.txt' are independent of ephemeris.
+                 *** Information stored in file <span class="s1">&#39;dataS2.txt&#39;</span> are independent of ephemeris.
                  Based on this information density of covering can be obtained fast but
-                 in approximated way (generally speaking more collected data allows
-                 to get more accurate results).
+                 in approximated way <span class="o">(</span>generally speaking more collected data allows
+                 to get more accurate results<span class="o">)</span>.
 
          -na or --nalpha &lt;int&gt;
-                 Number of loops (incrementation deep) in root finding algorithm.
+                 Number of loops <span class="o">(</span>incrementation deep<span class="o">)</span> in root finding algorithm.
                  &lt;int&gt; take positive integer number without zero.
-                 This flag affect only on 's2' algorithm.
+                 This flag affect only on <span class="s1">&#39;s2&#39;</span> algorithm.
                  Default set: 35.
 
          -nr or --nradius &lt;int&gt;
-                 Number of loops in covering radius (deep hole) finding algorithm.
+                 Number of loops in covering radius <span class="o">(</span>deep hole<span class="o">)</span> finding algorithm.
                  &lt;int&gt; take positive integer number without zero.
-                 This flag affect only on 's2' algorithm.
+                 This flag affect only on <span class="s1">&#39;s2&#39;</span> algorithm.
                  Default set: 20.
 
          -cv or --convert &lt;bool&gt;
                  Convert grid from space with hyper-sphere to hyper-ellipsoid space.
-                 &lt;bool&gt; take argument: t (true), f (false).
+                 &lt;bool&gt; take argument: t <span class="o">(</span><span class="nb">true</span><span class="o">)</span>, f <span class="o">(</span><span class="nb">false</span><span class="o">)</span>.
                  Default set: t.
 
          -ch or --chop &lt;bool&gt;
-                 Chop result to zero if value of result is smaller than |10^-12|.
-                 &lt;bool&gt; take argument: t (true), f (false).
+                 Chop result to zero <span class="k">if</span> value of result is smaller than <span class="p">|</span>10^-12<span class="p">|</span>.
+                 &lt;bool&gt; take argument: t <span class="o">(</span><span class="nb">true</span><span class="o">)</span>, f <span class="o">(</span><span class="nb">false</span><span class="o">)</span>.
                  Default set: f.
 
          -p or --print &lt;string&gt;
-                 Print result(s).
-                 &lt;string&gt; take argument(s): d, f, g.
+                 Print result<span class="o">(</span>s<span class="o">)</span>.
+                 &lt;string&gt; take argument<span class="o">(</span>s<span class="o">)</span>: d, f, g.
                  d - density of covering,
                  f - Fisher reduced matrix,
                  g - grid.
-                 Option can be joined (order is not important), e.g. df, dg, fg, dfg.
+                 Option can be joined <span class="o">(</span>order is not important<span class="o">)</span>, e.g. df, dg, fg, dfg.
                  Default set: g.
-                 #### If argument of flag -nd is set to be bigger than zero, flag -p
-                 #### can accept only 'd' argument.
+                 <span class="c1">#### If argument of flag -nd is set to be bigger than zero, flag -p</span>
+                 <span class="c1">#### can accept only &#39;d&#39; argument.</span>
 
    Flags with no arguments:
          -h or --help
                  Display this help.
 
          -ht or --helptxt
-                 Print this help to text file.
+                 Print this <span class="nb">help</span> to text file.
 
          -v or --version
                  Display information about version of GridsGenerator.
 
          -aa or --author
-                 About author(s). Display information about developer(s).</code></pre></div>
+                 About author<span class="o">(</span>s<span class="o">)</span>. Display information about developer<span class="o">(</span>s<span class="o">)</span>.
+</pre></div></div>
         </div>
 
         <footer class="col-md-12">
@@ -327,12 +334,9 @@ FLAGS
             <p>Documentation built with <a href="http://www.mkdocs.org/">MkDocs</a>.</p>
         </footer>
         <script>var base_url = '..';</script>
+        <script data-main="../mkdocs/js/search.js" src="../mkdocs/js/require.js"></script>
         <script src="../js/base.js"></script>
-        <script src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS_HTML"></script>
-        <script src="../search/require.js"></script>
-        <script src="../search/search.js"></script>
-
-        <div class="modal" id="mkdocs_search_modal" tabindex="-1" role="dialog" aria-labelledby="Search Modal" aria-hidden="true">
+        <script src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS_HTML"></script><div class="modal" id="mkdocs_search_modal" tabindex="-1" role="dialog" aria-labelledby="Search Modal" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
@@ -355,47 +359,7 @@ FLAGS
             </div>
         </div>
     </div>
-</div><div class="modal" id="mkdocs_keyboard_modal" tabindex="-1" role="dialog" aria-labelledby="Keyboard Shortcuts Modal" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
-                <h4 class="modal-title" id="exampleModalLabel">Keyboard Shortcuts</h4>
-            </div>
-            <div class="modal-body">
-              <table class="table">
-                <thead>
-                  <tr>
-                    <th style="width: 20%;">Keys</th>
-                    <th>Action</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr>
-                    <td><kbd>?</kbd></td>
-                    <td>Open this help</td>
-                  </tr>
-                  <tr>
-                    <td><kbd>&larr;</kbd></td>
-                    <td>Previous page</td>
-                  </tr>
-                  <tr>
-                    <td><kbd>&rarr;</kbd></td>
-                    <td>Next page</td>
-                  </tr>
-                  <tr>
-                    <td><kbd>s</kbd></td>
-                    <td>Search</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-            <div class="modal-footer">
-            </div>
-        </div>
-    </div>
 </div>
-
 
     </body>
 </html>

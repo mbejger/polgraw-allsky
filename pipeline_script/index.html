@@ -18,8 +18,8 @@
             <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
             <script src="https://oss.maxcdn.com/libs/respond.js/1.3.0/respond.min.js"></script>
         <![endif]-->
-
-        <script src="../js/jquery-1.10.2.min.js"></script>
+	
+	<script src="../js/jquery-1.10.2.min.js"></script>
         <script src="../js/bootstrap-3.0.3.min.js"></script>
         <script src="../js/highlight.pack.js"></script> 
     </head>
@@ -80,6 +80,10 @@
     <a href="../sensitivity_upper_limits/">Sensitivity upper limits</a>
 </li>
                             
+<li >
+    <a href="../fisher/">Fisher matrix calculation</a>
+</li>
+                            
 <li class="active">
     <a href="./">Pipeline: a minimal example</a>
 </li>
@@ -98,7 +102,7 @@
                     </a>
                 </li>
                     <li >
-                        <a rel="next" href="../sensitivity_upper_limits/">
+                        <a rel="next" href="../fisher/">
                             <i class="fa fa-arrow-left"></i> Previous
                         </a>
                     </li>
@@ -129,7 +133,7 @@
 <p>This is a demonstration of the pipeline using Gaussian noise test data with randomly-selected signal added to the data (software injection).  </p>
 <h3 id="structure-of-the-input-data">Structure of the input data</h3>
 <p>The generic directory structure of the input data is</p>
-<pre class="codehilite"><code class="language-bash">001
+<div class="codehilite"><pre><span></span>001
 ├── grid.bin
 ├── H1
 │   ├── DetSSB.bin
@@ -144,30 +148,33 @@
     ├── rDet.bin
     ├── rSSB.bin
     ├── starting_date
-    └── xdatc_001_1234.bin</code></pre>
+    └── xdatc_001_1234.bin
+</pre></div>
 
 
 <p>(here for two LIGO detectors H1 and L1, and frame <code>001</code>). Test data frames <script type="math/tex">nnn=001-008</script> with pure Gaussian noise 2-day time segments with sampling time equal to 2s (<code>xdatc_nnn_1234.bin</code>) are <a href="https://polgraw.camk.edu.pl/H1L1_2d_0.25.tar.gz">available here</a>. </p>
 <p>In principle, given the ephemerides (<code>DetSSB.bin</code>, <code>rDet.bin</code> and <code>rSSB.bin</code>) for each detector and frame <code>001-008</code>, one can create the grid matrices using the <a href="../../polgraw-allsky/grid_generation">gridgen</a> implementation (see the <a href="https://github.com/mbejger/polgraw-allsky/tree/master/gridgen">code</a> for details): </p>
-<pre class="codehilite"><code class="language-bash"># grid generation
-cd gridgen
+<div class="codehilite"><pre><span></span><span class="c1"># grid generation</span>
+<span class="nb">cd</span> gridgen
 make
-for ifo in H1 L1; do for d in $(seq -f %03g 1 8); do ./gridgen -m 0.5 -p dfg -d ../testdata/2d_0.25/${d}/${ifo}/ -n 17; done; done
+<span class="k">for</span> ifo in H1 L1<span class="p">;</span> <span class="k">do</span> <span class="k">for</span> d in <span class="k">$(</span>seq -f %03g <span class="m">1</span> 8<span class="k">)</span><span class="p">;</span> <span class="k">do</span> ./gridgen -m 0.5 -p dfg -d ../testdata/2d_0.25/<span class="si">${</span><span class="nv">d</span><span class="si">}</span>/<span class="si">${</span><span class="nv">ifo</span><span class="si">}</span>/ -n 17<span class="p">;</span> <span class="k">done</span><span class="p">;</span> <span class="k">done</span>
 
-# copying the H1 grid file one level up for the case of the network search 
-for d in $(seq -f %03g 1 8); do cp -v ../testdata/2d_0.25/${d}/H1/grid.bin ../testdata/2d_0.25/${d}; done</code></pre>
+<span class="c1"># copying the H1 grid file one level up for the case of the network search </span>
+<span class="k">for</span> d in <span class="k">$(</span>seq -f %03g <span class="m">1</span> 8<span class="k">)</span><span class="p">;</span> <span class="k">do</span> cp -v ../testdata/2d_0.25/<span class="si">${</span><span class="nv">d</span><span class="si">}</span>/H1/grid.bin ../testdata/2d_0.25/<span class="si">${</span><span class="nv">d</span><span class="si">}</span><span class="p">;</span> <span class="k">done</span>
+</pre></div>
 
 
 <p>Test Gaussian noise time series data were created as follows:  </p>
-<pre class="codehilite"><code class="language-bash">#!/bin/bash 
+<div class="codehilite"><pre><span></span><span class="ch">#!/bin/bash </span>
 
-band=1234
+<span class="nv">band</span><span class="o">=</span>1234
 
-# Gaussian data generation
-cd ../search/network/scr-cpu
+<span class="c1"># Gaussian data generation</span>
+<span class="nb">cd</span> ../search/network/scr-cpu
 gcc gauss-xdat.c -o gauss-xdat -lm -lgsl -lgslcblas
-# 86164: number of points in 2-day segment with 2s sampling time 
-for ifo in H1 L1; do for d in $(seq -f %03g 1 8); do echo $d $ifo; ./gauss-xdat 86164 1 1 ../../../testdata/2d_0.25/${d}/${ifo}/xdatc_${d}_${band}.bin; done; done</code></pre>
+<span class="c1"># 86164: number of points in 2-day segment with 2s sampling time </span>
+<span class="k">for</span> ifo in H1 L1<span class="p">;</span> <span class="k">do</span> <span class="k">for</span> d in <span class="k">$(</span>seq -f %03g <span class="m">1</span> 8<span class="k">)</span><span class="p">;</span> <span class="k">do</span> <span class="nb">echo</span> <span class="nv">$d</span> <span class="nv">$ifo</span><span class="p">;</span> ./gauss-xdat <span class="m">86164</span> <span class="m">1</span> <span class="m">1</span> ../../../testdata/2d_0.25/<span class="si">${</span><span class="nv">d</span><span class="si">}</span>/<span class="si">${</span><span class="nv">ifo</span><span class="si">}</span>/xdatc_<span class="si">${</span><span class="nv">d</span><span class="si">}</span>_<span class="si">${</span><span class="nv">band</span><span class="si">}</span>.bin<span class="p">;</span> <span class="k">done</span><span class="p">;</span> <span class="k">done</span>
+</pre></div>
 
 
 <p>Given the complete input data, this pipeline minimal example consists of </p>
@@ -180,14 +187,15 @@ for ifo in H1 L1; do for d in $(seq -f %03g 1 8); do echo $d $ifo; ./gauss-xdat 
 <h3 id="_1"></h3>
 <h3 id="generating-random-parameters-for-the-signal">Generating random parameters for the signal</h3>
 <p>Random parameters of the signal are chosen using the <a href="https://github.com/mbejger/polgraw-allsky/blob/master/search/network/src-cpu/sigen.c">sigen</a> and added to the data time series with the <code>add_signal()</code> function in (<a href="https://github.com/mbejger/polgraw-allsky/blob/master/search/network/src-cpu/init.c">init</a>). </p>
-<pre class="codehilite"><code class="language-bash"># Create random parameters of a signal signal
-cd search/network/src-cpu
+<div class="codehilite"><pre><span></span><span class="c1"># Create random parameters of a signal signal</span>
+<span class="nb">cd</span> search/network/src-cpu
 make sigen
-band=1234; dt=2; nod=2; ./sigen -amp 4.e-2 -band $band -dt $dt -gsize 10 -reffr 4 -nod $nod 1&gt; sig1 </code></pre>
+<span class="nv">band</span><span class="o">=</span>1234<span class="p">;</span> <span class="nv">dt</span><span class="o">=</span>2<span class="p">;</span> <span class="nv">nod</span><span class="o">=</span>2<span class="p">;</span> ./sigen -amp 4.e-2 -band <span class="nv">$band</span> -dt <span class="nv">$dt</span> -gsize <span class="m">10</span> -reffr <span class="m">4</span> -nod <span class="nv">$nod</span> 1&gt; sig1 
+</pre></div>
 
 
 <p>Signal parameters used in this example:</p>
-<pre class="codehilite"><code class="language-bash">% cat sig1 
+<div class="codehilite"><pre><span></span>% cat sig1 
 amp 4.000000e-02
 10
 4
@@ -198,40 +206,43 @@ amp 4.000000e-02
 4.7717937494571394e-01
 7.5715524886052021e-01
 7.5154297884129850e-01
--4.7938541489358644e-01</code></pre>
+-4.7938541489358644e-01
+</pre></div>
 
 
 <h3 id="_2"></h3>
 <h3 id="adding-signal-to-the-gaussian-data-and-searching-for-candidates">Adding signal to the Gaussian data and searching for candidates</h3>
-<pre class="codehilite"><code class="language-bash">band=1234; dt=2; nod=2; for d in $(seq -f %03g 1 8); do 
+<div class="codehilite"><pre><span></span><span class="nv">band</span><span class="o">=</span>1234<span class="p">;</span> <span class="nv">dt</span><span class="o">=</span>2<span class="p">;</span> <span class="nv">nod</span><span class="o">=</span>2<span class="p">;</span> <span class="k">for</span> d in <span class="k">$(</span>seq -f %03g <span class="m">1</span> 8<span class="k">)</span><span class="p">;</span> <span class="k">do</span> 
 
-  LD_LIBRARY_PATH=lib/yeppp-1.0.0/binaries/linux/x86_64 ./gwsearch-cpu \
-  -data ../../../testdata/2d_0.25/ \
-  -ident ${d} \
-  -band $band \
-  -dt $dt \ 
-  -nod $nod \ 
-  -addsig sig1 \  
-  -output . \
-  -threshold 14.5 \
-  --nocheckpoint \ 
+  <span class="nv">LD_LIBRARY_PATH</span><span class="o">=</span>lib/yeppp-1.0.0/binaries/linux/x86_64 ./gwsearch-cpu <span class="se">\</span>
+  -data ../../../testdata/2d_0.25/ <span class="se">\</span>
+  -ident <span class="si">${</span><span class="nv">d</span><span class="si">}</span> <span class="se">\</span>
+  -band <span class="nv">$band</span> <span class="se">\</span>
+  -dt <span class="nv">$dt</span> <span class="se">\ </span>
+  -nod <span class="nv">$nod</span> <span class="se">\ </span>
+  -addsig sig1 <span class="se">\ </span> 
+  -output . <span class="se">\</span>
+  -threshold 14.5 <span class="se">\</span>
+  --nocheckpoint <span class="se">\ </span>
 
-done</code></pre>
+<span class="k">done</span>
+</pre></div>
 
 
 <p>This produces trigger files for each frame (size in bytes also listed): </p>
-<pre class="codehilite"><code>99320 triggers_001_1234_2.bin
+<div class="codehilite"><pre><span></span>99320 triggers_001_1234_2.bin
 89960 triggers_002_1234_2.bin
 89880 triggers_003_1234_2.bin
 95360 triggers_004_1234_2.bin
 81600 triggers_005_1234_2.bin
 92200 triggers_006_1234_2.bin
 89040 triggers_007_1234_2.bin
-96320 triggers_008_1234_2.bin</code></pre>
+96320 triggers_008_1234_2.bin
+</pre></div>
 
 
 <p>First 10 triggers from <code>triggers_001_1234_2.bin</code> are </p>
-<pre class="codehilite"><code class="language-bash">3.05617018e+00 -3.42376198e-08 -7.68007347e-02 2.59248668e+00 5.06667333e+00 
+<div class="codehilite"><pre><span></span>3.05617018e+00 -3.42376198e-08 -7.68007347e-02 2.59248668e+00 5.06667333e+00 
 1.18243015e+00 -3.20762991e-08 -7.68007347e-02 2.59248668e+00 5.05528873e+00 
 1.08103361e-01 -2.77536578e-08 -7.68007347e-02 2.59248668e+00 5.07085254e+00 
 1.90022435e+00 -2.77536578e-08 -7.68007347e-02 2.59248668e+00 5.15191593e+00 
@@ -240,46 +251,50 @@ done</code></pre>
 2.38731576e+00 -2.12696958e-08 -7.68007347e-02 2.59248668e+00 5.31983396e+00 
 3.00543165e+00 -1.91083751e-08 -7.68007347e-02 2.59248668e+00 5.29454616e+00 
 7.49333983e-01 -1.26244131e-08 -7.68007347e-02 2.59248668e+00 5.08724856e+00 
-2.08710778e-01  3.43510887e-10 -7.68007347e-02 2.59248668e+00 5.17537018e+00 </code></pre>
+2.08710778e-01  3.43510887e-10 -7.68007347e-02 2.59248668e+00 5.17537018e+00 
+</pre></div>
 
 
 <h3 id="_3"></h3>
 <h3 id="coincidences-among-these-trigger-files">Coincidences among these trigger files</h3>
-<pre class="codehilite"><code class="language-bash">cd ../../../coincidences/src
+<div class="codehilite"><pre><span></span><span class="nb">cd</span> ../../../coincidences/src
 make
-band=1234; dt=2; nod=2; fpo=$(echo $band $dt |awk '{printf(&quot;%.6f&quot;, 10 + 0.96875*$1/(2.0*$2))}'); for s in {0..1}{0..1}{0..1}{0..1}; do 
+<span class="nv">band</span><span class="o">=</span>1234<span class="p">;</span> <span class="nv">dt</span><span class="o">=</span>2<span class="p">;</span> <span class="nv">nod</span><span class="o">=</span>2<span class="p">;</span> <span class="nv">fpo</span><span class="o">=</span><span class="k">$(</span><span class="nb">echo</span> <span class="nv">$band</span> <span class="nv">$dt</span> <span class="p">|</span>awk <span class="s1">&#39;{printf(&quot;%.6f&quot;, 10 + 0.96875*$1/(2.0*$2))}&#39;</span><span class="k">)</span><span class="p">;</span> <span class="k">for</span> s in <span class="o">{</span>0..1<span class="o">}{</span>0..1<span class="o">}{</span>0..1<span class="o">}{</span>0..1<span class="o">}</span><span class="p">;</span> <span class="k">do</span> 
 
-  ./coincidences \ 
-  -data ../../search/network/src-cpu \ 
-  -output . \ 
-  -shift $s \ 
-  -scale 4444 \ 
-  -refr 4 \ 
-  -dt $dt \ 
-  -trigname ${band}_2 \ 
-  -refloc ../../testdata/2d_0.25/004 \ 
-  -nod $nod \ 
-  -fpo $fpo \ 
-  -snrcutoff 5 \ 
+  ./coincidences <span class="se">\ </span>
+  -data ../../search/network/src-cpu <span class="se">\ </span>
+  -output . <span class="se">\ </span>
+  -shift <span class="nv">$s</span> <span class="se">\ </span>
+  -scale <span class="m">4444</span> <span class="se">\ </span>
+  -refr <span class="m">4</span> <span class="se">\ </span>
+  -dt <span class="nv">$dt</span> <span class="se">\ </span>
+  -trigname <span class="si">${</span><span class="nv">band</span><span class="si">}</span>_2 <span class="se">\ </span>
+  -refloc ../../testdata/2d_0.25/004 <span class="se">\ </span>
+  -nod <span class="nv">$nod</span> <span class="se">\ </span>
+  -fpo <span class="nv">$fpo</span> <span class="se">\ </span>
+  -snrcutoff <span class="m">5</span> <span class="se">\ </span>
 
-  done 2&gt;&gt; summary
+  <span class="k">done</span> 2&gt;&gt; summary
 
-# best shift (highest multiplicity with largest snr)
-sort -gk5 -gk10 summary | tail -1</code></pre>
+<span class="c1"># best shift (highest multiplicity with largest snr)</span>
+sort -gk5 -gk10 summary <span class="p">|</span> tail -1
+</pre></div>
 
 
 <p>The highest coincidence with the largest signal-to-noise ratio is  </p>
-<pre class="codehilite"><code>1234_2 1111 308.859375     8     5  9.95663703e-01 -1.10830358e-09 -1.12585347e-01 1.97463002e+00 1.246469e+01 5 2040 1987 1 2483 2419 4 2384 2193 3 2247 2137 8 2408 2363 2 2249 2172 6 2305 2220 7 2226 2191 6 2 8 3 5</code></pre>
+<div class="codehilite"><pre><span></span>1234_2 1111 308.859375     8     5  9.95663703e-01 -1.10830358e-09 -1.12585347e-01 1.97463002e+00 1.246469e+01 5 2040 1987 1 2483 2419 4 2384 2193 3 2247 2137 8 2408 2363 2 2249 2172 6 2305 2220 7 2226 2191 6 2 8 3 5
+</pre></div>
 
 
 <h3 id="_4"></h3>
 <h3 id="false-alarm-probability">False alarm probability</h3>
-<pre class="codehilite"><code>make fap 
-fap.sh &lt;(sort -gk5 -gk10 summary | tail -1) &lt;(echo $band 0.0) ../../testdata/2d_0.25/004</code></pre>
+<div class="codehilite"><pre><span></span><span class="x">make fap </span>
+<span class="x">fap.sh &lt;(sort -gk5 -gk10 summary | tail -1) &lt;(echo </span><span class="p">$</span><span class="nv">band</span><span class="x"> 0.0) ../../testdata/2d_0.25/004</span>
+</pre></div>
 
 
 <p>resulting in </p>
-<pre class="codehilite"><code>Number of days in time segments: 2
+<div class="codehilite"><pre><span></span>Number of days in time segments: 2
 Input data: /dev/fd/63
 Grid matrix data directory: ../../testdata/2d_0.25/004
 Band number: 1234 (veto fraction: 0.000000)
@@ -287,7 +302,8 @@ The reference frequency fpo: 308.859375
 The data sampling time dt: 2.000000
 FAP threshold: 1.000000
 Cell size: 4
-1234 3.088594e+02 3.091094e+02 7.665713e-08 5 17682 9.956637e-01 -1.108304e-09 -1.125853e-01 1.974630e+00 1.246469e+01 2</code></pre>
+1234 3.088594e+02 3.091094e+02 7.665713e-08 5 17682 9.956637e-01 -1.108304e-09 -1.125853e-01 1.974630e+00 1.246469e+01 2
+</pre></div>
 
 
 <p>The false alarm probability in this case is <code>7.665713e-08</code>. It's low enough to be an interesting outlier for a <a href="../../polgraw-allsky/followup">followup</a> procedure. </p></div>
@@ -298,12 +314,9 @@ Cell size: 4
             <p>Documentation built with <a href="http://www.mkdocs.org/">MkDocs</a>.</p>
         </footer>
         <script>var base_url = '..';</script>
+        <script data-main="../mkdocs/js/search.js" src="../mkdocs/js/require.js"></script>
         <script src="../js/base.js"></script>
-        <script src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS_HTML"></script>
-        <script src="../search/require.js"></script>
-        <script src="../search/search.js"></script>
-
-        <div class="modal" id="mkdocs_search_modal" tabindex="-1" role="dialog" aria-labelledby="Search Modal" aria-hidden="true">
+        <script src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS_HTML"></script><div class="modal" id="mkdocs_search_modal" tabindex="-1" role="dialog" aria-labelledby="Search Modal" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
@@ -326,47 +339,7 @@ Cell size: 4
             </div>
         </div>
     </div>
-</div><div class="modal" id="mkdocs_keyboard_modal" tabindex="-1" role="dialog" aria-labelledby="Keyboard Shortcuts Modal" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
-                <h4 class="modal-title" id="exampleModalLabel">Keyboard Shortcuts</h4>
-            </div>
-            <div class="modal-body">
-              <table class="table">
-                <thead>
-                  <tr>
-                    <th style="width: 20%;">Keys</th>
-                    <th>Action</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr>
-                    <td><kbd>?</kbd></td>
-                    <td>Open this help</td>
-                  </tr>
-                  <tr>
-                    <td><kbd>&larr;</kbd></td>
-                    <td>Previous page</td>
-                  </tr>
-                  <tr>
-                    <td><kbd>&rarr;</kbd></td>
-                    <td>Next page</td>
-                  </tr>
-                  <tr>
-                    <td><kbd>s</kbd></td>
-                    <td>Search</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-            <div class="modal-footer">
-            </div>
-        </div>
-    </div>
 </div>
-
 
     </body>
 </html>

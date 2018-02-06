@@ -66,9 +66,9 @@ Minimal call to `gwsearch-cpu` is as follows (code compiled with the `GNUSINCOS`
 
 where
  
-* `data_dir` is the base directory of input data files,
+* `data` directory is the base directory of input data files,
 *  Sampling time `dt` is $2 s$, 
-* `output_dir`is a directory to write the output (e.g., in current directory, . ) 
+* `output` directory is a directory to write the output (e.g., in current directory, . ) 
 * `ident` is the number of time frame to be analyzed ($001$),
 * `nod` number of days is $2$, 
 * `band` is the number of the frequency band (see the [input data structure](../polgraw-allsky/input_data) for details). 

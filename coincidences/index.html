@@ -18,8 +18,8 @@
             <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
             <script src="https://oss.maxcdn.com/libs/respond.js/1.3.0/respond.min.js"></script>
         <![endif]-->
-
-        <script src="../js/jquery-1.10.2.min.js"></script>
+	
+	<script src="../js/jquery-1.10.2.min.js"></script>
         <script src="../js/bootstrap-3.0.3.min.js"></script>
         <script src="../js/highlight.pack.js"></script> 
     </head>
@@ -78,6 +78,10 @@
                             
 <li >
     <a href="../sensitivity_upper_limits/">Sensitivity upper limits</a>
+</li>
+                            
+<li >
+    <a href="../fisher/">Fisher matrix calculation</a>
 </li>
                             
 <li >
@@ -143,7 +147,8 @@
 <p>Run <code>make coincidences</code>; resulting binary is called <code>coincidences</code>. Modify the <code>Makefile</code> to fit your system.</p>
 <h4 id="full-list-of-switches">Full list of switches</h4>
 <p>Type </p>
-<pre class="codehilite"><code>% ./coincidences --help </code></pre>
+<div class="codehilite"><pre><span></span><span class="c">% ./coincidences --help </span>
+</pre></div>
 
 
 <p>to obtain the following description: </p>
@@ -222,7 +227,8 @@
 </table>
 <h3 id="example">Example</h3>
 <p>Using the software injection added to 2-day Gaussian noise data segments (see <a href="../../polgraw-allsky/pipeline_script">minimal example of the pipeline</a>):</p>
-<pre class="codehilite"><code>% for s in {0..1}{0..1}{0..1}{0..1}; do ./coincidences -data ../../search/network/src-cpu -output . -shift $s -scale 4444 -refr 4 -dt 2 -trigname 1234_2 -refloc ../../testdata/2d_0.25/004 -nod 2 -fpo 308.859375 -snrcutoff 5; done 2&gt;&gt; summary</code></pre>
+<div class="codehilite"><pre><span></span><span class="c">% for s in {0..1}{0..1}{0..1}{0..1}; do ./coincidences -data ../../search/network/src-cpu -output . -shift $s -scale 4444 -refr 4 -dt 2 -trigname 1234_2 -refloc ../../testdata/2d_0.25/004 -nod 2 -fpo 308.859375 -snrcutoff 5; done 2&gt;&gt; summary</span>
+</pre></div>
 
 
 <p>This assumes that for the band <script type="math/tex">bbbb=1234</script> and the sampling time <script type="math/tex">dt=2\ \mathrm{s}</script> the band frequency <script type="math/tex">fpo=308.859375\ \mathrm{Hz}</script>, because 
@@ -230,7 +236,7 @@
 fpo = 10 + (1 - 2^{-5})\cdot bbbb\cdot \frac{1}{2dt}\ \mathrm{[Hz]}.
 </script>
 The reference grid file <code>grid.bin</code>, corresponding to the reference frame <code>004</code> (<code>-refr 4</code>) is located at the <code>-refloc</code> location. Signal-to-noise ratio cutoff is set to 5 (<code>-snrcutoff 5</code>). Some output is directed to <code>stdin</code>. For example, the output for shift <code>0000</code> is </p>
-<pre class="codehilite"><code>Number of days is 2
+<div class="codehilite"><pre><span></span>Number of days is 2
 The SNR threshold cutoff is 5.000000000000, corresponding to F-statistic value of 14.500000000000
 Reading the reference grid.bin at ../../testdata/2d_0.25/004
 fftpad from the grid file: 1
@@ -246,11 +252,13 @@ Reading triggers... Frame 8: 2372/2408
 Reading triggers... Frame 2: 2197/2249
 Reading triggers... Frame 6: 2225/2305
 Reading triggers... Frame 7: 2175/2226
-Total number of candidates from all frames: 17652</code></pre>
+Total number of candidates from all frames: 17652
+</pre></div>
 
 
 <p>The highest multiplicity coincidence for each shift is streamed to the <code>summary</code> file via the <code>stderr</code> (<code>2&gt;&gt; summary</code>). From this list of 16 lines, the highest multiplicity coincidence with the highest signal-to-noise is selected (<code>sort -gk5 -gk10 summary | tail -1</code>):</p>
-<pre class="codehilite"><code>1234_2 1111 308.859375     8     5  9.95663703e-01 -1.10830358e-09 -1.12585347e-01 1.97463002e+00 1.246469e+01 5 2040 1987 1 2483 2419 4 2384 2193 3 2247 2137 8 2408 2363 2 2249 2172 6 2305 2220 7 2226 2191 6 2 8 3 5</code></pre>
+<div class="codehilite"><pre><span></span>1234_2 1111 308.859375     8     5  9.95663703e-01 -1.10830358e-09 -1.12585347e-01 1.97463002e+00 1.246469e+01 5 2040 1987 1 2483 2419 4 2384 2193 3 2247 2137 8 2408 2363 2 2249 2172 6 2305 2220 7 2226 2191 6 2 8 3 5
+</pre></div>
 
 
 <p>This output contains the </p>
@@ -283,12 +291,13 @@ where </p>
 <code>int</code>) </li>
 </ul>
 <p>in order to recover the information about the original triggers for further studies. <code>.coi</code> files can be read with the auxilary <code>read_coi</code> code: </p>
-<pre class="codehilite"><code>% gcc -o read_coi read_coi.c -lm 
-% ./read_coi 
-# num_of_coincidences    mean_val_of_pars (f, s, d, a), snr    frame_num:trigger_num_in_trigger_file
-# (see http://mbejger.github.io/polgraw-allsky/coincidences for details)
-5 9.956637e-01 -1.108304e-09 -1.125853e-01 1.974630e+00 1.246469e+01 6:777 2:708 8:968 3:701 5:603 
-3 9.972902e-01 -1.174760e-10 -1.235594e-01 1.968819e+00 9.154494e+00 8:983 3:693 1:669 </code></pre>
+<div class="codehilite"><pre><span></span><span class="c">% gcc -o read_coi read_coi.c -lm </span>
+<span class="c">% ./read_coi </span>
+# <span class="n">num_of_coincidences</span>    <span class="n">mean_val_of_pars</span> <span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="n">s</span><span class="p">,</span> <span class="n">d</span><span class="p">,</span> <span class="n">a</span><span class="p">),</span> <span class="n">snr</span>    <span class="n">frame_num</span><span class="p">:</span><span class="n">trigger_num_in_trigger_file</span>
+# <span class="p">(</span><span class="n">see</span> <span class="n">http</span><span class="p">:</span><span class="o">//</span><span class="n">mbejger</span><span class="p">.</span><span class="n">github</span><span class="p">.</span><span class="n">io</span><span class="o">/</span><span class="n">polgraw</span><span class="o">-</span><span class="n">allsky</span><span class="o">/</span><span class="n">coincidences</span> <span class="k">for</span> <span class="n">details</span><span class="p">)</span>
+<span class="mi">5</span> <span class="mf">9.956637e-01</span> <span class="o">-</span><span class="mf">1.108304e-09</span> <span class="o">-</span><span class="mf">1.125853e-01</span> <span class="mf">1.974630e+00</span> <span class="mf">1.246469e+01</span> <span class="mi">6</span><span class="p">:</span><span class="mi">777</span> <span class="mi">2</span><span class="p">:</span><span class="mi">708</span> <span class="mi">8</span><span class="p">:</span><span class="mi">968</span> <span class="mi">3</span><span class="p">:</span><span class="mi">701</span> <span class="mi">5</span><span class="p">:</span><span class="mi">603</span> 
+<span class="mi">3</span> <span class="mf">9.972902e-01</span> <span class="o">-</span><span class="mf">1.174760e-10</span> <span class="o">-</span><span class="mf">1.235594e-01</span> <span class="mf">1.968819e+00</span> <span class="mf">9.154494e+00</span> <span class="mi">8</span><span class="p">:</span><span class="mi">983</span> <span class="mi">3</span><span class="p">:</span><span class="mi">693</span> <span class="mi">1</span><span class="p">:</span><span class="mi">669</span> 
+</pre></div>
 
 
 <p>where the pairs <code>frame-number:candidate-position-in-trigger-file</code> have been arranged for readability.   </p></div>
@@ -299,12 +308,9 @@ where </p>
             <p>Documentation built with <a href="http://www.mkdocs.org/">MkDocs</a>.</p>
         </footer>
         <script>var base_url = '..';</script>
+        <script data-main="../mkdocs/js/search.js" src="../mkdocs/js/require.js"></script>
         <script src="../js/base.js"></script>
-        <script src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS_HTML"></script>
-        <script src="../search/require.js"></script>
-        <script src="../search/search.js"></script>
-
-        <div class="modal" id="mkdocs_search_modal" tabindex="-1" role="dialog" aria-labelledby="Search Modal" aria-hidden="true">
+        <script src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS_HTML"></script><div class="modal" id="mkdocs_search_modal" tabindex="-1" role="dialog" aria-labelledby="Search Modal" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
@@ -327,47 +333,7 @@ where </p>
             </div>
         </div>
     </div>
-</div><div class="modal" id="mkdocs_keyboard_modal" tabindex="-1" role="dialog" aria-labelledby="Keyboard Shortcuts Modal" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
-                <h4 class="modal-title" id="exampleModalLabel">Keyboard Shortcuts</h4>
-            </div>
-            <div class="modal-body">
-              <table class="table">
-                <thead>
-                  <tr>
-                    <th style="width: 20%;">Keys</th>
-                    <th>Action</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr>
-                    <td><kbd>?</kbd></td>
-                    <td>Open this help</td>
-                  </tr>
-                  <tr>
-                    <td><kbd>&larr;</kbd></td>
-                    <td>Previous page</td>
-                  </tr>
-                  <tr>
-                    <td><kbd>&rarr;</kbd></td>
-                    <td>Next page</td>
-                  </tr>
-                  <tr>
-                    <td><kbd>s</kbd></td>
-                    <td>Search</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-            <div class="modal-footer">
-            </div>
-        </div>
-    </div>
 </div>
-
 
     </body>
 </html>

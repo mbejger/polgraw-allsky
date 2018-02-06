@@ -18,8 +18,8 @@
             <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
             <script src="https://oss.maxcdn.com/libs/respond.js/1.3.0/respond.min.js"></script>
         <![endif]-->
-
-        <script src="../js/jquery-1.10.2.min.js"></script>
+	
+	<script src="../js/jquery-1.10.2.min.js"></script>
         <script src="../js/bootstrap-3.0.3.min.js"></script>
         <script src="../js/highlight.pack.js"></script> 
     </head>
@@ -81,6 +81,10 @@
 </li>
                             
 <li >
+    <a href="../fisher/">Fisher matrix calculation</a>
+</li>
+                            
+<li >
     <a href="../pipeline_script/">Pipeline: a minimal example</a>
 </li>
                             
@@ -130,7 +134,8 @@ Written by Pia Astone (INFN, Physics Department of University of Rome "La Sapien
 <h3 id="prerequisites">Prerequisites</h3>
 <p>C compiler &amp; standard C libraries (<code>math.h</code>). Links to the PSS library (created by Pia Astone).</p>
 <h3 id="example">Example</h3>
-<pre class="codehilite"><code>% extract_band &lt; input_file</code></pre>
+<div class="codehilite"><pre><span></span><span class="c">% extract_band &lt; input_file</span>
+</pre></div>
 
 
 <p>where <code>input_file</code> is an ASCII file containing the following rows:  </p>
@@ -142,24 +147,26 @@ Written by Pia Astone (INFN, Physics Department of University of Rome "La Sapien
 <li>The width of frequency band in Hz</li>
 </ul>
 <p>e.g.,  </p>
-<pre class="codehilite"><code>100000
+<div class="codehilite"><pre><span></span>100000
 J0034+1612_2010-10-10.out
 J0034+1612_2010-10-10.list
 718.2480
-1</code></pre>
+1
+</pre></div>
 
 
 <h3 id="output">Output</h3>
-<pre class="codehilite"><code>% Beginning freq- Band- Samples in one stretch- Subsampling factor- inter (overlapping, 2 if data were overlapped)- Frequency step- Scaling factor- ***The data are real and imag of the FFT
-% 908.152344 0.250000 256 8192.000000 2  0.0009766 1.000000e-20
-% FFT number in the file; Beginning mjd days; Gps s; Gps ns;
-% 100 55099.5879745370 937922816 0
- 4.59662571e+02  2.27630825e+01
--3.50387007e+02 -2.20005558e+02
- 3.57587904e+02  1.01217077e+02
- 1.74400486e+02  2.62086552e+02
- 2.21804800e+02 -5.20278366e+02
--3.87826732e+02 -1.55758978e+02</code></pre>
+<div class="codehilite"><pre><span></span><span class="c">% Beginning freq- Band- Samples in one stretch- Subsampling factor- inter (overlapping, 2 if data were overlapped)- Frequency step- Scaling factor- ***The data are real and imag of the FFT</span>
+<span class="c">% 908.152344 0.250000 256 8192.000000 2  0.0009766 1.000000e-20</span>
+<span class="c">% FFT number in the file; Beginning mjd days; Gps s; Gps ns;</span>
+<span class="c">% 100 55099.5879745370 937922816 0</span>
+ <span class="mf">4.59662571e+02</span>  <span class="mf">2.27630825e+01</span>
+<span class="o">-</span><span class="mf">3.50387007e+02</span> <span class="o">-</span><span class="mf">2.20005558e+02</span>
+ <span class="mf">3.57587904e+02</span>  <span class="mf">1.01217077e+02</span>
+ <span class="mf">1.74400486e+02</span>  <span class="mf">2.62086552e+02</span>
+ <span class="mf">2.21804800e+02</span> <span class="o">-</span><span class="mf">5.20278366e+02</span>
+<span class="o">-</span><span class="mf">3.87826732e+02</span> <span class="o">-</span><span class="mf">1.55758978e+02</span>
+</pre></div>
 
 
 <h2 id="gen2day-description"><code>gen2day</code> description</h2>
@@ -179,7 +186,7 @@ J0034+1612_2010-10-10.list
 </ul>
 <p>An example for two LIGO detectors H1 and L1, and data frame segments <script type="math/tex">nnn=001-008</script> with pure Gaussian noise 2-day time segments with sampling time equal to 2s for a fiducial narrow band number <script type="math/tex">bbbb=1234</script> (<code>xdatc_nnn_1234.bin</code>) coresponding the the band frequency <script type="math/tex">fpo=308.859375</script> is <a href="https://polgraw.camk.edu.pl/H1L1_2d_0.25.tar.gz">available here</a>. </p>
 <p>A typical directory structure is as follows: </p>
-<pre class="codehilite"><code class="language-bash">001
+<div class="codehilite"><pre><span></span>001
 ├── grid.bin
 ├── H1
 │   ├── DetSSB.bin
@@ -190,12 +197,14 @@ J0034+1612_2010-10-10.list
     ├── DetSSB.bin
     ├── grid.bin
     ├── starting_date
-    └── xdatc_001_1234.bin</code></pre>
+    └── xdatc_001_1234.bin
+</pre></div>
 
 
 <p>Beginning of each time frame is saved in the <code>nnn/DD/starting_date</code> file, e.g., </p>
-<pre class="codehilite"><code>% cat 2d_0.25/001/H1/starting_date
-1.1260846080e+09</code></pre>
+<div class="codehilite"><pre><span></span><span class="c">% cat 2d_0.25/001/H1/starting_date</span>
+<span class="mf">1.1260846080e+09</span>
+</pre></div>
 
 
 <p>Frames <code>nnn</code> are labelled with three-digit consecutive number. For the <code>O1</code> data, the bandwidth is <code>0.25 Hz</code> (<script type="math/tex">dt = 2s</script>). For a given <script type="math/tex">dt</script>, the reference band frequency <code>fpo</code> is defined as 
@@ -208,16 +217,19 @@ Neighboring bands overlap by <script type="math/tex">2^{-5}/(2dt)\ \mathrm{Hz}</
 <h3 id="prerequisites_1">Prerequisites</h3>
 <p>C compiler and standard libraries (<code>math.h</code>, <code>sys/time.h</code> for <code>gettimeofday</code>). The code depends on the <a href="http://www.gnu.org/software/gsl/">GNU Scientific Library (GSL)</a> random number generation (<code>gsl/gsl_rng.h</code>) and random number distributions (<code>gsl/gsl_randist.h</code>; using the Marsaglia-Tsang ziggurat implementation).</p>
 <h3 id="compilation">Compilation</h3>
-<pre class="codehilite"><code class="language-bash">% gcc gauss-xdat.c -o gauss-xdat -lm -lgsl -lgslcblas</code></pre>
+<div class="codehilite"><pre><span></span>% gcc gauss-xdat.c -o gauss-xdat -lm -lgsl -lgslcblas
+</pre></div>
 
 
 <h3 id="example_1">Example</h3>
 <p>The program takes input values from the command line: </p>
-<pre class="codehilite"><code class="language-bash">% ./gauss-xdat N amplitude sigma output-file </code></pre>
+<div class="codehilite"><pre><span></span>% ./gauss-xdat N amplitude sigma output-file 
+</pre></div>
 
 
 <p>e.g., </p>
-<pre class="codehilite"><code class="language-bash">% ./gauss-xdat 86164 1 1 ../../../testdata/2d_0.25/001/H1/xdatc_001_1234.bin</code></pre>
+<div class="codehilite"><pre><span></span>% ./gauss-xdat <span class="m">86164</span> <span class="m">1</span> <span class="m">1</span> ../../../testdata/2d_0.25/001/H1/xdatc_001_1234.bin
+</pre></div>
 
 
 <p>The output is a binary file containing <code>N</code> double-precision numbers. </p></div>
@@ -228,12 +240,9 @@ Neighboring bands overlap by <script type="math/tex">2^{-5}/(2dt)\ \mathrm{Hz}</
             <p>Documentation built with <a href="http://www.mkdocs.org/">MkDocs</a>.</p>
         </footer>
         <script>var base_url = '..';</script>
+        <script data-main="../mkdocs/js/search.js" src="../mkdocs/js/require.js"></script>
         <script src="../js/base.js"></script>
-        <script src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS_HTML"></script>
-        <script src="../search/require.js"></script>
-        <script src="../search/search.js"></script>
-
-        <div class="modal" id="mkdocs_search_modal" tabindex="-1" role="dialog" aria-labelledby="Search Modal" aria-hidden="true">
+        <script src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS_HTML"></script><div class="modal" id="mkdocs_search_modal" tabindex="-1" role="dialog" aria-labelledby="Search Modal" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
@@ -256,47 +265,7 @@ Neighboring bands overlap by <script type="math/tex">2^{-5}/(2dt)\ \mathrm{Hz}</
             </div>
         </div>
     </div>
-</div><div class="modal" id="mkdocs_keyboard_modal" tabindex="-1" role="dialog" aria-labelledby="Keyboard Shortcuts Modal" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
-                <h4 class="modal-title" id="exampleModalLabel">Keyboard Shortcuts</h4>
-            </div>
-            <div class="modal-body">
-              <table class="table">
-                <thead>
-                  <tr>
-                    <th style="width: 20%;">Keys</th>
-                    <th>Action</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr>
-                    <td><kbd>?</kbd></td>
-                    <td>Open this help</td>
-                  </tr>
-                  <tr>
-                    <td><kbd>&larr;</kbd></td>
-                    <td>Previous page</td>
-                  </tr>
-                  <tr>
-                    <td><kbd>&rarr;</kbd></td>
-                    <td>Next page</td>
-                  </tr>
-                  <tr>
-                    <td><kbd>s</kbd></td>
-                    <td>Search</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-            <div class="modal-footer">
-            </div>
-        </div>
-    </div>
 </div>
-
 
     </body>
 </html>
