@@ -4,7 +4,7 @@ The Fisher matrix associated with the signal model and its inversion is calculat
 
 ### Prerequisites
 
-The code is written in standard `C` and it's mostly based on functions used in [search](../search_for_candidates/). Arbitrary-precision interval arithmetic [Arb](http://arblib.org) library is used to invert the (usually) not-very-well posed Fisher matrix, so it has to be installed beforehand. [Arb](http://arblib.org) requires [FLINT](http://www.flintlib.org), [MPFR](http://www.mpfr.org), and either [MPIR](http://www.mpir.org) or [GMP](http://www.gmplib.org). 
+The code is written in standard `C` and it's mostly based on functions used in [search](../polgraw-allsky/search_for_candidates/). Arbitrary-precision interval arithmetic [Arb](http://arblib.org) library is used to invert the (usually) not-very-well posed Fisher matrix, so it has to be installed beforehand. [Arb](http://arblib.org) requires [FLINT](http://www.flintlib.org), [MPFR](http://www.mpfr.org), and either [MPIR](http://www.mpir.org) or [GMP](http://www.gmplib.org). 
 
 ### Compilation 
 

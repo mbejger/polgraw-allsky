@@ -131,7 +131,7 @@
 <h1 id="fisher-matrix-calculation">Fisher matrix calculation</h1>
 <p>The Fisher matrix associated with the signal model and its inversion is calculated using <a href="https://github.com/mbejger/polgraw-allsky/tree/master/search/network/src-cpu/fisher.c">this code</a>. </p>
 <h3 id="prerequisites">Prerequisites</h3>
-<p>The code is written in standard <code>C</code> and it's mostly based on functions used in <a href="../../search_for_candidates/">search</a>. Arbitrary-precision interval arithmetic <a href="http://arblib.org">Arb</a> library is used to invert the (usually) not-very-well posed Fisher matrix, so it has to be installed beforehand. <a href="http://arblib.org">Arb</a> requires <a href="http://www.flintlib.org">FLINT</a>, <a href="http://www.mpfr.org">MPFR</a>, and either <a href="http://www.mpir.org">MPIR</a> or <a href="http://www.gmplib.org">GMP</a>. </p>
+<p>The code is written in standard <code>C</code> and it's mostly based on functions used in <a href="../../polgraw-allsky/search_for_candidates/">search</a>. Arbitrary-precision interval arithmetic <a href="http://arblib.org">Arb</a> library is used to invert the (usually) not-very-well posed Fisher matrix, so it has to be installed beforehand. <a href="http://arblib.org">Arb</a> requires <a href="http://www.flintlib.org">FLINT</a>, <a href="http://www.mpfr.org">MPFR</a>, and either <a href="http://www.mpir.org">MPIR</a> or <a href="http://www.gmplib.org">GMP</a>. </p>
 <h3 id="compilation">Compilation</h3>
 <p>Run  <code>make fisher</code> or <code>make</code> in <code>search/network/src-cpu</code>, resulting  binary is called <code>fisher</code>. Modify the <code>Makefile</code> (especially the variable <code>ARB_DIR</code>) to fit your system. </p>
 <h4 id="_1"></h4>
