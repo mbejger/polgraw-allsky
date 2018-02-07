@@ -133,7 +133,7 @@
 <h3 id="prerequisites">Prerequisites</h3>
 <p>The code is written in standard <code>C</code> and it's mostly based on functions used in <a href="../../polgraw-allsky/search_for_candidates/">search</a>. Arbitrary-precision interval arithmetic <a href="http://arblib.org">Arb</a> library is used to invert the (usually) not-very-well posed Fisher matrix, so it has to be installed beforehand. <a href="http://arblib.org">Arb</a> requires <a href="http://www.flintlib.org">FLINT</a>, <a href="http://www.mpfr.org">MPFR</a>, and either <a href="http://www.mpir.org">MPIR</a> or <a href="http://www.gmplib.org">GMP</a>. </p>
 <h3 id="compilation">Compilation</h3>
-<p>Run  <code>make fisher</code> or <code>make</code> in <code>search/network/src-cpu</code>, resulting  binary is called <code>fisher</code>. Modify the <code>Makefile</code> (especially the variable <code>ARB_DIR</code>) to fit your system. </p>
+<p>Run  <code>make fisher</code> in <code>search/network/src-cpu</code> - resulting  binary is called <code>fisher</code>. Modify the <code>Makefile</code> (especially the variable <code>ARB_DIR</code>) to fit your system. </p>
 <h4 id="_1"></h4>
 <h4 id="full-list-of-switches">Full list of switches</h4>
 <p>For the full list of options, type</p>
@@ -213,7 +213,7 @@
 <p>The <code>sigfile</code> file consists of 8 numbers: </p>
 <ul>
 <li>frequency [radians, between 0 and <script type="math/tex">\pi</script>] above <code>fpo</code>  </li>
-<li>spindown [<script type="math/tex">\mathrm{Hz/s}</script>]  </li>
+<li>spindown (frequency time derivative) [<script type="math/tex">\mathrm{Hz/s}</script>]  </li>
 <li>declination [radians, between <script type="math/tex">\pi</script> and <script type="math/tex">-\pi</script>]</li>
 <li>right ascension [radians, between 0 and <script type="math/tex">2\pi</script>]</li>
 <li>4 amplitudes <script type="math/tex">a_1, a_2, a_3, a_4</script>

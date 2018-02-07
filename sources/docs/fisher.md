@@ -8,7 +8,7 @@ The code is written in standard `C` and it's mostly based on functions used in [
 
 ### Compilation 
 
-Run  `make fisher` or `make` in `search/network/src-cpu`, resulting  binary is called `fisher`. Modify the `Makefile` (especially the variable `ARB_DIR`) to fit your system. 
+Run  `make fisher` in `search/network/src-cpu` - resulting  binary is called `fisher`. Modify the `Makefile` (especially the variable `ARB_DIR`) to fit your system. 
 
 ####
 #### Full list of switches
@@ -57,7 +57,7 @@ where
 The `sigfile` file consists of 8 numbers: 
 
 - frequency [radians, between 0 and $\pi$] above `fpo`  
-- spindown [$\mathrm{Hz/s}$]  
+- spindown (frequency time derivative) [$\mathrm{Hz/s}$]  
 - declination [radians, between $\pi$ and $-\pi$]
 - right ascension [radians, between 0 and $2\pi$]
 - 4 amplitudes $a_1, a_2, a_3, a_4$ 
