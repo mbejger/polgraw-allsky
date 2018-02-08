@@ -98,11 +98,11 @@ int fisher(Search_settings *sett,
            Aux_arrays *aux) { 
 
 
-  int i, j, k, n, dim=8; 
+  int i, j, k, l, m, n, dim=8, dim2=4; 
 
   // Signal parameters: f, fdot, delta, alpha, a1, a2, a3, a4
   // (see Phys. Rev. D 82, 022005 2010, Eqs. 2.13a-d) 
-  double sgnlo[8]; 
+  double sgnlo[dim]; 
 
   FILE *data; 
 
@@ -120,14 +120,9 @@ int fisher(Search_settings *sett,
 
   
   double ma[dim][dim], mFl[dim][dim]; 
-  double omega0, omega1, domega, a1, a2, a3, a4; 
+  double a[dim2], F[dim2][dim2][dim2], S[dim2][dim2][dim2][dim2];
+  double omega0, omega1, domega, sumhsq;  
   double sindelt, cosdelt, sinalt, cosalt; 
-
-  for(k=0; k<dim; k++) 
-    for(j=0; j<dim; j++) { 
-      ma[k][j] = 0; 
-      mFl[k][j] = 0; 
-    }
 
   omega0 = sgnlo[0]; // /sett->dt; 
   omega1 = sgnlo[1]; 
@@ -139,10 +134,13 @@ int fisher(Search_settings *sett,
   sinalt  = sin(sgnlo[3]); 
   cosalt  = cos(sgnlo[3]); 
   
-  a1 = sgnlo[4]; 
-  a2 = sgnlo[5]; 
-  a3 = sgnlo[6]; 
-  a4 = sgnlo[7]; 
+  // a1 = a[0], a2 = a[1], a3 = a[2], a4 = a[3] 
+  // in the signal amplitude model 
+  // h = (a1*a + a2*b)*cos(psi) + (a3*a + a4*b)*sin(psi)
+  a[0] = sgnlo[4]; 
+  a[1] = sgnlo[5]; 
+  a[2] = sgnlo[6]; 
+  a[3] = sgnlo[7]; 
 
   // Loop for each detector 
   for(n=0; n<sett->nifo; ++n) { 
@@ -155,108 +153,162 @@ int fisher(Search_settings *sett,
     modvir(sinalt, cosalt, sindelt, cosdelt, 
         sett->N, &ifo[n], aux);
 
+    for(k=0; k<dim; k++) 
+      for(j=0; j<dim; j++) { 
+        ma[k][j] = 0; 
+        mFl[k][j] = 0; 
+      }
+
+    for(l=0; l<dim2; l++)
+      for(k=0; k<dim2; k++) 
+        for(j=0; j<dim2; j++) 
+          F[l][k][j] = 0; 
+
+    for(m=0; m<dim2; m++)
+      for(l=0; l<dim2; l++)
+        for(k=0; k<dim2; k++) 
+          for(j=0; j<dim2; j++) 
+            S[m][l][k][j] = 0; 
+
     double sumhsq = 0; 
 
     for(i=0; i<sett->N; ++i) {
 
-      double psi, dpdf, dpds, dpdd, dpda, xet, yet, zet, a, b, h; 
+      double psi, xet, yet, zet, aa, bb, amph, dpdA[dim2], h[dim2], dh[dim2]; 
 
+      // Detector ephemerids at time step i
       xet = ifo[n].sig.DetSSB[i*3]; 
       yet = ifo[n].sig.DetSSB[i*3+1]; 
       zet = ifo[n].sig.DetSSB[i*3+2]; 
 
-      // amplitude modulation function at given time step i 
-      a = ifo[n].sig.aa[i]; 
-      b = ifo[n].sig.bb[i]; 
-
-      // phase 
+      // phase at time step i 
       psi = omega0*i + omega1*aux->t2[i] 
           + (cosalt*cosdelt*xet + sinalt*cosalt*yet + sindelt*zet)*(omega0 + 2*omega1*i + domega); 
 
-      // phase derivatives w.r.t. freq., spindown, delta and alpha parameters       
-      dpdf = i + xet*cosalt*cosdelt + yet*cosdelt*sinalt + zet*sindelt;  
-      dpds = aux->t2[i] + 2*i*(cosalt*cosdelt*xet + sinalt*cosalt*yet + sindelt*zet);   
-      dpdd = (domega + omega0 + 2*omega1*i)*(zet*cosdelt - (xet*cosalt + yet*sinalt)*sindelt); 
-      dpda = (domega + omega0 + 2*omega1*i)*cosdelt*(yet*cosalt - xet*sinalt); 
+      /* Phase derivatives w.r.t. intrinsic parameters A = (omega0, omega1, delta, alpha) 
+       * freq = f = omega0, spindown = s = omega1, delta = d, alpha = a
+       * 
+       * dpdA[0] = dpdf, dpdA[1] = dpds, dpdA[2] = dpdd, dpdA[3] = dpda
+       */     
 
-      // amplitude 
-      h = (a1*a + a2*b)*cos(psi) + (a3*a + a4*b)*sin(psi); 
+      dpdA[0] = i + xet*cosalt*cosdelt + yet*cosdelt*sinalt + zet*sindelt;  
+      dpdA[1] = aux->t2[i] + 2*i*(cosalt*cosdelt*xet + sinalt*cosalt*yet + sindelt*zet);   
+      dpdA[2] = (domega + omega0 + 2*omega1*i)*(zet*cosdelt - (xet*cosalt + yet*sinalt)*sindelt); 
+      dpdA[3] = (domega + omega0 + 2*omega1*i)*cosdelt*(yet*cosalt - xet*sinalt); 
 
-      // sum of h squares 
-      sumhsq += h*h; 
+      /* amplitude h = (a1*a + a2*b)*cos(psi) + (a3*a + a4*b)*sin(psi)
+       * aa = a, bb = b 
+       * 
+       * h1 = h[0] = a*cos(psi)
+       * h2 = h[1] = b*cos(psi) 
+       * h3 = h[2] = a*sin(psi) 
+       * h4 = h[3] = b*sin(psi) 
+       */ 
 
+      // amplitude modulation function at time step i 
+      aa = ifo[n].sig.aa[i]; 
+      bb = ifo[n].sig.bb[i]; 
+
+      h[0] = aa*cos(psi); 
+      h[1] = bb*cos(psi); 
+      h[2] = aa*sin(psi); 
+      h[3] = bb*sin(psi); 
+    
+      amph = a[0]*h[0] + a[1]*h[1] + a[2]*h[2] + a[3]*h[3];     
+
+      // sum of amplitude h squares 
+      sumhsq += amph*amph; 
+
+      dh[0] = -aa*sin(psi); 
+      dh[1] = -bb*sin(psi); 
+      dh[2] =  aa*cos(psi); 
+      dh[3] =  bb*cos(psi); 
+  
+      // F(A)
+      for(l=0; l<dim2; l++) 
+        for(k=0; k<dim2; k++) 
+          for(j=0; j<dim2; j++)  
+            F[l][k][j] += h[k]*dh[j]*dpdA[l]; 
+
+      // S(A, B) 
+      for(m=0; m<dim2; m++)
+        for(l=0; l<dim2; l++)
+          for(k=0; k<dim2; k++) 
+            for(j=0; j<dim2; j++) 
+              S[m][l][k][j] += dh[k]*dpdA[m]*dh[j]*dpdA[l]; 
+ 
       // Fisher matrix elements 
-      ma[0][0] = (a*a*a1*a1*dpdf*dpdf)/2 + (a*a*a3*a3*dpdf*dpdf)/2. + a*a1*a2*b*dpdf*dpdf + a*a3*a4*b*dpdf*dpdf + (a2*a2*b*b*dpdf*dpdf)/2. + (a4*a4*b*b*dpdf*dpdf)/2.; 
+      ma[0][0] = (aa*aa*a[0]*a[0]*dpdA[0]*dpdA[0])/2. + (aa*aa*a[2]*a[2]*dpdA[0]*dpdA[0])/2. + aa*a[0]*a[1]*bb*dpdA[0]*dpdA[0] + aa*a[2]*a[3]*bb*dpdA[0]*dpdA[0] + (a[1]*a[1]*bb*bb*dpdA[0]*dpdA[0])/2. + (a[3]*a[3]*bb*bb*dpdA[0]*dpdA[0])/2.; 
  
-      ma[0][1] = (a*a*a1*a1*dpds*dpdf)/2 + (a*a*a3*a3*dpds*dpdf)/2. + a*a1*a2*b*dpds*dpdf + a*a3*a4*b*dpds*dpdf + (a2*a2*b*b*dpds*dpdf)/2. + (a4*a4*b*b*dpds*dpdf)/2.;
+      ma[0][1] = (aa*aa*a[0]*a[0]*dpdA[1]*dpdA[0])/2 + (aa*aa*a[2]*a[2]*dpdA[1]*dpdA[0])/2. + aa*a[0]*a[1]*bb*dpdA[1]*dpdA[0] + aa*a[2]*a[3]*bb*dpdA[1]*dpdA[0] + (a[1]*a[1]*bb*bb*dpdA[1]*dpdA[0])/2. + (a[3]*a[3]*bb*bb*dpdA[1]*dpdA[0])/2.;
  
-      ma[0][2] = (a*a*a1*a1*dpdf*dpdd)/2 + (a*a*a3*a3*dpdf*dpdd)/2. + a*a1*a2*b*dpdf*dpdd + a*a3*a4*b*dpdf*dpdd + (a2*a2*b*b*dpdf*dpdd)/2. + (a4*a4*b*b*dpdf*dpdd)/2.; 
+      ma[0][2] = (aa*aa*a[0]*a[0]*dpdA[0]*dpdA[2])/2 + (aa*aa*a[2]*a[2]*dpdA[0]*dpdA[2])/2. + aa*a[0]*a[1]*bb*dpdA[0]*dpdA[2] + aa*a[2]*a[3]*bb*dpdA[0]*dpdA[2] + (a[1]*a[1]*bb*bb*dpdA[0]*dpdA[2])/2. + (a[3]*a[3]*bb*bb*dpdA[0]*dpdA[2])/2.; 
 
-      ma[0][3] = (a*a*a1*a1*dpdf*dpda)/2. + (a*a*a3*a3*dpdf*dpda)/2. + a*a1*a2*b*dpdf*dpda + a*a3*a4*b*dpdf*dpda + (a2*a2*b*b*dpdf*dpda)/2. + (a4*a4*b*b*dpdf*dpda)/2.;  
+      ma[0][3] = (aa*aa*a[0]*a[0]*dpdA[0]*dpdA[3])/2. + (aa*aa*a[2]*a[2]*dpdA[0]*dpdA[3])/2. + aa*a[0]*a[1]*bb*dpdA[0]*dpdA[3] + aa*a[2]*a[3]*bb*dpdA[0]*dpdA[3] + (a[1]*a[1]*bb*bb*dpdA[0]*dpdA[3])/2. + (a[3]*a[3]*bb*bb*dpdA[0]*dpdA[3])/2.;  
 
-      ma[0][4] = (a*a*a3*dpdf)/2. + (a*a4*b*dpdf)/2.;  
+      ma[0][4] = (aa*aa*a[2]*dpdA[0])/2. + (aa*a[3]*bb*dpdA[0])/2.;  
 
-      ma[0][5] = (a*a3*b*dpdf)/2. + (a4*b*b*dpdf)/2.;
+      ma[0][5] = (aa*a[2]*bb*dpdA[0])/2. + (a[3]*bb*bb*dpdA[0])/2.;
  
-      ma[0][6] = -(a*a*a1*dpdf)/2. - (a*a2*b*dpdf)/2.;
+      ma[0][6] = -(aa*aa*a[0]*dpdA[0])/2. - (aa*a[1]*bb*dpdA[0])/2.;
  
-      ma[0][7] = -(a*a1*b*dpdf)/2. - (a2*b*b*dpdf)/2.; 
+      ma[0][7] = -(aa*a[0]*bb*dpdA[0])/2. - (a[1]*bb*bb*dpdA[0])/2.; 
 
-      ma[1][1] = (a*a*a1*a1*dpds*dpds)/2. + (a*a*a3*a3*dpds*dpds)/2. + a*a1*a2*b*dpds*dpds + a*a3*a4*b*dpds*dpds + (a2*a2*b*b*dpds*dpds)/2. + (a4*a4*b*b*dpds*dpds)/2.; 
+      ma[1][1] = (aa*aa*a[0]*a[0]*dpdA[1]*dpdA[1])/2. + (aa*aa*a[2]*a[2]*dpdA[1]*dpdA[1])/2. + aa*a[0]*a[1]*bb*dpdA[1]*dpdA[1] + aa*a[2]*a[3]*bb*dpdA[1]*dpdA[1] + (a[1]*a[1]*bb*bb*dpdA[1]*dpdA[1])/2. + (a[3]*a[3]*bb*bb*dpdA[1]*dpdA[1])/2.; 
 
-      ma[1][2] = (a*a*a1*a1*dpds*dpdd)/2. + (a*a*a3*a3*dpds*dpdd)/2. + a*a1*a2*b*dpds*dpdd + a*a3*a4*b*dpds*dpdd + (a2*a2*b*b*dpds*dpdd)/2. + (a4*a4*b*b*dpds*dpdd)/2.;
+      ma[1][2] = (aa*aa*a[0]*a[0]*dpdA[1]*dpdA[2])/2. + (aa*aa*a[2]*a[2]*dpdA[1]*dpdA[2])/2. + aa*a[0]*a[1]*bb*dpdA[1]*dpdA[2] + aa*a[2]*a[3]*bb*dpdA[1]*dpdA[2] + (a[1]*a[1]*bb*bb*dpdA[1]*dpdA[2])/2. + (a[3]*a[3]*bb*bb*dpdA[1]*dpdA[2])/2.;
  
-      ma[1][3] = (a*a*a1*a1*dpds*dpda)/2. + (a*a*a3*a3*dpds*dpda)/2. + a*a1*a2*b*dpds*dpda + a*a3*a4*b*dpds*dpda + (a2*a2*b*b*dpds*dpda)/2. + (a4*a4*b*b*dpds*dpda)/2.;
+      ma[1][3] = (aa*aa*a[0]*a[0]*dpdA[1]*dpdA[3])/2. + (aa*aa*a[2]*a[2]*dpdA[1]*dpdA[3])/2. + aa*a[0]*a[1]*bb*dpdA[1]*dpdA[3] + aa*a[2]*a[3]*bb*dpdA[1]*dpdA[3] + (a[1]*a[1]*bb*bb*dpdA[1]*dpdA[3])/2. + (a[3]*a[3]*bb*bb*dpdA[1]*dpdA[3])/2.;
 
-      ma[1][4] = (a*a*a3*dpds)/2. + (a*a4*b*dpds)/2.;
+      ma[1][4] = (aa*aa*a[2]*dpdA[1])/2. + (aa*a[3]*bb*dpdA[1])/2.;
  
-      ma[1][5] = (a*a3*b*dpds)/2. + (a4*b*b*dpds)/2.; 
+      ma[1][5] = (aa*a[2]*bb*dpdA[1])/2. + (a[3]*bb*bb*dpdA[1])/2.; 
  
-      ma[1][6] = -(a*a*a1*dpds)/2. - (a*a2*b*dpds)/2.;
+      ma[1][6] = -(aa*aa*a[0]*dpdA[1])/2. - (aa*a[1]*bb*dpdA[1])/2.;
  
-      ma[1][7] = -(a*a1*b*dpds)/2. - (a2*b*b*dpds)/2.;
+      ma[1][7] = -(aa*a[0]*bb*dpdA[1])/2. - (a[1]*bb*bb*dpdA[1])/2.;
  
-      ma[2][2] = (a*a*a1*a1*dpdd*dpdd)/2. + (a*a*a3*a3*dpdd*dpdd)/2. + a*a1*a2*b*dpdd*dpdd + a*a3*a4*b*dpdd*dpdd + (a2*a2*b*b*dpdd*dpdd)/2. + (a4*a4*b*b*dpdd*dpdd)/2.;
+      ma[2][2] = (aa*aa*a[0]*a[0]*dpdA[2]*dpdA[2])/2. + (aa*aa*a[2]*a[2]*dpdA[2]*dpdA[2])/2. + aa*a[0]*a[1]*bb*dpdA[2]*dpdA[2] + aa*a[2]*a[3]*bb*dpdA[2]*dpdA[2] + (a[1]*a[1]*bb*bb*dpdA[2]*dpdA[2])/2. + (a[3]*a[3]*bb*bb*dpdA[2]*dpdA[2])/2.;
  
-      ma[2][3] = (a*a*a1*a1*dpdd*dpda)/2. + (a*a*a3*a3*dpdd*dpda)/2. + a*a1*a2*b*dpdd*dpda + a*a3*a4*b*dpdd*dpda + (a2*a2*b*b*dpdd*dpda)/2. + (a4*a4*b*b*dpdd*dpda)/2.;
+      ma[2][3] = (aa*aa*a[0]*a[0]*dpdA[2]*dpdA[3])/2. + (aa*aa*a[2]*a[2]*dpdA[2]*dpdA[3])/2. + aa*a[0]*a[1]*bb*dpdA[2]*dpdA[3] + aa*a[2]*a[3]*bb*dpdA[2]*dpdA[3] + (a[1]*a[1]*bb*bb*dpdA[2]*dpdA[3])/2. + (a[3]*a[3]*bb*bb*dpdA[2]*dpdA[3])/2.;
  
-      ma[2][4] = (a*a*a3*dpdd)/2. + (a*a4*b*dpdd)/2.;
+      ma[2][4] = (aa*aa*a[2]*dpdA[2])/2. + (aa*a[3]*bb*dpdA[2])/2.;
  
-      ma[2][5] = (a*a3*b*dpdd)/2. + (a4*b*b*dpdd)/2.;
+      ma[2][5] = (aa*a[2]*bb*dpdA[2])/2. + (a[3]*bb*bb*dpdA[2])/2.;
  
-      ma[2][6] = -(a*a*a1*dpdd)/2. - (a*a2*b*dpdd)/2.;
+      ma[2][6] = -(aa*aa*a[0]*dpdA[2])/2. - (aa*a[1]*bb*dpdA[2])/2.;
  
-      ma[2][7] = -(a*a1*b*dpdd)/2. - (a2*b*b*dpdd)/2.;
+      ma[2][7] = -(aa*a[0]*bb*dpdA[2])/2. - (a[1]*bb*bb*dpdA[2])/2.;
  
-      ma[3][3] = (a*a*a1*a1*dpda*dpda)/2. + (a*a*a3*a3*dpda*dpda)/2. + a*a1*a2*b*dpda*dpda + a*a3*a4*b*dpda*dpda + (a2*a2*b*b*dpda*dpda)/2. + (a4*a4*b*b*dpda*dpda)/2.;
+      ma[3][3] = (aa*aa*a[0]*a[0]*dpdA[3]*dpdA[3])/2. + (aa*aa*a[2]*a[2]*dpdA[3]*dpdA[3])/2. + aa*a[0]*a[1]*bb*dpdA[3]*dpdA[3] + aa*a[2]*a[3]*bb*dpdA[3]*dpdA[3] + (a[1]*a[1]*bb*bb*dpdA[3]*dpdA[3])/2. + (a[3]*a[3]*bb*bb*dpdA[3]*dpdA[3])/2.;
  
-      ma[3][4] = (a*a*a3*dpda)/2. + (a*a4*b*dpda)/2.;
+      ma[3][4] = (aa*aa*a[2]*dpdA[3])/2. + (aa*a[3]*bb*dpdA[3])/2.;
  
-      ma[3][5] = (a*a3*b*dpda)/2. + (a4*b*b*dpda)/2.;
+      ma[3][5] = (aa*a[2]*bb*dpdA[3])/2. + (a[3]*bb*bb*dpdA[3])/2.;
  
-      ma[3][6] = -(a*a*a1*dpda)/2. - (a*a2*b*dpda)/2.;
+      ma[3][6] = -(aa*aa*a[0]*dpdA[3])/2. - (aa*a[1]*bb*dpdA[3])/2.;
  
-      ma[3][7] = -(a*a1*b*dpda)/2. - (a2*b*b*dpda)/2.;
+      ma[3][7] = -(aa*a[0]*bb*dpdA[3])/2. - (a[1]*bb*bb*dpdA[3])/2.;
  
-      ma[4][4] = a*a/2.;
+      ma[4][4] = aa*aa/2.;
  
-      ma[4][5] = (a*b)/2.;
+      ma[4][5] = (aa*bb)/2.;
  
       ma[4][6] = 0;
  
       ma[4][7] = 0;
  
-      ma[5][5] = b*b/2.;
+      ma[5][5] = bb*bb/2.;
  
       ma[5][6] = 0;
  
       ma[5][7] = 0;
  
-      ma[6][6] = a*a/2.;
+      ma[6][6] = aa*aa/2.;
  
-      ma[6][7] = (a*b)/2.;
+      ma[6][7] = (aa*bb)/2.;
  
-      ma[7][7] = b*b/2.;
+      ma[7][7] = bb*bb/2.;
 
 
       // mFl 
@@ -271,9 +323,30 @@ int fisher(Search_settings *sett,
       for(j=0; j<k; j++)
         mFl[k][j] = mFl[j][k]; 
 
+    printf("A0=omega0, A1=omega1, A2=delta, A3=alpha\n"); 
+
+    for(l=0; l<dim2; l++) { 
+      printf("\nF(A%d):\n", l); 
+      for(k=0; k<dim2; k++) { 
+        for(j=0; j<dim2; j++)  
+          printf("%.16e ", F[l][k][j]);
+        printf("\n");
+      }
+    } 
+
+    for(m=0; m<dim2; m++)
+      for(l=0; l<=m; l++) { 
+        printf("\nS(A%d, A%d):\n", m, l); 
+        for(k=0; k<dim2; k++) {  
+          for(j=0; j<dim2; j++) 
+            printf("%.16e ", S[m][l][k][j]);
+          printf("\n");
+        } 
+      }
+
     //#mb printf("\nsumhsq, sqrt(sumhsq), N: %f %f %d\n", sumhsq, sqrt(sumhsq), sett->N); 
 
-    printf("The Fisher matrix:\n"); 
+    printf("\nThe Fisher matrix:\n"); 
 
     int r; 
     arb_mat_t A, T; 
@@ -287,10 +360,10 @@ int fisher(Search_settings *sett,
     for(k=0; k<dim; k++) { 
 //      printf("[");
       for(j=0; j<dim; j++) { 
-        printf("%.16e, ", mFl[k][j]);
+        printf("%.16e ", mFl[k][j]);
         arb_set_d(arb_mat_entry(A, k, j), mFl[k][j]);
       } 
-      printf("],\n");
+      printf("\n");
     }
 
     printf("Inverting the Fisher matrix...\n"); 
