@@ -98,7 +98,7 @@ int fisher(Search_settings *sett,
            Aux_arrays *aux) { 
 
 
-  int i, j, k, l, m, n, dim=8, dim2=4; 
+  int i, j, k, l, m, n, reffr, dim=8, dim2=4; 
 
   // Signal parameters: f, fdot, delta, alpha, a1, a2, a3, a4
   // (see Phys. Rev. D 82, 022005 2010, Eqs. 2.13a-d) 
@@ -108,6 +108,15 @@ int fisher(Search_settings *sett,
 
   // Reading signal parameters 
   if ((data=fopen (opts->addsig, "r")) != NULL) {
+
+    // This read is made compatible with the format of the signal 
+    // used by add_signal():init.c 
+    // Skipping first three values 
+
+    fseek(data, 3*sizeof(char) + sizeof(double) + 2*sizeof(int), SEEK_SET);
+      
+    fscanf (data, "%d", &reffr); 
+    printf("Reference frame is %03d\n", reffr); 
 
     for(i=0; i<dim; i++)
       fscanf(data, "%le",i+sgnlo); 
@@ -124,7 +133,9 @@ int fisher(Search_settings *sett,
   double omega0, omega1, domega, sumhsq;  
   double sindelt, cosdelt, sinalt, cosalt; 
 
-  omega0 = sgnlo[0]; // /sett->dt; 
+  // signal frequency shifted w.r.t the reference segment 
+  omega0 = sgnlo[0] - 2.*sgnlo[1]*(sett->N)*(reffr - opts->ident); 
+
   omega1 = sgnlo[1]; 
 
   domega = sett->oms; // 2*M_PI*sett->fpo*sett->dt; 
