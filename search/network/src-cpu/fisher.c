@@ -98,7 +98,7 @@ int fisher(Search_settings *sett,
            Aux_arrays *aux) { 
 
 
-  int i, j, k, l, m, n, reffr, dim=8, dim2=4; 
+  int i, j, k, l, m, n, reffr, dim=8, dim2=4, prec=128; 
 
   // Signal parameters: f, fdot, delta, alpha, a1, a2, a3, a4
   // (see Phys. Rev. D 82, 022005 2010, Eqs. 2.13a-d) 
@@ -334,6 +334,7 @@ int fisher(Search_settings *sett,
       for(j=0; j<k; j++)
         mFl[k][j] = mFl[j][k]; 
 
+/*
     printf("A0=omega0, A1=omega1, A2=delta, A3=alpha\n"); 
 
     for(l=0; l<dim2; l++) { 
@@ -355,31 +356,40 @@ int fisher(Search_settings *sett,
         } 
       }
 
+*/  
+
     //#mb printf("\nsumhsq, sqrt(sumhsq), N: %f %f %d\n", sumhsq, sqrt(sumhsq), sett->N); 
 
+/*
     printf("\nThe Fisher matrix:\n"); 
 
-    int r; 
-    arb_mat_t A, T; 
+*/ 
+
+    int r;
+    arb_t t; 
+    arb_init(t); 
+
+/*
+ 
+    arb_mat_t AA, T; 
     arb_t t; 
 
-    arb_mat_init(A, dim, dim); 
+    arb_mat_init(AA, dim, dim); 
     arb_mat_init(T, dim, dim); 
 
-    arb_init(t); 
 
     for(k=0; k<dim; k++) { 
 //      printf("[");
       for(j=0; j<dim; j++) { 
         printf("%.16e ", mFl[k][j]);
-        arb_set_d(arb_mat_entry(A, k, j), mFl[k][j]);
+        arb_set_d(arb_mat_entry(AA, k, j), mFl[k][j]);
       } 
       printf("\n");
     }
 
     printf("Inverting the Fisher matrix...\n"); 
 
-    r = arb_mat_spd_inv(T, A, 128);
+    r = arb_mat_spd_inv(T, AA, prec);
 
     if(r) {
       
@@ -395,9 +405,129 @@ int fisher(Search_settings *sett,
 
     printf("\n"); 
 
-    arb_mat_clear(A);
+    arb_mat_clear(AA);
     arb_mat_clear(T); 
+*/ 
 
+    arb_mat_t mFl1, M1; 
+
+    arb_mat_init(mFl1, dim2, dim2); 
+    arb_mat_init(M1, dim2, dim2); 
+    
+    //printf("F(5:8,5:8) Fisher Matrix:\n"); 
+
+    for(k=dim2; k<dim; k++) { 
+      for(j=dim2; j<dim; j++) { 
+        arb_set_d(arb_mat_entry(mFl1, k-dim2, j-dim2), mFl[k][j]);
+        //printf("%.16le ", mFl[k][j]); 
+      } 
+
+      //printf("\n"); 
+
+    }
+   
+    //printf("Inverting the mFL1 matrix...\n"); 
+
+    r = arb_mat_inv(M1, mFl1, prec);
+
+/*
+    if(r) {
+
+      for(k=0; k<dim2; k++) { 
+        for(j=0; j<dim2; j++) { 
+          arb_set(t, arb_mat_entry(M1, k, j)); 
+          printf("%.16le ", arf_get_d(arb_midref(t), ARF_RND_DOWN));
+        } 
+        printf("\n");
+      }
+
+    } else { 
+      printf("Failed to invert the mFl1 matrix.\n"); 
+    } 
+
+    printf("\n"); 
+*/
+
+
+    // Reduced Fisher matrix 
+    //----------------------
+
+    int A, B; 
+    double redF[dim2][dim2];
+
+    double Nd = (double)(sett->N);
+
+    arb_t Narb;
+    arb_init(Narb); 
+    arb_set_d(Narb, Nd);   
+
+    for(A=0; A<dim2; A++) { 
+      for(B=0; B<=A; B++) { // loops over A, B
+
+        arb_mat_t mA, mSAB, mFAT, mFB; 
+  
+        arb_mat_init(mA, dim2, dim2); 
+        arb_mat_init(mSAB, dim2, dim2); 
+        arb_mat_init(mFAT, dim2, dim2); 
+        arb_mat_init(mFB, dim2, dim2); 
+
+        for(k=0; k<dim2; k++) { 
+          for(j=0; j<dim2; j++) {
+
+            arb_set_d(arb_mat_entry(mSAB, k, j), S[A][B][k][j]);
+
+            // matrix mFA transposed --> mFAT
+            arb_set_d(arb_mat_entry(mFAT, k, j),  F[A][j][k]);
+            arb_set_d(arb_mat_entry(mFB, k, j),  F[B][k][j]);
+
+          } 
+        }
+
+        // mA = SAB - FA^T * M^-1 * FB
+        // overwriting to avoid too many matrices  
+        arb_mat_mul(mFAT, mFAT, M1, prec); 
+        arb_mat_mul(mFAT, mFAT, mFB, prec);    
+        arb_mat_sub(mA, mSAB, mFAT, prec); 
+
+        arb_mat_mul(mA, mA, M1, prec);
+
+        // trace(mA * M^-1)  
+        arb_mat_trace(t, mA, prec);
+
+        // normalization by N^2
+        arb_div(t, t, Narb, prec); 
+        arb_div(t, t, Narb, prec);
+        // additional normalization for spindown  
+        if(A==1)
+         arb_div(t, t, Narb, prec); 
+        if(B==1)
+          arb_div(t, t, Narb, prec); 
+
+        redF[A][B] = arf_get_d(arb_midref(t), ARF_RND_DOWN)/dim2;
+
+        arb_mat_clear(mA); 
+        arb_mat_clear(mSAB); 
+        arb_mat_clear(mFAT);
+        arb_mat_clear(mFB); 
+
+      } 
+
+    }
+
+    // Symmetrize redF
+    for(k=1; k<dim2; k++) 
+      for(j=0; j<k; j++) 
+        redF[j][k] = redF[k][j]; 
+
+    printf("\nReduced Fisher matrix:\n"); 
+    for(k=0; k<dim2; k++) { 
+      for(j=0; j<dim2; j++) 
+        printf("%.16le ", redF[k][j]);
+      printf("\n");
+    } 
+
+    arb_mat_clear(mFl1);
+    arb_mat_clear(M1); 
 
   } 
 
