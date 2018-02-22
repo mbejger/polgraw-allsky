@@ -153,7 +153,10 @@ int fisher(Search_settings *sett,
   a[2] = sgnlo[6]; 
   a[3] = sgnlo[7]; 
 
-  // Loop for each detector 
+
+  // Main loop over the detectors 
+  //-----------------------------
+
   for(n=0; n<sett->nifo; ++n) { 
 
     /* Amplitude modulation functions aa and bb 
@@ -182,6 +185,10 @@ int fisher(Search_settings *sett,
             S[m][l][k][j] = 0; 
 
     double sumhsq = 0; 
+
+
+    // Loop over the data points 
+    //--------------------------
 
     for(i=0; i<sett->N; ++i) {
 
@@ -327,7 +334,7 @@ int fisher(Search_settings *sett,
         for(j=0; j<dim; j++) 
           mFl[k][j] += ma[k][j];
 
-    } 
+    } /* end of loop over data points sett->N */  
 
     // Symmetrize mFl 
     for(k=1; k<dim; k++) 
@@ -510,9 +517,9 @@ int fisher(Search_settings *sett,
         arb_mat_clear(mFAT);
         arb_mat_clear(mFB); 
 
-      } 
+      } /* end of loop over B */   
 
-    }
+    } /* end of loop over A */ 
 
     // Symmetrize redF
     for(k=1; k<dim2; k++) 
@@ -529,7 +536,7 @@ int fisher(Search_settings *sett,
     arb_mat_clear(mFl1);
     arb_mat_clear(M1); 
 
-  } 
+  } /* end of the detector loop */   
 
   return 0; 
 
