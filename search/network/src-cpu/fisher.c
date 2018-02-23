@@ -112,9 +112,14 @@ int fisher(Search_settings *sett,
     // This read is made compatible with the format of the signal 
     // used by add_signal():init.c 
     // Skipping first three values 
-
-    fseek(data, 3*sizeof(char) + sizeof(double) + 2*sizeof(int), SEEK_SET);
-      
+ 
+    char amporsnr[3];
+    double h0; 
+    int gsize;   
+    
+    // These three values are not used  
+    fscanf (data, "%s %le %d", amporsnr, &h0, &gsize);    
+    
     fscanf (data, "%d", &reffr); 
     printf("Reference frame is %03d\n", reffr); 
 
@@ -126,8 +131,7 @@ int fisher(Search_settings *sett,
   } else {
     perror (opts->addsig);
   }
-
-  
+ 
   double ma[dim][dim], mFl[dim][dim]; 
   double a[dim2], F[dim2][dim2][dim2], S[dim2][dim2][dim2][dim2];
   double omega0, omega1, domega, sumhsq;  
@@ -376,10 +380,8 @@ int fisher(Search_settings *sett,
     arb_t t; 
     arb_init(t); 
 
-/*
  
     arb_mat_t AA, T; 
-    arb_t t; 
 
     arb_mat_init(AA, dim, dim); 
     arb_mat_init(T, dim, dim); 
@@ -388,13 +390,13 @@ int fisher(Search_settings *sett,
     for(k=0; k<dim; k++) { 
 //      printf("[");
       for(j=0; j<dim; j++) { 
-        printf("%.16e ", mFl[k][j]);
+//        printf("%.16e ", mFl[k][j]);
         arb_set_d(arb_mat_entry(AA, k, j), mFl[k][j]);
       } 
-      printf("\n");
+//      printf("\n");
     }
 
-    printf("Inverting the Fisher matrix...\n"); 
+//    printf("Inverting the Fisher matrix...\n"); 
 
     r = arb_mat_spd_inv(T, AA, prec);
 
@@ -413,8 +415,7 @@ int fisher(Search_settings *sett,
     printf("\n"); 
 
     arb_mat_clear(AA);
-    arb_mat_clear(T); 
-*/ 
+    arb_mat_clear(T);  
 
     arb_mat_t mFl1, M1; 
 
