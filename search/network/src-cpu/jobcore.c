@@ -421,7 +421,7 @@ int job_core(int pm,                   // Hemisphere
   // or the range file is given:  
   // if not, proceed with the wide range of spindowns 
   // if yes, use smin = s_range->sst, smax = s_range->spndr[1]  
-  if(!strcmp(opts->addsig, "") && !strcmp(opts->range, "")) {
+  if(!strcmp(opts->addsig, "") && !strcmp(opts->addline, "") && !strcmp(opts->range, "")) {
 
       // Spindown range defined using Smin and Smax (settings.c)  
       smin = trunc((sett->Smin - nn*sett->M[9] - mm*sett->M[13])/sett->M[5]);

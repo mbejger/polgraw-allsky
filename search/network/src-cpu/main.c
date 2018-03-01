@@ -120,6 +120,10 @@ int main (int argc, char* argv[]) {
     // If addsig switch used, add signal from file, 
     // search around this position (+- gsize)
     add_signal(&sett, &opts, &aux_arr, &s_range); 
+  } else if(strlen(opts.addline)) {  
+    // If addline switch used, add stationary line from file, 
+    // search around this position (+- gsize)
+    add_stationary_line(&sett, &opts, &aux_arr, &s_range); 
   } else 
     // Set search range from range file  
     set_search_range(&sett, &opts, &s_range);
