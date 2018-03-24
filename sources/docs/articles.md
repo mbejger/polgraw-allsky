@@ -1,4 +1,4 @@
-# List of documents and publications 
+# List of selected documents and publications 
 
 #### Methods 
 
@@ -8,6 +8,7 @@
 * [Data analysis of gravitational-wave signals from spinning neutron stars. IV. An all-sky search](http://journals.aps.org/prd/abstract/10.1103/PhysRevD.65.042003) [(arXiv)](http://arxiv.org/abs/gr-qc/0012108)
 * [Data analysis of gravitational-wave signals from spinning neutron stars. V. A narrow-band all-sky search](http://journals.aps.org/prd/abstract/10.1103/PhysRevD.82.022005) [(arXiv)](http://arxiv.org/abs/1003.0844)
 * [Banks of templates for all-sky narrow-band searches of gravitational waves from spinning neutron stars](http://iopscience.iop.org/article/10.1088/0264-9381/32/14/145014) [(arXiv)](https://arxiv.org/abs/1302.0509) 
+* [Searching for gravitational waves from known pulsars at once and twice the spin frequency](http://iopscience.iop.org/article/10.1088/0264-9381/31/10/105011/meta) [(arXiv)](https://arxiv.org/abs/1312.5478)
 
 #### Virgo VSR1 data 
  
@@ -19,8 +20,9 @@
 
 #### LIGO O1 
 
-* [First search for gravitational waves from known pulsars with Advanced LIGO](https://arxiv.org/abs/1701.07709) 
-* [All-sky Search for Periodic Gravitational Waves in the O1 LIGO Data](https://arxiv.org/abs/1707.02667)
+* [First search for gravitational waves from known pulsars with Advanced LIGO](http://iopscience.iop.org/article/10.3847/1538-4357/aa677f/meta) [(arXiv)](https://arxiv.org/abs/1701.07709) 
+* [All-sky Search for Periodic Gravitational Waves in the O1 LIGO Data](https://journals.aps.org/prd/abstract/10.1103/PhysRevD.96.062002) [(arXiv)](https://arxiv.org/abs/1707.02667)
+* [Full Band All-sky Search for Periodic Gravitational Waves in the O1 LIGO Data](https://arxiv.org/abs/1802.05241)
 
 #### Resonant bar detectors 
 
@@ -29,7 +31,7 @@
 
 #### Monographs 
 
-* [Gravitational-Wave Data Analysis. Formalism and Sample Applications: The Gaussian Case](http://relativity.livingreviews.org/Articles/lrr-2012-4/)
+* [Gravitational-Wave Data Analysis. Formalism and Sample Applications: The Gaussian Case](https://link.springer.com/article/10.12942/lrr-2012-4)
 * [Analysis of Gravitational-Wave Data](http://www.cambridge.org/us/academic/subjects/physics/cosmology-relativity-and-gravitation/analysis-gravitational-wave-data?format=AR)
  
 

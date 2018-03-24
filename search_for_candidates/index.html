@@ -142,7 +142,7 @@
 <h4 id="_2"></h4>
 <h4 id="full-list-of-switches">Full list of switches</h4>
 <p>For the full list of options, type</p>
-<div class="codehilite"><pre><span></span>% ./gwsearch-cpu --help 
+<div class="codehilite"><pre>% ./gwsearch-cpu --help 
 </pre></div>
 
 
@@ -245,7 +245,7 @@
 </table>
 <h3 id="example">Example</h3>
 <p>Minimal call to <code>gwsearch-cpu</code> is as follows (code compiled with the <code>GNUSINCOS</code> option): </p>
-<div class="codehilite"><pre><span></span><span class="c">% ./gwsearch-cpu -data ../../../testdata/2d_0.25 -dt 2 -output . -ident 001 -band 1234 -nod 2  </span>
+<div class="codehilite"><pre><span class="c">% ./gwsearch-cpu -data ../../../testdata/2d_0.25 -dt 2 -output . -ident 001 -band 1234 -nod 2  </span>
 </pre></div>
 
 
@@ -262,7 +262,7 @@
 <h4 id="network-of-detectors">Network of detectors</h4>
 <p>Test data frames <script type="math/tex">nnn=001-008</script> with pure Gaussian noise 2-day time segments with sampling time equal to 2s (<code>xdatc_nnn_1234.bin</code>) for two LIGO detectors H1 and L1 are <a href="https://polgraw.camk.edu.pl/H1L1_2d_0.25.tar.gz">available here</a>. </p>
 <p>A sample call is </p>
-<div class="codehilite"><pre><span></span>% <span class="nv">LD_LIBRARY_PATH</span><span class="o">=</span>lib/yeppp-1.0.0/binaries/linux/x86_64 ./gwsearch-cpu <span class="se">\</span>
+<div class="codehilite"><pre>% <span class="nv">LD_LIBRARY_PATH</span><span class="o">=</span>lib/yeppp-1.0.0/binaries/linux/x86_64 ./gwsearch-cpu <span class="se">\</span>
   -data ../../../testdata/2d_0.25/ <span class="se">\</span>
   -ident <span class="m">001</span> <span class="se">\</span>
   -band <span class="m">1234</span> <span class="se">\</span>
@@ -322,7 +322,7 @@
 </tbody>
 </table>
 <p>For the example above, the first 10 triggers from <code>triggers_001_1234_2.bin</code> are </p>
-<div class="codehilite"><pre><span></span>3.05617018e+00 -3.42376198e-08 -7.68007347e-02 2.59248668e+00 5.06667333e+00 
+<div class="codehilite"><pre>3.05617018e+00 -3.42376198e-08 -7.68007347e-02 2.59248668e+00 5.06667333e+00 
 1.18243015e+00 -3.20762991e-08 -7.68007347e-02 2.59248668e+00 5.05528873e+00 
 1.08103361e-01 -2.77536578e-08 -7.68007347e-02 2.59248668e+00 5.07085254e+00 
 1.90022435e+00 -2.77536578e-08 -7.68007347e-02 2.59248668e+00 5.15191593e+00 

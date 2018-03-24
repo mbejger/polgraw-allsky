@@ -172,7 +172,7 @@ P^{\rm shifts}_F = 1 - \bigg[ 1 - \Big( 2^4 p_F(N_c)
 <p>Run <code>make fap</code>; resulting binary is called <code>fap</code> (modify the <code>Makefile</code> to fit your system).</p>
 <h3 id="full-list-of-switches">Full list of switches</h3>
 <p>To obtain the full list of options, type </p>
-<div class="codehilite"><pre><span></span><span class="c">% ./fap --help </span>
+<div class="codehilite"><pre><span class="c">% ./fap --help </span>
 </pre></div>
 
 
@@ -235,28 +235,28 @@ P^{\rm shifts}_F = 1 - \bigg[ 1 - \Big( 2^4 p_F(N_c)
 </table>
 <h3 id="example">Example</h3>
 <p>Using the software injection added to 2-day Gaussian noise data segments (see <a href="../../polgraw-allsky/pipeline_script">minimal example of the pipeline</a>): </p>
-<div class="codehilite"><pre><span></span>% ./fap -nod <span class="m">2</span> -band <span class="m">1234</span> -data &lt;<span class="o">(</span>sort -gk5 -gk10 summary <span class="p">|</span> tail -1<span class="o">)</span> -grid ../../testdata/2d_0.25/004 -vetofrac 0.0 -cellsize <span class="m">4</span> -threshold 1.0 
+<div class="codehilite"><pre>% ./fap -nod <span class="m">2</span> -band <span class="m">1234</span> -data &lt;<span class="o">(</span>sort -gk5 -gk10 summary <span class="p">|</span> tail -1<span class="o">)</span> -grid ../../testdata/2d_0.25/004 -vetofrac 0.0 -cellsize <span class="m">4</span> -threshold 1.0 
 </pre></div>
 
 
 <p>or, with the auxilary <code>fap.sh</code> script, </p>
-<div class="codehilite"><pre><span></span>% <span class="nv">band</span><span class="o">=</span>1234<span class="p">;</span> bash fap.sh &lt;<span class="o">(</span>sort -gk5 -gk10 summary <span class="p">|</span> tail -1<span class="o">)</span> &lt;<span class="o">(</span><span class="nb">echo</span> <span class="nv">$band</span> 0.0<span class="o">)</span> ../../testdata/2d_0.25/004 
+<div class="codehilite"><pre>% <span class="nv">band</span><span class="o">=</span>1234<span class="p">;</span> bash fap.sh &lt;<span class="o">(</span>sort -gk5 -gk10 summary <span class="p">|</span> tail -1<span class="o">)</span> &lt;<span class="o">(</span><span class="nb">echo</span> <span class="nv">$ba</span>nd 0.0<span class="o">)</span> ../../testdata/2d_0.25/004 
 </pre></div>
 
 
 <p>Number of days in the time segment <code>nod</code> equals 2, fraction of the band vetoed <code>vetofrac</code> is 0 (no lines, Gaussian data) and the cell size scalling factor <code>cellsize</code> is 4. Directory containing the grid matrix file <code>grid.bin</code> of the reference frame (in this case frame <code>004</code>) should be given by the <code>grid</code> switch. The input data is the last line of a sorted <code>summary</code> file to select the shift giving the best coincidence with the highest signal-to-noise ratio: </p>
-<div class="codehilite"><pre><span></span>1234_2 1111 308.859375     8     5  9.95663703e-01 -1.10830358e-09 -1.12585347e-01 1.97463002e+00 1.246469e+01 5 2040 1987 1 2483 2419 4 2384 2193 3 2247 2137 8 2408 2363 2 2249 2172 6 2305 2220 7 2226 2191 6 2 8 3 5
+<div class="codehilite"><pre>1234_2 1111 308.859375     8     5  9.95663703e-01 -1.10830358e-09 -1.12585347e-01 1.97463002e+00 1.246469e+01 5 2040 1987 1 2483 2419 4 2384 2193 3 2247 2137 8 2408 2363 2 2249 2172 6 2305 2220 7 2226 2191 6 2 8 3 5
 </pre></div>
 
 
 <p>(see the <a href="../../polgraw-allsky/coincidences">coincidences</a> section for details). </p>
 <h3 id="output">Output</h3>
-<div class="codehilite"><pre><span></span>% ./fap -nod <span class="m">2</span> -band <span class="m">1234</span> -data &lt;<span class="o">(</span>sort -gk5 -gk10 summary <span class="p">|</span> tail -1<span class="o">)</span> -grid ../../testdata/2d_0.25/004 -vetofrac 0.0 -cellsize <span class="m">4</span> -threshold 1.0 
+<div class="codehilite"><pre>% ./fap -nod <span class="m">2</span> -band <span class="m">1234</span> -data &lt;<span class="o">(</span>sort -gk5 -gk10 summary <span class="p">|</span> tail -1<span class="o">)</span> -grid ../../testdata/2d_0.25/004 -vetofrac 0.0 -cellsize <span class="m">4</span> -threshold 1.0 
 </pre></div>
 
 
 <p>is</p>
-<div class="codehilite"><pre><span></span>Number of days in <span class="nb">time</span> segments: 2
+<div class="codehilite"><pre>Number of days in <span class="nb">time</span> segments: 2
 Input data: /dev/fd/63
 Grid matrix data directory: ../../testdata/2d_0.25/004
 Band number: <span class="m">1234</span> <span class="o">(</span>veto fraction: 0.000000<span class="o">)</span>
@@ -269,7 +269,7 @@ Cell size: 4
 
 
 <p>The last line (in case the probability <code>PFshifts</code> is lower than the <code>threshold</code>) is printed to <code>stderr</code>. The meaning of this output is the following:  </p>
-<div class="codehilite"><pre><span></span>#band f_min       f_max        PFshifts     noc Nkall  f s d a hemisphere 
+<div class="codehilite"><pre>#band f_min       f_max        PFshifts     noc Nkall  f s d a hemisphere 
 1234 3.088594e+02 3.091094e+02 7.665713e-08 5   17682  9.956637e-01 -1.108304e-09 -1.125853e-01 1.974630e+00 1.246469e+01 2
 </pre></div></div>
         </div>

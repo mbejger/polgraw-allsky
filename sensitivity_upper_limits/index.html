@@ -132,12 +132,12 @@
 <p>The scripts require <code>python3</code>. A working solution is to install a <code>python</code> virtual environment (<code>python3</code> comes with a built-in <code>pyvenv</code> virtual environment software).  </p>
 <h4 id="install-python345-locally">Install <code>python3.4.5</code> locally</h4>
 <p>Let's assume the installation directory is  </p>
-<div class="codehilite"><pre><span></span><span class="nv">installdir</span><span class="o">=</span>/path/to/installdir
+<div class="codehilite"><pre><span class="nv">installdir</span><span class="o">=</span>/path/to/installdir
 </pre></div>
 
 
 <p>then </p>
-<div class="codehilite"><pre><span></span>mkdir -p <span class="si">${</span><span class="nv">installdir</span><span class="si">}</span><span class="p">;</span> <span class="nb">cd</span> <span class="si">${</span><span class="nv">installdir</span><span class="si">}</span> 
+<div class="codehilite"><pre>mkdir -p <span class="si">${</span><span class="nv">installdir</span><span class="si">}</span><span class="p">;</span> <span class="nb">cd</span> <span class="si">${</span><span class="nv">installdir</span><span class="si">}</span> 
 wget https://www.python.org/ftp/python/3.4.5/Python-3.4.5.tgz
 tar zxvf Python-3.4.5.tgz
 <span class="nb">cd</span> Python-3.4.5
@@ -151,17 +151,17 @@ make install
 
 <h4 id="create-virtual-environment">Create virtual environment</h4>
 <p>In a selected location (<code>/path/to/venvdir</code>) type</p>
-<div class="codehilite"><pre><span></span><span class="si">${</span><span class="nv">installdir</span><span class="si">}</span>/bin/pyvenv venv
+<div class="codehilite"><pre><span class="si">${</span><span class="nv">installdir</span><span class="si">}</span>/bin/pyvenv venv
 </pre></div>
 
 
 <p>Activate the virtual environment</p>
-<div class="codehilite"><pre><span></span>. /path/to/venvdir/bin/activate
+<div class="codehilite"><pre>. /path/to/venvdir/bin/activate
 </pre></div>
 
 
 <p>(to leave the environment, type <code>deactivate</code>). You can now install specific packages using the <code>pip</code> installer: </p>
-<div class="codehilite"><pre><span></span>pip install nympy
+<div class="codehilite"><pre>pip install nympy
 pip install scipy
 pip install matplotlib
 pip install pandas
@@ -187,14 +187,14 @@ pip install pandas
 <ol>
 <li><code>bandlist</code> which is a list of bands with strain amplitudes, for example:  </li>
 </ol>
-<div class="codehilite"><pre><span></span><span class="m">0164</span> 2.25e-1 
+<div class="codehilite"><pre><span class="m">0164</span> 2.25e-1 
 <span class="m">0165</span> 1.5e-1 2e-1 2.5e-1 3e-1
 <span class="m">0166</span> 2e-1 4e-1
 </pre></div>
 
 
 <p>The call is</p>
-<div class="codehilite"><pre><span></span>% python script.py config.ini bandlist
+<div class="codehilite"><pre>% python script.py config.ini bandlist
 </pre></div>
 
 
@@ -202,17 +202,17 @@ pip install pandas
 1. Dummy <code>bash</code> script <code>dummy.sh</code> with the actual pipeline calls (variables replaced with actual values by <code>script.py</code> and renamed to <code>script.sh</code>),
 2. <code>PBS/Torque</code> script <code>job.sub</code>, launched into the cluster queue and running <code>script.sh</code> (modify it to fit other systems, e.g., the <code>slurm</code> scheduler). </p>
 <p>Script <code>script.py</code> creates a <code>run.sh</code> file which contains commands to send the jobs into the queue. The results are summary files (<code>.sum</code>) for the requested number of simulations. In order to process them, call the <code>summary.py</code> script</p>
-<div class="codehilite"><pre><span></span>% python summary.py band coincidence_threshold number_of_simulations
+<div class="codehilite"><pre>% python summary.py band coincidence_threshold number_of_simulations
 </pre></div>
 
 
 <p>for example </p>
-<div class="codehilite"><pre><span></span>% python summary.py <span class="m">0165</span> 0.7 100
+<div class="codehilite"><pre>% python summary.py <span class="m">0165</span> 0.7 100
 </pre></div>
 
 
 <p>The result will be something as follows (columns are <code>band</code> number, amplitude <code>h</code>, upper limit <code>ul</code>): </p>
-<div class="codehilite"><pre><span></span>band h   ul 
+<div class="codehilite"><pre>band h   ul 
 <span class="m">0165</span> 0.150 0.61
 <span class="m">0165</span> 0.200 0.78
 <span class="m">0165</span> 0.250 0.95
@@ -222,17 +222,17 @@ pip install pandas
 
 <h4 id="serial-stacked-version-for-longer-jobs">Serial (stacked) version for longer jobs</h4>
 <p><code>script2.py</code> creates subdirectories and a <code>job_BAND.sub</code> file for a list of amplitudes for BAND from <code>bandlist</code>, stacked one after another (can be handy to send one band as one job to the queue). Call: </p>
-<div class="codehilite"><pre><span></span>% python script2.sh config.ini bandlist
+<div class="codehilite"><pre>% python script2.sh config.ini bandlist
 </pre></div>
 
 
 <p>and then (for e.g., band 0165) send it to the queue </p>
-<div class="codehilite"><pre><span></span>% qsub -N <span class="m">0165</span> -v <span class="nv">howmany</span><span class="o">=</span><span class="m">100</span> job_0165.sub
+<div class="codehilite"><pre>% qsub -N <span class="m">0165</span> -v <span class="nv">howmany</span><span class="o">=</span><span class="m">100</span> job_0165.sub
 </pre></div>
 
 
 <p>The summary of simulations for a given band (<code>0165</code>, say) processed by the <a href="https://github.com/mbejger/polgraw-allsky/blob/master/sensitivity-scripts/summary.sh">summary.sh</a> result in the following list of <code>h0</code> amplitudes followed by the corresponding fractions of significant coincidences (<code>N_coin/N</code>):</p>
-<div class="codehilite"><pre><span></span>band h   ul 
+<div class="codehilite"><pre>band h   ul 
 <span class="m">0165</span> 0.150 0.61
 <span class="m">0165</span> 0.200 0.78
 <span class="m">0165</span> 0.250 0.95
@@ -241,14 +241,14 @@ pip install pandas
 
 
 <p>We are interested in a 95% upper limit i.e. the <code>h0</code> corresponding to the fraction 0.95 of significant coincidences in the simulation (<code>N_coin/N=0.95</code>). This is obtained by fitting a sigmoid function</p>
-<div class="codehilite"><pre><span></span><span class="k">def</span> <span class="nf">sigmoid</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">x0</span><span class="p">,</span> <span class="n">k</span><span class="p">):</span>
+<div class="codehilite"><pre><span class="k">def</span> <span class="nf">sigmoid</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">x0</span><span class="p">,</span> <span class="n">k</span><span class="p">):</span>
      <span class="n">y</span> <span class="o">=</span> <span class="mf">1.0</span> <span class="o">/</span> <span class="p">(</span><span class="mf">1.0</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">k</span><span class="o">*</span><span class="p">(</span><span class="n">x0</span><span class="o">-</span><span class="n">x</span><span class="p">)))</span>
      <span class="k">return</span> <span class="n">y</span>
 </pre></div>
 
 
 <p>to the above data. Fitting is done by <a href="https://github.com/mbejger/polgraw-allsky/blob/master/sensitivity-scripts/upper-limits/ul.py">ul.py</a>:</p>
-<div class="codehilite"><pre><span></span>% python ul.py 0165_results <span class="m">0165</span> 0.01 test.pdf
+<div class="codehilite"><pre>% python ul.py 0165_results <span class="m">0165</span> 0.01 test.pdf
 <span class="m">0165</span> 2.7026e-01
 </pre></div>
 

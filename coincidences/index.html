@@ -147,7 +147,7 @@
 <p>Run <code>make coincidences</code>; resulting binary is called <code>coincidences</code>. Modify the <code>Makefile</code> to fit your system.</p>
 <h4 id="full-list-of-switches">Full list of switches</h4>
 <p>Type </p>
-<div class="codehilite"><pre><span></span><span class="c">% ./coincidences --help </span>
+<div class="codehilite"><pre><span class="c">% ./coincidences --help </span>
 </pre></div>
 
 
@@ -227,7 +227,7 @@
 </table>
 <h3 id="example">Example</h3>
 <p>Using the software injection added to 2-day Gaussian noise data segments (see <a href="../../polgraw-allsky/pipeline_script">minimal example of the pipeline</a>):</p>
-<div class="codehilite"><pre><span></span><span class="c">% for s in {0..1}{0..1}{0..1}{0..1}; do ./coincidences -data ../../search/network/src-cpu -output . -shift $s -scale 4444 -refr 4 -dt 2 -trigname 1234_2 -refloc ../../testdata/2d_0.25/004 -nod 2 -fpo 308.859375 -snrcutoff 5; done 2&gt;&gt; summary</span>
+<div class="codehilite"><pre><span class="c">% for s in {0..1}{0..1}{0..1}{0..1}; do ./coincidences -data ../../search/network/src-cpu -output . -shift $s -scale 4444 -refr 4 -dt 2 -trigname 1234_2 -refloc ../../testdata/2d_0.25/004 -nod 2 -fpo 308.859375 -snrcutoff 5; done 2&gt;&gt; summary</span>
 </pre></div>
 
 
@@ -236,7 +236,7 @@
 fpo = 10 + (1 - 2^{-5})\cdot bbbb\cdot \frac{1}{2dt}\ \mathrm{[Hz]}.
 </script>
 The reference grid file <code>grid.bin</code>, corresponding to the reference frame <code>004</code> (<code>-refr 4</code>) is located at the <code>-refloc</code> location. Signal-to-noise ratio cutoff is set to 5 (<code>-snrcutoff 5</code>). Some output is directed to <code>stdin</code>. For example, the output for shift <code>0000</code> is </p>
-<div class="codehilite"><pre><span></span>Number of days is 2
+<div class="codehilite"><pre>Number of days is 2
 The SNR threshold cutoff is 5.000000000000, corresponding to F-statistic value of 14.500000000000
 Reading the reference grid.bin at ../../testdata/2d_0.25/004
 fftpad from the grid file: 1
@@ -257,7 +257,7 @@ Total number of candidates from all frames: 17652
 
 
 <p>The highest multiplicity coincidence for each shift is streamed to the <code>summary</code> file via the <code>stderr</code> (<code>2&gt;&gt; summary</code>). From this list of 16 lines, the highest multiplicity coincidence with the highest signal-to-noise is selected (<code>sort -gk5 -gk10 summary | tail -1</code>):</p>
-<div class="codehilite"><pre><span></span>1234_2 1111 308.859375     8     5  9.95663703e-01 -1.10830358e-09 -1.12585347e-01 1.97463002e+00 1.246469e+01 5 2040 1987 1 2483 2419 4 2384 2193 3 2247 2137 8 2408 2363 2 2249 2172 6 2305 2220 7 2226 2191 6 2 8 3 5
+<div class="codehilite"><pre>1234_2 1111 308.859375     8     5  9.95663703e-01 -1.10830358e-09 -1.12585347e-01 1.97463002e+00 1.246469e+01 5 2040 1987 1 2483 2419 4 2384 2193 3 2247 2137 8 2408 2363 2 2249 2172 6 2305 2220 7 2226 2191 6 2 8 3 5
 </pre></div>
 
 
@@ -291,7 +291,7 @@ where </p>
 <code>int</code>) </li>
 </ul>
 <p>in order to recover the information about the original triggers for further studies. <code>.coi</code> files can be read with the auxilary <code>read_coi</code> code: </p>
-<div class="codehilite"><pre><span></span><span class="c">% gcc -o read_coi read_coi.c -lm </span>
+<div class="codehilite"><pre><span class="c">% gcc -o read_coi read_coi.c -lm </span>
 <span class="c">% ./read_coi </span>
 # <span class="n">num_of_coincidences</span>    <span class="n">mean_val_of_pars</span> <span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="n">s</span><span class="p">,</span> <span class="n">d</span><span class="p">,</span> <span class="n">a</span><span class="p">),</span> <span class="n">snr</span>    <span class="n">frame_num</span><span class="p">:</span><span class="n">trigger_num_in_trigger_file</span>
 # <span class="p">(</span><span class="n">see</span> <span class="n">http</span><span class="p">:</span><span class="o">//</span><span class="n">mbejger</span><span class="p">.</span><span class="n">github</span><span class="p">.</span><span class="n">io</span><span class="o">/</span><span class="n">polgraw</span><span class="o">-</span><span class="n">allsky</span><span class="o">/</span><span class="n">coincidences</span> <span class="k">for</span> <span class="n">details</span><span class="p">)</span>
