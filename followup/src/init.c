@@ -670,12 +670,14 @@ void add_signal(
 		Command_line_opts *opts,
 		Aux_arrays *aux_arr) {
 puts("Adding signal from file");
+
   int i, j, n, gsize, reffr, k, hem; 
-  double snr, sum = 0., h0, cof, thsnr = 0., d1; 
+  double snr=0., sum = 0., h0=0., cof, thsnr = 0., d1; 
   double sigma_noise = 1.0;
   double be[2];
-  double sinaadd, cosaadd, sindadd, cosdadd, phaseadd, shiftadd, signadd; 
+  double sinaadd, cosaadd, sindadd, cosdadd, phaseadd, shiftadd; 
   double nSource[3], sgnlo[8];
+  char amporsnr[3];  
   double **sigaa, **sigbb;   // aa[nifo][N]
   sigaa = (double **)malloc(sett->nifo*sizeof(double *));
   for (k=0; k < sett->nifo; k++) sigaa[k] = (double *)calloc(sett->N, sizeof(double));
@@ -687,11 +689,23 @@ puts("Adding signal from file");
   // Signal parameters are read
   if ((data=fopen (opts->addsig, "r")) != NULL) {
 	
-    // Fscanning for the GW snr, grid size and the reference
-    // frame (for which the signal freq. is not spun-down/up)
-//    fscanf (data, "%le %d %d", &snr, &gsize, &reffr);  
-	fscanf (data, "%le %d %d", &h0, &gsize, &reffr);  
+    // Fscanning for the GW amplitude h0 or signal-to-noise,  
+    // the grid size and the reference frame 
+    // (for which the signal freq. is not spun-down/up)
 
+    fscanf (data, "%s", amporsnr);    
+
+    if(!strcmp(amporsnr, "amp")) { 
+      fscanf (data, "%le %d %d", &h0, &gsize, &reffr); 
+      printf("add_signal(): GW amplitude h0 is %le\n", h0); 
+    } else if(!strcmp(amporsnr, "snr")) { 
+      fscanf (data, "%le %d %d", &snr, &gsize, &reffr); 
+      printf("add_signal(): GW (network) signal-to-noise ratio is %le\n", snr); 
+    } else { 
+      printf("Problem with the signal file. Exiting...\n"); 
+      exit(0); 
+    } 
+puts("-1000 -1000 -1000 -1000 -1000 -1000");
     // Fscanning signal parameters: f, fdot, delta, alpha (sgnlo[0], ..., sgnlo[3])
     // four amplitudes sgnlo[4], ..., sgnlo[7] 
     // (see sigen.c and Phys. Rev. D 82, 022005 2010, Eqs. 2.13a-d) 
@@ -708,7 +722,6 @@ puts("Adding signal from file");
   // Search-specific parametrization of freq. 
   // for the software injections
   // sgnlo[0]: frequency, sgnlo[1]: frequency. derivative  
-  //#mb For VSR1 reffr=67
  
   sgnlo[0] += -2.*sgnlo[1]*(sett->N)*(reffr - opts->ident); 
  
@@ -717,14 +730,11 @@ puts("Adding signal from file");
   else if (sgnlo[0]>M_PI) exit(187); // &raquo;
 
   cof = sett->oms + sgnlo[0]; 
-
+  
 //Hemisphere an be vector 
 //(previously was fscanned from sigfile, now calculated here)
 
   hem = ast2lin(sgnlo[3], sgnlo[2], C_EPSMA, be);
-
-//  printf("%le %le %d\n", be[0], be[1], hem);
-
 
   // sgnlo[2]: declination, sgnlo[3]: right ascension 
   sindadd = sin(sgnlo[2]); 
@@ -736,6 +746,12 @@ puts("Adding signal from file");
   double phaseshift = sgnlo[0]*sett->N*(reffr - opts->ident)   
     + sgnlo[1]*pow(sett->N*(reffr - opts->ident), 2); 
 
+
+  // Allocate arrays for added signal, for each detector 
+  double **signadd = malloc((sett->nifo)*sizeof(double *));
+  for(n=0; n<sett->nifo; n++)
+    signadd[n] = malloc((sett->N)*sizeof(double));
+
   // Loop for each detector - sum calculations
   for(n=0; n<sett->nifo; n++) {
     
@@ -745,9 +761,9 @@ puts("Adding signal from file");
     nSource[0] = cosaadd*cosdadd;
     nSource[1] = sinaadd*cosdadd;
     nSource[2] = sindadd;
-
-    // adding signal to data (point by point)  								
+					
     for (i=0; i<sett->N; i++) {
+      
       shiftadd = 0.; 					 
       for (j=0; j<3; j++)
       	shiftadd += nSource[j]*ifo[n].sig.DetSSB[i*3+j];		 
@@ -758,15 +774,51 @@ puts("Adding signal from file");
         - phaseshift; 
 
       // The whole signal with 4 amplitudes and modulations 
-      signadd = sgnlo[4]*(sigaa[n][i])*cos(phaseadd) 
+
+      signadd[n][i] = sgnlo[4]*(sigaa[n][i])*cos(phaseadd) 
         + sgnlo[6]*(sigaa[n][i])*sin(phaseadd) 
         + sgnlo[5]*(sigbb[n][i])*cos(phaseadd) 
         + sgnlo[7]*(sigbb[n][i])*sin(phaseadd);
 
-// Sum over signals
-      sum += pow(signadd, 2.);
+      // Sum over signals
+      sum += pow(signadd[n][i], 2.);
+    
+    } // data loop
+   
+  } // detector loop
+
+
+  // Signal amplitude h0 from the snr 
+  // (currently only makes sense for Gaussian noise with fixed sigma)
+  if(snr)
+    h0 = (snr*sigma_noise)/(sqrt(sum));
+
+  // Loop for each detector - adding signal to data (point by point)  								
+  for(n=0; n<sett->nifo; n++) {
+    for (i=0; i<sett->N; i++) {
+
+      // Adding the signal to the data vector 
+      if(ifo[n].sig.xDat[i]) { 
+        ifo[n].sig.xDat[i] += h0*signadd[n][i];
+
+      } 
+
+    } // data loop
+
+  } // detector loop
+
+  // printf("snr=%le h0=%le\n", snr, h0);
+
+  // Free auxiliary 2d array 
+  for(n=0; n<sett->nifo; n++) 
+    free(signadd[n]);
+  free(signadd);
+for (i = 0; i < sett->nifo; i++) free(sigaa[i]);
+free(sigaa);
+for (i = 0; i < sett->nifo; i++) free(sigbb[i]);
+free(sigbb); 
+} // add_signal()
 	 
-    } //data loop
 
     // Write the data+signal to file   
 /*    FILE *dataout;
@@ -781,58 +833,9 @@ puts("Adding signal from file");
     else{
     	printf("Problem with %s file!\n", xxx);
     }
-    fclose(dataout); */
+    fclose(dataout); //at the end of detector loop */
     
-  } //detector loop
 
-//Signal amplitude
-
-//  h0 = (snr*sigma_noise)/(sqrt(sum));
-  snr = h0*(sqrt(sum))/sigma_noise;
-
-// Loop for each detector - adding signal to data (point by point)  								
-  for(n=0; n<sett->nifo; n++) {
-    
-    modvir(sinaadd, cosaadd, sindadd, cosdadd,
-	   sett->N, &ifo[n], aux_arr, sigaa[n], sigbb[n]);
-
-    nSource[0] = cosaadd*cosdadd;
-    nSource[1] = sinaadd*cosdadd;
-    nSource[2] = sindadd;
-					
-    for (i=0; i<sett->N; i++) {
-      shiftadd = 0.; 					 
-      for (j=0; j<3; j++)
-      	shiftadd += nSource[j]*ifo[n].sig.DetSSB[i*3+j];		 
-      
-      // Phase 
-      phaseadd = sgnlo[0]*i + sgnlo[1]*aux_arr->t2[i] 
-        + (cof + 2.*sgnlo[1]*i)*shiftadd
-        - phaseshift; 
-
-      // The whole signal with 4 amplitudes and modulations 
-      signadd = sgnlo[4]*(sigaa[n][i])*cos(phaseadd) 
-        + sgnlo[6]*(sigaa[n][i])*sin(phaseadd) 
-        + sgnlo[5]*(sigbb[n][i])*cos(phaseadd) 
-        + sgnlo[7]*(sigbb[n][i])*sin(phaseadd);
-
-      // Adding the signal to the data vector 
-      if(ifo[n].sig.xDat[i]) { 
-        ifo[n].sig.xDat[i] += h0*signadd;
-      } // if xDat
- 
-    } //data loop
-  } //detector loop
-
-//printf("snr=%le h0=%le\n", snr, h0);
-
-// Free memory
-for (i = 0; i < sett->nifo; i++) free(sigaa[i]);
-free(sigaa);
-for (i = 0; i < sett->nifo; i++) free(sigbb[i]);
-free(sigbb);
-//exit(0);
-} //add_signal
 
   /* Cleanup & memory free 
 	 */
