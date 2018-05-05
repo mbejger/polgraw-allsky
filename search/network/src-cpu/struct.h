@@ -39,6 +39,10 @@ typedef struct _signals {
   double *DetSSB;       // Ephemeris of the detector
   double *aa, *bb;      // Amplitude modulation functions
   double *shftf, *shft; // Resampling and time-shifting
+
+  // Derivatives of amplitude modulation functions
+  // with respect to delta and alpha 
+  double *daadalf, *daaddel, *dbbdalf, *dbbddel; 
   
   double epsm, 
          phir, 

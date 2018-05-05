@@ -16,7 +16,7 @@ CFLAGS = -DPREFIX="./candidates" -DCODEVER=$(VER) -DTIMERS=1 -D$(SINCOS) #-DVERB
 CFLAGS += -I$(FFTW_DIR)/include 
 CFLAGS += -g -Wall -Wno-unused -fno-omit-frame-pointer \
 	  -Ofast -ffast-math -funsafe-loop-optimizations -funroll-loops \
-	  -march=sandybridge -mtune=sandybridge -mavx
+#	  -march=sandybridge -mtune=sandybridge -mavx
 #	  -march=haswell -mtune=haswell -mavx2
 #sandy-bridge (psk)
 #	-march=corei7-avx -mtune=corei7-avx -mavx
@@ -93,6 +93,9 @@ bench: bench.o settings.o init.o auxi.o
 CFLAGS += -I$(ARB_DIR)/include
 
 fisher: fisher.o settings.o init.o auxi.o
+	$(CC) -o $@ $^ -Wl,-Bdynamic,-rpath,$(ARB_DIR)/lib/ -lrt -lm -lgsl -lgslcblas -lfftw3 -lc -L$(ARB_DIR)/lib -larb -lflint -lpthread -lmpfr -lgmp 
+
+fisher_exact: fisher_exact.o settings.o init.o auxi.o
 	$(CC) -o $@ $^ -Wl,-Bdynamic,-rpath,$(ARB_DIR)/lib/ -lrt -lm -lgsl -lgslcblas -lfftw3 -lc -L$(ARB_DIR)/lib -larb -lflint -lpthread -lmpfr -lgmp 
 
 #gridopt.o: gridopt.c 
