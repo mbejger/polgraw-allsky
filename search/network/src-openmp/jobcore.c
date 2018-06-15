@@ -20,7 +20,16 @@
 #include <assert.h>
 #if defined(SLEEF)
 //#include "sleef-2.80/purec/sleef.h"
-#include <sleefsimd.h>
+//#include <sleefsimd.h>
+#include <sleef.h>
+#define DORENAME
+#ifdef ENABLE_AVX
+#define CONFIG 1
+#include "helperavx.h"
+#include "renameavx.h"
+typedef Sleef___m256d_2 vdouble2;
+typedef Sleef___m256_2 vfloat2;
+#endif
 #elif defined(YEPPP)
 #include <yepMath.h>
 #include <yepLibrary.h>
@@ -46,7 +55,6 @@ void save_array_double(double *arr, int N, const char* file) {
   }
   fclose(fc);
 }
-
 
 // Main searching function (loops inside)
 void search(
@@ -508,10 +516,10 @@ int job_core(int pm,                   // Hemisphere
 	for(j=0; j<VECTLENDP; j++)
 	  _p[j] =  het1*(i+j) + sgnlt[1]*_tmp1[0][i+j];
 	
-	a = vloadu(_p);
-	v = xsincos(a);
-	vstoreu(_p, v.x); // reuse _p for sin
-	vstoreu(_c, v.y);
+	a = vloadu_vd_p(_p);
+	v = xsincos_u1(a);
+	vstoreu_v_p_vd(_p, v.x); // reuse _p for sin
+	vstoreu_v_p_vd(_c, v.y);
 	
 	for(j=0; j<VECTLENDP; ++j){
 	  exph = _c[j] - I*_p[j];
@@ -587,10 +595,10 @@ int job_core(int pm,                   // Hemisphere
 	  for(j=0; j<VECTLENDP; j++)
 	    _p[j] =  het1*(i+j) + sgnlt[1]*_tmp1[n][i+j];
 	  
-	  a = vloadu(_p);
-	  v = xsincos(a);
-	  vstoreu(_p, v.x); // reuse _p for sin
-	  vstoreu(_c, v.y);
+	  a = vloadu_vd_p(_p);
+	  v = xsincos_u1(a);
+	  vstoreu_v_p_vd(_p, v.x); // reuse _p for sin
+	  vstoreu_v_p_vd(_c, v.y);
 	
 	  for(j=0; j<VECTLENDP; ++j){
 	    exph = _c[j] - I*_p[j];
