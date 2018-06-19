@@ -68,10 +68,11 @@ void search(
 
   // struct stat buffer;
   struct flock lck;
-
+  
   int pm, mm, nn;       // hemisphere, sky positions 
   int sgnlc=0;          // number of candidates
   FLOAT_TYPE *sgnlv;    // array with candidates data
+  long totsgnl;        // total number of candidates
 
   char outname[512];
   int fd, status;
@@ -99,7 +100,7 @@ void search(
 
     sprintf (outname, "%s/triggers_%03d_%04d%s_%d.bin", 
 	     opts->prefix, opts->ident, opts->band, opts->label, pm);
-    
+    totsgnl = 0;
     /* Two main loops over sky positions */ 
     
     for (mm=s_range->mst; mm<=s_range->mr[1]; ++mm) {	
@@ -147,9 +148,10 @@ void search(
           if (fcntl (fd, F_SETLKW, &lck) < 0) perror ("fcntl()");
 #endif
           write(fd, (void *)(sgnlv), sgnlc*NPAR*sizeof(FLOAT_TYPE));
+	  totsgnl += sgnlc;
           if (close(fd) < 0) perror ("close()");
 	  sgnlc=0;
-
+	  
 	} /* if sgnlc > sett-nfft */
       } // for nn
       s_range->nst = s_range->nr[0];
@@ -172,9 +174,11 @@ void search(
     if (fcntl (fd, F_SETLKW, &lck) < 0) perror ("fcntl()");
 #endif
     write(fd, (void *)(sgnlv), sgnlc*NPAR*sizeof(FLOAT_TYPE));
+    totsgnl += sgnlc;
+    printf("\n### Total number of signals in %s = %ld\n\n", outname, totsgnl);
     if (close(fd) < 0) perror ("close()");
     sgnlc=0; 
-
+    
   } // for pm
   
   //#mb state file has to be modified accordingly to the buffer
@@ -183,11 +187,11 @@ void search(
 
   // Free triggers buffer
   free(sgnlv);
-
+  
 #ifdef TIMERS
   tend = get_current_time(CLOCK_REALTIME);
   double time_elapsed = get_time_difference(tstart, tend);
-  printf("Time elapsed: %e s\n", time_elapsed);
+  printf("\nwalltime = %e s | ncpus = %d | cputime = %e\n", time_elapsed, omp_get_max_threads(), time_elapsed*omp_get_max_threads());
 #endif
 
 }
