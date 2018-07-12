@@ -43,7 +43,7 @@ int main (int argc, char *argv[]) {
 		date_fname[MAX_LINE], sft_fname[MAX_LINE];
 	double fpo, tmp1, tmp2, gpsd, gpsd1, gpsdn, gps1, *gpsdv, *gpsd1v,	\
 		gpsdRest = 0;
-	int N, lfft, lfftr, lfftm, lenx, ldat, n, i, j,	   \
+	int N, lfft, lfftr, lfftm, lenx, ldat, n, i, j, yndx, notempty,	   \
 		bufsize = BUFSIZE, dd = 1, nSeg, noutl, nfiles = 0,    \
 		nxRest = 0, nxall = 0, flidx, offset;
 	double *rdt, *rtmp, *xtime, *x0, alpha, dt, othr, *xRest=NULL,	\
@@ -309,15 +309,35 @@ int main (int argc, char *argv[]) {
 			sprintf (tdc_fname, "%s/xdatc_%03d_%s.bin", td_dir, dd, plsr);
 			sprintf (date_fname, "%s/starting_date", td_dir);
 			fprintf (stderr, "%03d\t", dd);
-			// write xdat_*.bin file
-			if ((td_stream=fopen (td_fname, "w")) != NULL) {
-				fwrite ((void *)(xall+i*N), sizeof(double), N, td_stream);
-				fclose (td_stream);
+			// Do "xall" contains only zeros?
+			notempty=0;
+			for (yndx=0; yndx < N; yndx++){
+				if(xall[yndx] != 0.0){
+					notempty=1;// not empty
+					break;
+				}
+			}
+			// write xdat_*.bin file if not contains only zeros
+			if(notempty){
+				if ((td_stream=fopen (td_fname, "w")) != NULL) {
+					fwrite ((void *)(xall+i*N), sizeof(double), N, td_stream);
+					fclose (td_stream);
+				}
+			}
+			// Do this part of "x0" contains only zeros?
+			notempty=0;
+			for (yndx=0; yndx < N; yndx++){
+				if(x0[i*N+yndx] !=0.0){
+					notempty=1;
+					break;
+				}
 			}
 			// write xdatc_*.bin file
-			if ((td_stream=fopen (tdc_fname, "w")) != NULL) {
-				fwrite ((void *)(x0+i*N), sizeof(double), N, td_stream);
-				fclose (td_stream);
+			if(notempty){
+				if ((td_stream=fopen (tdc_fname, "w")) != NULL) {
+					fwrite ((void *)(x0+i*N), sizeof(double), N, td_stream);
+					fclose (td_stream);
+				}
 			}
 			if ((td_stream=fopen (date_fname, "w")) != NULL) {
 				fprintf (td_stream, "%.10e\n", gps1);
