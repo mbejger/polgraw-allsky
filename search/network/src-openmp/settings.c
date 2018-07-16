@@ -325,7 +325,7 @@ int read_lines(Search_settings *sett,
     char linefile[512], line[128] = {0}; 
     FILE *data; 
   
-    sprintf(linefile, "%s/O1LinesToBeCleaned_%s_v1.txt", 
+    sprintf(linefile, "%s/O2LinesToBeCleaned_%s_v1.txt", 
         opts->dtaprefix, ifo->name);
 
     // Reading line data from the input file (data)   
