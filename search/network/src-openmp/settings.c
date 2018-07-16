@@ -460,6 +460,8 @@ int read_lines(Search_settings *sett,
 
             // Line width from the resampling broadening 
             Dfmaxmax = 2.*fdotMax*(sett->N*sett->dt + sqrt(normdtEmax)) + l[i][0]*sqrt(normdEmax);
+	    // scaling with nod (relative to nod=6)
+	    Dfmaxmax *= 6./sett->nod;
 
             // The original width of a line is replaced with Dfmaxmax
             ifo->lines[j][0] = l[i][0] - Dfmaxmax; 
@@ -482,6 +484,8 @@ int read_lines(Search_settings *sett,
 
                 Dfmaxmax = 2.*fdotMax*(sett->N*sett->dt + sqrt(normdtEmax)) 
                   + linefreq*sqrt(normdEmax);
+		// scaling with nod (relative to nod=6)
+		Dfmaxmax *= 6./sett->nod;
 
                 // The original width of a line is replaced with Dfmaxmax
                 ifo->lines[j][0] = linefreq - Dfmaxmax;
@@ -505,6 +509,8 @@ int read_lines(Search_settings *sett,
 
                 Dfmaxmax = 2.*fdotMax*(sett->N*sett->dt + sqrt(normdtEmax)) 
                   + linefreq*sqrt(normdEmax);
+		// scaling with nod (relative to nod=6)
+		Dfmaxmax *= 6./sett->nod;
 
                 ifo->lines[j][0] = linefreq - k*Dfmaxmax;
                 ifo->lines[j][1] = linefreq + k*Dfmaxmax;
