@@ -106,12 +106,6 @@ void search(
     for (mm=s_range->mst; mm<=s_range->mr[1]; ++mm) {	
       for (nn=s_range->nst; nn<=s_range->nr[1]; ++nn) {	
 	
-        if(opts->checkp_flag) {
-          ftruncate(fileno(state), 0);  
-	  fprintf(state, "%d %d %d %d %d\n", pm, mm, nn, s_range->sst, *FNum);
-	  fseek(state, 0, SEEK_SET);
-	}
-	
 	/* Loop over spindowns is inside job_core() */
 	status = job_core(
 			  pm,           // hemisphere
@@ -151,7 +145,13 @@ void search(
 	  totsgnl += sgnlc;
           if (close(fd) < 0) perror ("close()");
 	  sgnlc=0;
-	  
+	
+	  if(opts->checkp_flag) {
+	    ftruncate(fileno(state), 0);  
+	    fprintf(state, "%d %d %d %d %d\n", pm, mm, nn, s_range->sst, *FNum);
+	    fseek(state, 0, SEEK_SET);
+	  }
+  
 	} /* if sgnlc > sett-nfft */
       } // for nn
       s_range->nst = s_range->nr[0];
