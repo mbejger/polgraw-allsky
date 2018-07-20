@@ -45,4 +45,7 @@ double det (const double *, int);
 // for qsorting the lines
 int compared2c (const void *, const void *);
 
+// signal handler
+static void sig_handler(int signo);
+
 #endif

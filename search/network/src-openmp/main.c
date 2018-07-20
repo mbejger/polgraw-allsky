@@ -13,6 +13,7 @@
 #include <gsl/gsl_linalg.h>
 #include <time.h>
 #include <dirent.h>
+#include <signal.h>
 
 #include "auxi.h"
 #include "settings.h"
@@ -33,6 +34,8 @@
 #define DTAPREFIX .
 #endif
 
+volatile sig_atomic_t save_state = 0;
+
 
 int main (int argc, char* argv[]) {
 
@@ -47,6 +50,9 @@ int main (int argc, char* argv[]) {
 #define CVSTR STR(CODEVER)
 
   printf("Code version : " CVSTR "\n");
+  if (signal(SIGINT, sig_handler) != SIG_ERR &&
+      signal(SIGTERM, sig_handler) != SIG_ERR )
+    printf("State saved on SIGTERM or SIGINT\n");    
 
   // Command line options 
   handle_opts(&sett, &opts, argc, argv);  
@@ -148,4 +154,10 @@ int main (int argc, char* argv[]) {
 
   return 0; 
 	
+}
+
+
+static void sig_handler(int signo)
+{
+  if (signo == SIGTERM || signo == SIGINT) save_state = 1;
 }

@@ -10,6 +10,7 @@
 #include <gsl/gsl_vector.h>
 #include <complex.h>
 #include <fftw3.h>
+#include <signal.h>
 
 /* JobCore file */
 #include "jobcore.h"
@@ -37,6 +38,8 @@ typedef Sleef___m256_2 vfloat2;
 #endif
 
 #include <omp.h>
+
+extern volatile sig_atomic_t save_state;
 
 void save_array(complex double *arr, int N, const char* file) {
   int i;
@@ -126,7 +129,7 @@ void search(
 
 	/* Add trigger parameters to a file */
 	// if enough signals found (no. of signals > half length of buffer)
-	if (sgnlc > sett->nfft) {
+	if (sgnlc > sett->nfft || save_state == 1) {
 	  if((fd = open (outname, 
 			 O_WRONLY|O_CREAT|O_APPEND, S_IRUSR|
 			 S_IWUSR|S_IRGRP|S_IROTH)) < 0) {
@@ -150,8 +153,14 @@ void search(
 	    ftruncate(fileno(state), 0);  
 	    fprintf(state, "%d %d %d %d %d\n", pm, mm, nn, s_range->sst, *FNum);
 	    fseek(state, 0, SEEK_SET);
+	    if (save_state == 1) {
+	      printf("%d %d %d %d %d\n", pm, mm, nn, s_range->sst, *FNum);
+	      printf("\nState saved after signal\nExiting\n");
+	      exit(EXIT_SUCCESS);
+	    }
 	  }
-  
+	  save_state = 0;
+
 	} /* if sgnlc > sett-nfft */
       } // for nn
       s_range->nst = s_range->nr[0];
