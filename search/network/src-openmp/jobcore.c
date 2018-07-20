@@ -151,10 +151,10 @@ void search(
 	
 	  if(opts->checkp_flag) {
 	    ftruncate(fileno(state), 0);  
-	    fprintf(state, "%d %d %d %d %d\n", pm, mm, nn, s_range->sst, *FNum);
+	    fprintf(state, "%d %d %d %d %d\n", pm, mm, nn+1, s_range->sst, *FNum);
 	    fseek(state, 0, SEEK_SET);
 	    if (save_state == 1) {
-	      printf("%d %d %d %d %d\n", pm, mm, nn, s_range->sst, *FNum);
+	      //printf("%d %d %d %d %d\n", pm, mm, nn+1, s_range->sst, *FNum);
 	      printf("\nState saved after signal\nExiting\n");
 	      exit(EXIT_SUCCESS);
 	    }
