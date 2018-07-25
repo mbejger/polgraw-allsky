@@ -1,4 +1,4 @@
-SEARCH_DIR = ../search/network/src-cpu
+SEARCH_DIR = ../../search/network/src-cpu
 
 # FFTW_DIR - fftw location, remember to compile it with optimizations (e.g. avx)
 # SINCOS = {YEPPP or SLEEF or GNUSINCOS or NOSINCOS}
