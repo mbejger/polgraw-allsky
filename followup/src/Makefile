@@ -1,8 +1,8 @@
-SEARCH_DIR = ../../search/network/src-cpu
+SEARCH_DIR = ../search/network/src-cpu
 
 # FFTW_DIR - fftw location, remember to compile it with optimizations (e.g. avx)
 # SINCOS = {YEPPP or SLEEF or GNUSINCOS or NOSINCOS}
-FFTW_DIR = /opt/fftw/3.3.4/gnu
+FFTW_DIR = /opt/fftw/3.3.7-gcc7.2-mvapich2.2/
 SINCOS =  YEPPP #YEPPP or SLEEF or GNUSINCOS or NOSINCOS
 
 CC = gcc
@@ -11,8 +11,8 @@ CC = gcc
 CFLAGS = -DPREFIX="./candidates" -DTIMERS -D$(SINCOS)
 CFLAGS += -I$(FFTW_DIR)/include -I$(SEARCH_DIR)
 CFLAGS += -g -Wall -Wno-unused -fno-omit-frame-pointer \
-	-O3 -ffast-math -funsafe-loop-optimizations -funroll-loops -fopenmp \
-#	-march=corei7-avx -mtune=corei7-avx -mavx -fopenmp 
+	-O3 -ffast-math -funsafe-loop-optimizations -funroll-loops \
+	-march=haswell -mtune=haswell -mavx2 -fopenmp -mfma
 #cpu specific optimizations e.g.: 
 #sandy-bridge (psk)
 	#-march=corei7-avx -mtune=corei7-avx -mavx
@@ -21,9 +21,7 @@ CFLAGS += -g -Wall -Wno-unused -fno-omit-frame-pointer \
 
 LDFLAGS = -L$(FFTW_DIR)/lib
 
-LOADLIBES = -Wl,--dynamic-linker=/lib64/ld-linux-x86-64.so.2 \
-	    -static -lfftw3 -lgsl -lgslcblas \
-	    -Wl,-Bdynamic -lc -lrt -lm -fopenmp 
+LOADLIBES = -Wl,-Bdynamic -lc -lrt -lm -fopenmp -lfftw3 -lgsl -lgslcblas
 
 ifeq ($(strip $(SINCOS)),SLEEF)
 SPATH = $(SEARCH_DIR)/lib/sleef-2.80/simd
