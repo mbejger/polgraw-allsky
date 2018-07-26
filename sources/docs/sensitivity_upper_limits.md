@@ -41,7 +41,7 @@ Activate the virtual environment
 (to leave the environment, type `deactivate`). You can now install specific packages using the `pip` installer: 
 
 ```bash
-pip install nympy
+pip install numpy
 pip install scipy
 pip install matplotlib
 pip install pandas
@@ -100,7 +100,7 @@ band h   ul
 `script2.py` creates subdirectories and a `job_BAND.sub` file for a list of amplitudes for BAND from `bandlist`, stacked one after another (can be handy to send one band as one job to the queue). Call: 
 
 ```bash
-% python script2.sh config.ini bandlist
+% python script2.py config.ini bandlist
 ```
 and then (for e.g., band 0165) send it to the queue 
 ```bash 

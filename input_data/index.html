@@ -134,7 +134,7 @@ Written by Pia Astone (INFN, Physics Department of University of Rome "La Sapien
 <h3 id="prerequisites">Prerequisites</h3>
 <p>C compiler &amp; standard C libraries (<code>math.h</code>). Links to the PSS library (created by Pia Astone).</p>
 <h3 id="example">Example</h3>
-<div class="codehilite"><pre><span class="c">% extract_band &lt; input_file</span>
+<div class="codehilite"><pre><span></span><span class="c">% extract_band &lt; input_file</span>
 </pre></div>
 
 
@@ -147,7 +147,7 @@ Written by Pia Astone (INFN, Physics Department of University of Rome "La Sapien
 <li>The width of frequency band in Hz</li>
 </ul>
 <p>e.g.,  </p>
-<div class="codehilite"><pre>100000
+<div class="codehilite"><pre><span></span>100000
 J0034+1612_2010-10-10.out
 J0034+1612_2010-10-10.list
 718.2480
@@ -156,7 +156,7 @@ J0034+1612_2010-10-10.list
 
 
 <h3 id="output">Output</h3>
-<div class="codehilite"><pre><span class="c">% Beginning freq- Band- Samples in one stretch- Subsampling factor- inter (overlapping, 2 if data were overlapped)- Frequency step- Scaling factor- ***The data are real and imag of the FFT</span>
+<div class="codehilite"><pre><span></span><span class="c">% Beginning freq- Band- Samples in one stretch- Subsampling factor- inter (overlapping, 2 if data were overlapped)- Frequency step- Scaling factor- ***The data are real and imag of the FFT</span>
 <span class="c">% 908.152344 0.250000 256 8192.000000 2  0.0009766 1.000000e-20</span>
 <span class="c">% FFT number in the file; Beginning mjd days; Gps s; Gps ns;</span>
 <span class="c">% 100 55099.5879745370 937922816 0</span>
@@ -186,7 +186,7 @@ J0034+1612_2010-10-10.list
 </ul>
 <p>An example for two LIGO detectors H1 and L1, and data frame segments <script type="math/tex">nnn=001-008</script> with pure Gaussian noise 2-day time segments with sampling time equal to 2s for a fiducial narrow band number <script type="math/tex">bbbb=1234</script> (<code>xdatc_nnn_1234.bin</code>) coresponding the the band frequency <script type="math/tex">fpo=308.859375</script> is <a href="https://polgraw.camk.edu.pl/H1L1_2d_0.25.tar.gz">available here</a>. </p>
 <p>A typical directory structure is as follows: </p>
-<div class="codehilite"><pre>001
+<div class="codehilite"><pre><span></span>001
 ├── grid.bin
 ├── H1
 │   ├── DetSSB.bin
@@ -202,7 +202,7 @@ J0034+1612_2010-10-10.list
 
 
 <p>Beginning of each time frame is saved in the <code>nnn/DD/starting_date</code> file, e.g., </p>
-<div class="codehilite"><pre><span class="c">% cat 2d_0.25/001/H1/starting_date</span>
+<div class="codehilite"><pre><span></span><span class="c">% cat 2d_0.25/001/H1/starting_date</span>
 <span class="mf">1.1260846080e+09</span>
 </pre></div>
 
@@ -217,18 +217,18 @@ Neighboring bands overlap by <script type="math/tex">2^{-5}/(2dt)\ \mathrm{Hz}</
 <h3 id="prerequisites_1">Prerequisites</h3>
 <p>C compiler and standard libraries (<code>math.h</code>, <code>sys/time.h</code> for <code>gettimeofday</code>). The code depends on the <a href="http://www.gnu.org/software/gsl/">GNU Scientific Library (GSL)</a> random number generation (<code>gsl/gsl_rng.h</code>) and random number distributions (<code>gsl/gsl_randist.h</code>; using the Marsaglia-Tsang ziggurat implementation).</p>
 <h3 id="compilation">Compilation</h3>
-<div class="codehilite"><pre>% gcc gauss-xdat.c -o gauss-xdat -lm -lgsl -lgslcblas
+<div class="codehilite"><pre><span></span>% gcc gauss-xdat.c -o gauss-xdat -lm -lgsl -lgslcblas
 </pre></div>
 
 
 <h3 id="example_1">Example</h3>
 <p>The program takes input values from the command line: </p>
-<div class="codehilite"><pre>% ./gauss-xdat N amplitude sigma output-file 
+<div class="codehilite"><pre><span></span>% ./gauss-xdat N amplitude sigma output-file 
 </pre></div>
 
 
 <p>e.g., </p>
-<div class="codehilite"><pre>% ./gauss-xdat <span class="m">86164</span> <span class="m">1</span> <span class="m">1</span> ../../../testdata/2d_0.25/001/H1/xdatc_001_1234.bin
+<div class="codehilite"><pre><span></span>% ./gauss-xdat <span class="m">86164</span> <span class="m">1</span> <span class="m">1</span> ../../../testdata/2d_0.25/001/H1/xdatc_001_1234.bin
 </pre></div>
 
 
