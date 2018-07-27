@@ -1,0 +1,13 @@
+#! /bin/bash -l
+# 
+#SBATCH -p short
+#SBATCH --mem-per-cpu=3GB
+#SBATCH -A bejger-grp 
+
+cd $SLURM_SUBMIT_DIR
+
+for d in $(seq -f %03g $start $howmany); do
+
+  bash script.sh $d 1> /dev/null 2> /dev/null
+
+done
