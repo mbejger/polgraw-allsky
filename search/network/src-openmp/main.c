@@ -50,9 +50,9 @@ int main (int argc, char* argv[]) {
 #define CVSTR STR(CODEVER)
 
   printf("Code version : " CVSTR "\n");
-  if (signal(SIGINT, sig_handler) != SIG_ERR &&
+  if (signal(SIGUSR1, sig_handler) != SIG_ERR &&
       signal(SIGTERM, sig_handler) != SIG_ERR )
-    printf("State saved on SIGTERM or SIGINT\n");    
+    printf("State saved on SIGTERM or SIGUSR1\n");    
 
   // Command line options 
   handle_opts(&sett, &opts, argc, argv);  
@@ -144,8 +144,9 @@ int main (int argc, char* argv[]) {
   // state file zeroed at the end of the run
   FILE *state;
   if(opts.checkp_flag) {
-    state = fopen (opts.qname, "w");
-    fclose (state);
+    remove(opts.qname);
+    //state = fopen (opts.qname, "w");
+    //fclose (state);
   }
 	
   // Cleanup & memory free 
@@ -159,5 +160,5 @@ int main (int argc, char* argv[]) {
 
 static void sig_handler(int signo)
 {
-  if (signo == SIGTERM || signo == SIGINT) save_state = 1;
+  if (signo == SIGTERM || signo == SIGUSR1) save_state = 1;
 }
