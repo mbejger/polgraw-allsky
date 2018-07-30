@@ -203,6 +203,8 @@ void search(
   printf("\nwalltime = %e s | ncpus = %d | cputime = %e\n", time_elapsed, omp_get_max_threads(), time_elapsed*omp_get_max_threads());
 #endif
 
+  printf("\nEND\n");
+
 }
 
 
