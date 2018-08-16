@@ -261,15 +261,20 @@ int main(int argc, char *argv[]) {
 
   } // end of reading line data in case of -d 
 
-  rrn[0] = (double)(sett.nmin)/sett.nfft ; 
-  rrn[1] = (double)(sett.nmax)/sett.nfft ;  
+  //#mb Changing the limits near the bands border 
+  //rrn[0] = (double)(sett.nmin)/sett.nfft ; 
+  //rrn[1] = (double)(sett.nmax)/sett.nfft ;  
+
+  //#mb For O2 UL simulation run 
+  rrn[0] = M_PI/20.; 
+  rrn[1] = M_PI - rrn[0]; 
 
   // Random signal parameters 
   //------------------------- 
 
   // Frequency derivative 
-  sgnlo[1] = -sett.Smax*get_rand() ;
-
+  sgnlo[1] = sett.Smin - (sett.Smin + sett.Smax)*get_rand();
+  
   if(evade_flag) { 
   // Frequency must not fall into one of know lines 
   do { 
@@ -303,13 +308,20 @@ int main(int argc, char *argv[]) {
   } while (!freq_line_check) ; 
 
   // Frequency in (0, \pi) range  
-  sgnlo[0] *= M_PI ;
+  //#mb Check if this is consistent with the definition 
+  // of rrn[0] and rrn[1]  
+  sgnlo[0] *= 2*M_PI ;
 
   // Lines will not be avoided
 
   } else { 
-	
-	sgnlo[0] =  M_PI*get_rand()*(rrn[1] - rrn[0]) + rrn[0] ;	
+
+	  //sgnlo[0] =  2*M_PI*get_rand()*(rrn[1] - rrn[0]) + rrn[0];	
+	  //
+	  //#mb this is compatible with the definition of 
+	  // rrn[0] = M_PI/20., rrn[1] = M_PI - rrn[0]
+
+	  sgnlo[0] =  get_rand()*(rrn[1] - rrn[0]) + rrn[0];	
 
   } 
 
