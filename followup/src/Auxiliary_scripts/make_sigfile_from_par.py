@@ -19,9 +19,11 @@ with open(sys.argv[2]) as f:
         # expecting only one number, the gps time in seconds 
         stime = float(l[0])
 
-# GW frequency and frequency derivative (2 \times F0 and F1) 
+# GW frequency (2 \times F0) 
 freq = 2.*float(pdata['F0']) 
-f1dot = 2.*float(pdata['F1']) 
+# Scaled frequency derivative from Hz/s units to non-dimensional
+f1_temp=2.*float(pdata['F1'])
+f1dot = 0.5*2*np.pi*f1_temp*4 
 
 # Our setup: sampling time dt and band number 
 dt = 2
@@ -31,7 +33,7 @@ band = float(sys.argv[3])
 fpo = 10. + 0.96875*band/(2.0*dt) 
 
 # Frequency of the pulsar at stime 
-fnow = freq + (stime - reftime)*f1dot
+fnow = freq + (stime - reftime)*f1_temp
 
 # Frequency in the band of width 2*dt in [0, pi]
 finband = (fnow - fpo)*(2*dt)*np.pi 
