@@ -93,7 +93,7 @@ void detectors_settings(Search_settings* sett,
 
   int i=0; 
 
-  char dirname[512], x[512];
+  char dirname[516], x[1332];
   // Main input directory name 
   sprintf (dirname, "%s/%03d", opts->dtaprefix, opts->ident); 
 
@@ -322,7 +322,7 @@ int read_lines(Search_settings *sett,
 
     int i=0, lnum, alllines, j; 
     double l[MAXL][7]; 
-    char linefile[512], line[128] = {0}; 
+    char linefile[542], line[128] = {0}; 
     FILE *data; 
   
     sprintf(linefile, "%s/O2LinesToBeCleaned_%s_v1.txt", 

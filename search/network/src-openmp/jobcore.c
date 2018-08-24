@@ -77,7 +77,7 @@ void search(
   FLOAT_TYPE *sgnlv;    // array with candidates data
   long totsgnl;        // total number of candidates
 
-  char outname[512];
+  char outname[1100];
   int fd, status;
   FILE *state;
 
