@@ -261,15 +261,20 @@ int main(int argc, char *argv[]) {
 
   } // end of reading line data in case of -d 
 
-  rrn[0] = (double)(sett.nmin)/sett.nfft ; 
-  rrn[1] = (double)(sett.nmax)/sett.nfft ;  
+  //#mb Changing the limits near the bands border 
+  //rrn[0] = (double)(sett.nmin)/sett.nfft ; 
+  //rrn[1] = (double)(sett.nmax)/sett.nfft ;  
+
+  //#mb For O2 UL simulation run 
+  rrn[0] = M_PI/20.; 
+  rrn[1] = M_PI - rrn[0]; 
 
   // Random signal parameters 
   //------------------------- 
 
   // Frequency derivative 
-  sgnlo[1] = -sett.Smax*get_rand() ;
-
+  sgnlo[1] = sett.Smin - (sett.Smin + sett.Smax)*get_rand();
+  
   if(evade_flag) { 
   // Frequency must not fall into one of know lines 
   do { 
@@ -303,13 +308,20 @@ int main(int argc, char *argv[]) {
   } while (!freq_line_check) ; 
 
   // Frequency in (0, \pi) range  
-  sgnlo[0] *= M_PI ;
+  //#mb Check if this is consistent with the definition 
+  // of rrn[0] and rrn[1]  
+  sgnlo[0] *= 2*M_PI ;
 
   // Lines will not be avoided
 
   } else { 
-	
-	sgnlo[0] =  M_PI*get_rand()*(rrn[1] - rrn[0]) + rrn[0] ;	
+
+	  //sgnlo[0] =  2*M_PI*get_rand()*(rrn[1] - rrn[0]) + rrn[0];	
+	  //
+	  //#mb this is compatible with the definition of 
+	  // rrn[0] = M_PI/20., rrn[1] = M_PI - rrn[0]
+
+	  sgnlo[0] =  get_rand()*(rrn[1] - rrn[0]) + rrn[0];	
 
   } 
 
@@ -323,20 +335,28 @@ int main(int argc, char *argv[]) {
 
   // Random sky position such that the signal is on the grid 
   // (inner loop), but is far enough from the poles (outer loop) 
-  do { 
-  	do { 
-		be1 = 2.*get_rand() - 1 ; 
-		be2 = 2.*get_rand() - 1 ;
 
-  	} while(sqr(be1)+sqr(be2) > 1) ; 
+  // Uniform sphere sampling algorithm 
+  double x1, x2, X, Y, Z; 
+  do {
 
-  	lin2ast (be1, be2, pm, sepsm, cepsm, &sinalt, &cosalt, &sindelt, &cosdelt);
+    do { 
+
+      x1 = 2*get_rand() - 1;
+      x2 = 2*get_rand() - 1;
+
+    } while(x1*x1 + x2*x2 >= 1); 
+       
+
+    X = 2*x1*sqrt(1 - x1*x1 - x2*x2);
+    Y = 2*x2*sqrt(1 - x1*x1 - x2*x2);
+    Z = 1 - 2*(x1*x1 + x2*x2);
   
   	// Sky position: declination
-  	sgnlo[2] = asin (sindelt);
+  	sgnlo[2] = M_PI_2 - acos(Z); 
 
-	// Right ascension
-  	sgnlo[3] = fmod (atan2 (sinalt, cosalt) + 2.*M_PI, 2.*M_PI);
+	  // Right ascension
+  	sgnlo[3] = atan2(Y, X) + M_PI; 
 
 	// breaks out of the outer loop
 	// if there is no -d switch with info about known lines   
