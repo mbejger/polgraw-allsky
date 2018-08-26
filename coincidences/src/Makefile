@@ -10,6 +10,7 @@ CC = gcc -std=gnu11 -static-libgcc
 CFLAGS = -I$(SEARCH_DIR) -I$(FFTW_DIR)/include
 CFLAGS += -g -Wall -Wno-unused -fno-omit-frame-pointer \
 	  -O3 -funsafe-loop-optimizations -funroll-loops \
+		-march=broadwell -mtune=broadwell -mavx2
 #	  -march=sandybridge -mtune=sandybridge -mavx
 
 #cpu specific optimizations e.g.: 
@@ -46,6 +47,10 @@ auxi.o: $(SEARCH_DIR)/auxi.c $(SEARCH_DIR)/auxi.h
 
 fap: fap.o settings.o auxi.o
 	$(CC) -o $@ $^ -lc -lrt -lm -lgsl -lgslcblas -lfftw3
+
+fap-many: fap-many.o settings.o auxi.o
+	$(CC) -o $@ $^ -lc -lrt -lm -lgsl -lgslcblas -lfftw3
+
 
 doc:
 	doxygen ../doc/Doxyfile

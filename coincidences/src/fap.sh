@@ -1,6 +1,8 @@
 #!/bin/bash 
 
-nod=2
+echo "Check the script settings: nod, cellsize, threshold!" 
+
+nod=24
 cellsize=4
 threshold=1.0
 

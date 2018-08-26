@@ -225,47 +225,52 @@ int main (int argc, char *argv[]) {
 
   if ((data=fopen (datafile, "r")) != NULL) {
 
-    short int i, shift, nof, band, hemi;
-    double fpofile;  
+    // until the end-of-file 
+    do { 
 
-    status = fscanf(data, "%hu_%hu %hu %lf %hu %hu",  
-             &band, &hemi, &shift, &fpofile, &nof, &noc); 
+      short int i, shift, nof, band, hemi;
+      double fpofile;  
 
-    int Nk[nof], Nku[nof], frn[nof], frnc[noc], Nkall=0;
-    double sigpar[5]; 
+      status = fscanf(data, "%hu_%hu %hu %lf %hu %hu",  
+                 &band, &hemi, &shift, &fpofile, &nof, &noc);   
 
-    // Coincidence signal parameters (f, s, d, a, snr) 
-    for(i=0; i<5; i++) 
-      status = fscanf(data, "%le", &sigpar[i]); 
+      int Nk[nof], Nku[nof], frn[nof], frnc[noc], Nkall=0;
+      double sigpar[5]; 
 
-    // Frames information: frame number, no. of candidates, no. of unique candidates 
-    for(i=0; i<nof; i++) { 
-      status = fscanf(data, "%d %d %d", &frn[i], &Nk[i], &Nku[i]); 
-      Nkall += Nku[i]; 
-    } 
-    
-    // Numbers of frames participating in the coincidence 
-    for(i=0; i<noc; i++) { 
-      fscanf(data, "%d", &frnc[i]); 
-    } 
+      // Coincidence signal parameters (f, s, d, a, snr) 
+      for(i=0; i<5; i++) {  
+        status = fscanf(data, "%le", &sigpar[i]); 
+      } 
 
-    double FAP, PFce[2*noc-2]; 
-    FalseAlarmCFast(2, noc, nof, Nc, &Nku[0], &PFce[0]); 
-    FAP = PFce[2*noc-3]; 
+      // Frames information: frame number, no. of candidates, no. of unique candidates 
+      for(i=0; i<nof; i++) { 
+        status = fscanf(data, "%d %d %d", &frn[i], &Nk[i], &Nku[i]); 
+        Nkall += Nku[i]; 
+      } 
 
-    // Final result: output to stderr cases when FAP threshold is reached  
-    if(FAP < threshold) { 
- 
-      fprintf(stderr, "%04d %le %le %le %d %d ", 
-        band, f_min, f_max, PFce[2*noc-3], noc, Nkall); 
-      
-      for(i=0; i<5; i++) fprintf(stderr, "%le ", sigpar[i]);
- 
-      fprintf(stderr, "%d\n", hemi); 
+      // Numbers of frames participating in the coincidence 
+      for(i=0; i<noc; i++) { 
+        status = fscanf(data, "%d", &frnc[i]); 
+      } 
 
-    } 
+      double FAP, PFce[2*noc-2]; 
+      FalseAlarmCFast(2, noc, nof, Nc, &Nku[0], &PFce[0]); 
+      FAP = PFce[2*noc-3]; 
 
+      // Final result: output to stderr cases when FAP threshold is reached  
+      if( (FAP < threshold) && (status != EOF) ) { 
    
+        fprintf(stderr, "%04d %le %le %le %d %d ", 
+          band, f_min, f_max, FAP, noc, Nkall); 
+        
+        for(i=0; i<5; i++) fprintf(stderr, "%le ", sigpar[i]);
+   
+        fprintf(stderr, "%d\n", hemi); 
+
+      }  
+
+    } while (status != EOF);   
+
   } else {
     perror (filename);
     exit(EXIT_FAILURE);
