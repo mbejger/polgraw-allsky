@@ -1,5 +1,5 @@
 // gcc -o read_coi read_coi.c -lm 
-// $ ./read_coi coi_file
+// $ ./read_coi coi_file mincoin 
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -11,6 +11,8 @@ int main(int argc, char **argv) {
 	FILE *data;  
 	float mean[5]; 
     	
+  int mincoin = atoi(argv[2]); 
+
 	// reading from the input datafile   
 	if ((data = fopen(argv[1], "rb")) != NULL) {
 
@@ -26,7 +28,7 @@ int main(int argc, char **argv) {
 		if(!whigh) { whigh = w; }  
 
 		//#mb uncomment to break out of the loop if coincidences lower than whigh appear  
-    //if(w < whigh) { break; } 
+    if(w < mincoin) { break; } 
          
 		fread(&mean, sizeof(float), 5, data);
 		fread(&fra, sizeof(unsigned short int), w, data); 
