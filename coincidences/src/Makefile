@@ -48,7 +48,7 @@ auxi.o: $(SEARCH_DIR)/auxi.c $(SEARCH_DIR)/auxi.h
 fap: fap.o settings.o auxi.o
 	$(CC) -o $@ $^ -lc -lrt -lm -lgsl -lgslcblas -lfftw3
 
-fap-many: fap-many.o settings.o auxi.o
+fap_new_coi_header: fap_new_coi_header.o settings.o auxi.o
 	$(CC) -o $@ $^ -lc -lrt -lm -lgsl -lgslcblas -lfftw3
 
 

@@ -49,7 +49,7 @@ fin.close()
 vetofrac = [x[1] for x in veto_frac if x[0] == band][0] 
 
 # FAP command evaluated for informations taken from the .coi files 
-fap_cmd = './fap_v2 -nod ' + nod + ' -band ' + band + ' -vetofrac ' + vetofrac + ' -cellsize ' + cellsize + ' -threshold ' + threshold + ' -grid ' + griddir 
+fap_cmd = './fap_new_coi_header -nod ' + nod + ' -band ' + band + ' -vetofrac ' + vetofrac + ' -cellsize ' + cellsize + ' -threshold ' + threshold + ' -grid ' + griddir 
 
 
 #list_of_shifts = list(itertools.product([0,1], repeat=4)) 
@@ -88,8 +88,8 @@ for index, item in enumerate(list_of_shifts):
     # evaluate the False Alarm Probability
     cmd = fap_cmd + ' -data <( echo "' + frdata + '")'
 
-    x = subprocess.Popen(cmd, shell=True, executable='/bin/bash')
-    x.communicate()
+    p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, executable='/bin/bash')
+    out, err = p.communicate()
 
 #$ python fap_from_coi.py config.ini 0081 1 
 #Opening vf_0041-0107_lines_v2...
