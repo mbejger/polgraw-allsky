@@ -10,7 +10,7 @@
 #define INICANDSIZE 10485760       // 1048576? Initial size for array candidates storage; 
                                // realloc called if needed (in coincidences)  
 
-#define MAXL 2048              // Max number of known lines for a detector  
+#define MAXL 32000              // Max number of known lines for a detector  
 
 // Command line option struct for search 
 typedef struct _comm_line_opts {

@@ -361,8 +361,11 @@ int read_lines(
               j++; 
             }
 
-            i++;  
- 
+	    if (++i > MAXL-1) {
+              printf("Can't read %s, increase MAXL!\n", linefile); 
+              exit(EXIT_FAILURE);
+            }
+
         }
 
     } else {  
@@ -474,7 +477,8 @@ int read_lines(
             ifo->lines[j][0] = l[i][0] - Dfmaxmax; 
             ifo->lines[j][1] = l[i][0] + Dfmaxmax;
 //          printf("%f %f\n", ifo->lines[j][0], ifo->lines[j][1]);
-            j++;
+            //j++;
+            if (++j > MAXL-1) {printf("Too many lines, increase MAXL!\n"); exit(EXIT_FAILURE);}
             break; 
 
         // Comb with fixed width. Vetoing the band 
@@ -496,7 +500,8 @@ int read_lines(
                 ifo->lines[j][0] = linefreq - Dfmaxmax;
                 ifo->lines[j][1] = linefreq + Dfmaxmax;
 //              printf("%f %f\n", ifo->lines[j][0], ifo->lines[j][1]);
-                j++; 
+                //j++;
+		if (++j > MAXL-1) {printf("Too many lines, increase MAXL!\n"); exit(EXIT_FAILURE);}
             } 
             break; 
  
@@ -518,7 +523,8 @@ int read_lines(
                 ifo->lines[j][0] = linefreq - k*Dfmaxmax;
                 ifo->lines[j][1] = linefreq + k*Dfmaxmax;
 //              printf("%f %f\n", ifo->lines[j][0], ifo->lines[j][1]);
-                j++; 
+                //j++;
+		if (++j > MAXL-1) {printf("Too many lines, increase MAXL!\n"); exit(EXIT_FAILURE);}
             }
             break; 
         } 
