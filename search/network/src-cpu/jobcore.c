@@ -65,7 +65,7 @@ void search(
   int sgnlc=0;          // number of candidates
   FLOAT_TYPE *sgnlv;    // array with candidates data
 
-  char outname[512];
+  char outname[1100];
   int fd, status;
   FILE *state;
 

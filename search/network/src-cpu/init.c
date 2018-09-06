@@ -303,7 +303,7 @@ void read_grid(
   sett->M = (double *) calloc (16, sizeof (double));
 
   FILE *data;
-  char filename[512];
+  char filename[562];
 
   // In case when -usedet option is used for one detector
   // i.e. opts->usedet has a length of 2 (e.g. H1 or V1), 
@@ -389,7 +389,7 @@ void init_arrays(
     */
 
     // Ephemeris file handling
-    char filename[512];
+    char filename[562];
     sprintf (filename, "%s/%03d/%s/DetSSB.bin", 
         opts->dtaprefix, opts->ident, ifo[i].name);
 
@@ -1059,11 +1059,9 @@ void plan_fftw(
   /* Checkpointing
 	 */
 
-void read_checkpoints(
-	Command_line_opts *opts, 
-  Search_range *s_range, 
-	int *FNum) {
-
+void read_checkpoints(Command_line_opts *opts, 
+		      Search_range *s_range, 
+		      int *FNum) {
   
   if(opts->checkp_flag) {
 		
@@ -1340,7 +1338,7 @@ void manage_grid_matrix(
   sett->M = (double *)calloc(16, sizeof (double));
 
   FILE *data;
-  char filename[512];
+  char filename[522];
   sprintf (filename, "%s/grid.bin", opts->refloc);
 
   if ((data=fopen (filename, "r")) != NULL) {
