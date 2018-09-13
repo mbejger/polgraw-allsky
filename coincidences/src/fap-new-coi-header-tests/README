@@ -1,4 +1,0 @@
-../fap_new_coi_header -nod 6 -band 0401 -vetofrac 0.000000 -cellsize 4 -threshold 1.0 -grid /work/chuck/virgo/O2/C02_6d_clean_noscience/022 -data frames_0401_2
-
-# This works 
-../fap_new_coi_header -nod 6 -band 0401 -vetofrac 0.000000 -cellsize 4 -threshold 1.0 -grid /work/chuck/virgo/O2/C02_6d_clean_noscience/022 -data frames_0401_2_20 
