@@ -115,7 +115,7 @@ Record no.            |
 --------------------- | ---------------------------- 
 1                     | frequency [radians, between 0 and $\pi$] above `fpo`  
 2                     | spindown [$\mathrm{Hz/s}$]  
-3                     | declination [radians, between $\pi$ and $-\pi$]
+3                     | declination [radians, between $\pi/2$ and $-\pi/2$]
 4                     | right ascension [radians, between 0 and $2\pi$]
 5                     | signal-to-noise ratio
 
