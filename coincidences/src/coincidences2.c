@@ -128,7 +128,7 @@ void read_trigger_files(Search_settings *sett,
   double sqrN, omsN, v[4][4], be[2];
   FLOAT_TYPE tmp[4];
 
-  char dirname[512], filename[512];
+  char dirname[512], filename[1024];
   // Trigger files directory name 
   sprintf (dirname, "%s", opts->dtaprefix); 
 
@@ -155,7 +155,7 @@ void read_trigger_files(Search_settings *sett,
   long ic, filelen, maxfilelen=0;
 
   // random prefix for temp. file names
-  char datestr[14];
+  char datestr[15];
   struct timespec t;
   clock_gettime(CLOCK_REALTIME, &t);
   sprintf(datestr, "ctmp_%09ld", t.tv_nsec);
@@ -544,7 +544,7 @@ void read_trigger_files(Search_settings *sett,
   //-------------------------------
   qsort(imtr, numc, sizeof(int *), way2compare_c1);
 
-  char outname[512]; 
+  char outname[1040]; 
   sprintf(outname, "%s/%04d_%s.coi", opts->prefix, opts->shift, opts->trigname);
   data = fopen(outname, "w"); 
   FLOAT_TYPE trigf[TRLEN];
