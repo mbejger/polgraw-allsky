@@ -27,8 +27,14 @@ rd = {'GSIZE':  p.get('settings', 'gsize'),
       'SNRCUT': p.get('coincidences', 'snrcut'),
       'MINCOIN':p.get('coincidences', 'mincoin'),} 
 
+
 def replfunc(match):
     return rd[match.group(0)]
+
+if len(sys.argv) > 3: 
+    job_suffix = "_" + str(sys.argv[3])
+else: 
+    job_suffix = "" 
 
 # read band-amplitudes file
 with open(sys.argv[2], 'r') as f:
@@ -43,13 +49,13 @@ with open(sys.argv[2], 'r') as f:
         h = np.delete(l, 0, axis=None) 
 
         # remove job_BAND.sub, if present 
-        if os.path.exists('job_'+band+'.sub'): 
-            os.remove('job_'+band+'.sub')
+        if os.path.exists('job_'+ band + job_suffix + '.sub'): 
+            os.remove('job_' + band + job_suffix + '.sub')
 
-        # PBS jobs for one band and different amplitudes
+        # SLURM jobs for one band and different amplitudes
         # stacked one after another (to have one longer job)
-        js = open('job_'+band+'.sub', 'a')
-
+        js = open('job_' + band + job_suffix + '.sub', 'a')
+ 
         js.write('#! /bin/bash -l\n')
         js.write(p.get('slurm', 'header')+'\n\n') 
 
