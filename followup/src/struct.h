@@ -17,7 +17,8 @@ Command line option struct for search
 ***************************************************************/
 typedef struct _comm_line_opts {
 	int 	simplex_flag,	// Simplex direct maximum search flag
-		mads_flag,	// MADS direct maximum search flag
+		mads_flag,	// MADS direct maximum search flag - 4D search
+		skymads_flag,	// skyMADS direct maximum search flag - 2D search
 		gauss_flag,	// Generate Gaussian noise instead of reading data
 		neigh_flag,	// Area of calculation will be defined as %% from initial value
 		naive_flag,	// Area of calculation is taken from optimal grid used in search 

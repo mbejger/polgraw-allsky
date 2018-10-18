@@ -53,11 +53,12 @@ void handle_opts( Search_settings *sett, Command_line_opts *opts, int argc, char
   	opts->simplex_flag=0;
   	opts->onepoint_flag=0;
   	opts->mads_flag=0;
+  	opts->skymads_flag=0;
   	opts->gauss_flag=0;
   	opts->neigh_flag=0;
   	opts->naive_flag=0;
 
-  	static int help_flag=0, simplex_flag=0, onepoint_flag=0, mads_flag=0, gauss_flag=0, neigh_flag=0, naive_flag=0;
+  	static int help_flag=0, simplex_flag=0, onepoint_flag=0, mads_flag=0, skymads_flag=0, gauss_flag=0, neigh_flag=0, naive_flag=0;
 
 // Reading arguments 
   	while (1) {
@@ -67,6 +68,8 @@ void handle_opts( Search_settings *sett, Command_line_opts *opts, int argc, char
 			{"simplex", no_argument, &simplex_flag, 1},
 //invertedMADS/MADS maximum search
 			{"mads", no_argument, &mads_flag, 1},
+//skyMADS search - only in frequency and spindown parameters
+			{"skymads", no_argument, &skymads_flag, 1},
 //Calculate F-statistics only for initial point (don't generate grid)
 			{"onepoint", no_argument, &onepoint_flag, 1},
 //Generate Gaussian noise instead of reading data
@@ -132,6 +135,7 @@ void handle_opts( Search_settings *sett, Command_line_opts *opts, int argc, char
       		printf("Also:\n\n");
       		printf("--simplex       Direct search of maximum using Nelder-Mead (simplex) algorithm\n");
       		printf("--mads       	Direct search of maximum using invertedMADS/MADS algorithm\n");
+      		printf("--skymads      	Direct search of maximum using 2D MADS algorithm (search only in frequency and spindown; keep sky position fixed).\n");
       		printf("--gauss		Generate Gaussian noise instead of reading data. Amplitude and sigma of the noise declared in init.c\n");
       		printf("--neigh		Function neigh() generate area as %% from initial value instead of taking it from grid.bin\n");
       		printf("--naive		Function naive() generate area as +/- points taking it from grid.bin and divide it into smaller grid.\n");
@@ -204,6 +208,7 @@ void handle_opts( Search_settings *sett, Command_line_opts *opts, int argc, char
 	opts->simplex_flag = simplex_flag;
   	opts->onepoint_flag = onepoint_flag;
   	opts->mads_flag = mads_flag;
+  	opts->skymads_flag = skymads_flag;
   	opts->gauss_flag = gauss_flag;
   	opts->neigh_flag = neigh_flag;
   	opts->naive_flag = naive_flag;
@@ -261,6 +266,9 @@ void handle_opts( Search_settings *sett, Command_line_opts *opts, int argc, char
 	}
 	if(opts->mads_flag){ 
     		printf("(inverted)MADS direct maximum search\n");
+	}
+	if(opts->skymads_flag){ 
+    		printf("skyMADS direct maximum search - only in frequency and spindown! Sky position is fixed!\n");
 	}
   	if(opts->simplex_flag){ 
     		printf("Simplex direct maximum search\n");
