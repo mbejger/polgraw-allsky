@@ -515,18 +515,18 @@ Yep64f* invertedMADS(Search_settings *sett, Aux_arrays *aux, double* sgnl, doubl
 		paramstart[r] = param[r] = incr[r];
 	}
 #ifdef YEPPP
-    yepLibrary_Init();
-    Yep64f *out = (Yep64f*)malloc(sizeof(Yep64f)*11);
-    Yep64f *extr = (Yep64f*)malloc(sizeof(Yep64f)*11); 
-    Yep64f *res = (Yep64f*)malloc(sizeof(Yep64f)*11);
-    Yep64f *maxres = (Yep64f*)malloc(sizeof(Yep64f)*11);
-    enum YepStatus status;
+	yepLibrary_Init();
+	Yep64f *out = (Yep64f*)malloc(sizeof(Yep64f)*11);
+	Yep64f *extr = (Yep64f*)malloc(sizeof(Yep64f)*11); 
+	Yep64f *res = (Yep64f*)malloc(sizeof(Yep64f)*11);
+	Yep64f *maxres = (Yep64f*)malloc(sizeof(Yep64f)*11);
+	enum YepStatus status;
 
 #endif
 
-		double **saa, **sbb;   		// amplitude modulation factors
-		saa = matrix(sett->nifo, sett->N);
-		sbb = matrix(sett->nifo, sett->N);
+	double **saa, **sbb;   		// amplitude modulation factors
+	saa = matrix(sett->nifo, sett->N);
+	sbb = matrix(sett->nifo, sett->N);
 
 //Main invertedMADS loop: when to end computations
 	while((param[0] <= paramfin[0]) && (param[1] <= paramfin[1]) && (param[2] <= paramfin[2]) && (param[3] <= paramfin[3])){  	
@@ -703,7 +703,7 @@ Yep64f* invertedMADS(Search_settings *sett, Aux_arrays *aux, double* sgnl, doubl
 		}
 //Check if number of steps is not exceeded - if yes, stop while loop
 		if(count >= limit){
-			for(r = 0; r < 4; r++) param[r] = 1e-15;
+			for(r = 0; r < 4; r++) param[r] = 100;
 		}
 
 	} // while loop
@@ -721,6 +721,177 @@ Yep64f* invertedMADS(Search_settings *sett, Aux_arrays *aux, double* sgnl, doubl
 	printf("invertedMADS ends in %d steps.\n", count);
 	return out;
 }// end invertedMADS()
+
+/***************************************************************
+Directed (inverted) MADS (mesh adaptive direct search) maximum search algorithm: 
+starts from initial point and create tiny 2D grid around it (only in frequency
+and spindown parameters - keep sky position same as in initial point). 
+Meshes of the grid increase in every step and shrink if new local maximum 
+is found. 
+***************************************************************/
+
+Yep64f* skyMADS(Search_settings *sett, Aux_arrays *aux, double* sgnl, double* rslts, double *p0){
+	int i, j, k, l, m, n, o, r, a = 0;
+	int count=0, limit = 10000;		//maximal number of steps to avoid infinite loops
+  	double sinalt, cosalt, sindelt, cosdelt;
+	double fp, fm, sp, sm, fp2, fm2, sp2, sm2;
+	double paramfin[2]; 			//final size of mesh
+	double paramstart[2];			//initial size of mesh
+	double param[2];
+	double array[17][2];			//points on the square
+	double p[4];
+	double nSource[3];
+	double incr[2];				//how much meshes of the grid increase size
+	incr[0] = 1e-5;				//in every step, in every direction
+	incr[1] = 1e-12;			//values were put by hand; based on tests
+	for(r = 0; r < 2;r++){
+		paramfin[r] = p0[r];
+		paramstart[r] = param[r] = incr[r];
+	}
+#ifdef YEPPP
+	yepLibrary_Init();
+	Yep64f *out = (Yep64f*)malloc(sizeof(Yep64f)*11);
+	Yep64f *extr = (Yep64f*)malloc(sizeof(Yep64f)*11); 
+	Yep64f *res = (Yep64f*)malloc(sizeof(Yep64f)*11);
+	Yep64f *maxres = (Yep64f*)malloc(sizeof(Yep64f)*11);
+	enum YepStatus status;
+
+#endif
+	double **saa, **sbb;   		// amplitude modulation factors
+	saa = matrix(sett->nifo, sett->N);
+	sbb = matrix(sett->nifo, sett->N);
+
+//Main invertedMADS loop: when to end computations
+	while((param[0] <= paramfin[0]) && (param[1] <= paramfin[1])){  	
+		count++;
+		for (i = 0; i < 11; i++){ 
+			maxres[i] = extr[i] = rslts[i];
+		}
+//Seed of the step
+		for (k = 0; k < 2; k++){
+			array[0][k] = extr[6+k];
+		}
+		fp = extr[6] + param[0];
+		fm = extr[6] - param[0];
+		sp = extr[7] + param[1];
+		sm = extr[7] - param[1];
+		fp2 = extr[6] + 0.5*param[0];
+		fm2 = extr[6] - 0.5*param[0];
+		sp2 = extr[7] + 0.5*param[1];
+		sm2 = extr[7] - 0.5*param[1];
+
+//Construction of the points on the square
+		for (j = 1; j < 6; j++) array[j][0] = fp;
+		for (j = 6; j < 11; j++) array[j][0] = fm;
+		for (j = 11; j < 13; j++) array[j][0] = fp2;
+		for (j = 13; j < 15; j++) array[j][0] = fm2;
+		for (j = 15; j < 17; j++) array[j][0] = extr[6];
+
+		for (j = 1; j < 6; j++) array[j][1] = sp;
+		for (j = 6; j < 11; j++) array[j][1] = sm;
+		for (j = 11; j < 13; j++) array[j][1] = sp2;
+		for (j = 13; j < 15; j++) array[j][1] = sm2;
+		for (j = 15; j < 17; j++) array[j][1] = extr[7];
+
+//Calculate F-statistics for the seed of the step
+		for(i = 0; i < 2; i++){ 
+			p[i] = array[0][i];
+		}
+		p[2] = rslts[8];
+		p[3] = rslts[9];		
+
+		sinalt = sin(p[3]);
+		cosalt = cos(p[3]);
+		sindelt = sin(p[2]);
+		cosdelt = cos(p[2]);
+
+		nSource[0] = cosalt*cosdelt;
+		nSource[1] = sinalt*cosdelt;
+		nSource[2] = sindelt;
+		for (o = 0; o < sett->nifo; ++o){
+			modvir(sinalt, cosalt, sindelt, cosdelt, sett->N, &ifo[o], aux, saa[o], sbb[o]);  
+		}
+		extr = Fstatnet(sett, p, nSource, saa, sbb);
+		for (i = 0; i < 11; i++) maxres[i] = extr[i];
+
+//Calculate F-statistics for the rest points - parallel
+		#pragma omp parallel default(shared) private(j, o, i, p, res)
+		{
+/*			double **sigaa, **sigbb;   
+			sigaa = matrix(sett->nifo, sett->N);
+			sigbb = matrix(sett->nifo, sett->N);
+
+			sinalt = sin(p[3]);
+			cosalt = cos(p[3]);
+			sindelt = sin(p[2]);
+			cosdelt = cos(p[2]);
+
+			nSource[0] = cosalt*cosdelt;
+			nSource[1] = sinalt*cosdelt;
+			nSource[2] = sindelt;
+			for (o = 0; o < sett->nifo; ++o){
+				modvir(sinalt, cosalt, sindelt, cosdelt, sett->N, &ifo[o], aux, sigaa[o], sigbb[o]);  
+			}*/
+			#pragma omp for
+			for(j = 1; j < 17; j++){
+				for(i = 0; i < 2; i++){ 
+					p[i] = array[j][i];
+				}
+				p[2] = rslts[8];
+				p[3] = rslts[9];
+//				res = Fstatnet(sett, p, nSource, sigaa, sigbb); 
+				res = Fstatnet(sett, p, nSource, saa, sbb);
+//Compare points and find one with maximal value of F-statistics
+				#pragma omp critical
+				if (res[5] < maxres[5]){
+					for (i = 0; i < 11; i++){ 
+						maxres[i] = res[i];
+					}
+				}
+			} //loop over points
+//			free_matrix(sigaa, sett->nifo, sett->N);
+//			free_matrix(sigbb, sett->nifo, sett->N);
+		} //pragma
+//Compare with the result from the previous step
+		if(extr[5] <= maxres[5]){
+//If old result is better - increase size of the meshes
+			for(r = 0; r < 2; r++){ 
+				param[r] = param[r] + incr[r];
+			}
+			for(j = 0; j < 11; j++){ 
+				rslts[j] = extr[j];
+			}
+		}
+		else{
+//If new result is better - take it as initial point to the next step
+//and shrink meshes to the original size
+			for(j = 0; j < 11; j++){ 
+				rslts[j] = maxres[j];
+			}
+			for(r = 0; r < 2; r++){ 
+				param[r] = paramstart[r];
+			}
+		}
+//Check if number of steps is not exceeded - if yes, stop while loop
+		if(count >= limit){
+			for(r = 0; r < 2; r++) param[r] = 100;
+		}
+
+	} // while loop
+	for (n= 0; n < 11; n++){
+		out[n] = rslts[n];
+	}
+
+//Free memory
+	free(extr);
+	free(res);
+	free_matrix(saa, sett->nifo, sett->N);
+	free_matrix(sbb, sett->nifo, sett->N);
+//Print info about number of steps
+	printf("skyMADS ends in %d steps.\n", count);
+	return out;
+}// end skyMADS()
+
 
 /***************************************************************
 Mesh adaptive direct search (MADS) maximum search declaration - classical
@@ -1140,6 +1311,7 @@ int main (int argc, char *argv[]) {
 	double sc;				// scaling factor
 	double pc[4];				// % define neighbourhood around each parameter for initial grid for neigh flag
 	double pc2[4];				// % define neighbourhood around each parameter for direct maximum search (invertedMADS, MADS & Simplex)
+	double pc0[2];				// define neighbourhood around frequency and spindown parameter (skyMADS)
 	double sgnlo[4];
 	double nearest_point[4];
 	double sgnlol[4]; 
@@ -1459,6 +1631,11 @@ int main (int argc, char *argv[]) {
 						pc2[2] = 0.15*sc;
 						pc2[3] = 0.10*sc;
 					} //if simplex or mads flag
+// Prepare area of search for skyMADS
+					if(opts.skymads_flag){
+						pc0[0] = 0.2;
+						pc0[1] = 1e-7;
+					}//if skymads flag
 				} //if optimal grid
 				if(flag == 1) continue;
 				results_max[5] = 0.;
@@ -1501,7 +1678,7 @@ int main (int argc, char *argv[]) {
 								results_max[i] = results[i];
 							}
 // Save information about this point for Simplex and/or invertedMADS
-							if(opts.simplex_flag||opts.mads_flag){
+							if(opts.simplex_flag||opts.mads_flag||opts.skymads_flag){
 								for (i = 0; i < 4; i ++){
 									sgnlo_max[i] = sgnlo[i];
 								}
@@ -1529,10 +1706,19 @@ int main (int argc, char *argv[]) {
 	      			sigaa = matrix(sett.nifo, sett.N);
 				sigbb = matrix(sett.nifo, sett.N);
 
-				pc2[0] = 0.05*sc;
-				pc2[1] = 5e-8*sc;
-				pc2[2] = 0.15*sc;
-				pc2[3] = 0.10*sc;
+// Prepare area of search for invertedMADS, MADS and Simplex
+				if(opts.simplex_flag||opts.mads_flag){
+// Values put by hand, according to our tests
+					pc2[0] = 0.05*sc;
+					pc2[1] = 5e-8*sc;
+					pc2[2] = 0.15*sc;
+					pc2[3] = 0.10*sc;
+				} //if simplex or mads flag
+// Prepare area of search for skyMADS
+				if(opts.skymads_flag){
+					pc0[0] = 0.2;
+					pc0[1] = 1e-7;
+				}//if skymads flag
 
 				for (i = 0; i < 4; i++){
 					sgnlo[i] = mean[i];
@@ -1550,10 +1736,12 @@ int main (int argc, char *argv[]) {
 					modvir(sinalt, cosalt, sindelt, cosdelt, sett.N, &ifo[i], &aux_arr, sigaa[i], sigbb[i]);  
 				}
 				results = Fstatnet(&sett, sgnlo, nSource, sigaa, sigbb);
+				puts("Maximum from --onepoint:");
+				printf("%le %le %le %le %le %le\n", results[6], results[7], results[8], results[9], results[5], results[4]);
 				for (i = 0; i < 11; i++){
 					results_max[i] = results[i];
 				}
-				if((opts.simplex_flag)||(opts.mads_flag)){
+				if((opts.simplex_flag)||(opts.mads_flag)||opts.skymads_flag){
 					for (i = 0; i < 4; i ++){
 						sgnlo_max[i] = sgnlo[i];
 					}
@@ -1574,6 +1762,17 @@ int main (int argc, char *argv[]) {
 				puts("MADS");
 //					maximum = MADS(&sett, &aux_arr, sgnlo_max, results_max, tolmads, pc2);
 				maximum = invertedMADS(&sett, &aux_arr, sgnlo_max, results_max, pc2);
+				if(maximum[5] < results_max[5]){
+					for (i = 0; i < 11; i++){
+						results_max[i] = maximum[i];
+					}
+				}
+			} //mads
+// Maximum search using skyMADS algorithm - only in frequency and spindown parameters
+  			if(opts.skymads_flag) {
+				puts("skyMADS");
+//					maximum = MADS(&sett, &aux_arr, sgnlo_max, results_max, tolmads, pc2);
+				maximum = skyMADS(&sett, &aux_arr, sgnlo_max, results_max, pc0);
 				if(maximum[5] < results_max[5]){
 					for (i = 0; i < 11; i++){
 						results_max[i] = maximum[i];
@@ -1614,7 +1813,7 @@ int main (int argc, char *argv[]) {
 	printf("Signal-to-noise ratio: %.8le\n", results_first[4]); 
 	printf("Signal-to-noise ratio from estimated amplitudes (for h0 = 1): %.8le\n", results_first[10]);
 	puts("**********************************************************************");
-if((opts.mads_flag)||(opts.simplex_flag)){
+if((opts.mads_flag)||(opts.simplex_flag)||(opts.skymads_flag)){
 	printf("***	True maximum is : (-)%.8le				***\n", -maximum[5]);
 	printf("Sgnlo for true maximum: %.8le %.8le %.8le %.8le\n", maximum[6], maximum[7], maximum[8], maximum[9]);
 	printf("Amplitudes for true maximum: %.8le %.8le %.8le %.8le\n", maximum[0], maximum[1], maximum[2], maximum[3]);
