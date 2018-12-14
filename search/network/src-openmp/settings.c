@@ -319,219 +319,203 @@ void modvir(double sinal, double cosal, double sindel, double cosdel,
 int read_lines(Search_settings *sett, 
 	       Command_line_opts *opts, 
 	       Detector_settings *ifo) { 
-
-    int i=0, lnum, alllines, j; 
-    double l[MAXL][7]; 
-    char linefile[542], line[128] = {0}; 
-    FILE *data; 
   
-    sprintf(linefile, "%s/O2LinesToBeCleaned_%s_v1.txt", 
-        opts->dtaprefix, ifo->name);
+  int i=0, lnum, alllines, j; 
+  double l[MAXL][7]; 
+  char linefile[542], line[128] = {0}; 
+  FILE *data; 
+  
+  sprintf(linefile, "%s/O2LinesToBeCleaned_%s_v1.txt", 
+	  opts->dtaprefix, ifo->name);
+  
+  // Reading line data from the input file (data)   
+  // Columns are: 
+  // 1 - frequency spacing (Hz) of comb (or frequency of single line)
+  // 2 - comb type (0 - singlet, 1 - comb with fixed width, 2 - comb with scaling width)
+  // 3 - frequency offset of 1st visible harmonic (Hz)
+  // 4 - index of first visible harmonic
+  // 5 - index of last visible harmonic
+  // 6 - width of left band (Hz)
+  // 7 - width of right band (Hz)
+  
+  if ((data = fopen(linefile, "r")) != NULL) {
+    
+    while (fgets(line, 128, data) != NULL) {
+      
+      // Skip comment lines beginning with '%'
+      if (*line == '%') continue;
+      
+      j=0; 
+      char *t;  
+      for(t = strtok(line, "\t "); t != NULL; t = strtok(NULL, "\t ")) {
+	l[i][j] = atof(t);
+	j++; 
+      }
 
-    // Reading line data from the input file (data)   
-    // Columns are: 
-    // 1 - frequency spacing (Hz) of comb (or frequency of single line)
-    // 2 - comb type (0 - singlet, 1 - comb with fixed width, 2 - comb with scaling width)
-    // 3 - frequency offset of 1st visible harmonic (Hz)
-    // 4 - index of first visible harmonic
-    // 5 - index of last visible harmonic
-    // 6 - width of left band (Hz)
-    // 7 - width of right band (Hz)
-
-    if ((data = fopen(linefile, "r")) != NULL) {
-
-        while (fgets(line, 128, data) != NULL) {
-
-            // Skip comment lines beginning with '%'
-            if (*line == '%') continue;
-
-            j=0; 
-            char *t;  
-            for(t = strtok(line, "\t "); t != NULL; t = strtok(NULL, "\t ")) {
-              l[i][j] = atof(t);
-              j++; 
-            }
-
-	    if (++i > MAXL-1) {
-	      printf("Can't read %s, increase MAXL!\n", linefile); 
-	      exit(EXIT_FAILURE);
-	    }
-        }
-
-    } else {  
-        printf("No known lines file %s for %s IFO found. Continuing without.\n", 
-            linefile, ifo->name);
-        return 0; 
-    } 
-
-    // The number of data for lines
-    lnum = i; 
-
-    fclose(data); 
-
-    // Produce line widths 
-    //--------------------
-
-    // Fixed line widths for each detector 
-    // based on the broadening modulation 
-    // due to the detector movement 
-
-    double *dE; 
-    dE = (double *)calloc(3*sett->N, sizeof(double));
-
-    // First derivative DetSSB (velocity)  
-    for(i=0; i<sett->N-1; i++) { 
-
-      for(j=0; j<3; j++)  
-        dE[i*3+j] = fabs(ifo->sig.DetSSB[(i+1)*3+j] - ifo->sig.DetSSB[i*3+j]); 
-
-    } 
-
-    double dEmax[3] = {0}; 
-
-    // Find maximum absolute values 
-    for(i=0; i<sett->N-1; i++) {
-
-      for(j=0; j<3; j++) 
-        if(dE[i*3+j] > dEmax[j]) 
-          dEmax[j] = dE[i*3+j]; 
-
-    } 
-
-//#mb test printout 
-//    printf("dEmax %f %f %f\n", dEmax[0], dEmax[1], dEmax[2]); 
- 
-    double *dtE;
-    dtE = (double *)calloc(3*sett->N, sizeof(double));
-
-    // First derivative 
-    for(i=0; i<sett->N-1; i++) { 
-
-      for(j=0; j<3; j++)  
-        dtE[i*3+j] = fabs(ifo->sig.DetSSB[(i+1)*3+j]*(i+1) - ifo->sig.DetSSB[i*3+j]*i)*sett->dt; 
-
-    } 
-
-    double dtEmax[3] = {0}; 
-
-    // Find maximum absolute values 
-    for(i=0; i<sett->N-1; i++) {
-
-      for(j=0; j<3; j++) 
-        if(dtE[i*3+j] > dtEmax[j]) 
-          dtEmax[j] = dtE[i*3+j]; 
-
-    } 
-
-//#mb test printout 
-//    printf("dtEmax %f %f %f\n", dtEmax[0], dtEmax[1], dtEmax[2]); 
-
-    //#mb !!! Limits put by hand for RDC_O1 !!! 
-    double fdotMax = 0.5e-8, Dfmaxmax, normdtEmax=0., normdEmax=0.;
-
-    for(j=0; j<3; j++) { 
-
-      normdtEmax += pow(dtEmax[j], 2.); 
-      normdEmax  += pow(dEmax[j], 2.);
-
-    } 
-
-    // Free auxiliary allocs 
-    free(dE); 
-    free(dtE); 
-
-    // Apply line widths 
-    //------------------
-
-    j=0; 
-    for(i=0; i<lnum; i++) { 
-
-        int line_type = (int)(l[i][1]);
-        int indf = (int)(l[i][3]);
-        int indl = (int)(l[i][4]);
-        int k; 
-
-        switch(line_type) { 
-
-        // Singlet
-        case 0: 
-/*            printf("Singlet\n");    
-            ifo->lines[j][0] = l[i][0] - l[i][5]; 
-            ifo->lines[j][1] = l[i][0] + l[i][6];
-*/
-
-            // Line width from the resampling broadening 
-            Dfmaxmax = 2.*fdotMax*(sett->N*sett->dt + sqrt(normdtEmax)) + l[i][0]*sqrt(normdEmax);
-	    // scaling with nod (relative to nod=6)
-	    Dfmaxmax *= 6./sett->nod;
-
-            // The original width of a line is replaced with Dfmaxmax
-            ifo->lines[j][0] = l[i][0] - Dfmaxmax; 
-            ifo->lines[j][1] = l[i][0] + Dfmaxmax;
-//          printf("%f %f\n", ifo->lines[j][0], ifo->lines[j][1]);
-            //j++;
-	    if (++j > MAXL-1) {printf("Too many lines, increase MAXL!\n"); exit(EXIT_FAILURE);}
-            break; 
-
-        // Comb with fixed width. Vetoing the band 
-        // [offset+index*spacing-leftwidth, offset+index*spacing+rightwidth] 
-        case 1:                  
-//            printf("Fixed width\n"); 
-            for(k=indf; k<=indl; k++) { 
-/*              ifo->lines[j][0] = l[i][2] + k*l[i][0] - l[i][5];
-                ifo->lines[j][1] = l[i][2] + k*l[i][0] + l[i][6];
-*/
-
-                // Line width from the resampling broadening 
-                double linefreq = l[i][2] + k*l[i][0]; 
-
-                Dfmaxmax = 2.*fdotMax*(sett->N*sett->dt + sqrt(normdtEmax)) 
-                  + linefreq*sqrt(normdEmax);
-		// scaling with nod (relative to nod=6)
-		Dfmaxmax *= 6./sett->nod;
-
-                // The original width of a line is replaced with Dfmaxmax
-                ifo->lines[j][0] = linefreq - Dfmaxmax;
-                ifo->lines[j][1] = linefreq + Dfmaxmax;
-//              printf("%f %f\n", ifo->lines[j][0], ifo->lines[j][1]);
-                //j++;
-		if (++j > MAXL-1) {printf("Too many lines, increase MAXL!\n"); exit(EXIT_FAILURE);}
-            } 
-            break; 
- 
-        // Comb with scaling-width. Vetoing the band 
-        // [offset+index*spacing-index*leftwidth, offset+index*spacing+index*rightwidth]       
-        case 2: 
-//            printf("Scalling-width\n"); 
-            for(k=indf; k<=indl; k++) { 
-/*              ifo->lines[j][0] = l[i][2] + k*l[i][0] - k*l[i][5];
-                ifo->lines[j][1] = l[i][2] + k*l[i][0] + k*l[i][6];
-*/
-
-                // Line width from the resampling broadening 
-                double linefreq = l[i][2] + k*l[i][0];
-
-                Dfmaxmax = 2.*fdotMax*(sett->N*sett->dt + sqrt(normdtEmax)) 
-                  + linefreq*sqrt(normdEmax);
-		// scaling with nod (relative to nod=6)
-		Dfmaxmax *= 6./sett->nod;
-
-                ifo->lines[j][0] = linefreq - k*Dfmaxmax;
-                ifo->lines[j][1] = linefreq + k*Dfmaxmax;
-//              printf("%f %f\n", ifo->lines[j][0], ifo->lines[j][1]);
-                //j++;
-		if (++j > MAXL-1) {printf("Too many lines, increase MAXL!\n"); exit(EXIT_FAILURE);}
-            }
-            break; 
-        } 
-
+      if (++i > MAXL-1) {
+	printf("Can't read %s, increase MAXL!\n", linefile); 
+	exit(EXIT_FAILURE);
+      }
     }
+    
+  } else {  
+    printf("No known lines file %s for %s IFO found. Continuing without.\n", 
+	   linefile, ifo->name);
+    return 0; 
+  } 
 
-    ifo->numlines = j; 
-    printf("Number of known lines in %s: %d\n", ifo->name, ifo->numlines); 
+  // The number of data for lines
+  lnum = i; 
+  
+  fclose(data); 
+  
+  // Produce line widths 
+  //--------------------
+  
+  // Fixed line widths for each detector 
+  // based on the broadening modulation 
+  // due to the detector movement 
+  
+  double *dE; 
+  dE = (double *)calloc(3*sett->N, sizeof(double));
+  
+  // First derivative DetSSB (velocity)  
+  for(i=0; i<sett->N-1; i++) { 
+    
+    for(j=0; j<3; j++)  
+      dE[i*3+j] = fabs(ifo->sig.DetSSB[(i+1)*3+j] - ifo->sig.DetSSB[i*3+j]); 
+    
+  } 
 
-return 0; 
+  double dEmax[3] = {0}; 
 
+  // Find maximum absolute values 
+  for(i=0; i<sett->N-1; i++) {
+
+    for(j=0; j<3; j++) 
+      if(dE[i*3+j] > dEmax[j]) 
+	dEmax[j] = dE[i*3+j]; 
+    
+  } 
+  
+  //#mb test printout 
+  //    printf("dEmax %f %f %f\n", dEmax[0], dEmax[1], dEmax[2]); 
+ 
+  double *dtE;
+  dtE = (double *)calloc(3*sett->N, sizeof(double));
+  
+  // First derivative 
+  for(i=0; i<sett->N-1; i++) { 
+    
+    for(j=0; j<3; j++)  
+      dtE[i*3+j] = fabs(ifo->sig.DetSSB[(i+1)*3+j]*(i+1) - ifo->sig.DetSSB[i*3+j]*i)*sett->dt; 
+    
+  } 
+  
+  double dtEmax[3] = {0}; 
+    
+  // Find maximum absolute values 
+  for(i=0; i<sett->N-1; i++) {
+    
+    for(j=0; j<3; j++) 
+      if(dtE[i*3+j] > dtEmax[j]) 
+	dtEmax[j] = dtE[i*3+j]; 
+    
+  } 
+
+  //#mb !!! Limits put by hand for RDC_O1 !!! 
+  double fdotMax = 0.5e-8, Dfmaxmax, normdtEmax=0., normdEmax=0.;
+
+  for(j=0; j<3; j++) { 
+    
+    normdtEmax += pow(dtEmax[j], 2.); 
+    normdEmax  += pow(dEmax[j], 2.);
+    
+  } 
+  
+  // Free auxiliary allocs 
+  free(dE); 
+  free(dtE); 
+  
+  // Apply line widths 
+  //------------------
+  
+  j=0; 
+  for(i=0; i<lnum; i++) { 
+    
+    int line_type = (int)(l[i][1]);
+    int indf = (int)(l[i][3]);
+    int indl = (int)(l[i][4]);
+    int k; 
+    
+    switch(line_type) { 
+      
+    // Singlet
+    case 0: 
+
+      // Line width from the resampling broadening 
+      Dfmaxmax = 2.*fdotMax*(sett->N*sett->dt + sqrt(normdtEmax)) + l[i][0]*sqrt(normdEmax);
+      // scaling with nod (relative to nod=6)
+      Dfmaxmax *= 6./sett->nod;
+      
+      // The original width of a line is replaced with Dfmaxmax
+      ifo->lines[j][0] = l[i][0] - Dfmaxmax; 
+      ifo->lines[j][1] = l[i][0] + Dfmaxmax;
+      ifo->lines[j][2] = i;
+      if (++j > MAXL-1) {printf("Too many lines, increase MAXL!\n"); exit(EXIT_FAILURE);}
+      break; 
+      
+
+    // Comb with fixed width. Vetoing the band 
+    // [offset+index*spacing-leftwidth, offset+index*spacing+rightwidth] 
+    case 1:
+
+      for(k=indf; k<=indl; k++) {
+	// Line width from the resampling broadening 
+	double linefreq = l[i][2] + k*l[i][0]; 
+	
+	Dfmaxmax = 2.*fdotMax*(sett->N*sett->dt + sqrt(normdtEmax)) 
+	         + linefreq*sqrt(normdEmax);
+	// scaling with nod (relative to nod=6)
+	Dfmaxmax *= 6./sett->nod;
+	
+	// The original width of a line is replaced with Dfmaxmax
+	ifo->lines[j][0] = linefreq - Dfmaxmax;
+	ifo->lines[j][1] = linefreq + Dfmaxmax;
+	ifo->lines[j][2] = i;
+	if (++j > MAXL-1) {printf("Too many lines, increase MAXL!\n"); exit(EXIT_FAILURE);}
+      } 
+      break; 
+      
+
+    // Comb with scaling-width. Vetoing the band 
+    // [offset+index*spacing-index*leftwidth, offset+index*spacing+index*rightwidth]       
+    case 2:
+      
+      for(k=indf; k<=indl; k++) { 
+	// Line width from the resampling broadening 
+	double linefreq = l[i][2] + k*l[i][0];
+	
+	Dfmaxmax = 2.*fdotMax*(sett->N*sett->dt + sqrt(normdtEmax)) 
+	         + linefreq*sqrt(normdEmax);
+	// scaling with nod (relative to nod=6)
+	Dfmaxmax *= 6./sett->nod;
+	
+	ifo->lines[j][0] = linefreq - k*Dfmaxmax;
+	ifo->lines[j][1] = linefreq + k*Dfmaxmax;
+	ifo->lines[j][2] = i;
+	if (++j > MAXL-1) {printf("Too many lines, increase MAXL!\n"); exit(EXIT_FAILURE);}
+      }
+      break; 
+    } 
+    
+  }
+  
+  ifo->numlines = j; 
+  printf("Number of known lines in %s: %d\n", ifo->name, ifo->numlines); 
+  
+  return 0; 
+  
 }
 
 
@@ -586,7 +570,7 @@ void lines_in_band(Search_settings* sett,
            sett->lines[k][0] = (ll-bs)/(sett->B)*M_PI;  
            sett->lines[k][1] = (lr-bs)/(sett->B)*M_PI;
 
-	   printf("%s: %f %f %f %f\n", ifo[i].name, ll, lr, sett->lines[k][0], sett->lines[k][1]);
+	   printf("%s: %f %f %f %f [line %d in veto file]\n", ifo[i].name, ll, lr, sett->lines[k][0], sett->lines[k][1], (int)ifo[i].lines[j][2] );
            k++; 
 
         }      
