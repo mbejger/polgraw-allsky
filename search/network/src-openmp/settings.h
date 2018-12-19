@@ -73,8 +73,8 @@ void lines_in_band(
 		   Search_settings* sett, 
 		   Command_line_opts *opts);  
 
-void check_if_band_is_fully_vetoed(
-				   Search_settings* sett); 
+void veto_fraction(
+		   Search_settings* sett); 
 
 
 // Coincidences 

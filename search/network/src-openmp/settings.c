@@ -582,10 +582,10 @@ void lines_in_band(Search_settings* sett,
 }     
 
 
-void check_if_band_is_fully_vetoed(Search_settings* sett) { 
+void veto_fraction(Search_settings* sett) { 
   
   int i; 
-  double ll=0.; 
+  double ll=0., gap=0.;
   
   // Sorting the excluded parts of a band (1st then 2nd column) 
   qsort(sett->lines, sett->numlines_band, 2*sizeof(double), compared2c); 
@@ -599,12 +599,18 @@ void check_if_band_is_fully_vetoed(Search_settings* sett) {
   for(i=0; i<sett->numlines_band; i++) { 
     
     // Looking for a gap between the excluded regions 
-    if(sett->lines[i][0] > ll) return; 
-    else ll = sett->lines[i][1]; 
-    
-  }        
+    if(sett->lines[i][0] >= ll) {
+      gap += sett->lines[i][0] - ll;
+      ll = sett->lines[i][1];
+    } else {
+      if (ll < sett->lines[i][1]) ll = sett->lines[i][1];
+    }
+  }
+  if ( ll < M_PI) gap += M_PI - ll;
   
-  if(!(ll < M_PI)) { 
+  printf("Band veto fraction = %6.4f\n", (M_PI-gap)/M_PI);
+
+  if(gap <= 0.) { 
     printf("This band is fully vetoed. My work here is done, exiting...\n"); 
     exit(EXIT_SUCCESS); 
   }
