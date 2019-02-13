@@ -1,8 +1,10 @@
 TARGET=coincidences
+TARGET = coincidences-sb-dev7
 SEARCH_DIR=../../search/network/src-cpu
 
 # FFTW_DIR - fftw location, remember to compile it with optimizations (e.g. avx)
-FFTW_DIR = /opt/fftw/3.3.5/gnu-omp-devtoolset3
+#FFTW_DIR = /opt/fftw/3.3.5/gnu-omp-devtoolset3
+FFTW_DIR = /opt/fftw/3.3.7-gcc7.2-mvapich2.2
 
 CC = gcc -std=gnu11 -static-libgcc
 # pre-processor flags: TIMERS, VERBOSE (rich stdout output)
@@ -10,12 +12,11 @@ CC = gcc -std=gnu11 -static-libgcc
 CFLAGS = -I$(SEARCH_DIR) -I$(FFTW_DIR)/include
 CFLAGS += -g -Wall -Wno-unused -fno-omit-frame-pointer \
 	  -O3 -funsafe-loop-optimizations -funroll-loops \
-		-march=broadwell -mtune=broadwell -mavx2
-#	  -march=sandybridge -mtune=sandybridge -mavx
+	  -march=sandybridge -mtune=sandybridge -mavx
 
 #cpu specific optimizations e.g.: 
 #haswell
-#	  -march=haswell -mtune=haswell -mavx2 -mfma
+	#-march=haswell -mtune=haswell -mavx2 -mfma
 #sandy-bridge (psk)
 	#-march=sandybridge -mtune=sandybridge -mavx
 #westmere (plgrid)
@@ -51,6 +52,8 @@ fap: fap.o settings.o auxi.o
 fap_new_coi_header: fap_new_coi_header.o settings.o auxi.o
 	$(CC) -o $@ $^ -lc -lrt -lm -lgsl -lgslcblas -lfftw3
 
+fap_new_coi_header_hyper_improved: fap_new_coi_header_hyper_improved.o settings.o auxi.o
+        $(CC) -o $@ $^ -lc -lrt -lm -lgsl -lgslcblas -lfftw3
 
 doc:
 	doxygen ../doc/Doxyfile
