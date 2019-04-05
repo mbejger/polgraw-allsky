@@ -25,7 +25,7 @@
 void lin2ast(double be1, double be2, int pm, double sepsm, double cepsm,	\
          double *sinal, double *cosal, double *sindel, double *cosdel);
 
-void ast2lin(FLOAT_TYPE alfa, FLOAT_TYPE delta, double epsm, double *be); 
+int ast2lin(FLOAT_TYPE alfa, FLOAT_TYPE delta, double epsm, double *be); 
  
 void spline(complex double *, int, complex double *);
 complex double splint (complex double *, complex double *, int, double);
