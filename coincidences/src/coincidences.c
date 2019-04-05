@@ -64,6 +64,7 @@ int main (int argc, char* argv[]) {
 
   // Free arrays at the end 
   free(sett.M); 
+  printf("\nEND\n");
 
   return 0; 
 	
