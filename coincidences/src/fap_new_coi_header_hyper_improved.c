@@ -410,6 +410,7 @@ int *FalseAlarm(int Cmax, int noc, int L, double Nc, int *Nk,
 
   // The return order of r is: PF, NF, pf, C[] array
 
+  printf("\nEND\n");
   return 0; 
 
 }
