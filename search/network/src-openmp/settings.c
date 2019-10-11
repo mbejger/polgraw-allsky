@@ -69,11 +69,16 @@ void search_settings(Search_settings* sett) {
   // F-statistic in range (nmin+1, nmax) of data points
   // 
   // The value of sett->fftpad (zero padding - original grids: 2, new grids: 1) 
-  // is read from the grid.bin file in read_grid() (see init.c) 
-
+  // is read from the grid.bin file in read_grid() (see init.c)
+  
+#if 0
   sett->nmin = sett->fftpad*NAV*sett->B;
   sett->nmax = (sett->nfft/2 - NAV*sett->B)*sett->fftpad;
-
+#else
+  sett->nmin = pow(2,-5)*sett->nfft/2*sett->fftpad
+  sett->nmax = (1 - pow(2,-5))*sett->nfft/2*sett->fftpad;
+#endif  
+    
   // initial value of number of known instrumental lines in band 
   sett->numlines_band=0; 
 
@@ -456,7 +461,8 @@ int read_lines(Search_settings *sett,
       // Line width from the resampling broadening 
       Dfmaxmax = 2.*fdotMax*(sett->N*sett->dt + sqrt(normdtEmax)) + l[i][0]*sqrt(normdEmax);
       // scaling with nod (relative to nod=6)
-      Dfmaxmax *= 6./sett->nod;
+      //Dfmaxmax *= 6./sett->nod;
+      Dfmaxmax *= 0.25;
       
       // The original width of a line is replaced with Dfmaxmax
       ifo->lines[j][0] = l[i][0] - Dfmaxmax; 
