@@ -462,8 +462,9 @@ int job_core(int pm,                   // Hemisphere
   
   if(opts->s0_flag) smin = smax;
   // if spindown parameter is taken into account, smin != smax
-  
-  printf ("\n>>%d\t%d\t%d\t[%d..%d]\n", *FNum, mm, nn, smin, smax);
+
+  int s_stride = 2;
+  printf ("\n>>%d\t%d\t%d\t[%d..%d:%d]\n", *FNum, mm, nn, smin, smax, s_stride);
 
   static fftw_complex *fxa, *fxb;
   static double *F;
@@ -499,7 +500,7 @@ int job_core(int pm,                   // Hemisphere
 
     //#pragma omp for schedule(static,4)
 #pragma omp for schedule(static,4)
-    for(ss=smin; ss<=smax; ++ss) {
+    for(ss=smin; ss<=smax; ss += s_stride) {
 
 #if TIMERS>2
       tstart = get_current_time(CLOCK_PROCESS_CPUTIME_ID);
