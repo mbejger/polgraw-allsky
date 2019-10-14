@@ -75,9 +75,13 @@ void search_settings(Search_settings* sett) {
   sett->nmin = sett->fftpad*NAV*sett->B;
   sett->nmax = (sett->nfft/2 - NAV*sett->B)*sett->fftpad;
 #else
-  sett->nmin = pow(2,-5)*sett->nfft/2*sett->fftpad
+  sett->nmin = pow(2,-5)*sett->nfft/2*sett->fftpad;
   sett->nmax = (1 - pow(2,-5))*sett->nfft/2*sett->fftpad;
-#endif  
+#endif
+  printf("------------------------ Settings -------------------------\n");
+  printf(" B         N          nfft         Fstat_nmin    Fstat_nmax\n");
+  printf("%6.3f  %9d  %9d  %9d       %9d\n", sett->B, sett->N, sett->nfft, sett->nmin, sett->nmax);
+  printf("-----------------------------------------------------------\n");
     
   // initial value of number of known instrumental lines in band 
   sett->numlines_band=0; 
@@ -164,7 +168,7 @@ void detectors_settings(Search_settings* sett,
 
   sett->nifo=i;      // number of detectors  
   if(sett->nifo) { 
-    printf("Settings - number of detectors: %d\n", sett->nifo); 
+    printf("Number of detectors: %d\n", sett->nifo); 
 
   } else { 
     printf("No subdirectories with detector data found. Exiting...\n"); 
