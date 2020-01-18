@@ -43,9 +43,9 @@ int main (int argc, char *argv[]) {
 		date_fname[MAX_LINE], sft_fname[MAX_LINE];
 	double fpo, tmp1, tmp2, gpsd, gpsd1, gpsdn, gps1, *gpsdv, *gpsd1v,	\
 		gpsdRest = 0;
-	int N, lfft, lfftr, lfftm, lenx, ldat, n, i, j, yndx, notempty,	   \
+	int N, lfft, lfftr, lfftm, lenx, ldat, n, i, j, indx, yndx, notempty,	   \
 		bufsize = BUFSIZE, dd = 1, nSeg, noutl, nfiles = 0,    \
-		nxRest = 0, nxall = 0, flidx, offset;
+		nxRest = 0, nxall = 0, flidx, offset, *segar;
 	double *rdt, *rtmp, *xtime, *x0, alpha, dt, othr, *xRest=NULL,	\
 		*xall;
 	int fftsize[] = {0};
@@ -55,9 +55,10 @@ int main (int argc, char *argv[]) {
 	dictionary *ini;
 	char *site, *plsr, *DataDir, *SftDir, *flsum, *fnptr, \
 		*tptr, *flnames[MAX_FILES];
+
 #ifdef USE_LAL
-	int gen_eph;
-	char *EphDir, *efile, *sfile, eFname[MAX_LINE], sFname[MAX_LINE],	\
+	int gen_eph, gen_sci;
+	char *EphDir, *efile, *sfile, *segments_fname, eFname[MAX_LINE], sFname[MAX_LINE],	\
 		eph_fname[MAX_LINE];
 	double *DetSSB, *rDet, *rSSB, mjd1, phir, elam = 0, position[4];
 	EphemerisData *edat = NULL;
@@ -74,6 +75,7 @@ int main (int argc, char *argv[]) {
 	}
 
 	startgps = iniparser_getdouble(ini, "general:startgps", 0.0); // write time sequences starting from this time
+	
 	site = iniparser_getstring (ini, "data:site", NULL);
 	plsr = iniparser_getstring (ini, "data:plsr", NULL);
 	DataDir = iniparser_getstring (ini, "data:datadir", NULL);
@@ -86,14 +88,50 @@ int main (int argc, char *argv[]) {
 	alpha = iniparser_getdouble (ini, "general:alpha", 0.1);
 	othr = iniparser_getdouble (ini, "general:othresh", 750.);
 	dt = iniparser_getdouble (ini, "general:dt", 0.5);
+
+	gen_sci = iniparser_getboolean (ini, "general:scientific", 0);
+    
+    double mingps, maxgps=0;
+    double start, end;
+		long int numbersegan;
+    if(gen_sci){
+        segments_fname = iniparser_getstring (ini, "general:segments", NULL);
+  
+		FILE  *segment_file = fopen(segments_fname, "r");
+        if(segment_file == NULL){
+            perror("Error! Cannot open file \n" );
+     		return 1;
+        }
+        else{
+            printf("Reading file %s\n", segments_fname);
+            fscanf(segment_file, "%lf %lf", &start, &end);
+            mingps=start; maxgps=end;
+            while(fscanf(segment_file, "%lf %lf", &start, &end) != EOF){
+                if (maxgps < end){maxgps = end;}
+                if(mingps > start){mingps = start;}
+            }
+						printf("mingps = %f, maxgps = %f, dt = %f\n", mingps, maxgps, dt);
+    				numbersegan = (long int)ceil((maxgps-mingps)/dt);  
+						printf("numbersegar = %ld\n", numbersegan);
+            segar=(int*)calloc(numbersegan, sizeof(int));
+            fseek(segment_file, 0, SEEK_SET); // seek to the begining of the file
+            while(fscanf(segment_file, "%lf %lf", &start, &end) != EOF){
+                printf("startindx = %d endindx = %d\n", (int)ceil((start-mingps)/dt), (int)ceil((end-mingps)/dt));
+                for(indx=(int)ceil((start-mingps)/dt); indx < (int)ceil((end-mingps)/dt); indx++){
+                   // printf("indx = %d\n", indx);
+                    segar[indx]=1;
+                }
+            }            
+        }         
+    }//end if(gen_sci)
+
 #ifdef USE_LAL
 	gen_eph = iniparser_getboolean (ini, "general:ephemeris", 0);
 	if (gen_eph) {
 		detector = get_detector (site);
 		get_position (detector, position);
 		elam = position[1];
-		fprintf (stderr, "Detector ephemeris for %s will be created\n",	\
-			names[detector]);
+		fprintf (stderr, "Detector ephemeris for %s will be created\n",	names[detector]);
 		EphDir = iniparser_getstring (ini, "general:EphDir", NULL);
 		efile = iniparser_getstring (ini, "general:efile", NULL);
 		sfile = iniparser_getstring (ini, "general:sfile", NULL);
@@ -129,11 +167,13 @@ int main (int argc, char *argv[]) {
   
 	fprintf (stderr, "Time sequences for %s will be created. ", plsr);
 	fprintf (stderr, "Found %d sft files in the worklist\n", nfiles);
-	
+
+
 	gpsdv = (double *) calloc (nfiles, sizeof (double)); // array for starting GPS time for files
 	gpsd1v = (double *) calloc (nfiles, sizeof (double));
-
-	for (flidx=0; flidx<nfiles; flidx++) {
+    
+    // Read "nfile" number of *.out files
+	for (flidx=0; flidx < nfiles; flidx++) {
 		fprintf (stderr, ">>> Reading data file %s ...", flnames[flidx]);
 		sprintf (sft_fname, "%s/%s", SftDir, flnames[flidx]);
 		// read header and check the file
@@ -184,7 +224,7 @@ int main (int argc, char *argv[]) {
 
 		/* Reconstruct full FFT */
 	
-		fprintf (stderr, "--- Reconstructing time domain sequence... ");
+		fprintf (stderr, "--- Reconstructing time domain sequence... \n");
 
 		Xin_array = (fftw_complex *) fftw_malloc (n*lfft*sizeof (fftw_complex));
 		Xout_array = (fftw_complex *) fftw_malloc (n*lfft*sizeof (fftw_complex));
@@ -203,12 +243,8 @@ int main (int argc, char *argv[]) {
 		/* Remove overlapping, add borders.		*/
 		for (j=0; j<lfftr; j++)   *(xtime+j) = (*(Xout_array+j))[0]/lfft;
 		for (i=0; i<n; i++)
-			for (j=0; j<lfftm; j++)
-				*(xtime+lfftr+i*lfftm+j) =		\
-					(*(Xout_array+i*lfft+lfftr+j))[0]/lfft;
-		for (j=0; j<lfftr; j++)
-			*(xtime+lfftr+n*lfftm+j) =			\
-				(*(Xout_array+(n-1)*lfft+lfftr+lfftm+j))[0]/lfft;
+			for (j=0; j<lfftm; j++)		*(xtime+lfftr+i*lfftm+j) = (*(Xout_array+i*lfft+lfftr+j))[0]/lfft;
+		for (j=0; j<lfftr; j++)		*(xtime+lfftr+n*lfftm+j) = (*(Xout_array+(n-1)*lfft+lfftr+lfftm+j))[0]/lfft;
 		fftw_free (Xin_array);
 		fftw_free (Xout_array);
 
@@ -216,6 +252,7 @@ int main (int argc, char *argv[]) {
 
 		offset = (gpsd-gpsdRest)/dt;
 		nxall = lenx+offset;
+		printf("nxall = %d\n", nxall);
 		xall = (double *) calloc (nxall, sizeof (double));
 
 		fprintf (stderr, " Done.");
@@ -227,9 +264,28 @@ int main (int argc, char *argv[]) {
 		fprintf (stderr, "lenx = %d\n", lenx);
 		fprintf (stderr, "nxall = %d\n", nxall);
 #endif
+        if(gen_sci){
+			printf("gpsdRest = %f,  mingps =%f, gpsd = %f, gps1 = %f, gpsdn = %f, gpsd1 = %f\n", gpsdRest, mingps, gpsd, gps1, gpsdn, gpsd1);
+			int offsetgps=(int)round((gpsd - mingps)/dt);
+			printf("offsetgps = %d, nxall = %d numbersegan = %d\n", offsetgps, nxall, numbersegan);
+			for(indx=0; indx < lenx; indx++){
+					//printf("indx = %d\n", indx);
+					if((offsetgps+indx) < 0){xtime[indx] = 0;}
+					else{
+						if((offsetgps+indx) > numbersegan) { xtime[indx] = 0; }
+						else{
+							//printf("indx = %d, offsetgps+indx = %d, segar[offsetgps+indx] = %d\n", indx, offsetgps+indx, segar[offsetgps+indx]);
+							if(segar[offsetgps+indx] != 1) xtime[indx] = 0;
+						}
+					}
+			}
+		}
 
 		if (offset <= 0) {
+//			printf("offset = %d\n", offset);
 			if (nxRest > 0) {
+//			printf("nxRest = %d\n", nxRest);
+
 #ifdef DEBUG
 				fprintf (stderr, "%s: long xRest", flnames[flidx]);
 #else 
@@ -239,6 +295,7 @@ int main (int argc, char *argv[]) {
 			fprintf (stderr, "\n");
 			memcpy (xall, xtime-offset, nxall*sizeof(double));
 		} else {
+			printf("nxRest > offset\n");
 			if (nxRest > offset) {
 #ifdef DEBUG
 				fprintf (stderr, "%s: short xRest\n", flnames[flidx]);
@@ -253,14 +310,14 @@ int main (int argc, char *argv[]) {
 #endif
 			}
 			memcpy (xall, xRest, nxRest*sizeof(double));
+			printf("offset(xtime) = %d, lenx = %d, nxall = %d\n", offset, lenx, nxall);
 			memcpy (xall+offset, xtime, lenx*sizeof(double));
 		}
 		gpsd1 = gpsdRest;
 		gpsd1v[flidx] = gpsd1;
-#ifdef DEBUG
 		fprintf (stderr, "gpsd1 = %f\n", gpsd1);
-#endif
-
+    
+		
 		fprintf (stderr, "--- Cleaning outliers...");
 		/* Remove very large outliers */
 		for (j=0; j<nxall; j++)
@@ -305,8 +362,13 @@ int main (int argc, char *argv[]) {
 			if (stat (td_dir, &st) == -1) {
 				mkdir (td_dir, 0755);
 			}
-			sprintf (td_fname, "%s/xdat_%03d_%s.bin", td_dir, dd, plsr);
-			sprintf (tdc_fname, "%s/xdatc_%03d_%s.bin", td_dir, dd, plsr);
+			if(gen_sci){
+				sprintf (td_fname, "%s/xdats_%03d_%s.bin", td_dir, dd, plsr);
+				sprintf (tdc_fname, "%s/xdatsc_%03d_%s.bin", td_dir, dd, plsr);}
+			else{
+				sprintf (td_fname, "%s/xdat_%03d_%s.bin", td_dir, dd, plsr);
+				sprintf (tdc_fname, "%s/xdatc_%03d_%s.bin", td_dir, dd, plsr);
+			}
 			sprintf (date_fname, "%s/starting_date", td_dir);
 			fprintf (stderr, "%03d\t", dd);
 			// Do "xall" contains only zeros?
