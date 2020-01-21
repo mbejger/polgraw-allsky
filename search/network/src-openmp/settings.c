@@ -138,7 +138,7 @@ void detectors_settings(Search_settings* sett,
           opts->ident, opts->label);
 */
 
-          sprintf(x, "%s/%03d/%s/xdatc_%03d_%04d%s.bin",
+          sprintf(x, "%s/%03d/%s/xdatsc_%03d_%04d%s.bin",
           opts->dtaprefix, opts->ident, ep->d_name,
           opts->ident, opts->band, opts->label);
 
