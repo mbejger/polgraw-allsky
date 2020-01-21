@@ -71,12 +71,12 @@ void search_settings(Search_settings* sett) {
   // The value of sett->fftpad (zero padding - original grids: 2, new grids: 1) 
   // is read from the grid.bin file in read_grid() (see init.c)
   
-#if 0
+#if 1 
   sett->nmin = sett->fftpad*NAV*sett->B;
   sett->nmax = (sett->nfft/2 - NAV*sett->B)*sett->fftpad;
 #else
-  sett->nmin = pow(2,-5)*sett->nfft/2*sett->fftpad;
-  sett->nmax = (1 - pow(2,-5))*sett->nfft/2*sett->fftpad;
+  sett->nmin = pow(2,-6)*sett->nfft/2*sett->fftpad;
+  sett->nmax = (1 - pow(2,-6))*sett->nfft/2*sett->fftpad;
 #endif
   printf("------------------------ Settings -------------------------\n");
   printf(" B         N          nfft         Fstat_nmin    Fstat_nmax\n");
