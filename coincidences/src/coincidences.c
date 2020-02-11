@@ -173,18 +173,14 @@ void read_trigger_files(Search_settings *sett,
     for(i=0; i<4; i++) printf("%d ", shift[i]); 
     printf("\n"); 
 
-    // Calculating the scaling from opts->scale 
-    val = opts->scale;
-    for(i=0; i<4; i++) scale[i] = 1; // Initial value: no scaling 
-    i=3;
-    while (val > 0) {
-      if(val%10) scale[i] = val%10;
-      i--; val /= 10;
-    }
+    // Scaling values from opts->scale[f, s, d, a]
+    scale[0] = opts->scalef; 
+    scale[1] = opts->scales; 
+    scale[2] = opts->scaled; 
+    scale[3] = opts->scalea; 
 
     printf("Cell scaling in f, s, d, a directions: ");
-    for(i=0; i<4; i++) printf("%d ", scale[i]);
-    printf("\n");
+    printf("%d %d %d %d\n", scale[0], scale[1], scale[2], scale[3]);
 
     // Transformation matrix elements: division by the corresponding 
     // scale factors outside the main loop over candidates    
@@ -493,8 +489,8 @@ void read_trigger_files(Search_settings *sett,
   // Coincidences above opts->mincoin threshold 
   //-------------------------------------------
   memset(outname, 0, sizeof(outname));
-  sprintf(outname, "%s/%04d_%04d_%s.coi", 
-    opts->prefix, opts->shift, opts->scale, opts->trigname);
+  sprintf(outname, "%s/%04d_%d-%d-%d-%d_%s.coi", 
+    opts->prefix, opts->shift, opts->scalef, opts->scales, opts->scaled, opts->scalea, opts->trigname);
   data = fopen(outname, "w"); 
 
   int q, maxcoin = imtr[0][1], maxcoinindex=0; 
