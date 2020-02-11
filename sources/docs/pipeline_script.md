@@ -143,7 +143,10 @@ band=1234; dt=2; nod=2; fpo=$(echo $band $dt |awk '{printf("%.6f", 10 + 0.96875*
   -data ../../search/network/src-cpu \ 
   -output . \ 
   -shift $s \ 
-  -scale 4444 \ 
+  -scalef 4 \ 
+  -scales 4 \ 
+  -scaled 4 \ 
+  -scalea 4 \ 
   -refr 4 \ 
   -dt $dt \ 
   -trigname ${band}_2 \ 

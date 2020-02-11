@@ -36,7 +36,10 @@ to obtain the following description:
 |-data            | Data directory (default is `./candidates`)
 |-output          | Output directory (default is `./coinc-results`)
 |-shift           | Cell shifts in `fsda` directions (4 digit number, e.g. `0101`, default `0000`)
-|-scale           | Cell scaling in `fsda` directions (4 digit number, e.g. `4824`, default `1111`)
+|-scalef          | Cell scaling in f direction (a number, e.g. 32, default 1)
+|-scales          | Cell scaling in s direction (a number, e.g. 8, default 1)
+|-scaled          | Cell scaling in d direction (a number, e.g. 4, default 1)
+|-scalea          | Cell scaling in a direction (a number, e.g. 4, default 1)
 |-refr            | Reference frame number
 |-fpo             | Reference band frequency `fpo` value
 |-dt              | Data sampling time dt (default value: `0.5`)
@@ -57,7 +60,7 @@ Also:
 
 Using the software injection added to 2-day Gaussian noise data segments (see [minimal example of the pipeline](../polgraw-allsky/pipeline_script)):
 ```
-% for s in {0..1}{0..1}{0..1}{0..1}; do ./coincidences -data ../../search/network/src-cpu -output . -shift $s -scale 4444 -refr 4 -dt 2 -trigname 1234_2 -refloc ../../testdata/2d_0.25/004 -nod 2 -fpo 308.859375 -snrcutoff 5; done 2>> summary
+% for s in {0..1}{0..1}{0..1}{0..1}; do ./coincidences -data ../../search/network/src-cpu -output . -shift $s -scalef 4 -scales 4 -scaled 4 -scalea 4 -refr 4 -dt 2 -trigname 1234_2 -refloc ../../testdata/2d_0.25/004 -nod 2 -fpo 308.859375 -snrcutoff 5; done 2>> summary
 ```
 This assumes that for the band $bbbb=1234$ and the sampling time $dt=2\ \mathrm{s}$ the band frequency $fpo=308.859375\ \mathrm{Hz}$, because 
 $$

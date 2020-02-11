@@ -10,111 +10,112 @@
         <link rel="shortcut icon" href="../img/favicon.ico">
         <title>Fisher matrix calculation - Polgraw group</title>
         <link href="../css/bootstrap-custom.min.css" rel="stylesheet">
-        <link href="../css/font-awesome-4.5.0.css" rel="stylesheet">
+        <link href="../css/font-awesome.min.css" rel="stylesheet">
         <link href="../css/base.css" rel="stylesheet">
-        <link rel="stylesheet" href="../css/highlight.css">
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/github.min.css">
         <!-- HTML5 shim and Respond.js IE8 support of HTML5 elements and media queries -->
         <!--[if lt IE 9]>
             <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
-            <script src="https://oss.maxcdn.com/libs/respond.js/1.3.0/respond.min.js"></script>
+            <script src="https://oss.maxcdn.com/libs/respond.js/1.4.2/respond.min.js"></script>
         <![endif]-->
-	
-	<script src="../js/jquery-1.10.2.min.js"></script>
-        <script src="../js/bootstrap-3.0.3.min.js"></script>
-        <script src="../js/highlight.pack.js"></script> 
+
+        <script src="../js/jquery-1.10.2.min.js" defer></script>
+        <script src="../js/bootstrap-3.0.3.min.js" defer></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
+        <script>hljs.initHighlightingOnLoad();</script> 
     </head>
 
     <body>
 
         <div class="navbar navbar-default navbar-fixed-top" role="navigation">
-    <div class="container">
+            <div class="container">
 
-        <!-- Collapsed navigation -->
-        <div class="navbar-header">
-            <!-- Expander button -->
-            <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
-                <span class="sr-only">Toggle navigation</span>
-                <span class="icon-bar"></span>
-                <span class="icon-bar"></span>
-                <span class="icon-bar"></span>
-            </button>
-            <a class="navbar-brand" href="..">Polgraw group</a>
-        </div>
+                <!-- Collapsed navigation -->
+                <div class="navbar-header">
+                    <!-- Expander button -->
+                    <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
+                        <span class="sr-only">Toggle navigation</span>
+                        <span class="icon-bar"></span>
+                        <span class="icon-bar"></span>
+                        <span class="icon-bar"></span>
+                    </button>
+                    <a class="navbar-brand" href="..">Polgraw group</a>
+                </div>
 
-        <!-- Expanded navigation -->
-        <div class="navbar-collapse collapse">
-                <!-- Main navigation -->
-                <ul class="nav navbar-nav">
-                    <li >
-                        <a href="..">Home</a>
-                    </li>
-                    <li class="dropdown active">
-                        <a href="#" class="dropdown-toggle" data-toggle="dropdown">Pipeline description <b class="caret"></b></a>
-                        <ul class="dropdown-menu">
-                            
+                <!-- Expanded navigation -->
+                <div class="navbar-collapse collapse">
+                        <!-- Main navigation -->
+                        <ul class="nav navbar-nav">
+                            <li >
+                                <a href="..">Home</a>
+                            </li>
+                            <li class="dropdown active">
+                                <a href="#" class="dropdown-toggle" data-toggle="dropdown">Pipeline description <b class="caret"></b></a>
+                                <ul class="dropdown-menu">
+                                    
 <li >
     <a href="../input_data/">Input data generation</a>
 </li>
-                            
+                                    
 <li >
     <a href="../grid_generation/">Grid generation</a>
 </li>
-                            
+                                    
 <li >
     <a href="../search_for_candidates/">F-statistic candidate signal search</a>
 </li>
-                            
+                                    
 <li >
     <a href="../coincidences/">Coincidences between candidates</a>
 </li>
-                            
+                                    
 <li >
     <a href="../fap_coincidences/">False alarm probablity of conicidences</a>
 </li>
-                            
+                                    
 <li >
     <a href="../followup/">Followup of interesting outliers</a>
 </li>
-                            
+                                    
 <li >
     <a href="../sensitivity_upper_limits/">Sensitivity upper limits</a>
 </li>
-                            
+                                    
 <li class="active">
     <a href="./">Fisher matrix calculation</a>
 </li>
-                            
+                                    
 <li >
     <a href="../pipeline_script/">Pipeline: a minimal example</a>
 </li>
-                            
+                                    
 <li >
     <a href="../articles/">Documents and publications</a>
 </li>
+                                </ul>
+                            </li>
                         </ul>
-                    </li>
-                </ul>
 
-            <ul class="nav navbar-nav navbar-right">
-                <li>
-                    <a href="#" data-toggle="modal" data-target="#mkdocs_search_modal">
-                        <i class="fa fa-search"></i> Search
-                    </a>
-                </li>
-                    <li >
-                        <a rel="next" href="../sensitivity_upper_limits/">
-                            <i class="fa fa-arrow-left"></i> Previous
-                        </a>
-                    </li>
-                    <li >
-                        <a rel="prev" href="../pipeline_script/">
-                            Next <i class="fa fa-arrow-right"></i>
-                        </a>
-                    </li>
-            </ul>
+                    <ul class="nav navbar-nav navbar-right">
+                        <li>
+                            <a href="#" data-toggle="modal" data-target="#mkdocs_search_modal">
+                                <i class="fa fa-search"></i> Search
+                            </a>
+                        </li>
+                            <li >
+                                <a rel="next" href="../sensitivity_upper_limits/">
+                                    <i class="fa fa-arrow-left"></i> Previous
+                                </a>
+                            </li>
+                            <li >
+                                <a rel="prev" href="../pipeline_script/">
+                                    Next <i class="fa fa-arrow-right"></i>
+                                </a>
+                            </li>
+                    </ul>
+                </div>
+            </div>
         </div>
-    </div>
-</div>
 
         <div class="container">
                 <div class="col-md-3"><div class="bs-sidebar hidden-print affix well" role="complementary">
@@ -131,7 +132,7 @@
 <h1 id="fisher-matrix-calculation">Fisher matrix calculation</h1>
 <p>The Fisher matrix associated with the signal model and its inversion is calculated using <a href="https://github.com/mbejger/polgraw-allsky/tree/master/search/network/src-cpu/fisher.c">this code</a>. </p>
 <h3 id="prerequisites">Prerequisites</h3>
-<p>The code is written in standard <code>C</code> and it's mostly based on functions used in <a href="../../polgraw-allsky/search_for_candidates/">search</a>. Arbitrary-precision interval arithmetic <a href="http://arblib.org">Arb</a> library is used to invert the (usually) not-very-well posed Fisher matrix, so it has to be installed beforehand. <a href="http://arblib.org">Arb</a> requires <a href="http://www.flintlib.org">FLINT</a>, <a href="http://www.mpfr.org">MPFR</a>, and either <a href="http://www.mpir.org">MPIR</a> or <a href="http://www.gmplib.org">GMP</a>. </p>
+<p>The code is written in standard <code>C</code> and it's mostly based on functions used in <a href="../polgraw-allsky/search_for_candidates/">search</a>. Arbitrary-precision interval arithmetic <a href="http://arblib.org">Arb</a> library is used to invert the (usually) not-very-well posed Fisher matrix, so it has to be installed beforehand. <a href="http://arblib.org">Arb</a> requires <a href="http://www.flintlib.org">FLINT</a>, <a href="http://www.mpfr.org">MPFR</a>, and either <a href="http://www.mpir.org">MPIR</a> or <a href="http://www.gmplib.org">GMP</a>. </p>
 <h3 id="compilation">Compilation</h3>
 <p>Run  <code>make fisher</code> in <code>search/network/src-cpu</code> - resulting  binary is called <code>fisher</code>. Modify the <code>Makefile</code> (especially the variable <code>ARB_DIR</code>) to fit your system. </p>
 <h4 id="_1"></h4>
@@ -206,7 +207,7 @@
 <li>Sampling time <code>dt</code> is <script type="math/tex">2 s</script>, </li>
 <li><code>ident</code> is the number of time frame to be analyzed (<script type="math/tex">001</script>),</li>
 <li><code>nod</code> number of days is <script type="math/tex">2</script>, </li>
-<li><code>band</code> is the number of the frequency band (see the <a href="../../polgraw-allsky/input_data">input data structure</a> for details). </li>
+<li><code>band</code> is the number of the frequency band (see the <a href="../polgraw-allsky/input_data">input data structure</a> for details). </li>
 <li><code>usedet</code> switch to chose a detector (here <script type="math/tex">H1</script>) </li>
 <li><code>addsig</code> switch to chose a file with signal data</li>
 </ul>
@@ -220,11 +221,11 @@
 </li>
 </ul>
 <p>e.g., </p>
-<div class="codehilite"><pre><span></span>1.431318175386891
+<div class="codehilite"><pre><span></span><span class="m">1</span>.431318175386891
 -7.9539e-9
-0.6363615896875658
-4.396884357060633
-7.764354801848407e-3
+<span class="m">0</span>.6363615896875658
+<span class="m">4</span>.396884357060633
+<span class="m">7</span>.764354801848407e-3
 -1.422468474545797e-2
 -1.559826840666228e-2
 -8.623005535014139e-3
@@ -247,38 +248,43 @@ h(t) = \left(a_1 a(t) + a_2 b(t)\right)\cos(\psi)
 </p>
 <p>with <script type="math/tex">\psi(f, \dot{f}, \delta, \alpha, t)</script> being the phase of the signal, and <script type="math/tex">a</script> and <script type="math/tex">b</script> the amplitude modulation functions (calculated in the <a href="https://github.com/mbejger/polgraw-allsky/tree/master/search/network/src-cpu/settings.c">modvir</a> function). </p>
 <h3 id="example-output">Example output</h3>
-<div class="codehilite"><pre><span></span>Number of days is 2
+<div class="codehilite"><pre><span></span>Number of days is <span class="m">2</span>
 Input data directory is 2d_0.25
-Frame and band numbers are <span class="m">1</span> and 1234
-The reference frequency fpo is 308.859375
-The data sampling <span class="nb">time</span> dt is 2.000000
+Frame and band numbers are <span class="m">1</span> and <span class="m">1234</span>
+The reference frequency fpo is <span class="m">308</span>.859375
+The data sampling <span class="nb">time</span> dt is <span class="m">2</span>.000000
 Adding signal from <span class="s1">&#39;sigfile&#39;</span>
-Settings - number of detectors: 1
+Settings - number of detectors: <span class="m">1</span>
 Using H1 IFO as detector <span class="c1">#0... 2d_0.25/001/H1/xdatc_001_1234.bin as input time series data</span>
 Using 2d_0.25/001/H1/DetSSB.bin as detector H1 ephemerids...
 The Fisher matrix:
-1.4602194451385117e+10 9.6224528459395950e+14 1.0472943290223141e+10 1.9109038902196317e+11 -5.6465717962684985e+06 -4.1172082782989331e+06 -2.9517981884375727e+06 7.0470722915177587e+06 
-9.6224528459395950e+14 6.7134859540063060e+19 6.5156368686556762e+14 1.1289208033400466e+16 -3.3340781322676825e+11 -2.4401458951787103e+11 -1.7381344007331134e+11 4.1673668536337537e+11 
-1.0472943290223141e+10 6.5156368686556762e+14 8.0545511145922174e+09 1.5540065972734366e+11 -4.6112260504154256e+06 -3.4059196396034071e+06 -2.3414307185722976e+06 5.7018637665277841e+06 
-1.9109038902196317e+11 1.1289208033400466e+16 1.5540065972734366e+11 3.1204237328935298e+12 -9.2852217833914995e+07 -6.9173973293523684e+07 -4.6213130625602841e+07 1.1410003283718885e+08 
--5.6465717962684985e+06 -3.3340781322676825e+11 -4.6112260504154256e+06 -9.2852217833914995e+07 7.6814199126393523e+03 -1.6833193661163169e-03 0.0000000000000000e+00 0.0000000000000000e+00 
--4.1172082782989331e+06 -2.4401458951787103e+11 -3.4059196396034071e+06 -6.9173973293523684e+07 -1.6833193661163169e-03 1.0351065428550139e+04 0.0000000000000000e+00 0.0000000000000000e+00 
--2.9517981884375727e+06 -1.7381344007331134e+11 -2.3414307185722976e+06 -4.6213130625602841e+07 0.0000000000000000e+00 0.0000000000000000e+00 7.6814199126393523e+03 -1.6833193661163169e-03 
-7.0470722915177587e+06 4.1673668536337537e+11 5.7018637665277841e+06 1.1410003283718885e+08 0.0000000000000000e+00 0.0000000000000000e+00 -1.6833193661163169e-03 1.0351065428550139e+04 
+<span class="m">1</span>.4602194451385117e+10 <span class="m">9</span>.6224528459395950e+14 <span class="m">1</span>.0472943290223141e+10 <span class="m">1</span>.9109038902196317e+11 -5.6465717962684985e+06 -4.1172082782989331e+06 -2.9517981884375727e+06 <span class="m">7</span>.0470722915177587e+06 
+<span class="m">9</span>.6224528459395950e+14 <span class="m">6</span>.7134859540063060e+19 <span class="m">6</span>.5156368686556762e+14 <span class="m">1</span>.1289208033400466e+16 -3.3340781322676825e+11 -2.4401458951787103e+11 -1.7381344007331134e+11 <span class="m">4</span>.1673668536337537e+11 
+<span class="m">1</span>.0472943290223141e+10 <span class="m">6</span>.5156368686556762e+14 <span class="m">8</span>.0545511145922174e+09 <span class="m">1</span>.5540065972734366e+11 -4.6112260504154256e+06 -3.4059196396034071e+06 -2.3414307185722976e+06 <span class="m">5</span>.7018637665277841e+06 
+<span class="m">1</span>.9109038902196317e+11 <span class="m">1</span>.1289208033400466e+16 <span class="m">1</span>.5540065972734366e+11 <span class="m">3</span>.1204237328935298e+12 -9.2852217833914995e+07 -6.9173973293523684e+07 -4.6213130625602841e+07 <span class="m">1</span>.1410003283718885e+08 
+-5.6465717962684985e+06 -3.3340781322676825e+11 -4.6112260504154256e+06 -9.2852217833914995e+07 <span class="m">7</span>.6814199126393523e+03 -1.6833193661163169e-03 <span class="m">0</span>.0000000000000000e+00 <span class="m">0</span>.0000000000000000e+00 
+-4.1172082782989331e+06 -2.4401458951787103e+11 -3.4059196396034071e+06 -6.9173973293523684e+07 -1.6833193661163169e-03 <span class="m">1</span>.0351065428550139e+04 <span class="m">0</span>.0000000000000000e+00 <span class="m">0</span>.0000000000000000e+00 
+-2.9517981884375727e+06 -1.7381344007331134e+11 -2.3414307185722976e+06 -4.6213130625602841e+07 <span class="m">0</span>.0000000000000000e+00 <span class="m">0</span>.0000000000000000e+00 <span class="m">7</span>.6814199126393523e+03 -1.6833193661163169e-03 
+<span class="m">7</span>.0470722915177587e+06 <span class="m">4</span>.1673668536337537e+11 <span class="m">5</span>.7018637665277841e+06 <span class="m">1</span>.1410003283718885e+08 <span class="m">0</span>.0000000000000000e+00 <span class="m">0</span>.0000000000000000e+00 -1.6833193661163169e-03 <span class="m">1</span>.0351065428550139e+04 
 Inverting the Fisher matrix...
 Diagonal elements of the covariance matrix:
-2.561275e-04 3.867944e-18 2.363103e-03 9.137957e-04 1.343874e+05 4.107046e+04 3.329715e+04 1.117611e+05 
+<span class="m">2</span>.561275e-04 <span class="m">3</span>.867944e-18 <span class="m">2</span>.363103e-03 <span class="m">9</span>.137957e-04 <span class="m">1</span>.343874e+05 <span class="m">4</span>.107046e+04 <span class="m">3</span>.329715e+04 <span class="m">1</span>.117611e+05 
 </pre></div></div>
         </div>
 
         <footer class="col-md-12">
             <hr>
-            <p>Documentation built with <a href="http://www.mkdocs.org/">MkDocs</a>.</p>
+            <p>Documentation built with <a href="https://www.mkdocs.org/">MkDocs</a>.</p>
         </footer>
-        <script>var base_url = '..';</script>
-        <script data-main="../mkdocs/js/search.js" src="../mkdocs/js/require.js"></script>
-        <script src="../js/base.js"></script>
-        <script src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS_HTML"></script><div class="modal" id="mkdocs_search_modal" tabindex="-1" role="dialog" aria-labelledby="Search Modal" aria-hidden="true">
+        <script>
+            var base_url = "..",
+                shortcuts = {"help": 191, "next": 78, "previous": 80, "search": 83};
+        </script>
+        <script src="../js/base.js" defer></script>
+        <script src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS_HTML" defer></script>
+        <script src="../search/main.js" defer></script>
+
+        <div class="modal" id="mkdocs_search_modal" tabindex="-1" role="dialog" aria-labelledby="Search Modal" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
@@ -292,10 +298,49 @@ Diagonal elements of the covariance matrix:
                 </p>
                 <form role="form">
                     <div class="form-group">
-                        <input type="text" class="form-control" placeholder="Search..." id="mkdocs-search-query">
+                        <input type="text" class="form-control" placeholder="Search..." id="mkdocs-search-query" title="Type search term here">
                     </div>
                 </form>
                 <div id="mkdocs-search-results"></div>
+            </div>
+            <div class="modal-footer">
+            </div>
+        </div>
+    </div>
+</div><div class="modal" id="mkdocs_keyboard_modal" tabindex="-1" role="dialog" aria-labelledby="Keyboard Shortcuts Modal" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
+                <h4 class="modal-title" id="exampleModalLabel">Keyboard Shortcuts</h4>
+            </div>
+            <div class="modal-body">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th style="width: 20%;">Keys</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td class="help shortcut"><kbd>?</kbd></td>
+                    <td>Open this help</td>
+                  </tr>
+                  <tr>
+                    <td class="next shortcut"><kbd>n</kbd></td>
+                    <td>Next page</td>
+                  </tr>
+                  <tr>
+                    <td class="prev shortcut"><kbd>p</kbd></td>
+                    <td>Previous page</td>
+                  </tr>
+                  <tr>
+                    <td class="search shortcut"><kbd>s</kbd></td>
+                    <td>Search</td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
             <div class="modal-footer">
             </div>

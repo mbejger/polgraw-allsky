@@ -10,111 +10,112 @@
         <link rel="shortcut icon" href="../img/favicon.ico">
         <title>Sensitivity upper limits - Polgraw group</title>
         <link href="../css/bootstrap-custom.min.css" rel="stylesheet">
-        <link href="../css/font-awesome-4.5.0.css" rel="stylesheet">
+        <link href="../css/font-awesome.min.css" rel="stylesheet">
         <link href="../css/base.css" rel="stylesheet">
-        <link rel="stylesheet" href="../css/highlight.css">
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/github.min.css">
         <!-- HTML5 shim and Respond.js IE8 support of HTML5 elements and media queries -->
         <!--[if lt IE 9]>
             <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
-            <script src="https://oss.maxcdn.com/libs/respond.js/1.3.0/respond.min.js"></script>
+            <script src="https://oss.maxcdn.com/libs/respond.js/1.4.2/respond.min.js"></script>
         <![endif]-->
-	
-	<script src="../js/jquery-1.10.2.min.js"></script>
-        <script src="../js/bootstrap-3.0.3.min.js"></script>
-        <script src="../js/highlight.pack.js"></script> 
+
+        <script src="../js/jquery-1.10.2.min.js" defer></script>
+        <script src="../js/bootstrap-3.0.3.min.js" defer></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
+        <script>hljs.initHighlightingOnLoad();</script> 
     </head>
 
     <body>
 
         <div class="navbar navbar-default navbar-fixed-top" role="navigation">
-    <div class="container">
+            <div class="container">
 
-        <!-- Collapsed navigation -->
-        <div class="navbar-header">
-            <!-- Expander button -->
-            <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
-                <span class="sr-only">Toggle navigation</span>
-                <span class="icon-bar"></span>
-                <span class="icon-bar"></span>
-                <span class="icon-bar"></span>
-            </button>
-            <a class="navbar-brand" href="..">Polgraw group</a>
-        </div>
+                <!-- Collapsed navigation -->
+                <div class="navbar-header">
+                    <!-- Expander button -->
+                    <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
+                        <span class="sr-only">Toggle navigation</span>
+                        <span class="icon-bar"></span>
+                        <span class="icon-bar"></span>
+                        <span class="icon-bar"></span>
+                    </button>
+                    <a class="navbar-brand" href="..">Polgraw group</a>
+                </div>
 
-        <!-- Expanded navigation -->
-        <div class="navbar-collapse collapse">
-                <!-- Main navigation -->
-                <ul class="nav navbar-nav">
-                    <li >
-                        <a href="..">Home</a>
-                    </li>
-                    <li class="dropdown active">
-                        <a href="#" class="dropdown-toggle" data-toggle="dropdown">Pipeline description <b class="caret"></b></a>
-                        <ul class="dropdown-menu">
-                            
+                <!-- Expanded navigation -->
+                <div class="navbar-collapse collapse">
+                        <!-- Main navigation -->
+                        <ul class="nav navbar-nav">
+                            <li >
+                                <a href="..">Home</a>
+                            </li>
+                            <li class="dropdown active">
+                                <a href="#" class="dropdown-toggle" data-toggle="dropdown">Pipeline description <b class="caret"></b></a>
+                                <ul class="dropdown-menu">
+                                    
 <li >
     <a href="../input_data/">Input data generation</a>
 </li>
-                            
+                                    
 <li >
     <a href="../grid_generation/">Grid generation</a>
 </li>
-                            
+                                    
 <li >
     <a href="../search_for_candidates/">F-statistic candidate signal search</a>
 </li>
-                            
+                                    
 <li >
     <a href="../coincidences/">Coincidences between candidates</a>
 </li>
-                            
+                                    
 <li >
     <a href="../fap_coincidences/">False alarm probablity of conicidences</a>
 </li>
-                            
+                                    
 <li >
     <a href="../followup/">Followup of interesting outliers</a>
 </li>
-                            
+                                    
 <li class="active">
     <a href="./">Sensitivity upper limits</a>
 </li>
-                            
+                                    
 <li >
     <a href="../fisher/">Fisher matrix calculation</a>
 </li>
-                            
+                                    
 <li >
     <a href="../pipeline_script/">Pipeline: a minimal example</a>
 </li>
-                            
+                                    
 <li >
     <a href="../articles/">Documents and publications</a>
 </li>
+                                </ul>
+                            </li>
                         </ul>
-                    </li>
-                </ul>
 
-            <ul class="nav navbar-nav navbar-right">
-                <li>
-                    <a href="#" data-toggle="modal" data-target="#mkdocs_search_modal">
-                        <i class="fa fa-search"></i> Search
-                    </a>
-                </li>
-                    <li >
-                        <a rel="next" href="../followup/">
-                            <i class="fa fa-arrow-left"></i> Previous
-                        </a>
-                    </li>
-                    <li >
-                        <a rel="prev" href="../fisher/">
-                            Next <i class="fa fa-arrow-right"></i>
-                        </a>
-                    </li>
-            </ul>
+                    <ul class="nav navbar-nav navbar-right">
+                        <li>
+                            <a href="#" data-toggle="modal" data-target="#mkdocs_search_modal">
+                                <i class="fa fa-search"></i> Search
+                            </a>
+                        </li>
+                            <li >
+                                <a rel="next" href="../followup/">
+                                    <i class="fa fa-arrow-left"></i> Previous
+                                </a>
+                            </li>
+                            <li >
+                                <a rel="prev" href="../fisher/">
+                                    Next <i class="fa fa-arrow-right"></i>
+                                </a>
+                            </li>
+                    </ul>
+                </div>
+            </div>
         </div>
-    </div>
-</div>
 
         <div class="container">
                 <div class="col-md-3"><div class="bs-sidebar hidden-print affix well" role="complementary">
@@ -187,8 +188,8 @@ pip install pandas
 <ol>
 <li><code>bandlist</code> which is a list of bands with strain amplitudes, for example:  </li>
 </ol>
-<div class="codehilite"><pre><span></span><span class="m">0164</span> 2.25e-1 
-<span class="m">0165</span> 1.5e-1 2e-1 2.5e-1 3e-1
+<div class="codehilite"><pre><span></span><span class="m">0164</span> <span class="m">2</span>.25e-1 
+<span class="m">0165</span> <span class="m">1</span>.5e-1 2e-1 <span class="m">2</span>.5e-1 3e-1
 <span class="m">0166</span> 2e-1 4e-1
 </pre></div>
 
@@ -207,16 +208,16 @@ pip install pandas
 
 
 <p>for example </p>
-<div class="codehilite"><pre><span></span>% python summary.py <span class="m">0165</span> 0.7 100
+<div class="codehilite"><pre><span></span>% python summary.py <span class="m">0165</span> <span class="m">0</span>.7 <span class="m">100</span>
 </pre></div>
 
 
 <p>The result will be something as follows (columns are <code>band</code> number, amplitude <code>h</code>, upper limit <code>ul</code>): </p>
 <div class="codehilite"><pre><span></span>band h   ul 
-<span class="m">0165</span> 0.150 0.61
-<span class="m">0165</span> 0.200 0.78
-<span class="m">0165</span> 0.250 0.95
-<span class="m">0165</span> 0.300 0.99
+<span class="m">0165</span> <span class="m">0</span>.150 <span class="m">0</span>.61
+<span class="m">0165</span> <span class="m">0</span>.200 <span class="m">0</span>.78
+<span class="m">0165</span> <span class="m">0</span>.250 <span class="m">0</span>.95
+<span class="m">0165</span> <span class="m">0</span>.300 <span class="m">0</span>.99
 </pre></div>
 
 
@@ -233,10 +234,10 @@ pip install pandas
 
 <p>The summary of simulations for a given band (<code>0165</code>, say) processed by the <a href="https://github.com/mbejger/polgraw-allsky/blob/master/sensitivity-scripts/summary.sh">summary.sh</a> result in the following list of <code>h0</code> amplitudes followed by the corresponding fractions of significant coincidences (<code>N_coin/N</code>):</p>
 <div class="codehilite"><pre><span></span>band h   ul 
-<span class="m">0165</span> 0.150 0.61
-<span class="m">0165</span> 0.200 0.78
-<span class="m">0165</span> 0.250 0.95
-<span class="m">0165</span> 0.300 0.99
+<span class="m">0165</span> <span class="m">0</span>.150 <span class="m">0</span>.61
+<span class="m">0165</span> <span class="m">0</span>.200 <span class="m">0</span>.78
+<span class="m">0165</span> <span class="m">0</span>.250 <span class="m">0</span>.95
+<span class="m">0165</span> <span class="m">0</span>.300 <span class="m">0</span>.99
 </pre></div>
 
 
@@ -248,8 +249,8 @@ pip install pandas
 
 
 <p>to the above data. Fitting is done by <a href="https://github.com/mbejger/polgraw-allsky/blob/master/sensitivity-scripts/upper-limits/ul.py">ul.py</a>:</p>
-<div class="codehilite"><pre><span></span>% python ul.py 0165_results <span class="m">0165</span> 0.01 test.pdf
-<span class="m">0165</span> 2.7026e-01
+<div class="codehilite"><pre><span></span>% python ul.py 0165_results <span class="m">0165</span> <span class="m">0</span>.01 test.pdf
+<span class="m">0165</span> <span class="m">2</span>.7026e-01
 </pre></div>
 
 
@@ -259,12 +260,17 @@ pip install pandas
 
         <footer class="col-md-12">
             <hr>
-            <p>Documentation built with <a href="http://www.mkdocs.org/">MkDocs</a>.</p>
+            <p>Documentation built with <a href="https://www.mkdocs.org/">MkDocs</a>.</p>
         </footer>
-        <script>var base_url = '..';</script>
-        <script data-main="../mkdocs/js/search.js" src="../mkdocs/js/require.js"></script>
-        <script src="../js/base.js"></script>
-        <script src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS_HTML"></script><div class="modal" id="mkdocs_search_modal" tabindex="-1" role="dialog" aria-labelledby="Search Modal" aria-hidden="true">
+        <script>
+            var base_url = "..",
+                shortcuts = {"help": 191, "next": 78, "previous": 80, "search": 83};
+        </script>
+        <script src="../js/base.js" defer></script>
+        <script src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS_HTML" defer></script>
+        <script src="../search/main.js" defer></script>
+
+        <div class="modal" id="mkdocs_search_modal" tabindex="-1" role="dialog" aria-labelledby="Search Modal" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
@@ -278,10 +284,49 @@ pip install pandas
                 </p>
                 <form role="form">
                     <div class="form-group">
-                        <input type="text" class="form-control" placeholder="Search..." id="mkdocs-search-query">
+                        <input type="text" class="form-control" placeholder="Search..." id="mkdocs-search-query" title="Type search term here">
                     </div>
                 </form>
                 <div id="mkdocs-search-results"></div>
+            </div>
+            <div class="modal-footer">
+            </div>
+        </div>
+    </div>
+</div><div class="modal" id="mkdocs_keyboard_modal" tabindex="-1" role="dialog" aria-labelledby="Keyboard Shortcuts Modal" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
+                <h4 class="modal-title" id="exampleModalLabel">Keyboard Shortcuts</h4>
+            </div>
+            <div class="modal-body">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th style="width: 20%;">Keys</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td class="help shortcut"><kbd>?</kbd></td>
+                    <td>Open this help</td>
+                  </tr>
+                  <tr>
+                    <td class="next shortcut"><kbd>n</kbd></td>
+                    <td>Next page</td>
+                  </tr>
+                  <tr>
+                    <td class="prev shortcut"><kbd>p</kbd></td>
+                    <td>Previous page</td>
+                  </tr>
+                  <tr>
+                    <td class="search shortcut"><kbd>s</kbd></td>
+                    <td>Search</td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
             <div class="modal-footer">
             </div>

@@ -10,111 +10,112 @@
         <link rel="shortcut icon" href="../img/favicon.ico">
         <title>F-statistic candidate signal search - Polgraw group</title>
         <link href="../css/bootstrap-custom.min.css" rel="stylesheet">
-        <link href="../css/font-awesome-4.5.0.css" rel="stylesheet">
+        <link href="../css/font-awesome.min.css" rel="stylesheet">
         <link href="../css/base.css" rel="stylesheet">
-        <link rel="stylesheet" href="../css/highlight.css">
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/github.min.css">
         <!-- HTML5 shim and Respond.js IE8 support of HTML5 elements and media queries -->
         <!--[if lt IE 9]>
             <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
-            <script src="https://oss.maxcdn.com/libs/respond.js/1.3.0/respond.min.js"></script>
+            <script src="https://oss.maxcdn.com/libs/respond.js/1.4.2/respond.min.js"></script>
         <![endif]-->
-	
-	<script src="../js/jquery-1.10.2.min.js"></script>
-        <script src="../js/bootstrap-3.0.3.min.js"></script>
-        <script src="../js/highlight.pack.js"></script> 
+
+        <script src="../js/jquery-1.10.2.min.js" defer></script>
+        <script src="../js/bootstrap-3.0.3.min.js" defer></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
+        <script>hljs.initHighlightingOnLoad();</script> 
     </head>
 
     <body>
 
         <div class="navbar navbar-default navbar-fixed-top" role="navigation">
-    <div class="container">
+            <div class="container">
 
-        <!-- Collapsed navigation -->
-        <div class="navbar-header">
-            <!-- Expander button -->
-            <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
-                <span class="sr-only">Toggle navigation</span>
-                <span class="icon-bar"></span>
-                <span class="icon-bar"></span>
-                <span class="icon-bar"></span>
-            </button>
-            <a class="navbar-brand" href="..">Polgraw group</a>
-        </div>
+                <!-- Collapsed navigation -->
+                <div class="navbar-header">
+                    <!-- Expander button -->
+                    <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
+                        <span class="sr-only">Toggle navigation</span>
+                        <span class="icon-bar"></span>
+                        <span class="icon-bar"></span>
+                        <span class="icon-bar"></span>
+                    </button>
+                    <a class="navbar-brand" href="..">Polgraw group</a>
+                </div>
 
-        <!-- Expanded navigation -->
-        <div class="navbar-collapse collapse">
-                <!-- Main navigation -->
-                <ul class="nav navbar-nav">
-                    <li >
-                        <a href="..">Home</a>
-                    </li>
-                    <li class="dropdown active">
-                        <a href="#" class="dropdown-toggle" data-toggle="dropdown">Pipeline description <b class="caret"></b></a>
-                        <ul class="dropdown-menu">
-                            
+                <!-- Expanded navigation -->
+                <div class="navbar-collapse collapse">
+                        <!-- Main navigation -->
+                        <ul class="nav navbar-nav">
+                            <li >
+                                <a href="..">Home</a>
+                            </li>
+                            <li class="dropdown active">
+                                <a href="#" class="dropdown-toggle" data-toggle="dropdown">Pipeline description <b class="caret"></b></a>
+                                <ul class="dropdown-menu">
+                                    
 <li >
     <a href="../input_data/">Input data generation</a>
 </li>
-                            
+                                    
 <li >
     <a href="../grid_generation/">Grid generation</a>
 </li>
-                            
+                                    
 <li class="active">
     <a href="./">F-statistic candidate signal search</a>
 </li>
-                            
+                                    
 <li >
     <a href="../coincidences/">Coincidences between candidates</a>
 </li>
-                            
+                                    
 <li >
     <a href="../fap_coincidences/">False alarm probablity of conicidences</a>
 </li>
-                            
+                                    
 <li >
     <a href="../followup/">Followup of interesting outliers</a>
 </li>
-                            
+                                    
 <li >
     <a href="../sensitivity_upper_limits/">Sensitivity upper limits</a>
 </li>
-                            
+                                    
 <li >
     <a href="../fisher/">Fisher matrix calculation</a>
 </li>
-                            
+                                    
 <li >
     <a href="../pipeline_script/">Pipeline: a minimal example</a>
 </li>
-                            
+                                    
 <li >
     <a href="../articles/">Documents and publications</a>
 </li>
+                                </ul>
+                            </li>
                         </ul>
-                    </li>
-                </ul>
 
-            <ul class="nav navbar-nav navbar-right">
-                <li>
-                    <a href="#" data-toggle="modal" data-target="#mkdocs_search_modal">
-                        <i class="fa fa-search"></i> Search
-                    </a>
-                </li>
-                    <li >
-                        <a rel="next" href="../grid_generation/">
-                            <i class="fa fa-arrow-left"></i> Previous
-                        </a>
-                    </li>
-                    <li >
-                        <a rel="prev" href="../coincidences/">
-                            Next <i class="fa fa-arrow-right"></i>
-                        </a>
-                    </li>
-            </ul>
+                    <ul class="nav navbar-nav navbar-right">
+                        <li>
+                            <a href="#" data-toggle="modal" data-target="#mkdocs_search_modal">
+                                <i class="fa fa-search"></i> Search
+                            </a>
+                        </li>
+                            <li >
+                                <a rel="next" href="../grid_generation/">
+                                    <i class="fa fa-arrow-left"></i> Previous
+                                </a>
+                            </li>
+                            <li >
+                                <a rel="prev" href="../coincidences/">
+                                    Next <i class="fa fa-arrow-right"></i>
+                                </a>
+                            </li>
+                    </ul>
+                </div>
+            </div>
         </div>
-    </div>
-</div>
 
         <div class="container">
                 <div class="col-md-3"><div class="bs-sidebar hidden-print affix well" role="complementary">
@@ -256,7 +257,7 @@
 <li><code>output</code> directory is a directory to write the output (e.g., in current directory, . ) </li>
 <li><code>ident</code> is the number of time frame to be analyzed (<script type="math/tex">001</script>),</li>
 <li><code>nod</code> number of days is <script type="math/tex">2</script>, </li>
-<li><code>band</code> is the number of the frequency band (see the <a href="../../polgraw-allsky/input_data">input data structure</a> for details). </li>
+<li><code>band</code> is the number of the frequency band (see the <a href="../polgraw-allsky/input_data">input data structure</a> for details). </li>
 </ul>
 <h4 id="_3"></h4>
 <h4 id="network-of-detectors">Network of detectors</h4>
@@ -270,7 +271,7 @@
   -nod <span class="m">2</span> <span class="se">\ </span>
   -addsig sig1 <span class="se">\ </span> 
   -output . <span class="se">\</span>
-  -threshold 14.5 <span class="se">\</span>
+  -threshold <span class="m">14</span>.5 <span class="se">\</span>
   --nocheckpoint
 </pre></div>
 
@@ -283,7 +284,7 @@
 <li><code>band</code> equals to <script type="math/tex">1234</script>,  </li>
 <li>the sampling time <code>dt</code> equals <script type="math/tex">2 s</script>, </li>
 <li>number of days <code>nod</code> in <script type="math/tex">2</script>, </li>
-<li>the <code>-addsig</code> option is used to add a software injection to pure noise Gaussian data. The signal's parameters are randomly generated using the <code>sigen</code> code (for more details see the <a href="../../polgraw-allsky/pipeline_script">minimal example</a>).  </li>
+<li>the <code>-addsig</code> option is used to add a software injection to pure noise Gaussian data. The signal's parameters are randomly generated using the <code>sigen</code> code (for more details see the <a href="../polgraw-allsky/pipeline_script">minimal example</a>).  </li>
 <li>the threshold for the <script type="math/tex">\mathcal{F}</script>-statistic is set to be <script type="math/tex">14.5</script>,</li>
 <li><code>-output</code> is the current directory, </li>
 <li><code>--nocheckpoint</code> disables the checkpointing (writing the last visited position on the grid to the <code>state</code> file), </li>
@@ -291,47 +292,24 @@
 <h3 id="output-files">Output files</h3>
 <p>Binary output files, containing trigger candidate events above an arbitrary threshold (option <code>-threshold</code> for the <script type="math/tex">\mathcal{F}</script>-statistic, default 20), are written to the <code>output_dir</code> directory. There are two output files for every input data sequence: <code>triggers_nnn_bbbb_1.bin</code> and
 <code>triggers_nnn_bbbb_2.bin</code>,  where  <code>1</code> and  <code>2</code> correspond to the northern and southern ecliptic hemisphere. Each trigger (candidate) event occupies <code>40</code> consecutive bytes (5 double numbers), with the following meaning:</p>
-<table>
-<thead>
-<tr>
-<th>Record no.</th>
-<th></th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>1</td>
-<td>frequency [radians, between 0 and <script type="math/tex">\pi</script>] above <code>fpo</code></td>
-</tr>
-<tr>
-<td>2</td>
-<td>spindown [<script type="math/tex">\mathrm{Hz/s}</script>]</td>
-</tr>
-<tr>
-<td>3</td>
-<td>declination [radians, between <script type="math/tex">\pi/2</script> and <script type="math/tex">-\pi/2</script>]</td>
-</tr>
-<tr>
-<td>4</td>
-<td>right ascension [radians, between 0 and <script type="math/tex">2\pi</script>]</td>
-</tr>
-<tr>
-<td>5</td>
-<td>signal-to-noise ratio</td>
-</tr>
-</tbody>
-</table>
+<p>Record no.            | 
+--------------------- | ---------------------------- 
+1                     | frequency [radians, between 0 and <script type="math/tex">\pi</script>] above <code>fpo</code><br />
+2                     | spindown [<script type="math/tex">\mathrm{Hz/s}</script>]<br />
+3                     | declination [radians, between <script type="math/tex">\pi/2</script> and <script type="math/tex">-\pi/2</script>]
+4                     | right ascension [radians, between 0 and <script type="math/tex">2\pi</script>]
+5                     | signal-to-noise ratio</p>
 <p>For the example above, the first 10 triggers from <code>triggers_001_1234_2.bin</code> are </p>
-<div class="codehilite"><pre><span></span>3.05617018e+00 -3.42376198e-08 -7.68007347e-02 2.59248668e+00 5.06667333e+00 
-1.18243015e+00 -3.20762991e-08 -7.68007347e-02 2.59248668e+00 5.05528873e+00 
-1.08103361e-01 -2.77536578e-08 -7.68007347e-02 2.59248668e+00 5.07085254e+00 
-1.90022435e+00 -2.77536578e-08 -7.68007347e-02 2.59248668e+00 5.15191593e+00 
-1.90000217e+00 -2.55923371e-08 -7.68007347e-02 2.59248668e+00 5.42638039e+00 
-2.09224664e+00 -2.34310165e-08 -7.68007347e-02 2.59248668e+00 5.20879551e+00 
-2.38731576e+00 -2.12696958e-08 -7.68007347e-02 2.59248668e+00 5.31983396e+00 
-3.00543165e+00 -1.91083751e-08 -7.68007347e-02 2.59248668e+00 5.29454616e+00 
-7.49333983e-01 -1.26244131e-08 -7.68007347e-02 2.59248668e+00 5.08724856e+00 
-2.08710778e-01  3.43510887e-10 -7.68007347e-02 2.59248668e+00 5.17537018e+00 
+<div class="codehilite"><pre><span></span><span class="m">3</span>.05617018e+00 -3.42376198e-08 -7.68007347e-02 <span class="m">2</span>.59248668e+00 <span class="m">5</span>.06667333e+00 
+<span class="m">1</span>.18243015e+00 -3.20762991e-08 -7.68007347e-02 <span class="m">2</span>.59248668e+00 <span class="m">5</span>.05528873e+00 
+<span class="m">1</span>.08103361e-01 -2.77536578e-08 -7.68007347e-02 <span class="m">2</span>.59248668e+00 <span class="m">5</span>.07085254e+00 
+<span class="m">1</span>.90022435e+00 -2.77536578e-08 -7.68007347e-02 <span class="m">2</span>.59248668e+00 <span class="m">5</span>.15191593e+00 
+<span class="m">1</span>.90000217e+00 -2.55923371e-08 -7.68007347e-02 <span class="m">2</span>.59248668e+00 <span class="m">5</span>.42638039e+00 
+<span class="m">2</span>.09224664e+00 -2.34310165e-08 -7.68007347e-02 <span class="m">2</span>.59248668e+00 <span class="m">5</span>.20879551e+00 
+<span class="m">2</span>.38731576e+00 -2.12696958e-08 -7.68007347e-02 <span class="m">2</span>.59248668e+00 <span class="m">5</span>.31983396e+00 
+<span class="m">3</span>.00543165e+00 -1.91083751e-08 -7.68007347e-02 <span class="m">2</span>.59248668e+00 <span class="m">5</span>.29454616e+00 
+<span class="m">7</span>.49333983e-01 -1.26244131e-08 -7.68007347e-02 <span class="m">2</span>.59248668e+00 <span class="m">5</span>.08724856e+00 
+<span class="m">2</span>.08710778e-01  <span class="m">3</span>.43510887e-10 -7.68007347e-02 <span class="m">2</span>.59248668e+00 <span class="m">5</span>.17537018e+00 
 </pre></div>
 
 
@@ -349,12 +327,17 @@
 
         <footer class="col-md-12">
             <hr>
-            <p>Documentation built with <a href="http://www.mkdocs.org/">MkDocs</a>.</p>
+            <p>Documentation built with <a href="https://www.mkdocs.org/">MkDocs</a>.</p>
         </footer>
-        <script>var base_url = '..';</script>
-        <script data-main="../mkdocs/js/search.js" src="../mkdocs/js/require.js"></script>
-        <script src="../js/base.js"></script>
-        <script src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS_HTML"></script><div class="modal" id="mkdocs_search_modal" tabindex="-1" role="dialog" aria-labelledby="Search Modal" aria-hidden="true">
+        <script>
+            var base_url = "..",
+                shortcuts = {"help": 191, "next": 78, "previous": 80, "search": 83};
+        </script>
+        <script src="../js/base.js" defer></script>
+        <script src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS_HTML" defer></script>
+        <script src="../search/main.js" defer></script>
+
+        <div class="modal" id="mkdocs_search_modal" tabindex="-1" role="dialog" aria-labelledby="Search Modal" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
@@ -368,10 +351,49 @@
                 </p>
                 <form role="form">
                     <div class="form-group">
-                        <input type="text" class="form-control" placeholder="Search..." id="mkdocs-search-query">
+                        <input type="text" class="form-control" placeholder="Search..." id="mkdocs-search-query" title="Type search term here">
                     </div>
                 </form>
                 <div id="mkdocs-search-results"></div>
+            </div>
+            <div class="modal-footer">
+            </div>
+        </div>
+    </div>
+</div><div class="modal" id="mkdocs_keyboard_modal" tabindex="-1" role="dialog" aria-labelledby="Keyboard Shortcuts Modal" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
+                <h4 class="modal-title" id="exampleModalLabel">Keyboard Shortcuts</h4>
+            </div>
+            <div class="modal-body">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th style="width: 20%;">Keys</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td class="help shortcut"><kbd>?</kbd></td>
+                    <td>Open this help</td>
+                  </tr>
+                  <tr>
+                    <td class="next shortcut"><kbd>n</kbd></td>
+                    <td>Next page</td>
+                  </tr>
+                  <tr>
+                    <td class="prev shortcut"><kbd>p</kbd></td>
+                    <td>Previous page</td>
+                  </tr>
+                  <tr>
+                    <td class="search shortcut"><kbd>s</kbd></td>
+                    <td>Search</td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
             <div class="modal-footer">
             </div>

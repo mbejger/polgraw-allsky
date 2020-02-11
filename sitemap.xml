@@ -1,76 +1,58 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-
-    
     <url>
-     <loc>/</loc>
-     <lastmod>2018-09-14</lastmod>
+     <loc>None</loc>
+     <lastmod>2020-02-11</lastmod>
      <changefreq>daily</changefreq>
     </url>
-    
-
-    
-        
     <url>
-     <loc>/input_data/</loc>
-     <lastmod>2018-09-14</lastmod>
+     <loc>None</loc>
+     <lastmod>2020-02-11</lastmod>
      <changefreq>daily</changefreq>
     </url>
-        
     <url>
-     <loc>/grid_generation/</loc>
-     <lastmod>2018-09-14</lastmod>
+     <loc>None</loc>
+     <lastmod>2020-02-11</lastmod>
      <changefreq>daily</changefreq>
     </url>
-        
     <url>
-     <loc>/search_for_candidates/</loc>
-     <lastmod>2018-09-14</lastmod>
+     <loc>None</loc>
+     <lastmod>2020-02-11</lastmod>
      <changefreq>daily</changefreq>
     </url>
-        
     <url>
-     <loc>/coincidences/</loc>
-     <lastmod>2018-09-14</lastmod>
+     <loc>None</loc>
+     <lastmod>2020-02-11</lastmod>
      <changefreq>daily</changefreq>
     </url>
-        
     <url>
-     <loc>/fap_coincidences/</loc>
-     <lastmod>2018-09-14</lastmod>
+     <loc>None</loc>
+     <lastmod>2020-02-11</lastmod>
      <changefreq>daily</changefreq>
     </url>
-        
     <url>
-     <loc>/followup/</loc>
-     <lastmod>2018-09-14</lastmod>
+     <loc>None</loc>
+     <lastmod>2020-02-11</lastmod>
      <changefreq>daily</changefreq>
     </url>
-        
     <url>
-     <loc>/sensitivity_upper_limits/</loc>
-     <lastmod>2018-09-14</lastmod>
+     <loc>None</loc>
+     <lastmod>2020-02-11</lastmod>
      <changefreq>daily</changefreq>
     </url>
-        
     <url>
-     <loc>/fisher/</loc>
-     <lastmod>2018-09-14</lastmod>
+     <loc>None</loc>
+     <lastmod>2020-02-11</lastmod>
      <changefreq>daily</changefreq>
     </url>
-        
     <url>
-     <loc>/pipeline_script/</loc>
-     <lastmod>2018-09-14</lastmod>
+     <loc>None</loc>
+     <lastmod>2020-02-11</lastmod>
      <changefreq>daily</changefreq>
     </url>
-        
     <url>
-     <loc>/articles/</loc>
-     <lastmod>2018-09-14</lastmod>
+     <loc>None</loc>
+     <lastmod>2020-02-11</lastmod>
      <changefreq>daily</changefreq>
     </url>
-        
-    
-
 </urlset>

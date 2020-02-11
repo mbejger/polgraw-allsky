@@ -1,6 +1,6 @@
 site_name: Polgraw group   
 
-pages:
+nav:
 - Home: 'index.md'
 - Pipeline description:
     - 'Input data generation': 'input_data.md'

@@ -10,111 +10,112 @@
         <link rel="shortcut icon" href="../img/favicon.ico">
         <title>False alarm probablity of conicidences - Polgraw group</title>
         <link href="../css/bootstrap-custom.min.css" rel="stylesheet">
-        <link href="../css/font-awesome-4.5.0.css" rel="stylesheet">
+        <link href="../css/font-awesome.min.css" rel="stylesheet">
         <link href="../css/base.css" rel="stylesheet">
-        <link rel="stylesheet" href="../css/highlight.css">
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/github.min.css">
         <!-- HTML5 shim and Respond.js IE8 support of HTML5 elements and media queries -->
         <!--[if lt IE 9]>
             <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
-            <script src="https://oss.maxcdn.com/libs/respond.js/1.3.0/respond.min.js"></script>
+            <script src="https://oss.maxcdn.com/libs/respond.js/1.4.2/respond.min.js"></script>
         <![endif]-->
-	
-	<script src="../js/jquery-1.10.2.min.js"></script>
-        <script src="../js/bootstrap-3.0.3.min.js"></script>
-        <script src="../js/highlight.pack.js"></script> 
+
+        <script src="../js/jquery-1.10.2.min.js" defer></script>
+        <script src="../js/bootstrap-3.0.3.min.js" defer></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
+        <script>hljs.initHighlightingOnLoad();</script> 
     </head>
 
     <body>
 
         <div class="navbar navbar-default navbar-fixed-top" role="navigation">
-    <div class="container">
+            <div class="container">
 
-        <!-- Collapsed navigation -->
-        <div class="navbar-header">
-            <!-- Expander button -->
-            <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
-                <span class="sr-only">Toggle navigation</span>
-                <span class="icon-bar"></span>
-                <span class="icon-bar"></span>
-                <span class="icon-bar"></span>
-            </button>
-            <a class="navbar-brand" href="..">Polgraw group</a>
-        </div>
+                <!-- Collapsed navigation -->
+                <div class="navbar-header">
+                    <!-- Expander button -->
+                    <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
+                        <span class="sr-only">Toggle navigation</span>
+                        <span class="icon-bar"></span>
+                        <span class="icon-bar"></span>
+                        <span class="icon-bar"></span>
+                    </button>
+                    <a class="navbar-brand" href="..">Polgraw group</a>
+                </div>
 
-        <!-- Expanded navigation -->
-        <div class="navbar-collapse collapse">
-                <!-- Main navigation -->
-                <ul class="nav navbar-nav">
-                    <li >
-                        <a href="..">Home</a>
-                    </li>
-                    <li class="dropdown active">
-                        <a href="#" class="dropdown-toggle" data-toggle="dropdown">Pipeline description <b class="caret"></b></a>
-                        <ul class="dropdown-menu">
-                            
+                <!-- Expanded navigation -->
+                <div class="navbar-collapse collapse">
+                        <!-- Main navigation -->
+                        <ul class="nav navbar-nav">
+                            <li >
+                                <a href="..">Home</a>
+                            </li>
+                            <li class="dropdown active">
+                                <a href="#" class="dropdown-toggle" data-toggle="dropdown">Pipeline description <b class="caret"></b></a>
+                                <ul class="dropdown-menu">
+                                    
 <li >
     <a href="../input_data/">Input data generation</a>
 </li>
-                            
+                                    
 <li >
     <a href="../grid_generation/">Grid generation</a>
 </li>
-                            
+                                    
 <li >
     <a href="../search_for_candidates/">F-statistic candidate signal search</a>
 </li>
-                            
+                                    
 <li >
     <a href="../coincidences/">Coincidences between candidates</a>
 </li>
-                            
+                                    
 <li class="active">
     <a href="./">False alarm probablity of conicidences</a>
 </li>
-                            
+                                    
 <li >
     <a href="../followup/">Followup of interesting outliers</a>
 </li>
-                            
+                                    
 <li >
     <a href="../sensitivity_upper_limits/">Sensitivity upper limits</a>
 </li>
-                            
+                                    
 <li >
     <a href="../fisher/">Fisher matrix calculation</a>
 </li>
-                            
+                                    
 <li >
     <a href="../pipeline_script/">Pipeline: a minimal example</a>
 </li>
-                            
+                                    
 <li >
     <a href="../articles/">Documents and publications</a>
 </li>
+                                </ul>
+                            </li>
                         </ul>
-                    </li>
-                </ul>
 
-            <ul class="nav navbar-nav navbar-right">
-                <li>
-                    <a href="#" data-toggle="modal" data-target="#mkdocs_search_modal">
-                        <i class="fa fa-search"></i> Search
-                    </a>
-                </li>
-                    <li >
-                        <a rel="next" href="../coincidences/">
-                            <i class="fa fa-arrow-left"></i> Previous
-                        </a>
-                    </li>
-                    <li >
-                        <a rel="prev" href="../followup/">
-                            Next <i class="fa fa-arrow-right"></i>
-                        </a>
-                    </li>
-            </ul>
+                    <ul class="nav navbar-nav navbar-right">
+                        <li>
+                            <a href="#" data-toggle="modal" data-target="#mkdocs_search_modal">
+                                <i class="fa fa-search"></i> Search
+                            </a>
+                        </li>
+                            <li >
+                                <a rel="next" href="../coincidences/">
+                                    <i class="fa fa-arrow-left"></i> Previous
+                                </a>
+                            </li>
+                            <li >
+                                <a rel="prev" href="../followup/">
+                                    Next <i class="fa fa-arrow-right"></i>
+                                </a>
+                            </li>
+                    </ul>
+                </div>
+            </div>
         </div>
-    </div>
-</div>
 
         <div class="container">
                 <div class="col-md-3"><div class="bs-sidebar hidden-print affix well" role="complementary">
@@ -234,54 +235,59 @@ P^{\rm shifts}_F = 1 - \bigg[ 1 - \Big( 2^4 p_F(N_c)
 </tbody>
 </table>
 <h3 id="example">Example</h3>
-<p>Using the software injection added to 2-day Gaussian noise data segments (see <a href="../../polgraw-allsky/pipeline_script">minimal example of the pipeline</a>): </p>
-<div class="codehilite"><pre><span></span>% ./fap -nod <span class="m">2</span> -band <span class="m">1234</span> -data &lt;<span class="o">(</span>sort -gk5 -gk10 summary <span class="p">|</span> tail -1<span class="o">)</span> -grid ../../testdata/2d_0.25/004 -vetofrac 0.0 -cellsize <span class="m">4</span> -threshold 1.0 
+<p>Using the software injection added to 2-day Gaussian noise data segments (see <a href="../polgraw-allsky/pipeline_script">minimal example of the pipeline</a>): </p>
+<div class="codehilite"><pre><span></span>% ./fap -nod <span class="m">2</span> -band <span class="m">1234</span> -data &lt;<span class="o">(</span>sort -gk5 -gk10 summary <span class="p">|</span> tail -1<span class="o">)</span> -grid ../../testdata/2d_0.25/004 -vetofrac <span class="m">0</span>.0 -cellsize <span class="m">4</span> -threshold <span class="m">1</span>.0 
 </pre></div>
 
 
 <p>or, with the auxilary <code>fap.sh</code> script, </p>
-<div class="codehilite"><pre><span></span>% <span class="nv">band</span><span class="o">=</span>1234<span class="p">;</span> bash fap.sh &lt;<span class="o">(</span>sort -gk5 -gk10 summary <span class="p">|</span> tail -1<span class="o">)</span> &lt;<span class="o">(</span><span class="nb">echo</span> <span class="nv">$band</span> 0.0<span class="o">)</span> ../../testdata/2d_0.25/004 
+<div class="codehilite"><pre><span></span>% <span class="nv">band</span><span class="o">=</span><span class="m">1234</span><span class="p">;</span> bash fap.sh &lt;<span class="o">(</span>sort -gk5 -gk10 summary <span class="p">|</span> tail -1<span class="o">)</span> &lt;<span class="o">(</span><span class="nb">echo</span> <span class="nv">$band</span> <span class="m">0</span>.0<span class="o">)</span> ../../testdata/2d_0.25/004 
 </pre></div>
 
 
 <p>Number of days in the time segment <code>nod</code> equals 2, fraction of the band vetoed <code>vetofrac</code> is 0 (no lines, Gaussian data) and the cell size scalling factor <code>cellsize</code> is 4. Directory containing the grid matrix file <code>grid.bin</code> of the reference frame (in this case frame <code>004</code>) should be given by the <code>grid</code> switch. The input data is the last line of a sorted <code>summary</code> file to select the shift giving the best coincidence with the highest signal-to-noise ratio: </p>
-<div class="codehilite"><pre><span></span>1234_2 1111 308.859375     8     5  9.95663703e-01 -1.10830358e-09 -1.12585347e-01 1.97463002e+00 1.246469e+01 5 2040 1987 1 2483 2419 4 2384 2193 3 2247 2137 8 2408 2363 2 2249 2172 6 2305 2220 7 2226 2191 6 2 8 3 5
+<div class="codehilite"><pre><span></span><span class="err">1234_2 1111 308.859375     8     5  9.95663703e-01 -1.10830358e-09 -1.12585347e-01 1.97463002e+00 1.246469e+01 5 2040 1987 1 2483 2419 4 2384 2193 3 2247 2137 8 2408 2363 2 2249 2172 6 2305 2220 7 2226 2191 6 2 8 3 5</span>
 </pre></div>
 
 
-<p>(see the <a href="../../polgraw-allsky/coincidences">coincidences</a> section for details). </p>
+<p>(see the <a href="../polgraw-allsky/coincidences">coincidences</a> section for details). </p>
 <h3 id="output">Output</h3>
-<div class="codehilite"><pre><span></span>% ./fap -nod <span class="m">2</span> -band <span class="m">1234</span> -data &lt;<span class="o">(</span>sort -gk5 -gk10 summary <span class="p">|</span> tail -1<span class="o">)</span> -grid ../../testdata/2d_0.25/004 -vetofrac 0.0 -cellsize <span class="m">4</span> -threshold 1.0 
+<div class="codehilite"><pre><span></span>% ./fap -nod <span class="m">2</span> -band <span class="m">1234</span> -data &lt;<span class="o">(</span>sort -gk5 -gk10 summary <span class="p">|</span> tail -1<span class="o">)</span> -grid ../../testdata/2d_0.25/004 -vetofrac <span class="m">0</span>.0 -cellsize <span class="m">4</span> -threshold <span class="m">1</span>.0 
 </pre></div>
 
 
 <p>is</p>
-<div class="codehilite"><pre><span></span>Number of days in <span class="nb">time</span> segments: 2
+<div class="codehilite"><pre><span></span>Number of days in <span class="nb">time</span> segments: <span class="m">2</span>
 Input data: /dev/fd/63
 Grid matrix data directory: ../../testdata/2d_0.25/004
-Band number: <span class="m">1234</span> <span class="o">(</span>veto fraction: 0.000000<span class="o">)</span>
-The reference frequency fpo: 308.859375
-The data sampling <span class="nb">time</span> dt: 2.000000
-FAP threshold: 1.000000
-Cell size: 4
-<span class="m">1234</span> 3.088594e+02 3.091094e+02 7.665713e-08 <span class="m">5</span> <span class="m">17682</span> 9.956637e-01 -1.108304e-09 -1.125853e-01 1.974630e+00 1.246469e+01 2
+Band number: <span class="m">1234</span> <span class="o">(</span>veto fraction: <span class="m">0</span>.000000<span class="o">)</span>
+The reference frequency fpo: <span class="m">308</span>.859375
+The data sampling <span class="nb">time</span> dt: <span class="m">2</span>.000000
+FAP threshold: <span class="m">1</span>.000000
+Cell size: <span class="m">4</span>
+<span class="m">1234</span> <span class="m">3</span>.088594e+02 <span class="m">3</span>.091094e+02 <span class="m">7</span>.665713e-08 <span class="m">5</span> <span class="m">17682</span> <span class="m">9</span>.956637e-01 -1.108304e-09 -1.125853e-01 <span class="m">1</span>.974630e+00 <span class="m">1</span>.246469e+01 <span class="m">2</span>
 </pre></div>
 
 
 <p>The last line (in case the probability <code>PFshifts</code> is lower than the <code>threshold</code>) is printed to <code>stderr</code>. The meaning of this output is the following:  </p>
-<div class="codehilite"><pre><span></span>#band f_min       f_max        PFshifts     noc Nkall  f s d a hemisphere 
-1234 3.088594e+02 3.091094e+02 7.665713e-08 5   17682  9.956637e-01 -1.108304e-09 -1.125853e-01 1.974630e+00 1.246469e+01 2
+<div class="codehilite"><pre><span></span><span class="err">#band f_min       f_max        PFshifts     noc Nkall  f s d a hemisphere </span>
+<span class="err">1234 3.088594e+02 3.091094e+02 7.665713e-08 5   17682  9.956637e-01 -1.108304e-09 -1.125853e-01 1.974630e+00 1.246469e+01 2</span>
 </pre></div></div>
         </div>
 
         <footer class="col-md-12">
             <hr>
-            <p>Documentation built with <a href="http://www.mkdocs.org/">MkDocs</a>.</p>
+            <p>Documentation built with <a href="https://www.mkdocs.org/">MkDocs</a>.</p>
         </footer>
-        <script>var base_url = '..';</script>
-        <script data-main="../mkdocs/js/search.js" src="../mkdocs/js/require.js"></script>
-        <script src="../js/base.js"></script>
-        <script src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS_HTML"></script><div class="modal" id="mkdocs_search_modal" tabindex="-1" role="dialog" aria-labelledby="Search Modal" aria-hidden="true">
+        <script>
+            var base_url = "..",
+                shortcuts = {"help": 191, "next": 78, "previous": 80, "search": 83};
+        </script>
+        <script src="../js/base.js" defer></script>
+        <script src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS_HTML" defer></script>
+        <script src="../search/main.js" defer></script>
+
+        <div class="modal" id="mkdocs_search_modal" tabindex="-1" role="dialog" aria-labelledby="Search Modal" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
@@ -295,10 +301,49 @@ Cell size: 4
                 </p>
                 <form role="form">
                     <div class="form-group">
-                        <input type="text" class="form-control" placeholder="Search..." id="mkdocs-search-query">
+                        <input type="text" class="form-control" placeholder="Search..." id="mkdocs-search-query" title="Type search term here">
                     </div>
                 </form>
                 <div id="mkdocs-search-results"></div>
+            </div>
+            <div class="modal-footer">
+            </div>
+        </div>
+    </div>
+</div><div class="modal" id="mkdocs_keyboard_modal" tabindex="-1" role="dialog" aria-labelledby="Keyboard Shortcuts Modal" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
+                <h4 class="modal-title" id="exampleModalLabel">Keyboard Shortcuts</h4>
+            </div>
+            <div class="modal-body">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th style="width: 20%;">Keys</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td class="help shortcut"><kbd>?</kbd></td>
+                    <td>Open this help</td>
+                  </tr>
+                  <tr>
+                    <td class="next shortcut"><kbd>n</kbd></td>
+                    <td>Next page</td>
+                  </tr>
+                  <tr>
+                    <td class="prev shortcut"><kbd>p</kbd></td>
+                    <td>Previous page</td>
+                  </tr>
+                  <tr>
+                    <td class="search shortcut"><kbd>s</kbd></td>
+                    <td>Search</td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
             <div class="modal-footer">
             </div>
