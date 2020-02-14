@@ -1207,13 +1207,13 @@ void handle_opts_coinc(
       // Cell shifts  
       {"shift", required_argument, 0, 's'},
       // Cell scaling in f  
-      {"scalef", required_argument, 0, 'zf'},
+      {"scalef", required_argument, 0, 'u'},
       // Cell scaling in s
-      {"scales", required_argument, 0, 'zs'},
+      {"scales", required_argument, 0, 'v'},
       // Cell scaling in d 
-      {"scaled", required_argument, 0, 'zd'},
+      {"scaled", required_argument, 0, 'w'},
       // Cell scaling in a 
-      {"scalea", required_argument, 0, 'za'},
+      {"scalea", required_argument, 0, 'x'},
       // Reference frame number 
       {"refr", required_argument, 0, 'r'},
       // output directory
@@ -1268,7 +1268,7 @@ void handle_opts_coinc(
     }
 
     int option_index = 0;
-    int c = getopt_long_only (argc, argv, "p:o:d:s:zf:zs:zd:za:r:t:e:g:m:n:c:y:", long_options, &option_index);
+    int c = getopt_long_only (argc, argv, "p:o:d:s:u:v:w:x:r:t:e:g:m:n:c:y:", long_options, &option_index);
     if (c == -1)
       break;
 
@@ -1279,16 +1279,16 @@ void handle_opts_coinc(
     case 's': // Cell shifts 
       opts->shift = atof(optarg);
       break;
-    case 'zf': // Cell scaling f  
+    case 'u': // Cell scaling f  
       opts->scalef = atoi(optarg);
       break;
-    case 'zs': // Cell scaling s  
+    case 'v': // Cell scaling s  
       opts->scales = atoi(optarg);
       break;
-    case 'zd': // Cell scaling d  
+    case 'w': // Cell scaling d  
       opts->scaled = atoi(optarg);
       break;
-    case 'za': // Cell scaling a  
+    case 'x': // Cell scaling a  
       opts->scalea = atoi(optarg);
       break;
     case 'r':
