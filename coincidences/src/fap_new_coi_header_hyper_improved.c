@@ -276,12 +276,13 @@ int main (int argc, char *argv[]) {
         FalseAlarmCFast(2, i, nof, Nc, &Nku[0], &PFce[0]); 
         FAP = PFce[2*i-3]; 
 
-        // Final result: output to stderr cases when FAP threshold is reached  
-        if(FAP < threshold) 
+        // Final result: output to stderr cases when FAP threshold is reached   
+        //#mb hack - fabs because for nonphysical noc FAP equals -inf  
+        if(fabs(FAP) < threshold) 
           fprintf(stderr, "%hu %le ", i, FAP); 
     }
   
-    fprintf(stderr, "\n"); 
+    //fprintf(stderr, "\n"); 
  
   } else {
     perror (filename);
