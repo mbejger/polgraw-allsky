@@ -268,7 +268,7 @@ int main (int argc, char *argv[]) {
       Nkall += Nku[i]; 
     } 
 
-    fprintf(stderr, "%d ", Nkall); 
+    fprintf(stderr, "%d %d ", nof, Nkall); 
 
     for(i=noc; i<=nof; i++) {
  
@@ -276,35 +276,19 @@ int main (int argc, char *argv[]) {
         FalseAlarmCFast(2, i, nof, Nc, &Nku[0], &PFce[0]); 
         FAP = PFce[2*i-3]; 
 
-/*
-        if(FAP<1.e-9) { 
-
-          short int j; 
-          for(j=i; j<=nof; j++) { 
-            fprintf(stderr, "%hu %le ", j, 0.0);
-          } 
-
-          break; 
-
-        } 
-*/
-
         // Final result: output to stderr cases when FAP threshold is reached  
-//        if(FAP < threshold) 
-          //fprintf(stderr, "%le %hu %hu %d\n", PFce[2*noc-3], nof, noc, Nkall); 
+        if(FAP < threshold) 
           fprintf(stderr, "%hu %le ", i, FAP); 
-	  exit(0);
     }
-
+  
     fprintf(stderr, "\n"); 
-   
+ 
   } else {
     perror (filename);
     exit(EXIT_FAILURE);
   }
 
   fclose (data);
-
 
   return 0;
  
@@ -334,8 +318,10 @@ int *FalseAlarm(int Cmax, int noc, int L, double Nc, int *Nk,
 
   Nmax = min(noc, L);
 
-  double C[Nmax][5], pf[5]={0}; 
-  printf("\n");
+  double C[Nmax][5], pf[5]={0};
+ 
+//  printf("\n");
+
   for(i=Cmax; i<=Nmax; i++) {  
 
     double P[5], Q[5], Ctmp[5];
@@ -383,18 +369,17 @@ int *FalseAlarm(int Cmax, int noc, int L, double Nc, int *Nk,
     gsl_combination_free (cq);
     // Probability that a cell cointains Cmax or more coincidences
     
-    printf("i/Nmax = %d / %d  %d pf=[", i, Nmax, L);
+//    printf("i/Nmax = %d / %d  %d pf=[", i, Nmax, L);
     for(l=0; l<5; l++){
       C[i-1][l] = Ctmp[l];
       pf[l] += C[i-1][l];
-      printf("%f, ", pf[l]);
+//      printf("%f, ", pf[l]);
     }
-    printf("]\n");
-    fflush(stdout);
-    if (i==8) break;
+//    printf("]\n");
+//    fflush(stdout);
 
   } // i 
-  printf("\n");
+//  printf("\n");
   // False alarm probability PF 
   // Probability that there is Cmax or more coincidences in one or more cells
   C0[0] = 1. - pow(1. - pf[0], Nc);
@@ -428,7 +413,6 @@ int *FalseAlarm(int Cmax, int noc, int L, double Nc, int *Nk,
 
   // The return order of r is: PF, NF, pf, C[] array
 
-  printf("\nEND\n");
   return 0; 
 
 }
