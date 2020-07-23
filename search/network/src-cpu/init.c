@@ -1190,8 +1190,11 @@ void handle_opts_coinc(
   // Default value of the cell shift: 0000 (no shifts)
   opts->shift=0;
 
-  // Default value of the cell scaling: 1111 (no scaling)
-  opts->scale=1111;
+  // Default values of the fsda cell scaling: 1, 1, 1, 1 (no scaling)
+  opts->scalef=1;
+  opts->scales=1;
+  opts->scaled=1;
+  opts->scalea=1;
 
   // Default signal-to-noise threshold cutoff
   opts->snrcutoff=6;
@@ -1203,8 +1206,14 @@ void handle_opts_coinc(
       {"help", no_argument, &help_flag, 1},
       // Cell shifts  
       {"shift", required_argument, 0, 's'},
-      // Cell scaling 
-      {"scale", required_argument, 0, 'z'},
+      // Cell scaling in f  
+      {"scalef", required_argument, 0, 'u'},
+      // Cell scaling in s
+      {"scales", required_argument, 0, 'v'},
+      // Cell scaling in d 
+      {"scaled", required_argument, 0, 'w'},
+      // Cell scaling in a 
+      {"scalea", required_argument, 0, 'x'},
       // Reference frame number 
       {"refr", required_argument, 0, 'r'},
       // output directory
@@ -1238,7 +1247,10 @@ void handle_opts_coinc(
       printf("-data         Data directory (default is ./candidates)\n");
       printf("-output       Output directory (default is ./coinc-results)\n");
       printf("-shift        Cell shifts in fsda directions (4 digit number, e.g. 0101, default 0000)\n");
-      printf("-scale        Cell scaling in fsda directions (4 digit number, e.g. 4824, default 1111)\n");
+      printf("-scalef       Cell scaling in f direction (a number, e.g. 32, default 1)\n");
+      printf("-scales       Cell scaling in s direction (a number, e.g. 8, default 1)\n");
+      printf("-scaled       Cell scaling in d direction (a number, e.g. 4, default 1)\n");
+      printf("-scalea       Cell scaling in a direction (a number, e.g. 4, default 1)\n");
       printf("-refr         Reference frame number\n");
       printf("-fpo          Reference band frequency fpo value\n");
       printf("-dt           Data sampling time dt (default value: 0.5)\n");
@@ -1256,7 +1268,7 @@ void handle_opts_coinc(
     }
 
     int option_index = 0;
-    int c = getopt_long_only (argc, argv, "p:o:d:s:z:r:t:e:g:m:n:c:y:", long_options, &option_index);
+    int c = getopt_long_only (argc, argv, "p:o:d:s:u:v:w:x:r:t:e:g:m:n:c:y:", long_options, &option_index);
     if (c == -1)
       break;
 
@@ -1267,8 +1279,17 @@ void handle_opts_coinc(
     case 's': // Cell shifts 
       opts->shift = atof(optarg);
       break;
-    case 'z': // Cell scaling   
-      opts->scale = atoi(optarg);
+    case 'u': // Cell scaling f  
+      opts->scalef = atoi(optarg);
+      break;
+    case 'v': // Cell scaling s  
+      opts->scales = atoi(optarg);
+      break;
+    case 'w': // Cell scaling d  
+      opts->scaled = atoi(optarg);
+      break;
+    case 'x': // Cell scaling a  
+      opts->scalea = atoi(optarg);
       break;
     case 'r':
       opts->refr = atoi(optarg);

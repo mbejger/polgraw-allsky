@@ -186,7 +186,11 @@ typedef struct _comm_line_opts_coinc {
   int help_flag; 
   
   int shift, // Cell shifts  (4 digit number corresponding to fsda, e.g. 0101)  
-      scale, // Cell scaling (4 digit number corresponding to fsda, e.g. 4824) 
+                // Cell scaling in fsda: 4 numbers corresponding to 
+      scalef,   // frequency f,  
+      scales,   // spindown s, 
+      scaled,   // declination d, 
+      scalea,   // right ascencion a  
       refr;  // Reference frame 
 
   // Minimal number of coincidences recorded in the output  

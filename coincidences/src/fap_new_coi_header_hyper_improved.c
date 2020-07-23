@@ -27,7 +27,7 @@ int main (int argc, char *argv[]) {
 
   size_t i;
   short int noc; 
-  int status, band=0, cellsize=4, To; 
+  int status, band=0, cellf=4, cells=4, celld=4, cella=4, To; 
   char filename[512], datafile[512], griddir[512];
   double gamrn[16], vetofrac=0, threshold=0.1; 
   double f_min, f_max, fdotmin, fdotmax, detgamrn, vol4, vl, vc, Nc;
@@ -55,8 +55,14 @@ int main (int argc, char *argv[]) {
       {"help", no_argument, &help_flag, 1},
       // frequency band number
       {"band", required_argument, 0, 'b'},
-      // cell size 
-      {"cellsize", required_argument, 0, 'c'},
+      // cell size f
+      {"cellf", required_argument, 0, 'i'},
+      // cell size s
+      {"cells", required_argument, 0, 'j'},
+      // cell size d
+      {"celld", required_argument, 0, 'k'},
+      // cell size a
+      {"cella", required_argument, 0, 'l'},
       // input data directory
       {"data", required_argument, 0, 'd'},
       // grid matrix data directory
@@ -81,7 +87,10 @@ int main (int argc, char *argv[]) {
       printf("Usage: ./fap -[switch1] <value1> -[switch2] <value2> ...\n") ;
       printf("Switches are:\n\n");
       printf("-band         Band number\n");
-      printf("-cellsize     Cell size (default value: 4)\n");
+      printf("-cellf        Cell size f (default value: 4)\n");
+      printf("-cells        Cell size s (default value: 4)\n");
+      printf("-celld        Cell size d (default value: 4)\n");
+      printf("-cella        Cell size a (default value: 4)\n");
       printf("-data         Coincidence summary file\n");
       printf("-grid         Grid matrix directory (default value: .)\n");
       printf("-dt           Data sampling time dt (default value: 2)\n");
@@ -97,7 +106,7 @@ int main (int argc, char *argv[]) {
     }
 
     int option_index = 0;
-    int c = getopt_long_only(argc, argv, "b:c:d:g:s:t:y:v:n", 
+    int c = getopt_long_only(argc, argv, "b:c:d:g:s:t:y:v:n:i:j:k:l", 
 			     long_options, &option_index);
     if (c == -1)
       break;
@@ -106,8 +115,17 @@ int main (int argc, char *argv[]) {
     case 'b': // band 
       opts.band = atoi(optarg);
       break;
-    case 'c': // cellsize 
-      cellsize = atoi(optarg);
+    case 'i': // cellsize 
+      cellf = atoi(optarg);
+      break;
+    case 'j': // cellsize 
+      cells = atoi(optarg);
+      break;
+    case 'k': // cellsize 
+      celld = atoi(optarg);
+      break;
+    case 'l': // cellsize 
+      cella = atoi(optarg);
       break;
     case 'd': // data file  
       strcpy(datafile, optarg);
@@ -158,7 +176,7 @@ int main (int argc, char *argv[]) {
   printf("The data sampling time dt: %f\n", sett.dt); 
   printf("FAP threshold: %f\n", threshold); 
 
-  printf("Cell size: %d\n", cellsize); 
+  printf("Cell sizes: f=%d s=%d d=%d a=%d\n", cellf, cells, celld, cella); 
 
 	
   // Search settings
@@ -227,9 +245,9 @@ int main (int argc, char *argv[]) {
  
   // Taking into acount the vetoed fraction of the band 
   if(vetofrac) 
-    Nc = round((1.0 - vetofrac)*Nc/pow(cellsize, 4));
+    Nc = round((1.0 - vetofrac)*Nc/(cellf*cells*celld*cella));
   else 
-    Nc = round(Nc/pow(cellsize, 4));
+    Nc = round(Nc/(cellf*cells*celld*cella));
 
   // Read the coincidence data 
   //--------------------------  
@@ -250,7 +268,7 @@ int main (int argc, char *argv[]) {
       Nkall += Nku[i]; 
     } 
 
-    fprintf(stderr, "%d ", Nkall); 
+    fprintf(stderr, "%d %d ", nof, Nkall); 
 
     for(i=noc; i<=nof; i++) {
  
@@ -258,35 +276,20 @@ int main (int argc, char *argv[]) {
         FalseAlarmCFast(2, i, nof, Nc, &Nku[0], &PFce[0]); 
         FAP = PFce[2*i-3]; 
 
-/*
-        if(FAP<1.e-9) { 
-
-          short int j; 
-          for(j=i; j<=nof; j++) { 
-            fprintf(stderr, "%hu %le ", j, 0.0);
-          } 
-
-          break; 
-
-        } 
-*/
-
-        // Final result: output to stderr cases when FAP threshold is reached  
-//        if(FAP < threshold) 
-          //fprintf(stderr, "%le %hu %hu %d\n", PFce[2*noc-3], nof, noc, Nkall); 
+        // Final result: output to stderr cases when FAP threshold is reached   
+        //#mb hack - fabs because for nonphysical noc FAP equals -inf  
+        if(fabs(FAP) < threshold) 
           fprintf(stderr, "%hu %le ", i, FAP); 
-	  exit(0);
     }
-
-    fprintf(stderr, "\n"); 
-   
+  
+    //fprintf(stderr, "\n"); 
+ 
   } else {
     perror (filename);
     exit(EXIT_FAILURE);
   }
 
   fclose (data);
-
 
   return 0;
  
@@ -316,8 +319,10 @@ int *FalseAlarm(int Cmax, int noc, int L, double Nc, int *Nk,
 
   Nmax = min(noc, L);
 
-  double C[Nmax][5], pf[5]={0}; 
-  printf("\n");
+  double C[Nmax][5], pf[5]={0};
+ 
+//  printf("\n");
+
   for(i=Cmax; i<=Nmax; i++) {  
 
     double P[5], Q[5], Ctmp[5];
@@ -365,18 +370,17 @@ int *FalseAlarm(int Cmax, int noc, int L, double Nc, int *Nk,
     gsl_combination_free (cq);
     // Probability that a cell cointains Cmax or more coincidences
     
-    printf("i/Nmax = %d / %d  %d pf=[", i, Nmax, L);
+//    printf("i/Nmax = %d / %d  %d pf=[", i, Nmax, L);
     for(l=0; l<5; l++){
       C[i-1][l] = Ctmp[l];
       pf[l] += C[i-1][l];
-      printf("%f, ", pf[l]);
+//      printf("%f, ", pf[l]);
     }
-    printf("]\n");
-    fflush(stdout);
-    if (i==8) break;
+//    printf("]\n");
+//    fflush(stdout);
 
   } // i 
-  printf("\n");
+//  printf("\n");
   // False alarm probability PF 
   // Probability that there is Cmax or more coincidences in one or more cells
   C0[0] = 1. - pow(1. - pf[0], Nc);
@@ -410,7 +414,6 @@ int *FalseAlarm(int Cmax, int noc, int L, double Nc, int *Nk,
 
   // The return order of r is: PF, NF, pf, C[] array
 
-  printf("\nEND\n");
   return 0; 
 
 }
