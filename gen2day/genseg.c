@@ -102,7 +102,7 @@ int main (int argc, char *argv[]) {
      othr = iniparser_getdouble (ini, "general:othresh", 250.);   // threshold to clean large outliers
      out_replace = iniparser_getstring (ini, "data:out_replace", "gauss");  // replace outliers with zero or random gaussian value
      gen_sci = iniparser_getboolean (ini, "general:scientific", 1); // use science data only
-     w_taper_dt = iniparser_getdouble (ini, "general:w_taper_dt", 1200.);   // Tukey window tapering size in seconds; if <=0 do not apply window to science regions
+     w_taper_dt = iniparser_getdouble (ini, "data:w_taper_dt", 1200.);   // Tukey window tapering size in seconds; if <=0 do not apply window to science regions
 
 
      const gsl_rng_type *T;
@@ -380,16 +380,13 @@ int main (int argc, char *argv[]) {
 	       }
 	       
 	       // create Tukey windows in scientific regions
-#define PI    3.141592653589793
-
-	       int lobe_isize = (int)ceil(w_taper_dt/dt);
-	       int li;
 
 	       i = 0;
 	       while(i < N){
+		    // find sci region
 		    if (seg_sci_mask[i] < 0.5) {i++; continue;}
-		    i1 = i; // first point in sci region
-		    i2 = i1;
+		    i1 = i;  // first point
+		    i2 = i1; // last point
 		    while(++i)
 			 if ((seg_sci_mask[i] < 0.5) || (i == N)) break;
 		    
@@ -417,15 +414,22 @@ int main (int argc, char *argv[]) {
 		    i2 = is;
 		    fprintf(stderr,"changed to: %d %d\n", i1, i2);
 #endif
-		    
+
+// Tukey window
 #if 1
-		    // in case lobe_isize*2 < L ; +2 accounts for even and odd cases
-		    li = MIN(lobe_isize, (i2-i1+2)/2 );
-		    fprintf(stderr, "sci i1=%d  i2=%d  lobe_isize=%d\n", i1, i2, li);
-		    for(l=0; l<li; l++){
-			 double lobe = 0.5*(1.-cos(PI*l/li));
-			 seg_sci_mask[i1 + l] = lobe;
-			 seg_sci_mask[i2 - l] = lobe;
+
+#define PI    3.141592653589793
+		    if (w_taper_dt > dt) {
+			 int lobe_isize = (int)ceil(w_taper_dt/dt);
+			 int li;
+			 // in case lobe_isize*2 < L ; +2 accounts for even and odd cases
+			 li = MIN(lobe_isize, (i2-i1+2)/2 );
+			 fprintf(stderr, "sci i1=%d  i2=%d  lobe_isize=%d\n", i1, i2, li);
+			 for(l=0; l<li; l++){
+			      double lobe = 0.5*(1.-cos(PI*l/li));
+			      seg_sci_mask[i1 + l] = lobe;
+			      seg_sci_mask[i2 - l] = lobe;
+			 }
 		    }
 #endif		    
 	       }
@@ -437,7 +441,7 @@ int main (int argc, char *argv[]) {
 	       }
 	       
 #if 1
-               // remove ramaining large outliers above othr
+               // remove ramaining large outliers above 6*sigma level (othr not used)
 	       fprintf (stderr, "--- Cleaning large outliers - replace with %s \n", out_replace);
 	       
 	       double sdval;
@@ -478,9 +482,35 @@ int main (int argc, char *argv[]) {
 	       nout = GrubbsOutliersMany(xall+seg*N, x0, N, bufsize, alpha, out_replace);
 	       fprintf(stderr,"    Grubbs outliers removed : %d / %d = %d%% \n", nout, N, 100*nout/N);
 #else
-	       memcpy (x0, xall, N*sizeof(double));
+	       memcpy (x0, xall+seg*N, N*sizeof(double));
 #endif
-	       // write output files
+
+// replace all zeros with gaussian values
+#if 0
+	       fprintf (stderr, "--- Replacing zeros with gaussian values");
+	       
+	       double sd = 0.;
+	       nout = 0;
+	       for (i=0; i<N; i++){
+		    double v = x0[i];
+		    if (fabs(v) > 1.e-30){
+			 sd += v*v;
+			 nout++;
+		    }
+	       }
+	       sd = sqrt(sd/(double)(nout-1));
+	       fprintf(stderr, " | std dev = %f \n", sd);
+	       
+	       for (i=0; i<N; i++){
+		    if (fabs(x0[i]) < 1.e-30)
+			 x0[i] = gsl_ran_gaussian_ziggurat(r, sd);
+	       }
+#endif	       
+
+	       
+	       /**************************/
+               /* write output files     */
+	       /**************************/
 	       sprintf (td_dir, "%s/%03d", DataDir, dd);
 	       if (stat (td_dir, &st) == -1) {
 		    mkdir (td_dir, 0755);
@@ -516,7 +546,7 @@ int main (int argc, char *argv[]) {
 	       // Do this part of "x0" contains only zeros?
 	       notempty=0;
 	       for (yndx=0; yndx < N; yndx++){
-		    if(x0[seg*N+yndx] !=0.0){
+		    if(x0[yndx] != 0.0){
 			 notempty=1;
 			 break;
 		    }
@@ -524,7 +554,7 @@ int main (int argc, char *argv[]) {
 	       // write xdatc_*.bin file
 	       if(notempty){
 		    if ((td_stream=fopen (tdc_fname, "w")) != NULL) {
-			 fwrite ((void *)(x0+seg*N), sizeof(double), N, td_stream);
+			 fwrite ((void *)x0, sizeof(double), N, td_stream);
 			 fclose (td_stream);
 		    }
 	       }
