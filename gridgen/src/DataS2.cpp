@@ -8,13 +8,13 @@
 
 #include "DataS2.h"
 
-DataS2::DataS2(): m_omega0p(0.), m_density(0.), m_alpha(0.), m_radius(0.), m_NAlpha(0), m_NRadius(0){};
+DataS2::DataS2(): m_omega0p(0.), m_density(0.), m_alpha(0.), m_radius(0.), m_NAlpha(0), m_NRadius(0){}
 
 DataS2::DataS2(double omega, double density, double alpha, double radius, int n_alpha, int n_radius):
     m_omega0p(omega), m_density(density), m_alpha(alpha), m_radius(radius),
     m_NAlpha(n_alpha), m_NRadius(n_radius)
 {
-};
+}
 
 int DataS2::get_nalpha() const
 {

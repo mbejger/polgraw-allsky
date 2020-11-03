@@ -9,7 +9,7 @@
 #include "Node.h"
 
 Node::Node(): m_distance(0.), m_coef(0) {}
-Node::Node(double distance, const std::vector<int> coeff): m_distance(distance), m_coef(coeff) //<int>&
+Node::Node(double distance, const std::vector<int>& coeff): m_distance(distance), m_coef(coeff) //<int>&
 {
     //ctor
 }

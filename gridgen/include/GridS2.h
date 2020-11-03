@@ -4,6 +4,7 @@
 // Copyright:   Andrzej Pisarski
 // License:     CC-BY-NC-ND
 // Created:     10/06/2015
+// Last Modification: 12/01/2020 A.Pisarski
 ///////////////////////////////////////
 
 #ifndef GRIDS2_H
@@ -40,7 +41,7 @@ class GridS2
         const int m_NAlpha;                 // incrementation deep of root finding algorithm
         const int m_NRadius;                // incrementation deep of covering radius (deep hole)
                                             // founding algorithm
-
+        unsigned int m_dim;                 // An* dimension
 
         /// a4* normalized vectors
         std::vector<double> m_a1n;

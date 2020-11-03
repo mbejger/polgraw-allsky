@@ -31,8 +31,9 @@ GridS2::GridS2(FisherRM const *const fm, int n_alpha=35, int n_radius=20):
         throw std::runtime_error(error);
     }
 
-    if(m_fm->dim()==4)
+    if(m_fm->dim()==4)/// || m_fm->dim()==5
     {
+        m_dim = 4;
         std::vector<std::vector<double> > a4 = a4star_pp();
 
         /// a4* normalized vectors (perpendicular to axis Omega_{0}^{'})
@@ -78,7 +79,7 @@ std::vector<std::vector<double> > GridS2::a4star_pp() const
 }
 
 std::vector<std::vector<double> > GridS2::cell_vectors(double alpha, double c0=0.75,
-                                                       unsigned int nfft=524288, int mode=1) const
+                                                       unsigned int nfft=1048576, int mode=1) const
 {
     unsigned int data_length = m_fm->get_ephemeris_length();
     if(data_length<=0)
@@ -282,7 +283,8 @@ double GridS2::density(CellS2& root = find_alpha(0.001, M_PI/2.) )
 */
 double GridS2::density(std::vector<double>& basis_vectors) const
 {
-    return std::abs( pow(M_PI, 2.0)/( 2.0*num::det(basis_vectors, 4) ) );
+    return num::thickness(basis_vectors, 1.0, m_dim);
+    /// return std::abs( pow(M_PI, 2.0)/( 2.0*num::det(basis_vectors, 4) ) );
 }
 
 std::vector<double> GridS2::grid_prim(double c0, unsigned int nfft,
@@ -416,7 +418,7 @@ std::vector<double> GridS2::grid(double c0, double xi, unsigned int nfft,
 
     //basis[0]=ro;
     std::vector<double> temp;
-    temp = num::mult(base_prim_1vector, num::inverse( num::cholesky( m_fm->postrmf(xi), 4), 4), 4, 4, 4);
+    temp = num::multiply_AB(base_prim_1vector, num::inverse( num::cholesky( m_fm->postrmf(xi), 4), 4), 4, 4, 4);
     for(int i=0; i<16; i++)
         basis[i]=r_scale*temp[i]; //basis[i+1]=
 
@@ -430,7 +432,7 @@ std::vector<double> GridS2::convert(double c0, double xi, const std::vector<doub
     double r_scale=sqrt(1.0-c0);
 
     std::vector<double> temp(16, 0.0);
-    temp = num::mult(grid_prim, num::inverse( num::cholesky( m_fm->postrmf(xi), 4), 4), 4, 4, 4);
+    temp = num::multiply_AB(grid_prim, num::inverse( num::cholesky( m_fm->postrmf(xi), 4), 4), 4, 4, 4);
     for(int i=0; i<16; i++)
         ws1[i]=r_scale*temp[i];
 

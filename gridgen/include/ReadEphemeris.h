@@ -20,7 +20,7 @@ class ReadEphemeris
 
         const std::vector<double>& get_ephemeris1() const; // \mu_{1} - return Cartesian coordinates at SSB
         const std::vector<double>& get_ephemeris2() const; // \mu_{2} - return Cartesian coordinates at SSB
-        unsigned int get_length() const;
+        unsigned int get_ephemeris_length() const;
 
     private:
         std::vector<double> m_ephemeris1;         // \mu_{1} - Cartesian coordinates at SSB.

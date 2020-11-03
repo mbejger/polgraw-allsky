@@ -4,6 +4,7 @@
 // Copyright:   Andrzej Pisarski
 // License:     CC-BY-NC-ND
 // Created:     20/05/2015
+// Last Modification: 11/04/2020 A.Pisarski
 ///////////////////////////////////////
 
 #include "ReadConfig.h"
@@ -22,21 +23,24 @@ const std::vector<std::string> ReadConfig::m_options{
     "SetDataLength=",
     "NAlpha=",                              //  8
     "NRadius=",
+    "Spindown=",                            //  10
     "PathSSB=", "PathDet=", "PathDetSSB=",
     "PathSave=",
     "FilePatternGrid=",
     "FilePatternFM=",
-    "FilePatternDoC=",                      // 16
+    "FilePatternDoC=",                      // 17
     "SaveGrid=",
     "SaveFisherMatrix=",
     "SaveDensityOfCovering=",
-    "Chop=",                                // 20
+    "Chop=",                                // 21
     "ChooseMethod=",
+    "TypeSearch=",                          /// 23 v0.3.01
     "DataS2Use=",
     "DataS2SaveBest=",
-    "Convert=",                             // 24
+    "Convert=",                             // 26
+    "ObserveTimeSymmetric=",                /// 27 v0.3.01
     "Quiet=",
-    "SayHello="                             // 26
+    "SayHello="                             // 29 [0, 30)
 };
 
 ReadConfig::ReadConfig(): m_values(read_config_file())
@@ -117,7 +121,7 @@ std::vector<OptionValue> ReadConfig::set_command(const std::vector<std::string>&
 {
     typedef std::string::const_iterator iter;
     std::vector<OptionValue> tempV;
-    tempV.resize(27);
+    tempV.resize(m_options.size());
 
     unsigned int k;
     for(unsigned int line=0; line<config_lines.size(); line++)
@@ -131,9 +135,9 @@ std::vector<OptionValue> ReadConfig::set_command(const std::vector<std::string>&
             {
                 i+=m_options[k].size();
                 std::string temp(i, e);
-                    //std::cout << temp << std::endl;
-                ///double v = std::atof(temp.c_str());
-                if(k<10)
+                //    std::cout << temp << std::endl;
+	        ///double v = std::atof(temp.c_str());
+                if(k<11)
                 {
                     if(k<6)
                     {
@@ -188,54 +192,71 @@ std::vector<OptionValue> ReadConfig::set_command(const std::vector<std::string>&
     if(tempV[7].m_i < 0)
         tempV[7].m_i = 0;               // zero means SetDataLength equal to ephemeris length
 
+
     if(tempV[8].m_i <= 0)
-        tempV[8].m_i = 18;              // NAlpha
+        tempV[8].m_i = 35;              // NAlpha
 
     if(tempV[9].m_i <= 0)
-        tempV[9].m_i = 18;              // NRadius
+        tempV[9].m_i = 20;              // NRadius
 
-    for(int i=10; i<13; i++)            // Source files
+///    if(tempV[10].m_i <= 0 || tempV[10].m_i>2)
+///        tempV[10].m_i = 1;              // Spindown, see lines: 242 - 249
+
+    for(int i=11; i<14; i++)            // Source files
         if(tempV[i].m_s.size() == 0)
         {
             std::string error = "Can't find " + tempV[i].m_s;
             throw std::runtime_error(error);
         }
 
-    if(tempV[13].m_s.size() == 0)       // Output directory
+    if(tempV[14].m_s.size() == 0)       // Output directory
     {
         std::string error = "Can't open " + tempV[13].m_s;
         throw std::runtime_error(error);
     }
 
-    if(tempV[14].m_s.size() == 0)       // File name pattern (grid)
-        tempV[14].m_s = "grid_Co%C_IT%I_N%N.txt";
+    if(tempV[15].m_s.size() == 0)       // File name pattern (grid)
+        tempV[15].m_s = "grid_Co%C_IT%I_N%N.txt";
 
-    if(tempV[15].m_s.size() == 0)       // File name pattern (Fisher matrix)
-        tempV[15].m_s = "fisher_IT%I.txt";
+    if(tempV[16].m_s.size() == 0)       // File name pattern (Fisher matrix)
+        tempV[16].m_s = "fisher_IT%I.txt";
 
-    if(tempV[16].m_s.size() == 0)
-        tempV[16].m_s = "DoC_DL%D_N%N.txt"; // File name pattern (density of covering)
+    if(tempV[17].m_s.size() == 0)
+        tempV[17].m_s = "DoC_DL%D_N%N.txt"; // File name pattern (density of covering)
 
-    if(tempV[17].m_s != "True" && tempV[17].m_s != "False")
-        tempV[17].m_s = "True";
+    if(tempV[18].m_s != "True" && tempV[18].m_s != "False")
+        tempV[18].m_s = "True";
 
-    for(int i=18; i<21; i++)            // Choose if obtain grid, Fisher matrix or density of covering
+    for(int i=19; i<22; i++)            // Choose if obtain grid, Fisher matrix or density of covering
         if(tempV[i].m_s != "True" && tempV[i].m_s != "False")   // or chop result
             tempV[i].m_s = "False";
 
-    if(tempV[21].m_s != "S1" && tempV[21].m_s != "S2"
-       && tempV[21].m_s != "Automatic") // Choose algorithm to obtain grid or Fisher matrix or density
-        tempV[21].m_s = "Automatic";
+    if(tempV[22].m_s != "s1" && tempV[22].m_s != "s2"
+       && tempV[22].m_s != "Automatic") // Choose algorithm to obtain grid or Fisher matrix or density
+        tempV[22].m_s = "Automatic";
+    //TypeSearch=
+    if(tempV[23].m_s != "All-Sky" && tempV[23].m_s != "AllSky"
+       && tempV[23].m_s != "Directed") // Choose type of search
+        tempV[23].m_s = "All-Sky";
 
-    for(int i=22; i<25; i++)            // (22) DataS2Use, (23) DataS2SaveBest
+    if(tempV[23].m_s == "All-Sky"){
+        if(tempV[10].m_i <= 0 || tempV[10].m_i>2)
+            tempV[10].m_i = 1;              // Spindown
+    }
+    if(tempV[23].m_s == "Directed"){
+        if(tempV[10].m_i <= 0 || tempV[10].m_i>3)
+            tempV[10].m_i = 1;              // Spindown
+    }
+
+    for(int i=24; i<27; i++)            // (24) DataS2Use, (25) DataS2SaveBest,(26) Convert
         if(tempV[i].m_s != "True" && tempV[i].m_s != "False")
             tempV[i].m_s = "True";
 
-    if(tempV[24].m_s != "True" && tempV[24].m_s != "False") // (24) Convert
-        tempV[24].m_s = "True";
+    if(tempV[27].m_s != "True" && tempV[27].m_s != "False") // (27) ObserveTimeSymmetric (False == [0, To], True == [-To/2, To/2])
+        tempV[27].m_s = "True";
 
-    for(int i=25; i<27; i++)            // (25) "Quiet=", (26) "SayHello="
-        if(tempV[i].m_s != "True" && tempV[25].m_s != "False") // , (25) Future option, not implement yet
+    for(int i=28; i<30; i++)            // (26) "Quiet=", (27) "SayHello="
+        if(tempV[i].m_s != "True" && tempV[26].m_s != "False") // , (27) Future option, not implement yet
             tempV[i].m_s = "False";
 /*
     for(unsigned int i =0; i<6; i++)

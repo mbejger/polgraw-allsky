@@ -4,18 +4,19 @@
 // Copyright:   Andrzej Pisarski
 // License:     CC-BY-NC-ND
 // Created:     20/05/2015
+// Modification:07/06/2020 A.Pisarski
 ///////////////////////////////////////
 
 #include "ReadEphemeris.h"
 #include <stdexcept>
-#include <iostream>
 #include <fstream>
 #include <cmath>
 
 ReadEphemeris::ReadEphemeris(const std::vector<std::string> paths)//&
 {
-    if(paths.size()!=3)
+    if(paths.size()%3!=0)
     {
+        //std::cout << "paths.size()=" << paths.size() << std::endl;
         std::string error="Missing at least one of paths files!";
         throw std::runtime_error(error);
     }
@@ -82,8 +83,6 @@ ReadEphemeris::ReadEphemeris(const std::vector<std::string> paths)//&
         m_ephemeris1.reserve(m_length+4);
         m_ephemeris2.reserve(m_length+4);
 
-        //#mb original version with 1000.0
-//        double ws=1000.0/m_length; //scale factor
         double ws=1.0/m_length; //scale factor
 
         unsigned int j=0;
@@ -116,7 +115,7 @@ const std::vector<double>& ReadEphemeris::get_ephemeris2() const
     return m_ephemeris2;
 }
 
-unsigned int ReadEphemeris::get_length() const
+unsigned int ReadEphemeris::get_ephemeris_length() const
 {
     return m_length;
 }

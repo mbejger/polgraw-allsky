@@ -20,7 +20,7 @@ class Node
 {
     public:
         Node();
-        Node(double, const std::vector<int>);
+        Node(double, const std::vector<int>&);///&
         Node(const Node&);
 
         void operator=(const Node&);
