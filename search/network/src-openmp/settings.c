@@ -127,7 +127,7 @@ void detectors_settings(Search_settings* sett,
 	    dp = opendir(dirname);
 	    if (dp) {
 		 closedir(dp);
-		 sprintf(x, "%s/xdatc_%03d_%04d%s.bin", dirname, opts->ident,
+		 sprintf(x, "%s/xdatsc_%03d_%04d%s.bin", dirname, opts->ident,
 			                                 opts->band, opts->label);
 		 printf("file %s\n", x);
 		 data = fopen(x, "r");
