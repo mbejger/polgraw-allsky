@@ -74,14 +74,16 @@ int main (int argc, char* argv[]) {
     }
   }
  
+	
+  // Detector network settings
+  detectors_settings(&sett, &opts); 
+
   // Grid data 
   read_grid(&sett, &opts);	
-	
+
   // Search settings
   search_settings(&sett); 
 
-  // Detector network settings
-  detectors_settings(&sett, &opts); 
 
   // Array initialization and reading the ephemerids 
   init_arrays(&sett, &opts, &aux_arr);

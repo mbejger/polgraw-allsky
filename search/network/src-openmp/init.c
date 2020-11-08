@@ -287,39 +287,49 @@ void handle_opts( Search_settings *sett,
 	/* Generate grid from the M matrix (grid.bin)
 	 */ 
 
-void read_grid(
-	       Search_settings *sett, 
-	       Command_line_opts *opts) {
+void read_grid( Search_settings *sett, 
+		Command_line_opts *opts ) {
+     
+     sett->M = (double *) calloc (16, sizeof (double));
+     
+     FILE *data;
+     char filename[1024];
+     int i;
+     
+     // In case when -usedet option is used for one detector
+     // i.e. opts->usedet has a length of 2 (e.g. H1 or V1),
+     // or data dir contains only one detector,
+     // read grid.bin from this detector subdirectory 
+     // (see detectors_settings() in settings.c for details)
+     
+     if(strlen(opts->usedet)==2 || sett->nifo==1 ) {
+	  //sprintf (filename, "%s/%03d/%s/grid.bin", opts->dtaprefix, opts->ident, opts->usedet);
+     	  sprintf (filename, "%s/%03d/%s/grid.bin", opts->dtaprefix, opts->ident, ifo[0].name);
+     } else {
+	  //sprintf (filename, "%s/%03d/grid.bin", opts->dtaprefix, opts->ident);
+	  // det network
+	  char dnet_str[MAX_DETECTORS*DETNAME_LENGTH]="";
+          for(i=0; i<sett->nifo; i++)
+	       strcat(dnet_str, ifo[i].name);
 
-  sett->M = (double *) calloc (16, sizeof (double));
+	  sprintf (filename, "%s/%03d/grids/grid_%03d_%04d_%sc.bin", opts->dtaprefix, opts->ident, opts->ident, opts->band, dnet_str);
+     }
+	  
 
-  FILE *data;
-  char filename[562];
+     if ((data=fopen (filename, "r")) != NULL) {
+	  printf("Using grid file %s\n", filename);
+	  fread ((void *)&sett->fftpad, sizeof (int), 1, data);
 
-  // In case when -usedet option is used for one detector
-  // i.e. opts->usedet has a length of 2 (e.g. H1 or V1), 
-  // read grid.bin from this detector subdirectory 
-  // (see detectors_settings() in settings.c for details) 
-  if(strlen(opts->usedet)==2)
-    sprintf (filename, "%s/%03d/%s/grid.bin", opts->dtaprefix, opts->ident, opts->usedet);
-  else 
-  sprintf (filename, "%s/%03d/grid.bin", opts->dtaprefix, opts->ident);
-
-
-  if ((data=fopen (filename, "r")) != NULL) {
-    printf("Using grid file from %s\n", filename);
-    fread ((void *)&sett->fftpad, sizeof (int), 1, data);
-
-    printf("Using fftpad from the grid file: %d\n", sett->fftpad); 
+	  printf("fftpad from the grid file: %d\n", sett->fftpad); 
 	
-    // M: vector of 16 components consisting of 4 rows
-    // of 4x4 grid-generating matrix
-    fread ((void *)sett->M, sizeof (double), 16, data);
-    fclose (data);
-  } else {
-    perror (filename);
-    exit(EXIT_FAILURE);
-  }
+	  // M: vector of 16 components consisting of 4 rows
+	  // of 4x4 grid-generating matrix
+	  fread ((void *)sett->M, sizeof (double), 16, data);
+	  fclose (data);
+     } else {
+	  perror (filename);
+	  exit(EXIT_FAILURE);
+     }
 
 } // end of read grid 
 

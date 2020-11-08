@@ -463,7 +463,7 @@ int job_core(int pm,                   // Hemisphere
   if(opts->s0_flag) smin = smax;
   // if spindown parameter is taken into account, smin != smax
 
-  int s_stride = 2;
+  int s_stride = 1;
   printf ("\n>>%d\t%d\t%d\t[%d..%d:%d]\n", *FNum, mm, nn, smin, smax, s_stride);
 
   static fftw_complex *fxa, *fxb;
