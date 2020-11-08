@@ -67,7 +67,8 @@ void handle_opts( Search_settings *sett,
   opts->s0_flag=0;
   opts->checkp_flag=0;
   opts->veto_flag=0; 
-
+  opts->overlap=-1.;
+  
   static int help_flag=0, white_flag=0, s0_flag=0, 
              checkp_flag=1, veto_flag=0;
 
@@ -112,6 +113,8 @@ void handle_opts( Search_settings *sett,
       {"dt", required_argument, 0, 's'},
       // Narrow down the frequency band (+- the center of band) 
       {"narrowdown", required_argument, 0, 'n'},
+      // band overlap
+      {"overlap", required_argument, 0, 'v'},
       {0, 0, 0, 0}
     };
 
@@ -136,6 +139,7 @@ void handle_opts( Search_settings *sett,
       printf("-addsig       Add signal with parameters from <file>\n");
       printf("-nod          Number of days\n");
       printf("-narrowdown   Narrow-down the frequency band (range [0, 0.5] +- around center)\n\n");
+      printf("-overlap      Band overlap, fpo=10+(1-overlap)*band*dt/2 ; obligatory if band is used\n\n");
 
 
       printf("Also:\n\n");
@@ -149,7 +153,7 @@ void handle_opts( Search_settings *sett,
     }
 
     int option_index = 0;
-    int c = getopt_long_only(argc, argv, "i:b:o:d:l:r:g:c:t:h:p:x:y:s:u:n:", 
+    int c = getopt_long_only(argc, argv, "i:b:o:d:l:r:g:c:t:h:p:x:y:s:u:n:v:",
 			     long_options, &option_index);
     if (c == -1)
       break;
@@ -205,6 +209,9 @@ void handle_opts( Search_settings *sett,
     case 'n':
       opts->narrowdown = atof(optarg);
       break;
+    case 'v':
+      opts->overlap = atof(optarg);
+      break;
     case '?':
       break;
     default:
@@ -235,12 +242,20 @@ void handle_opts( Search_settings *sett,
   // Starting band frequency:
   // fpo_val is optionally read from the command line
   // Its initial value is set to -1
-  if(!(sett->fpo >= 0))
 
-    // The usual definition (multiplying the offset by B=1/(2dt))
-    // !!! in RDC_O1 the fstart equals 10, not 100 like in VSR1 !!! 
-    // 
-    sett->fpo = 10. + 0.96875*opts->band*(0.5/sett->dt);
+  if (!(sett->fpo >= 0)) {
+
+       // The usual definition (multiplying the offset by B=1/(2dt))
+       // !!! in RDC_O1 the fstart equals 10, not 100 like in VSR1 !!! 
+       //sett->fpo = 10. + 0.96875*opts->band*(0.5/sett->dt);
+       printf("band=%d  ,   overlap=%f \n", opts->band, opts->overlap);
+       if (opts->band > 0 && opts->overlap >=0.) {
+	    sett->fpo = 10. + (1. - opts->overlap)*opts->band*(0.5/sett->dt);
+       } else {
+	    printf("Band AND overlap or fpo must be specified!\n");
+	    exit(EXIT_FAILURE);
+       }
+  }
 
   printf("The reference frequency fpo is %f\n", sett->fpo);
   printf("The data sampling time dt is %f\n", sett->dt); 
