@@ -743,12 +743,12 @@ int job_core(int pm,                   // Hemisphere
 	  
 	  // Checking if signal is within a known instrumental line 
 	  int k, veto_status = 0; 
-	  for(k=0; k<sett->numlines_band; k++)
-	    if(sgnlt[0]>=sett->lines[k][0] && sgnlt[0]<=sett->lines[k][1]) { 
+	  for(k=0; k<sett->numlines_band; k++){
+	    if(sgnlt[0]>=sett->lines[k][0] && sgnlt[0]<=sett->lines[k][1]) {
 	      veto_status=1; 
 	      break; 
 	    }   
-	  
+	  }
 	  int _sgnlc;
 	  if(!veto_status) {
 

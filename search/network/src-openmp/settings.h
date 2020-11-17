@@ -37,15 +37,11 @@
 //31557600.0          // year in seconds = 365.25 * 86400
 
 
-void search_settings(
-		     Search_settings *sett);
+void search_settings( Search_settings *sett );
 
-void detectors_settings(
-			Search_settings *sett, 
-			Command_line_opts *opts);
+void detectors_settings( Search_settings *sett, Command_line_opts *opts );
 
-void rogcvir(
-	     Detector_settings *ifo); 
+void rogcvir( Detector_settings *ifo ); 
 
 void modvir(
 	    double sinal,
@@ -56,31 +52,23 @@ void modvir(
 	    Detector_settings *ifo, 
 	    Aux_arrays *aux);
 
-int lineph(
-	   double, double *, double *, char *, char *, int);
+int lineph( double, double *, double *, char *, char *, int );
 
 // Lines and excluded regions treatment
-void narrow_down_band(
-		      Search_settings* sett, 
-		      Command_line_opts *opts);  
+void narrow_down_band( Search_settings* sett,  Command_line_opts *opts );
 
-int read_lines(
-	       Search_settings *sett,
-	       Command_line_opts *opts, 
-	       Detector_settings *ifo);
+int read_lines( Search_settings *sett,
+	        Command_line_opts *opts, 
+	        Detector_settings *ifo);
 
-void lines_in_band(
-		   Search_settings* sett, 
-		   Command_line_opts *opts);  
+int line_in_band( double* fl, double* fr, Search_settings* sett );
 
-void veto_fraction(
-		   Search_settings* sett); 
+void veto_fraction( Search_settings* sett); 
 
 
 // Coincidences 
-void read_trigger_files(
-			Search_settings *sett,
-			Command_line_opts_coinc *opts, 
-			Candidate_triggers *trig);
+void read_trigger_files( Search_settings *sett,
+			 Command_line_opts_coinc *opts, 
+			 Candidate_triggers *trig);
 
 #endif

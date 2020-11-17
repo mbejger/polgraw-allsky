@@ -89,32 +89,22 @@ int main (int argc, char* argv[]) {
   init_arrays(&sett, &opts, &aux_arr);
 
   // Narrowing-down the band (excluding the edges 
-  // according to the opts.narrowdown parameter) 
+  // according to the opts.narrowdown parameter)
+  // adds two lines
   if(opts.narrowdown < 0.5*M_PI)
     narrow_down_band(&sett, &opts);
   
-  // Reading known lines data from external files 
-  if(opts.veto_flag) { 
-    for(i=0; i<sett.nifo; i++) {
-      printf("Reading known lines data for %s from %s\n", ifo[i].name, opts.dtaprefix);
-      read_lines(&sett, &opts, &ifo[i]);
-    }
-
-    // Vetoing known lines in band 
-    lines_in_band(&sett, &opts); 
-  } 
+  // Reading veto lines data from external files
+  printf("Reading veto files...\n");
+  read_lines(&sett, &opts, &ifo[0]);
 
   // If excluded parts of band, list them
   // and check if the band isn't fully vetoed 
-  if(sett.numlines_band) {     
-    int k; 
-    printf("list of excluded frequencies in band (in radians):\n"); 
-    for(k=0; k<sett.numlines_band; k++) 
-      printf("%f %f\n", sett.lines[k][0], sett.lines[k][1]);
-    
-    veto_fraction(&sett); 
-  } 
-
+  if(sett.numlines_band)
+       veto_fraction(&sett);
+  else
+       printf("Band veto fraction = 0.0000\n");
+       
   // Amplitude modulation functions for each detector  
   for(i=0; i<sett.nifo; i++)   
     rogcvir(&ifo[i]); 

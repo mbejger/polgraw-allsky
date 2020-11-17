@@ -246,9 +246,8 @@ void handle_opts( Search_settings *sett,
   if (!(sett->fpo >= 0)) {
 
        // The usual definition (multiplying the offset by B=1/(2dt))
-       // !!! in RDC_O1 the fstart equals 10, not 100 like in VSR1 !!! 
-       //sett->fpo = 10. + 0.96875*opts->band*(0.5/sett->dt);
-       printf("band=%d  ,   overlap=%f \n", opts->band, opts->overlap);
+       // old: sett->fpo = 10. + 0.96875*opts->band*(0.5/sett->dt);
+
        if (opts->band > 0 && opts->overlap >=0.) {
 	    sett->fpo = 10. + (1. - opts->overlap)*opts->band*(0.5/sett->dt);
        } else {
@@ -293,8 +292,8 @@ void handle_opts( Search_settings *sett,
     if (chdir(opts->wd)) { perror (opts->wd); abort (); }
   }
 
-  if(opts->veto_flag) 
-    printf("Known lines will be vetoed (reading from files in the data directory)\n");
+  //if(opts->veto_flag) 
+  //  printf("Known lines will be vetoed (reading from files in the data directory)\n");
 
 } // end of command line options handling 
 

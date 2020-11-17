@@ -164,10 +164,10 @@ typedef struct _detector {
   Ampl_mod_coeff amod; 
   Signals sig;  
 
-  double lines[MAXL][3]; // Array for lines: column values 
+     //double lines[MAXL][3]; // Array for lines: column values 
                          // are beginning and end of line to veto 
-  int numlines;                        
- 
+     //int numlines;                        
+
 } Detector_settings; 
 
 
