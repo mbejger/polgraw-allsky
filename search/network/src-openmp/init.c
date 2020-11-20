@@ -139,7 +139,7 @@ void handle_opts( Search_settings *sett,
       printf("-addsig       Add signal with parameters from <file>\n");
       printf("-nod          Number of days\n");
       printf("-narrowdown   Narrow-down the frequency band (range [0, 0.5] +- around center)\n\n");
-      printf("-overlap      Band overlap, fpo=10+(1-overlap)*band*dt/2 ; obligatory if band is used\n\n");
+      printf("-overlap      Band overlap, fpo=10+(1-overlap)*band/(dt*2) ; obligatory if band is used\n\n");
 
 
       printf("Also:\n\n");
