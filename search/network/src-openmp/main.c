@@ -96,7 +96,8 @@ int main (int argc, char* argv[]) {
   
   // Reading veto lines data from external files
   printf("Reading veto files...\n");
-  read_lines(&sett, &opts, &ifo[0]);
+//  read_lines(&sett, &opts, ifo);
+  read_lines(&sett, &opts);
 
   // If excluded parts of band, list them
   // and check if the band isn't fully vetoed 

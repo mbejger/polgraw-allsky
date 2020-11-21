@@ -10,7 +10,8 @@
 #define INICANDSIZE 1024       // 1048576? Initial size for array candidates storage; 
                                // realloc called if needed (in coincidences)  
 
-#define MAXL 32000              // Max number of known lines for a detector  
+#define MAXL 8192              // Max number of veto lines in band
+#define MAXVFILEL 8192         // Max number of text lines in the veto file
 
 // Command line option struct for search 
 typedef struct _comm_line_opts {

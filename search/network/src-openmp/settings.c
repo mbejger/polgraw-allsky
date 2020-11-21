@@ -7,6 +7,7 @@
 #include "settings.h"
 #include "auxi.h"
 #include "struct.h"
+#include <glob.h>
 
 
 /* Search settings: 
@@ -273,13 +274,11 @@ void modvir(double sinal, double cosal, double sindel, double cosdel,
 } // modvir
 
 
-#include <glob.h>
 int read_lines( Search_settings *sett,
-		Command_line_opts *opts,
-		Detector_settings *ifo) {
-  
+		Command_line_opts *opts ){
+
   int i=0, lnum, j;
-  char linefile[1200], line[512] = {0}, *lfile;
+  char linefile[1200], line[513] = {0}, *lfile;
   FILE *data;
   struct vlines {
        double f;
@@ -287,69 +286,77 @@ int read_lines( Search_settings *sett,
        double offset;
        int iharm1, iharm2;
        double lwidth, rwidth;
-       char comment[512];
+       int det;
        int nline;
        char vfile[512];
-  } vline[MAXL];
-  char line_aux[MAXL][1024];
-  char line_info[1024];
+  } vline[MAXVFILEL];
+  char line_aux[MAXVFILEL][512];
   double fl, fr;
   
   glob_t globbuf;
   globbuf.gl_offs = 0;
 
-  //
-  // calculate max line broadening due to demodulation
-  // 
-  double *dE; 
-  dE = (double *)calloc(3*sett->N, sizeof(double));
-  
-  // First derivative DetSSB (velocity)  
-  for(i=0; i<sett->N-1; i++) { 
-       for(j=0; j<3; j++)  
-	    dE[i*3+j] = fabs(ifo->sig.DetSSB[(i+1)*3+j] - ifo->sig.DetSSB[i*3+j]); 
-  } 
+  double fdotMax, Dfmaxmax;
+  double normdtEmax[MAX_DETECTORS], normdEmax[MAX_DETECTORS];
 
-  double dEmax[3] = {0}; 
-
-  // Find maximum absolute values 
-  for(i=0; i<sett->N-1; i++) {
-       for(j=0; j<3; j++) 
-	    if(dE[i*3+j] > dEmax[j]) dEmax[j] = dE[i*3+j]; 
-  } 
-  
-  double *dtE;
-  dtE = (double *)calloc(3*sett->N, sizeof(double));
-  
-  // First derivative 
-  for(i=0; i<sett->N-1; i++) { 
-       for(j=0; j<3; j++)  
-	    dtE[i*3+j] =
-		 fabs(ifo->sig.DetSSB[(i+1)*3+j]*(i+1) - ifo->sig.DetSSB[i*3+j]*i)*sett->dt; 
-  } 
-  
-  double dtEmax[3] = {0}; 
-    
-  // Find maximum absolute values 
-  for(i=0; i<sett->N-1; i++) {
-       for(j=0; j<3; j++) 
-	    if(dtE[i*3+j] > dtEmax[j]) dtEmax[j] = dtE[i*3+j]; 
-  } 
-
-  double fdotMax, Dfmaxmax, normdtEmax=0., normdEmax=0.;
   // calculate fdotMax from sett.Smin
   fdotMax = sett->Smin/(2.*M_PI*sett->dt*sett->dt);
 
-  for(j=0; j<3; j++) { 
-       normdtEmax += pow(dtEmax[j], 2.); 
-       normdEmax  += pow(dEmax[j], 2.);
-  } 
+  //
+  // for each detector
+  // calculate max line broadening due to demodulation
+  // 
+  for(int det=0; det < sett->nifo; det++) {
+       
+       double *dE; 
+       dE = (double *)calloc(3*sett->N, sizeof(double));
   
-  // Free auxiliary allocs 
-  free(dE); 
-  free(dtE); 
+       // First derivative DetSSB (velocity)  
+       for(i=0; i<sett->N-1; i++) { 
+	    for(j=0; j<3; j++)  
+		 dE[i*3+j] = fabs(ifo[det].sig.DetSSB[(i+1)*3+j] -
+				  ifo[det].sig.DetSSB[i*3+j]); 
+       } 
 
+       double dEmax[3] = {0};
+
+       // Find maximum absolute values 
+       for(i=0; i<sett->N-1; i++) {
+	    for(j=0; j<3; j++) 
+		 if(dE[i*3+j] > dEmax[j]) dEmax[j] = dE[i*3+j];
+       }
   
+       double *dtE;
+       dtE = (double *)calloc(3*sett->N, sizeof(double));
+  
+       // First derivative 
+       for(i=0; i<sett->N-1; i++) {
+	    for(j=0; j<3; j++)
+		 dtE[i*3+j] = fabs(ifo[det].sig.DetSSB[(i+1)*3+j]*(i+1) -
+				   ifo[det].sig.DetSSB[i*3+j]*i)*sett->dt; 
+       }
+  
+       double dtEmax[3] = {0};
+    
+       // Find maximum absolute values 
+       for(i=0; i<sett->N-1; i++) {
+	    for(j=0; j<3; j++) 
+		 if(dtE[i*3+j] > dtEmax[j]) dtEmax[j] = dtE[i*3+j];
+       }
+
+       normdtEmax[det]=0.;
+       normdEmax[det]=0.;
+       for(j=0; j<3; j++) {
+	    normdtEmax[det] += pow(dtEmax[j], 2.); 
+	    normdEmax[det]  += pow(dEmax[j], 2.);
+       } 
+  
+       // Free auxiliary allocs 
+       free(dE);
+       free(dtE);
+       
+  }
+
   //
   // read veto files and find lines in band
   //
@@ -357,9 +364,9 @@ int read_lines( Search_settings *sett,
   i = 0; // veto line number (global for all veto files)
 
   for(int det=0; det < sett->nifo; det++) {
-       
        // search for all veto files matching pattern <data>/lines/<det_name>lines*.csv
        sprintf(linefile, "%s/lines/%slines*.csv", opts->dtaprefix, ifo[det].name);
+       
        printf("[%s] Looking for %s ... ", ifo[det].name, linefile);
        glob(linefile, GLOB_DOOFFS, NULL, &globbuf);
        printf("%ld files match\n", globbuf.gl_pathc);
@@ -368,7 +375,7 @@ int read_lines( Search_settings *sett,
 	    lfile = globbuf.gl_pathv[ifile];
 	    printf("   [%s] %s ", ifo[det].name, lfile);
 
-	    // Reading line data from the input file (data)   
+	    // Reading line data from the input file (data)
 	    // Columns are: 
 	    // 1 - frequency spacing (Hz) of comb (or frequency of single line)
 	    // 2 - comb type (0 - singlet, 1 - comb with fixed width, 2 - comb with scaling width)
@@ -396,7 +403,7 @@ int read_lines( Search_settings *sett,
 		 vline[i].iharm2  = atoi(strtok(NULL,","));
 		 vline[i].lwidth  = atof(strtok(NULL,","));
 		 vline[i].rwidth  = atof(strtok(NULL,","));
-		 strcpy(vline[i].comment, strtok(NULL,","));
+		 vline[i].det     = det;
 		 vline[i].nline = nline;
 		 strcpy(vline[i].vfile, lfile);
 		 /*printf("%f  %d  %f  %d   %d   %f   %f   %d   %s\n",  vline[i].f, vline[i].type,
@@ -425,7 +432,6 @@ int read_lines( Search_settings *sett,
   j=0; // index of line in band
   if(opts->narrowdown < 0.5*M_PI) j = sett->numlines_band;
 
-  
   // Apply line widths 
   //------------------
 
@@ -439,7 +445,9 @@ int read_lines( Search_settings *sett,
        case 0:
 	    
 	    // Line width from the resampling broadening 
-	    Dfmaxmax = 2.*fdotMax*(sett->N*sett->dt + sqrt(normdtEmax)) + vline[i].f*sqrt(normdEmax);
+	    Dfmaxmax = 2.*fdotMax*(sett->N*sett->dt +
+				   sqrt(normdtEmax[vline[i].det])) +
+		 vline[i].f*sqrt(normdEmax[vline[i].det]);
 	    
 	    fl = vline[i].f - vline[i].lwidth - Dfmaxmax;
 	    fr = vline[i].f + vline[i].rwidth + Dfmaxmax;
@@ -461,8 +469,9 @@ int read_lines( Search_settings *sett,
 		 
 		 double linefreq = vline[i].offset + k*vline[i].f; 
 		 // Line width from the resampling broadening 
-		 Dfmaxmax = 2.*fdotMax*(sett->N*sett->dt + sqrt(normdtEmax)) 
-		      + linefreq*sqrt(normdEmax);
+		 Dfmaxmax = 2.*fdotMax*(sett->N*sett->dt +
+					sqrt(normdtEmax[vline[i].det])) 
+		      + linefreq*sqrt(normdEmax[vline[i].det]);
 
 		 fl = linefreq - vline[i].lwidth - Dfmaxmax;
 		 fr = linefreq + vline[i].rwidth + Dfmaxmax;
@@ -486,8 +495,9 @@ int read_lines( Search_settings *sett,
 
 		 double linefreq = vline[i].offset + k*vline[i].f; 
 		 // Line width from the resampling broadening 
-		 Dfmaxmax = 2.*fdotMax*(sett->N*sett->dt + sqrt(normdtEmax)) 
-		      + linefreq*sqrt(normdEmax);
+		 Dfmaxmax = 2.*fdotMax*(sett->N*sett->dt +
+					sqrt(normdtEmax[vline[i].det])) 
+		      + linefreq*sqrt(normdEmax[vline[i].det]);
 
 		 fl = linefreq - k*vline[i].lwidth - Dfmaxmax;
 		 fr = linefreq + k*vline[i].rwidth + Dfmaxmax;
@@ -580,7 +590,6 @@ void narrow_down_band(Search_settings* sett, Command_line_opts *opts) {
 
 
 
-
 void veto_fraction(Search_settings* sett) { 
   
   int i; 
@@ -613,3 +622,4 @@ void veto_fraction(Search_settings* sett) {
   }
  
 }
+
