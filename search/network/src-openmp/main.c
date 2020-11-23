@@ -96,16 +96,8 @@ int main (int argc, char* argv[]) {
   
   // Reading veto lines data from external files
   printf("Reading veto files...\n");
-//  read_lines(&sett, &opts, ifo);
   read_lines(&sett, &opts);
 
-  // If excluded parts of band, list them
-  // and check if the band isn't fully vetoed 
-  if(sett.numlines_band)
-       veto_fraction(&sett);
-  else
-       printf("Band veto fraction = 0.0000\n");
-       
   // Amplitude modulation functions for each detector  
   for(i=0; i<sett.nifo; i++)   
     rogcvir(&ifo[i]); 

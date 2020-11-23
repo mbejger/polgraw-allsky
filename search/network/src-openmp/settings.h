@@ -61,8 +61,7 @@ int read_lines( Search_settings *sett, Command_line_opts *opts );
 
 int line_in_band( double* fl, double* fr, Search_settings* sett );
 
-void veto_fraction( Search_settings* sett); 
-
+void lines_veto_fraction(Search_settings* sett, int lf, int le, int vflag);
 
 // Coincidences 
 void read_trigger_files( Search_settings *sett,

@@ -278,7 +278,7 @@ int read_lines( Search_settings *sett,
 		Command_line_opts *opts ){
 
   int i=0, lnum, j;
-  char linefile[1200], line[513] = {0}, *lfile;
+  char linefile[1200], line[512], *lfile;
   FILE *data;
   struct vlines {
        double f;
@@ -295,10 +295,10 @@ int read_lines( Search_settings *sett,
   
   glob_t globbuf;
   globbuf.gl_offs = 0;
-
+  
   double fdotMax, Dfmaxmax;
   double normdtEmax[MAX_DETECTORS], normdEmax[MAX_DETECTORS];
-
+  
   // calculate fdotMax from sett.Smin
   fdotMax = sett->Smin/(2.*M_PI*sett->dt*sett->dt);
 
@@ -427,7 +427,7 @@ int read_lines( Search_settings *sett,
   
 
   lnum = i;
-  printf("Total number of data lines: %d\n", lnum);
+  //  printf("Total number of data lines: %d\n", lnum);
 
   j=0; // index of line in band
   if(opts->narrowdown < 0.5*M_PI) j = sett->numlines_band;
@@ -539,21 +539,27 @@ int read_lines( Search_settings *sett,
   }
   
   fclose(data);
-  printf("Wrote in band veto lines to: %s\n", linefile);
+  printf("Wrote veto lines in band to: %s\n", linefile);
+
+  lines_veto_fraction(sett, sett->numlines_band, j, opts->veto_flag);
   
-  // set number of veto lines only if veto flag is 
+  // set number of veto lines only if veto option is given
   if (opts->veto_flag) {
        printf("Veto lines will be applied!\n");
        sett->numlines_band = j;
   } else {
-       printf("Veto lines will NOT be applied!\n");
+       printf("Veto lines WILL NOT be applied!\n");
   }
   // printf("Number of known lines in band: %d\n", sett->numlines_band);
+
+  printf("Excluded frequencies in band (incl. narrowdown, in radians):\n"); 
+  for(i=0; i<sett->numlines_band; i++) 
+       printf("   %f %f\n", sett->lines[i][0], sett->lines[i][1]);
+  
   
   return 0; 
   
 }
-
 
 
 int line_in_band(double* fl, double* fr, Search_settings* sett ) {
@@ -587,6 +593,43 @@ void narrow_down_band(Search_settings* sett, Command_line_opts *opts) {
   
 }
 
+
+
+void lines_veto_fraction(Search_settings* sett, int lf, int le, int vflag) {
+     
+  // lf - index of first line, le - index of last line
+  int i; 
+  double ll=0., gap=0.;
+  
+  // Sorting veto lines in band (1st then 2nd column) 
+  qsort(&sett->lines[lf], le-lf, 2*sizeof(double), compared2c); 
+
+  /*
+  printf("Excluded frequencies (excl. narrowdown, sorted, in radians):\n"); 
+  for(i=lf; i<le; i++) 
+       printf("   %f %f\n", sett->lines[i][0], sett->lines[i][1]);
+  */
+
+  for(i=lf; i<le; i++) {
+    
+       // Looking for a gap between lines
+       if(sett->lines[i][0] >= ll) {
+	    gap += sett->lines[i][0] - ll;
+	    ll = sett->lines[i][1];
+       } else {
+	    if (ll < sett->lines[i][1]) ll = sett->lines[i][1];
+       }
+  }
+  if ( ll < M_PI) gap += M_PI - ll;
+  
+  printf("Band veto fraction = %6.4f\n", (M_PI-gap)/M_PI);
+  
+  if( (gap <= 1.e-10) && vflag) {
+       printf("This band is fully vetoed. My work here is done, exiting...\n"); 
+       exit(EXIT_SUCCESS); 
+  }
+ 
+}
 
 
 
