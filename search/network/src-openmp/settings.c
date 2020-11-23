@@ -588,7 +588,8 @@ void narrow_down_band(Search_settings* sett, Command_line_opts *opts) {
   sett->lines[1][1] = M_PI;
   
   sett->numlines_band = 2;
-  printf("Band is narrowed-down to [%f, %f]\n", sett->lines[0][1], sett->lines[1][0]);
+  printf("Band is narrowed-down to [%f, %f] (narrowdown=%f)\n", sett->lines[0][1], sett->lines[1][0],
+	 opts->narrowdown/M_PI);
   
 }
 
