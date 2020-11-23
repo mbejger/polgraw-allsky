@@ -305,12 +305,14 @@ int read_lines( Search_settings *sett,
   //
   // for each detector
   // calculate max line broadening due to demodulation
-  // 
+  //
+
+  double *dE, *dtE;
+  dE = (double *)calloc(3*sett->N, sizeof(double));
+  dtE = (double *)calloc(3*sett->N, sizeof(double));
+
   for(int det=0; det < sett->nifo; det++) {
        
-       double *dE; 
-       dE = (double *)calloc(3*sett->N, sizeof(double));
-  
        // First derivative DetSSB (velocity)  
        for(i=0; i<sett->N-1; i++) { 
 	    for(j=0; j<3; j++)  
@@ -325,9 +327,6 @@ int read_lines( Search_settings *sett,
 	    for(j=0; j<3; j++) 
 		 if(dE[i*3+j] > dEmax[j]) dEmax[j] = dE[i*3+j];
        }
-  
-       double *dtE;
-       dtE = (double *)calloc(3*sett->N, sizeof(double));
   
        // First derivative 
        for(i=0; i<sett->N-1; i++) {
@@ -351,11 +350,11 @@ int read_lines( Search_settings *sett,
 	    normdEmax[det]  += pow(dEmax[j], 2.);
        } 
   
-       // Free auxiliary allocs 
-       free(dE);
-       free(dtE);
-       
   }
+
+  // Free auxiliary allocs 
+  free(dE);
+  free(dtE);
 
   //
   // read veto files and find lines in band
@@ -604,12 +603,6 @@ void lines_veto_fraction(Search_settings* sett, int lf, int le, int vflag) {
   // Sorting veto lines in band (1st then 2nd column) 
   qsort(&sett->lines[lf], le-lf, 2*sizeof(double), compared2c); 
 
-  /*
-  printf("Excluded frequencies (excl. narrowdown, sorted, in radians):\n"); 
-  for(i=lf; i<le; i++) 
-       printf("   %f %f\n", sett->lines[i][0], sett->lines[i][1]);
-  */
-
   for(i=lf; i<le; i++) {
     
        // Looking for a gap between lines
@@ -627,41 +620,6 @@ void lines_veto_fraction(Search_settings* sett, int lf, int le, int vflag) {
   if( (gap <= 1.e-10) && vflag) {
        printf("This band is fully vetoed. My work here is done, exiting...\n"); 
        exit(EXIT_SUCCESS); 
-  }
- 
-}
-
-
-
-void veto_fraction(Search_settings* sett) { 
-  
-  int i; 
-  double ll=0., gap=0.;
-  
-  // Sorting the excluded parts of a band (1st then 2nd column) 
-  qsort(sett->lines, sett->numlines_band, 2*sizeof(double), compared2c); 
-  
-  printf("Excluded frequencies (incl. narrowdown, sorted, in radians):\n"); 
-  for(i=0; i<sett->numlines_band; i++) 
-       printf("   %f %f\n", sett->lines[i][0], sett->lines[i][1]);
-
-  for(i=0; i<sett->numlines_band; i++) { 
-    
-    // Looking for a gap between the excluded regions 
-    if(sett->lines[i][0] >= ll) {
-      gap += sett->lines[i][0] - ll;
-      ll = sett->lines[i][1];
-    } else {
-      if (ll < sett->lines[i][1]) ll = sett->lines[i][1];
-    }
-  }
-  if ( ll < M_PI) gap += M_PI - ll;
-  
-  printf("Band veto fraction = %6.4f\n", (M_PI-gap)/M_PI);
-
-  if(gap <= 0.) { 
-    printf("This band is fully vetoed. My work here is done, exiting...\n"); 
-    exit(EXIT_SUCCESS); 
   }
  
 }
