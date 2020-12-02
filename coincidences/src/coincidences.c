@@ -125,7 +125,7 @@ void read_trigger_files(Search_settings *sett,
   double sqrN, omsN, v[4][4], be[2];
   FLOAT_TYPE tmp[4], c[5];
 
-  char dirname[512], filename[512], outname[512];  
+  char dirname[512], filename[1024], outname[1200];
   // Trigger files directory name 
   sprintf (dirname, "%s", opts->dtaprefix); 
 
