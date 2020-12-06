@@ -116,9 +116,13 @@ void splintpad (complex double *ya, double *shftf, int N, int interpftpad,
 
   y2 = (complex double *) malloc (interpftpad*N*sizeof (complex double)); //vector twice-size of N
   spline (ya, interpftpad*N, y2);
+#if defined(_OPENMP)
 #pragma omp parallel default(shared) private(x)
+#endif
   {
+#if defined(_OPENMP)         
 #pragma omp for schedule(static)
+#endif       
     for (i=0; i<N; ++i) {
       x = interpftpad*(i-shftf[i]);
       out[i] = splint (ya, y2, interpftpad*N, x);
