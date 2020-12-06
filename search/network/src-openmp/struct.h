@@ -180,19 +180,23 @@ struct _detector ifo[MAX_DETECTORS];
 // Command line option struct for coincidences 
 typedef struct _comm_line_opts_coinc {
   
-  int help_flag; 
+     int help_flag; 
   
-  int shift, // Cell shifts  (4 digit number corresponding to fsda, e.g. 0101)  
-      scale, // Cell scaling (4 digit number corresponding to fsda, e.g. 4824) 
-      refr;  // Reference frame 
-
-  // Minimal number of coincidences recorded in the output  
-  int mincoin; 
-
-  double fpo, refgps, narrowdown, snrcutoff; 
-  
-  char prefix[512], dtaprefix[512], trigname[512], refloc[512], *wd;
-  
+     int shift, // Cell shifts  (4 digit number corresponding to fsda, e.g. 0101)
+                // Cell scaling in fsda: 4 numbers corresponding to
+	  scalef,   // frequency f,  
+	  scales,   // spindown s, 
+	  scaled,   // declination d, 
+	  scalea,   // right ascencion a  
+	  refr,  // Reference frame 
+	  band,  // band number
+	  hemi;  // Hemisphere
+     
+     // Minimal number of coincidences recorded in the output  
+     int mincoin; 
+     double fpo, refgps, narrowdown, snrcutoff, overlap;
+     char prefix[512], refgrid[1024], *wd, infile[512];
+     
 } Command_line_opts_coinc;
 
 typedef struct _triggers { 

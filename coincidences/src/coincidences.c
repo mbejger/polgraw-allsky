@@ -18,10 +18,6 @@
 #define PREFIX ./coinc-results
 #endif
 
-#ifndef DTAPREFIX
-#define DTAPREFIX ./candidates
-#endif
-
 #define REALLOC_FACTOR 1.2
 
 int main (int argc, char* argv[]) {
@@ -52,8 +48,8 @@ int main (int argc, char* argv[]) {
   }
   
   // Manage grid matrix  
-  manage_grid_matrix(&sett, &opts);	
-
+  manage_grid_matrix(&sett, opts.refgrid);
+  
   // Search settings 
   search_settings(&sett); 
 
@@ -116,171 +112,158 @@ int** matrix(int rows, int cols) {
  */ 
 
 void read_trigger_files(Search_settings *sett, 
-     Command_line_opts_coinc *opts, 
-     Candidate_triggers *trig) {
+			Command_line_opts_coinc *opts, 
+			Candidate_triggers *trig) {
   
-  int i, j, candsize=INICANDSIZE, allcandsize=INICANDSIZE, goodcands=0, current_frame=0, frcount=0;  
+  int i, j, candsize=INICANDSIZE, allcandsize=INICANDSIZE,
+       goodcands=0, current_frame=0, frcount=0;  
   int val, shift[4], scale[4]; 
   int hemi;
   double sqrN, omsN, v[4][4], be[2];
   FLOAT_TYPE tmp[4], c[5];
 
   char dirname[512], filename[1024], outname[1200];
-  // Trigger files directory name 
-  sprintf (dirname, "%s", opts->dtaprefix); 
 
-  DIR *dp;
-  struct dirent *ep;
-  FILE *data; 
+  FILE *data, *infile;
 
   int **candi = malloc(candsize*sizeof(int *)); 
   int **ti; 
   // 7 columns in a row: fi, si, di, ai, orgpos, fr, i
   for(i=0; i<candsize; i++) 
-    candi[i] = (int*)calloc(7, sizeof(int));
+       candi[i] = (int*)calloc(7, sizeof(int));
 
   int **allcandi = malloc(allcandsize*sizeof(int *)); 
   // 7 columns in a row: fi, si, di, ai, orgpos, fr, i
   for(i=0; i<allcandsize; i++) 
-    allcandi[i] = malloc(7*sizeof(int));
+       allcandi[i] = malloc(7*sizeof(int));
 
   FLOAT_TYPE **candf = malloc(candsize*sizeof(FLOAT_TYPE *)); 
   FLOAT_TYPE **tf; 
   // 5 columns in a row: f, s, d, a, SNR
   for(i=0; i<candsize; i++) 
-    candf[i] = malloc(5*sizeof(FLOAT_TYPE));
+       candf[i] = malloc(5*sizeof(FLOAT_TYPE));
 
   FLOAT_TYPE **allcandf = malloc(allcandsize*sizeof(FLOAT_TYPE *));
   // 5 columns in a row: f, s, d, a, SNR
   for(i=0; i<allcandsize; i++)
-    allcandf[i] = malloc(5*sizeof(FLOAT_TYPE));
+       allcandf[i] = malloc(5*sizeof(FLOAT_TYPE));
 
 
-  dp = opendir (dirname);
+  // Calculating the shifts from opts->shift 
+  val = opts->shift;
+  for(i=0; i<4; i++) shift[i] = 0; // Initial value: no shift 
+  i=3; 
+  while (val > 0) { 
+       if(val%10) shift[i] = val%10; 
+       i--; val /= 10;
+  }
+  
+  printf("Cell shifts  in f, s, d, a directions: "); 
+  for(i=0; i<4; i++) printf("%d ", shift[i]); 
+  printf("\n"); 
 
-  if (dp != NULL) {
+  // Scaling values from opts->scale[f, s, d, a]
+  scale[0] = opts->scalef; 
+  scale[1] = opts->scales; 
+  scale[2] = opts->scaled; 
+  scale[3] = opts->scalea; 
 
-    // Calculating the shifts from opts->shift 
-    val = opts->shift;
-    for(i=0; i<4; i++) shift[i] = 0; // Initial value: no shift 
-    i=3; 
-    while (val > 0) { 
-      if(val%10) shift[i] = val%10; 
-      i--; val /= 10;
-    }
+  sqrN = pow(sett->N, 2);
+  omsN = sett->oms*sett->N; 
 
-    printf("Cell shifts  in f, s, d, a directions: "); 
-    for(i=0; i<4; i++) printf("%d ", shift[i]); 
-    printf("\n"); 
-
-    // Scaling values from opts->scale[f, s, d, a]
-    scale[0] = opts->scalef; 
-    scale[1] = opts->scales; 
-    scale[2] = opts->scaled; 
-    scale[3] = opts->scalea; 
-
-    printf("Cell scaling in f, s, d, a directions: ");
-    printf("%d %d %d %d\n", scale[0], scale[1], scale[2], scale[3]);
-
-    // Transformation matrix elements: division by the corresponding 
-    // scale factors outside the main loop over candidates    
-    for(j=0; j<4; j++)  
-      for(i=0; i<4; i++)
-        v[i][j] = (sett->vedva[i][j])/scale[j];   
-
-    sqrN = pow(sett->N, 2);
-    omsN = sett->oms*sett->N; 
+  printf("Cell scaling in f, s, d, a directions: ");
+  printf("%d %d %d %d\n", scale[0], scale[1], scale[2], scale[3]);
 
 
-    while ((ep = readdir (dp))) { 
+  // Transformation matrix elements: division by the corresponding 
+  // scale factors outside the main loop over candidates    
+  for(j=0; j<4; j++)  
+       for(i=0; i<4; i++)
+	    v[i][j] = (sett->vedva[i][j])/scale[j];
 
-      if(((ep->d_type == DT_REG) || (ep->d_type == DT_LNK)) &&
-        (strstr(ep->d_name, opts->trigname) != NULL)) {
+  printf("Reading trigger filenames from %s\n", opts->infile);
+  
+  if((infile = fopen(opts->infile, "r")) == NULL) {
+       printf("Error opening %s", opts->infile);
+       exit(EXIT_FAILURE);
+  }
+  char line[1024], gridfile[1024];
+  while(fgets(line, sizeof(line), infile)) {
+       if( line[0] == '%') continue;
+       strcpy(filename, strtok(line," \r\n"));
+       // determine frame from filename
+       char bandstr[7], fr[3], *bstrpos;
+       int curerent_frame;
+       sprintf(bandstr, "_%04d_", opts->band);
+       bstrpos = strstr(filename, bandstr);
+       strncpy(fr, bstrpos-3, 3);
+       current_frame=atoi(fr);
+       printf("Frame %d  %s\n", current_frame, filename);
 
-        sprintf(filename, "%s/%s", opts->dtaprefix, ep->d_name);
+       if((data = fopen(filename, "r")) == NULL) {
+	    printf("Can't open %s", filename);
+	    exit(EXIT_FAILURE);
+       }
+       
+       FLOAT_TYPE finband;
+       // Original candidate number (position in the trigger file)
+       int orgpos=0;
+       // Counter for 'good' candidates i.e. these that are in band
+       i=0; 
+       frcount++;
 
-        // This part looks for the first number in the trigger file name,
-        // under the assumption that this is the frame number
-        char *fr; 
-        char *epdname = ep->d_name;  
-
-        while((fr = strsep(&epdname, "_"))!=NULL) {
-          if(fr[0] >= '0' && fr[0] <= '9') {
-            current_frame = atoi(fr);
-            printf("Reading %s... Frame %d: ", ep->d_name, current_frame);
-            break; 
-          }
-        }
-
-        if((data = fopen(filename, "r")) != NULL) {
-
-          FLOAT_TYPE finband;
-          // Original candidate number (position in the trigger file)
-          int orgpos=0;
-          // Counter for 'good' candidates i.e. these that are in band
-          i=0; 
-          frcount++;
-
-          // Each candidate is represented by 5 FLOAT_TYPE (double or float) numbers
-          // c[0]=f, c[1]=s, c[2]=d, c[3]=a, c[4]=snr
-          while(fread((void *)c, sizeof(FLOAT_TYPE), 5, data)==5) {  
+       // Each candidate is represented by 5 FLOAT_TYPE (double or float) numbers
+       // c[0]=f, c[1]=s, c[2]=d, c[3]=a, c[4]=snr
+       while(fread((void *)c, sizeof(FLOAT_TYPE), 5, data)==5) {  
 
             //Narrowing-down the band around center  
             if((c[0] > M_PI_2 - opts->narrowdown) && (c[0] < M_PI_2 + opts->narrowdown)) {
+		 
+		 // shifting c[0] (=frequency) to opts->refr reference frame 
+		 c[0] = c[0] + 2.*c[1]*(sett->N)*(opts->refr - current_frame); 
 
-             // shifting c[0] (=frequency) to opts->refr reference frame 
-             c[0] = c[0] + 2.*c[1]*(sett->N)*(opts->refr - current_frame); 
+		 // #mb todo: deal with the out-of-band candidates 
+		 // c[4] = rho = \sqrt{2(F-2)}
+		 if(((c[0]>0) && (c[0]<M_PI)) && (c[4] > opts->snrcutoff)) {
+		      
+		      // Conversion to linear parameters
+		      //--------------------------------
+		      
+		      tmp[0] = c[0]*sett->N;
+		      tmp[1] = c[1]*sqrN;
 
-              // #mb todo: deal with the out-of-band candidates 
-              // if frequency is in band 
-              // c[4] = 4.0620192023179804 corresponds to F-stat = 10.25
-              // c[4] = 4.1231056256176606 corresponds to F-stat = 10.5
-              // c[4] = 4.2426406871192848 corresponds to F-stat = 11 
-              // c[4] = 4.4721359549995796 corresponds to F-stat = 12
-              // c[4] = 4.5825756949558398 corresponds to F-stat = 12.5
-              // c[4] = 5.0990195135927845 corresponds to F-stat = 15
-              // because
-              // c[4] = rho = \sqrt{2(F-2)}
-              if(((c[0]>0) && (c[0]<M_PI)) && (c[4] > opts->snrcutoff)) {
+		      // Transformation of astronomical to linear coordinates;
+		      // C_EPSMA, an average value of epsm, is defined in settings.h
+		      hemi = ast2lin(c[3], c[2], C_EPSMA, be);
+		      
+		      // tmp[2] corresponds to declination (d), tmp[3] to right ascension (a)
+		      tmp[2] = omsN*be[0];
+		      tmp[3] = omsN*be[1];
 
-                // Conversion to linear parameters
-                //--------------------------------
+		      // Saving candidate values
+		      for(j=0; j<4; j++) {
+			   
+			   // Integer values (0=fi, 1=si, 2=di, 3=ai)
+			   candi[i][j] = round(tmp[0]*v[0][j] + tmp[1]*v[1][j]
+					       + tmp[2]*v[2][j] + tmp[3]*v[3][j] 
+					       + 0.5*shift[j]);
 
-                tmp[0] = c[0]*sett->N;
-                tmp[1] = c[1]*sqrN;
+			   // Astrophysical values (0=f, 1=s, 2=d, 3=a)
+			   // f is shifted to opts->refr time frame
+			   candf[i][j] = c[j];
 
-                // Transformation of astronomical to linear coordinates;
-                // C_EPSMA, an average value of epsm, is defined in settings.h
-                hemi = ast2lin(c[3], c[2], C_EPSMA, be);
+		      }
 
-                // tmp[2] corresponds to declination (d), tmp[3] to right ascension (a)
-                tmp[2] = omsN*be[0];
-                tmp[3] = omsN*be[1];
+		      // Saving the original position, frame number and current index
+		      candi[i][4] = orgpos;
+		      candi[i][5] = current_frame;
+		      candi[i][6] = i;
+		      // Saving the SNR value
+		      candf[i][4] = c[4];
+		      i++;
 
-                // Saving candidate values
-                for(j=0; j<4; j++) {
-
-                  // Integer values (0=fi, 1=si, 2=di, 3=ai)
-                  candi[i][j] = round(tmp[0]*v[0][j] + tmp[1]*v[1][j]
-                              + tmp[2]*v[2][j] + tmp[3]*v[3][j] 
-                              + 0.5*shift[j]);
-
-                  // Astrophysical values (0=f, 1=s, 2=d, 3=a)
-                  // f is shifted to opts->refr time frame
-                  candf[i][j] = c[j];
-
-                }
-
-                // Saving the original position, frame number and current index
-                candi[i][4] = orgpos;
-                candi[i][5] = current_frame;
-                candi[i][6] = i;
-                // Saving the SNR value
-                candf[i][4] = c[4];
-                i++;
-
-             } // if finband
-
+		 } // if finband
+		 
             } // if narrowdown
 
             orgpos++;
@@ -288,156 +271,147 @@ void read_trigger_files(Search_settings *sett,
             // Resizing the candidates' array, if the previous limit is reached
             // (realloc by a factor of 2)
             if(i==candsize) {
+		 
+		 candsize *= REALLOC_FACTOR;
 
-              candsize *= REALLOC_FACTOR;
-
-              ti = realloc(candi, candsize*sizeof(int *)); 
-              if(ti!=NULL) { 
-
-                candi = ti; 
-                for(j=i; j<candsize; j++)
-                  candi[j] = malloc(7*sizeof(int));
-
-              } else { 
-                printf("Problem with memory realloc for candidates array (int)... exiting...\n");
-                exit(EXIT_FAILURE);
-              }
-
-              tf = realloc(candf, candsize*sizeof(FLOAT_TYPE *)); 
-              if(tf!=NULL) { 
-
-                candf = tf; 
-
-                for(j=i; j<candsize; j++)
-                  candf[j] = malloc(5*sizeof(FLOAT_TYPE));
-
-              } else { 
-                printf("Problem with memory realloc for candidates array (astro)... exiting...\n"); 
-                exit(EXIT_FAILURE);
-              }
-
-
+		 ti = realloc(candi, candsize*sizeof(int *)); 
+		 if(ti!=NULL) { 
+		      
+		      candi = ti; 
+		      for(j=i; j<candsize; j++)
+			   candi[j] = malloc(7*sizeof(int));
+		      
+		 } else { 
+		      printf("Problem with memory realloc for candidates array (int)... exiting...\n");
+		      exit(EXIT_FAILURE);
+		 }
+		 
+		 tf = realloc(candf, candsize*sizeof(FLOAT_TYPE *)); 
+		 if(tf!=NULL) { 
+		      
+		      candf = tf; 
+		      
+		      for(j=i; j<candsize; j++)
+			   candf[j] = malloc(5*sizeof(FLOAT_TYPE));
+		      
+		 } else { 
+		      printf("Problem with memory realloc for candidates array (astro)... exiting...\n"); 
+		      exit(EXIT_FAILURE);
+		 }
+		 
             } // candsize realloc 
 
-          } // while fread 
+       } // while fread 
 
 
-          // Frame number  
-          trig->frameinfo[frcount][0] = current_frame;
-          // Number of candidates in band for a given frame 
-          trig->frameinfo[frcount][1] = i;  
-
-
-          // Looking for duplicates and selecting the one with highest SNR
-          //--------------------------------------------------------------
-
-          // Sorting the first 4 columns of candi
-          qsort(candi, trig->frameinfo[frcount][1], sizeof(int *), way2compare_4c);
-
-          int maxsnridx=0, frgoodcands=0;
-          double candsnr=0;  
-          for (i=0; i<trig->frameinfo[frcount][1]; i++) {
-
+       // Frame number  
+       trig->frameinfo[frcount][0] = current_frame;
+       // Number of candidates in band for a given frame 
+       trig->frameinfo[frcount][1] = i;  
+       
+       
+       // Looking for duplicates and selecting the one with highest SNR
+       //--------------------------------------------------------------
+       
+       // Sorting the first 4 columns of candi
+       qsort(candi, trig->frameinfo[frcount][1], sizeof(int *), way2compare_4c);
+       
+       int maxsnridx=0, frgoodcands=0;
+       double candsnr=0;  
+       for (i=0; i<trig->frameinfo[frcount][1]; i++) {
+	    
             int idx, idx1, maxi, diff=1;  
             for(j=0; j<4; j++)
-              // using XOR: !(a^b) equals 1 for a=b
-              //if((candi[i][j])^(candi[i+1][j])) { diff=0; break; }             
-              diff *= !((candi[i][j])^(candi[i+1][j]));
-
+		 // using XOR: !(a^b) equals 1 for a=b
+		 //if((candi[i][j])^(candi[i+1][j])) { diff=0; break; }             
+		 diff *= !((candi[i][j])^(candi[i+1][j]));
+	    
             idx = candi[i][6];
-
+	    
             if(!diff) {
 
-              int k=i, kidx=idx;
-              if(maxsnridx) { k=maxi; kidx=maxsnridx; }
-
-              // Writing to array containing all candidates 
-              for(j=0; j<6; j++)
-                allcandi[goodcands][j] = candi[k][j];
-              allcandi[goodcands][6] = goodcands; 
-
-              for(j=0; j<5; j++)
-                allcandf[goodcands][j] = candf[kidx][j];
-
-              maxsnridx=0;
-              goodcands++;
-              frgoodcands++;
-
-              if(goodcands==allcandsize) {
-
-                allcandsize *= REALLOC_FACTOR;
-
-                ti = realloc(allcandi, allcandsize*sizeof(int *)); 
-                if(ti!=NULL) {
-                  allcandi = ti;
-                  for(j=goodcands; j<allcandsize; j++)
-                    allcandi[j] = malloc(7*sizeof(int));
-                } else { 
-                  printf("Problem with memory realloc for ALL candidates array (int)... exiting...\n");
-                  exit(EXIT_FAILURE);
-                }
-
-                tf = realloc(allcandf, allcandsize*sizeof(FLOAT_TYPE *)); 
-                if(tf!=NULL) { 
-                  allcandf = tf; 
-                  for(j=goodcands; j<allcandsize; j++)
-                    allcandf[j] = malloc(5*sizeof(FLOAT_TYPE));
-                  } else { 
-                    printf("Problem with memory realloc for ALL candidates array (astro)... exiting...\n");
-                    exit(EXIT_FAILURE);
-                  } 
-
-              }
-
-            // The candidate is not unique, selecting the one with the highest SNR
+		 int k=i, kidx=idx;
+		 if(maxsnridx) { k=maxi; kidx=maxsnridx; }
+		 
+		 // Writing to array containing all candidates 
+		 for(j=0; j<6; j++)
+		      allcandi[goodcands][j] = candi[k][j];
+		 allcandi[goodcands][6] = goodcands; 
+		 
+		 for(j=0; j<5; j++)
+		      allcandf[goodcands][j] = candf[kidx][j];
+		 
+		 maxsnridx=0;
+		 goodcands++;
+		 frgoodcands++;
+		 
+		 if(goodcands==allcandsize) {
+		      
+		      allcandsize *= REALLOC_FACTOR;
+		      
+		      ti = realloc(allcandi, allcandsize*sizeof(int *)); 
+		      if(ti!=NULL) {
+			   allcandi = ti;
+			   for(j=goodcands; j<allcandsize; j++)
+				allcandi[j] = malloc(7*sizeof(int));
+		      } else { 
+			   printf("Problem with memory realloc for ALL candidates array (int)... exiting...\n");
+			   exit(EXIT_FAILURE);
+		      }
+		      
+		      tf = realloc(allcandf, allcandsize*sizeof(FLOAT_TYPE *)); 
+		      if(tf!=NULL) { 
+			   allcandf = tf; 
+			   for(j=goodcands; j<allcandsize; j++)
+				allcandf[j] = malloc(5*sizeof(FLOAT_TYPE));
+		      } else { 
+			   printf("Problem with memory realloc for ALL candidates array (astro)... exiting...\n");
+			   exit(EXIT_FAILURE);
+		      } 
+		      
+		 }
+		 
+		 // The candidate is not unique, selecting the one with the highest SNR
             } else {
+		 
+		 idx1 = candi[i+1][6];
 
-              idx1 = candi[i+1][6];
+		 if(!maxsnridx) {  
 
-              if(!maxsnridx) {  
-
-                maxsnridx = (candf[idx][4] > candf[idx1][4] ? idx : idx1);  
-                maxi = (candf[idx][4] > candf[idx1][4] ? i : i+1);
-                candsnr = candf[maxsnridx][4];    
-
-              } else {
-
-                if(candf[idx][4] > candsnr) {
-                  maxsnridx = idx; maxi = i; 
-                  candsnr = candf[idx][4]; 
-                } else if(candf[idx1][4] > candsnr) {
-                  maxsnridx = idx1; maxi = i+1; 
-                  candsnr = candf[idx1][4];
-                }
-              }
+		      maxsnridx = (candf[idx][4] > candf[idx1][4] ? idx : idx1);  
+		      maxi = (candf[idx][4] > candf[idx1][4] ? i : i+1);
+		      candsnr = candf[maxsnridx][4];    
+		      
+		 } else {
+		      
+		      if(candf[idx][4] > candsnr) {
+			   maxsnridx = idx; maxi = i; 
+			   candsnr = candf[idx][4]; 
+		      } else if(candf[idx1][4] > candsnr) {
+			   maxsnridx = idx1; maxi = i+1; 
+			   candsnr = candf[idx1][4];
+		      }
+		 }
             }
-          }
+       }
+       
+       // Number of unique candidates in a given frame
+       trig->frameinfo[frcount][2] = frgoodcands;
+       printf("%d/%d  [unique/inband]\n", trig->frameinfo[frcount][2], trig->frameinfo[frcount][1]);
 
-          // Number of unique candidates in a given frame
-          trig->frameinfo[frcount][2] = frgoodcands;
-          printf("%d/%d\n", trig->frameinfo[frcount][2], trig->frameinfo[frcount][1]);
-
-        } else { 
-          printf("Problem with %s...\n", filename);  
-          perror (filename);
-        }
-
-      memset(filename, 0, sizeof(filename)); 
-      fclose(data); 
-
-      } // if(((ep->d_type == DT_REG) ...
-
-    } // while ((ep = readdir (dp))) 
-
-  } // if (dp != NULL)  
-
-  (void) closedir(dp);
+       memset(filename, 0, sizeof(filename)); 
+       fclose(data); 
+       
+  } //   while(fgets(line, sizeof(line), infile)) 
 
   trig->frcount = frcount;
   trig->goodcands = goodcands;
 
   printf("Total number of candidates from all frames: %d\n", trig->goodcands);
 
+  //exit(0);
+  
+    
   // Looking for coincidences (the same integer values) among different frames
   //--------------------------------------------------------------------------
 
@@ -489,8 +463,8 @@ void read_trigger_files(Search_settings *sett,
   // Coincidences above opts->mincoin threshold 
   //-------------------------------------------
   memset(outname, 0, sizeof(outname));
-  sprintf(outname, "%s/%04d_%d-%d-%d-%d_%s.coi", 
-    opts->prefix, opts->shift, opts->scalef, opts->scales, opts->scaled, opts->scalea, opts->trigname);
+  sprintf(outname, "%s/%04d_%d-%d-%d-%d_%04d_%1d.coi", 
+	  opts->prefix, opts->shift, opts->scalef, opts->scales, opts->scaled, opts->scalea, opts->band, opts->hemi);
   data = fopen(outname, "w"); 
 
   int q, maxcoin = imtr[0][1], maxcoinindex=0; 
@@ -584,13 +558,14 @@ void read_trigger_files(Search_settings *sett,
 
     mean[4] = sqrt(mean[4]); // SNR mean: sqrt of sum of squares  
  
-    fprintf(stderr, "%s %04d %5f %5hu %5d %15.8le %5.8le %5.8le %5.8le %5le ", 
-      opts->trigname, opts->shift, sett->fpo, trig->frcount, maxcoin,   
-      mean[0], mean[1], mean[2], mean[3], mean[4]);
+    fprintf(stderr, "%04d_%1d %04d %5f %5hu %5d %15.8le %5.8le %5.8le %5.8le %5le ", 
+	    opts->band, opts->hemi, opts->shift, sett->fpo, trig->frcount, maxcoin,   
+	    mean[0], mean[1], mean[2], mean[3], mean[4]);
 
     // info about time segments: frame number, all, unique candidates 
     for(i=1; i<=trig->frcount; i++) 
-      fprintf(stderr, "%d %d %d ", trig->frameinfo[i][0], trig->frameinfo[i][1], trig->frameinfo[i][2]); 
+	 fprintf(stderr, "%d %d %d ", trig->frameinfo[i][0],
+		 trig->frameinfo[i][1], trig->frameinfo[i][2]); 
 
     // Frame numbers participating in the coincidence 
     for(i=0; i<maxcoin; i++)

@@ -58,9 +58,10 @@ void handle_opts_coinc(
 		       int argc,  
 		       char* argv[]);  
 
-void manage_grid_matrix(
-			Search_settings *sett,
-			Command_line_opts_coinc *opts);
+void manage_grid_matrix_old( Search_settings *sett,
+			     Command_line_opts_coinc *opts);
+
+void manage_grid_matrix( Search_settings *sett, char *gridfile );
 
 void convert_to_linear(
 		       Search_settings *sett,

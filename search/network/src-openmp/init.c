@@ -138,7 +138,7 @@ void handle_opts( Search_settings *sett,
       printf("-usedet       Use only detectors from string (default is use all available)\n");
       printf("-addsig       Add signal with parameters from <file>\n");
       printf("-nod          Number of days\n");
-      printf("-narrowdown   Narrow-down the frequency band (range [0, 0.5] +- around center)\n\n");
+      printf("-narrowdown   Narrow-down the frequency band (range [0, 0.5] +- around center)\n");
       printf("-overlap      Band overlap, fpo=10+(1-overlap)*band/(dt*2) ; obligatory if band is used\n\n");
 
 
@@ -873,8 +873,10 @@ void plan_fftw(
    * (see http://www.fftw.org/fftw3_doc/Wisdom.html)
    */ 
 
+#if defined(_OPENMP)
   fftw_init_threads();
-
+#endif
+  
   gethostname(hostname, 512);
   sprintf (wfilename, "wisdom-%s.dat", hostname);
   if((wisdom = fopen (wfilename, "r")) != NULL) {
@@ -898,9 +900,11 @@ void plan_fftw(
   // Change FFTW_MEASURE to FFTW_PATIENT for more optimized plan
   // (takes more time to generate the wisdom file)
   plans->plan = fftw_plan_dft_1d(sett->nfftf, fftw_arr->xa, fftw_arr->xa, FFTW_FORWARD, FFTW_MEASURE);
-
+  
+#if defined(_OPENMP)
   fftw_plan_with_nthreads(omp_get_max_threads());
-
+#endif
+  
   plans->pl_int = fftw_plan_dft_1d(sett->nfft, fftw_arr->xa, fftw_arr->xa, FFTW_FORWARD, FFTW_MEASURE);
 	                             
   plans->pl_inv = fftw_plan_dft_1d(sett->Ninterp, fftw_arr->xa, fftw_arr->xa, FFTW_BACKWARD, FFTW_MEASURE);
@@ -1022,16 +1026,15 @@ void cleanup(
 	/*	Command line options handling: coincidences  
 	 */ 
 	
-void handle_opts_coinc(
-    Search_settings *sett, 
-    Command_line_opts_coinc *opts,
-	int argc, 
-	char* argv[]) {
+void handle_opts_coinc( Search_settings *sett,
+			Command_line_opts_coinc *opts,
+			int argc,
+			char* argv[]) {
 	
   opts->wd=NULL;
 	
   strcpy (opts->prefix, TOSTR(PREFIX));
-  strcpy (opts->dtaprefix, TOSTR(DTAPREFIX));
+  //strcpy (opts->dtaprefix, TOSTR(DTAPREFIX));
 
   // Initial value of the number of days is set to 0
   sett->nod = 0;
@@ -1052,8 +1055,13 @@ void handle_opts_coinc(
   opts->shift=0;
 
   // Default value of the cell scaling: 1111 (no scaling)
-  opts->scale=1111;
+  opts->scalef=4;
+  opts->scales=4;
+  opts->scaled=4;
+  opts->scalea=4;
 
+  sett->fpo = -1;
+  
   // Default signal-to-noise threshold cutoff
   opts->snrcutoff=6;
 
@@ -1072,14 +1080,18 @@ void handle_opts_coinc(
       {"output", required_argument, 0, 'o'},
       // input data directory
       {"data", required_argument, 0, 'd'},
+      // frequency band number
+      {"band", required_argument, 0, 'b'},
       // fpo value
       {"fpo", required_argument, 0, 'p'},
       // data sampling time 
       {"dt", required_argument, 0, 't'},
-      // triggers' name prefactor 
-      {"trigname", required_argument, 0, 'e'},
-      // Location of the reference grid.bin and starting_date files  
-      {"refloc", required_argument, 0, 'g'},
+      // hemisphere
+      {"hemi", required_argument, 0, 'e'},
+      // a file with input files (triggers + grids)
+      {"infiles", required_argument, 0, 'i'},
+      // Location of the reference frame grid
+      {"refgrid", required_argument, 0, 'g'},
       // Minimal number of coincidences recorded in the output  
       {"mincoin", required_argument, 0, 'm'},
       // Narrow down the frequency band (+- the center of band) 
@@ -1088,6 +1100,8 @@ void handle_opts_coinc(
       {"snrcutoff", required_argument, 0, 'c'},
       // number of days in the time-domain segment 
       {"nod", required_argument, 0, 'y'},
+      // band overlap
+      {"overlap", required_argument, 0, 'v'},
       {0, 0, 0, 0}
     };
 
@@ -1096,20 +1110,22 @@ void handle_opts_coinc(
       printf("polgraw-allsky periodic GWs: search for concidences among candidates\n");
       printf("Usage: ./coincidences -[switch1] <value1> -[switch2] <value2> ...\n") ;
       printf("Switches are:\n\n");
-      printf("-data         Data directory (default is ./candidates)\n");
       printf("-output       Output directory (default is ./coinc-results)\n");
       printf("-shift        Cell shifts in fsda directions (4 digit number, e.g. 0101, default 0000)\n");
-      printf("-scale        Cell scaling in fsda directions (4 digit number, e.g. 4824, default 1111)\n");
+      printf("-scale        Cell scaling in fsda directions (coma separated, e.g. 32,8,4,4, default 4,4,4,4)\n");
       printf("-refr         Reference frame number\n");
+      printf("-band         Band number\n");
       printf("-fpo          Reference band frequency fpo value\n");
       printf("-dt           Data sampling time dt (default value: 0.5)\n");
-      printf("-trigname     Part of triggers' name (for identifying files)\n");
-      printf("-refloc       Location of the reference grid.bin and starting_date files\n");
+      printf("-infile       File containing the list of trigger and grid files\n");      
+      printf("-hemi         Hemisphere (used for labeling)\n");
+      printf("-refgrid      Location of the reference frame grid\n");
       printf("-mincoin      Minimal number of coincidences recorded\n");
       printf("-narrowdown   Narrow-down the frequency band (range [0, 0.5] +- around center)\n");
       printf("-nod          Number of days\n");
-      printf("-snrcutoff    Signal-to-noise threshold cutoff (default value: 6)\n\n");
-
+      printf("-snrcutoff    Signal-to-noise threshold cutoff (default value: 6)\n");
+      printf("-overlap      Band overlap, fpo=10+(1-overlap)*band/(dt*2) ; obligatory if band is used\n\n");
+      
       printf("Also:\n\n");
       printf("--help		This help\n");
 
@@ -1117,54 +1133,63 @@ void handle_opts_coinc(
     }
 
     int option_index = 0;
-    int c = getopt_long_only (argc, argv, "p:o:d:s:z:r:t:e:g:m:n:c:y:", long_options, &option_index);
+    int c = getopt_long_only (argc, argv, "p:o:s:z:r:t:e:g:m:n:c:y:b:v:i:", long_options, &option_index);
     if (c == -1)
       break;
 
     switch (c) {
     case 'p':
-      sett->fpo = atof(optarg);
-      break;
+	 sett->fpo = atof(optarg);
+	 break;
     case 's': // Cell shifts 
-      opts->shift = atof(optarg);
-      break;
-    case 'z': // Cell scaling   
-      opts->scale = atoi(optarg);
-      break;
+	 opts->shift = atof(optarg);
+	 break;
+    case 'z': // Cell scaling
+	 opts->scalef = atoi(strtok(optarg,","));
+	 opts->scales = atoi(strtok(NULL,","));
+	 opts->scaled = atoi(strtok(NULL,","));
+	 opts->scalea = atoi(strtok(NULL,","));      
+	 break;
     case 'r':
-      opts->refr = atoi(optarg);
-      break;
+	 opts->refr = atoi(optarg);
+	 break;
     case 'o':
-      strcpy(opts->prefix, optarg);
-      break;
-    case 'd':
-      strcpy(opts->dtaprefix, optarg);
-      break;
+	 strcpy(opts->prefix, optarg);
+	 break;
     case 't':
-      sett->dt = atof(optarg);
-      break;
+	 sett->dt = atof(optarg);
+	 break;
+    case 'i':
+	 strcpy(opts->infile, optarg);
+	 break;
     case 'e':
-      strcpy(opts->trigname, optarg);
-      break;
+	 opts->hemi = atoi(optarg);
+	 break;
     case 'g':
-      strcpy(opts->refloc, optarg);
-      break;
+	 strcpy(opts->refgrid, optarg);
+	 break;
     case 'm':
-      opts->mincoin = atoi(optarg);
-      break;
+	 opts->mincoin = atoi(optarg);
+	 break;
     case 'n':
-      opts->narrowdown = atof(optarg);
-      break;
+	 opts->narrowdown = atof(optarg);
+	 break;
     case 'c':
-      opts->snrcutoff = atof(optarg);
-      break;
+	 opts->snrcutoff = atof(optarg);
+	 break;
     case 'y':
-      sett->nod = atoi(optarg);
-      break;
+	 sett->nod = atoi(optarg);
+	 break;
+    case 'b':
+	 opts->band = atoi(optarg);
+	 break;
+    case 'v':
+	 opts->overlap = atof(optarg);
+	 break;
     case '?':
-      break;
+	 break;
     default:
-      break ;
+	 break ;
     } /* switch c */
   } /* while 1 */
 
@@ -1183,16 +1208,47 @@ void handle_opts_coinc(
   printf("corresponding to F-statistic value of %.12f\n", 
     pow(opts->snrcutoff, 2)/2. + 2); 
 
+  if(!(opts->band)) { 
+       printf("Band is not set... Exiting\n"); 
+       exit(EXIT_FAILURE);
+  }
+  if(!(opts->hemi)) { 
+       printf("Hemisphere is not set... Exiting\n"); 
+       exit(EXIT_FAILURE);
+  }
+  if(!(opts->overlap)) { 
+       printf("Band overlap is not set... Exiting\n"); 
+       exit(EXIT_FAILURE);
+  }
+  
+  printf("Band=%04d  Hemisphere=%1d  Overlap=%f\n", opts->band, opts->hemi, opts->overlap);
+  
+  // Starting band frequency:
+  // fpo_val is optionally read from the command line
+  // Its initial value is set to -1
+  if (!(sett->fpo >= 0)) {
+       if (opts->band > 0 && opts->overlap >=0.) {
+	    sett->fpo = 10. + (1. - opts->overlap)*opts->band*(0.5/sett->dt);
+       } else {
+	    printf("Band AND overlap or fpo must be specified!\n");
+	    exit(EXIT_FAILURE);
+       }
+  }
+  printf("The reference frequency fpo is %f\n", sett->fpo);
+
+  printf("Cell scaling factors are: %d %d %d %d\n", opts->scalef, opts->scales,
+	 opts->scaled, opts->scalea);
+  
 } // end of command line options handling: coincidences  
 
 
+#if 0
+/* Manage grid matrix (read from grid.bin, find eigenvalues 
+ * and eigenvectors) and reference GPS time from starting_time
+ * (expected to be in the same directory)    
+ */ 
 
-	/* Manage grid matrix (read from grid.bin, find eigenvalues 
-	 * and eigenvectors) and reference GPS time from starting_time
-     * (expected to be in the same directory)    
-	 */ 
-
-void manage_grid_matrix(
+void manage_grid_matrix_old(
 	Search_settings *sett, 
 	Command_line_opts_coinc *opts) {
 
@@ -1299,5 +1355,90 @@ void manage_grid_matrix(
   gsl_matrix_free (evec);
 
 } // end of manage grid matrix  
+#endif
+
+void manage_grid_matrix( Search_settings *sett, char *gridfile ) {
+
+  FILE *data;
+
+  sett->M = (double *)calloc(16, sizeof (double));
+
+  if ((data=fopen(gridfile, "r")) != NULL) {
+       printf("Reading grid file: %s\n", gridfile);
+       fread ((void *)&sett->fftpad, sizeof (int), 1, data);
+       //printf("fftpad from the grid file: %d\n", sett->fftpad); 
+       fread ((void *)sett->M, sizeof(double), 16, data);
+       // We actually need the second (Fisher) matrix from grid.bin, 
+       // hence the second fread: 
+       fread ((void *)sett->M, sizeof(double), 16, data);
+       fclose (data);
+  } else {
+       perror(gridfile);
+       exit(EXIT_FAILURE);
+  }
 
 
+  // Calculating the eigenvectors and eigenvalues 
+  gsl_matrix_view m = gsl_matrix_view_array(sett->M, 4, 4);
+
+  gsl_vector *eval = gsl_vector_alloc(4);
+  gsl_matrix *evec = gsl_matrix_alloc(4, 4);
+
+  gsl_eigen_symmv_workspace *w = gsl_eigen_symmv_alloc(4); 
+  gsl_eigen_symmv(&m.matrix, eval, evec, w);
+  gsl_eigen_symmv_free(w);
+
+  double eigval[4], eigvec[4][4]; 
+  // Saving the results to the settings struct sett->vedva[][]
+  int i, j;
+  for(i=0; i<4; i++) { 
+       eigval[i] = gsl_vector_get(eval, i); 
+       gsl_vector_view evec_i = gsl_matrix_column(evec, i);
+       
+       for(j=0; j<4; j++)   
+	    eigvec[j][i] = gsl_vector_get(&evec_i.vector, j);               
+  }
+
+  // This is an auxiliary matrix composed of the eigenvector 
+  // columns multiplied by a matrix with sqrt(eigenvalues) on diagonal  
+  for(i=0; i<4; i++) { 
+       for(j=0; j<4; j++) { 
+	    sett->vedva[i][j]  = eigvec[i][j]*sqrt(eigval[j]); 
+//        printf("%.12le ", sett->vedva[i][j]); 
+       } 
+//      printf("\n"); 
+  }
+
+
+/* 
+  //#mb matrix generated in matlab, for tests 
+  double _tmp[4][4] = { 
+    {-2.8622034614137332e-001, -3.7566564762376159e-002, -4.4001551065376701e-012, -3.4516253934827171e-012}, 
+    {-2.9591999145463371e-001, 3.6335210834374479e-002, 8.1252443441098394e-014, -6.8170555119669981e-014}, 
+    {1.5497867603229576e-005, 1.9167007413107127e-006, 1.0599051611325639e-008, -5.0379548388381567e-008}, 
+    {2.4410008440913992e-005, 3.2886518554938671e-006, -5.7338464150027107e-008, -9.3126913365595100e-009},
+  };
+
+  { int i,j; 
+  for(i=0; i<4; i++) 
+    for(j=0; j<4; j++) 
+      sett->vedva[i][j]  = _tmp[i][j]; 
+  }
+
+  printf("\n"); 
+
+  { int i, j; 
+  for(i=0; i<4; i++) { 
+    for(j=0; j<4; j++) {
+        printf("%.12le ", sett->vedva[i][j]);
+      }
+      printf("\n"); 
+  } 
+
+ } 
+*/ 
+
+  gsl_vector_free (eval);
+  gsl_matrix_free (evec);
+
+} // end of manage grid matrix  
