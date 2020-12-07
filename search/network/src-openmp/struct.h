@@ -7,7 +7,7 @@
 #define MAX_DETECTORS 8        // Maximum number of detectors in network 
 #define DETNAME_LENGTH 2       // Detector name length (H1, L1, V1...)
 #define XDATNAME_LENGTH 512    // Maximum length of input file name xdat*bin 
-#define INICANDSIZE 1024       // 1048576? Initial size for array candidates storage; 
+#define INICANDSIZE 1048576    // Initial size for array candidates storage; 
                                // realloc called if needed (in coincidences)  
 
 #define MAXL 8192              // Max number of veto lines in band
