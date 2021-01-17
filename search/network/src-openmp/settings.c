@@ -44,8 +44,10 @@ void search_settings(Search_settings* sett) {
 
   //#mb ranges of spindown (RDC O1)
   double fdotmin, fdotmax; 
-  fdotmin = 0.5e-8; 
-  fdotmax = 0.5e-9; 
+  //fdotmin = 0.5e-8; 
+  //fdotmax = 0.5e-9; 
+  fdotmin = 3e-10; 
+  fdotmax = 1e-10; 
 
   Smax = 2.*M_PI*fdotmin*dt*dt;
   Smin = 2.*M_PI*fdotmax*dt*dt;
