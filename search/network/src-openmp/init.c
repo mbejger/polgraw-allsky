@@ -1086,8 +1086,6 @@ void handle_opts_coinc( Search_settings *sett,
       {"fpo", required_argument, 0, 'p'},
       // data sampling time 
       {"dt", required_argument, 0, 't'},
-      // hemisphere
-      {"hemi", required_argument, 0, 'e'},
       // a file with input files (triggers + grids)
       {"infiles", required_argument, 0, 'i'},
       // Location of the reference frame grid
@@ -1118,7 +1116,6 @@ void handle_opts_coinc( Search_settings *sett,
       printf("-fpo          Reference band frequency fpo value\n");
       printf("-dt           Data sampling time dt (default value: 0.5)\n");
       printf("-infile       File containing the list of trigger and grid files\n");      
-      printf("-hemi         Hemisphere (used for labeling)\n");
       printf("-refgrid      Location of the reference frame grid\n");
       printf("-mincoin      Minimal number of coincidences recorded\n");
       printf("-narrowdown   Narrow-down the frequency band (range [0, 0.5] +- around center)\n");
@@ -1133,7 +1130,7 @@ void handle_opts_coinc( Search_settings *sett,
     }
 
     int option_index = 0;
-    int c = getopt_long_only (argc, argv, "p:o:s:z:r:t:e:g:m:n:c:y:b:v:i:", long_options, &option_index);
+    int c = getopt_long_only (argc, argv, "p:o:s:z:r:t:g:m:n:c:y:b:v:i:", long_options, &option_index);
     if (c == -1)
       break;
 
@@ -1161,9 +1158,6 @@ void handle_opts_coinc( Search_settings *sett,
 	 break;
     case 'i':
 	 strcpy(opts->infile, optarg);
-	 break;
-    case 'e':
-	 opts->hemi = atoi(optarg);
 	 break;
     case 'g':
 	 strcpy(opts->refgrid, optarg);
@@ -1212,16 +1206,15 @@ void handle_opts_coinc( Search_settings *sett,
        printf("Band is not set... Exiting\n"); 
        exit(EXIT_FAILURE);
   }
-  if(!(opts->hemi)) { 
-       printf("Hemisphere is not set... Exiting\n"); 
-       exit(EXIT_FAILURE);
-  }
   if(!(opts->overlap)) { 
        printf("Band overlap is not set... Exiting\n"); 
        exit(EXIT_FAILURE);
   }
   
-  printf("Band=%04d  Hemisphere=%1d  Overlap=%f\n", opts->band, opts->hemi, opts->overlap);
+  printf("Band=%04d  Overlap=%f\n", opts->band, opts->overlap);
+
+  // hemi must be decoded from filename
+  opts->hemi = -1;
   
   // Starting band frequency:
   // fpo_val is optionally read from the command line
@@ -1404,7 +1397,7 @@ void manage_grid_matrix( Search_settings *sett, char *gridfile ) {
   for(i=0; i<4; i++) { 
        for(j=0; j<4; j++) { 
 	    sett->vedva[i][j]  = eigvec[i][j]*sqrt(eigval[j]); 
-//        printf("%.12le ", sett->vedva[i][j]); 
+	    //printf("%.12le ", sett->vedva[i][j]); 
        } 
 //      printf("\n"); 
   }
