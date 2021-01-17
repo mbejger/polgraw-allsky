@@ -93,6 +93,10 @@ void search(
   // Allocate buffer for triggers
   sgnlv = (FLOAT_TYPE *)calloc(NPAR*2*sett->nfft, sizeof(FLOAT_TYPE));
 
+  // open mode for trig file (append only if checkpointing)
+  int tmode = O_WRONLY|O_CREAT;
+  if(opts->checkp_flag) tmode = O_WRONLY|O_CREAT|O_APPEND;
+
   state = NULL;
   if(opts->checkp_flag) 
     state = fopen (opts->qname, "w");
@@ -130,37 +134,35 @@ void search(
 	/* Add trigger parameters to a file */
 	// if enough signals found (no. of signals > half length of buffer)
 	if (sgnlc > sett->nfft || save_state == 1) {
-	  if((fd = open (outname, 
-			 O_WRONLY|O_CREAT|O_APPEND, S_IRUSR|
-			 S_IWUSR|S_IRGRP|S_IROTH)) < 0) {
-	    perror(outname);
-	    return;
-	  }
+	     if((fd = open (outname, tmode, S_IRUSR|S_IWUSR|S_IRGRP)) < 0) {
+		  perror(outname);
+		  return;
+	     }
 
 #ifdef USE_LOCKING
-	  lck.l_type = F_WRLCK;
-	  lck.l_whence = 0;
-	  lck.l_start = 0L;
-	  lck.l_len = 0L;
-          if (fcntl (fd, F_SETLKW, &lck) < 0) perror ("fcntl()");
+	     lck.l_type = F_WRLCK;
+	     lck.l_whence = 0;
+	     lck.l_start = 0L;
+	     lck.l_len = 0L;
+	     if (fcntl (fd, F_SETLKW, &lck) < 0) perror ("fcntl()");
 #endif
-          write(fd, (void *)(sgnlv), sgnlc*NPAR*sizeof(FLOAT_TYPE));
-	  totsgnl += sgnlc;
-          if (close(fd) < 0) perror ("close()");
-	  sgnlc=0;
-	
-	  if(opts->checkp_flag) {
-	    ftruncate(fileno(state), 0);  
-	    fprintf(state, "%d %d %d %d %d\n", pm, mm, nn+1, s_range->sst, *FNum);
-	    fseek(state, 0, SEEK_SET);
-	    if (save_state == 1) {
-	      //printf("%d %d %d %d %d\n", pm, mm, nn+1, s_range->sst, *FNum);
-	      printf("\nState saved after signal\nExiting\n");
-	      exit(EXIT_SUCCESS);
-	    }
-	  }
-	  save_state = 0;
-
+	     write(fd, (void *)(sgnlv), sgnlc*NPAR*sizeof(FLOAT_TYPE));
+	     totsgnl += sgnlc;
+	     if (close(fd) < 0) perror ("close()");
+	     sgnlc=0;
+	     
+	     if(opts->checkp_flag) {
+		  ftruncate(fileno(state), 0);  
+		  fprintf(state, "%d %d %d %d %d\n", pm, mm, nn+1, s_range->sst, *FNum);
+		  fseek(state, 0, SEEK_SET);
+		  if (save_state == 1) {
+		       //printf("%d %d %d %d %d\n", pm, mm, nn+1, s_range->sst, *FNum);
+		       printf("\nState saved after signal\nExiting\n");
+		       exit(EXIT_SUCCESS);
+		  }
+	     }
+	     save_state = 0;
+	     
 	} /* if sgnlc > sett-nfft */
       } // for nn
       s_range->nst = s_range->nr[0];
@@ -168,11 +170,9 @@ void search(
     s_range->mst = s_range->mr[0]; 
 
     // Write the leftover from the last iteration of the buffer 
-    if((fd = open(outname, 
-		  O_WRONLY|O_CREAT|O_APPEND, S_IRUSR|
-		  S_IWUSR|S_IRGRP|S_IROTH)) < 0) {
-      perror(outname);
-      return; 
+    if((fd = open(outname, tmode, S_IRUSR|S_IWUSR|S_IRGRP)) < 0) {
+	 perror(outname);
+	 return; 
     }
 
 #ifdef USE_LOCKING
