@@ -68,9 +68,10 @@ void handle_opts( Search_settings *sett,
   opts->checkp_flag=0;
   opts->veto_flag=0; 
   opts->overlap=-1.;
+  opts->gen_vlines_flag=0;
   
   static int help_flag=0, white_flag=0, s0_flag=0, 
-             checkp_flag=1, veto_flag=0;
+             checkp_flag=1, veto_flag=0, gen_vlines_flag=0;
 
   // Reading arguments 
 
@@ -80,7 +81,8 @@ void handle_opts( Search_settings *sett,
       {"whitenoise", no_argument, &white_flag, 1},
       {"nospindown", no_argument, &s0_flag, 1},
       {"nocheckpoint", no_argument, &checkp_flag, 0},
-      {"vetolines", no_argument, &veto_flag, 1}, 
+      {"vetolines", no_argument, &veto_flag, 1},
+      {"genvlines", no_argument, &gen_vlines_flag, 1},
       // frame number
       {"ident", required_argument, 0, 'i'},
       // frequency band number
@@ -147,6 +149,7 @@ void handle_opts( Search_settings *sett,
       printf("--nospindown      Spindowns neglected\n");
       printf("--nocheckpoint    State file won't be created (no checkpointing)\n");
       printf("--vetolines       Veto known lines from files in data directory\n");
+      printf("--genvlines       Generate .vlines file and exit\n");
       printf("--help            This help\n");
 
       exit(EXIT_SUCCESS);
@@ -234,6 +237,7 @@ void handle_opts( Search_settings *sett,
   opts->s0_flag = s0_flag;
   opts->checkp_flag = checkp_flag;
   opts->veto_flag = veto_flag; 
+  opts->gen_vlines_flag = gen_vlines_flag;
 
   printf("Input data directory is %s\n", opts->dtaprefix);
   printf("Output directory is %s\n", opts->prefix);

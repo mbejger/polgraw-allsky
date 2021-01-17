@@ -91,12 +91,12 @@ int main (int argc, char* argv[]) {
   // Narrowing-down the band (excluding the edges 
   // according to the opts.narrowdown parameter)
   // adds two lines
-  if(opts.narrowdown < 0.5*M_PI)
-    narrow_down_band(&sett, &opts);
+  if(opts.narrowdown < 0.5*M_PI) narrow_down_band(&sett, &opts);
   
   // Reading veto lines data from external files
   printf("Reading veto files...\n");
   read_lines(&sett, &opts);
+  if (opts.gen_vlines_flag) exit(EXIT_SUCCESS);
 
   // Amplitude modulation functions for each detector  
   for(i=0; i<sett.nifo; i++)   

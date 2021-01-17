@@ -19,7 +19,8 @@ typedef struct _comm_line_opts {
   int white_flag, 		// white noise flag
       s0_flag,			// no spin-down flag
       checkp_flag,		// checkpointing flag
-      veto_flag,                // veto lines flag 
+      veto_flag,                // veto lines flag (apply veto lines)
+      gen_vlines_flag,          // (re)generate .vlines files and exit
       help_flag;
   
   int fftinterp;
