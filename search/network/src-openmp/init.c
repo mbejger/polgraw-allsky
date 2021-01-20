@@ -950,11 +950,11 @@ void read_checkpoints(
       if((fscanf(state, "%d %d %d %d %d", &s_range->pst, &s_range->mst,
 		      &s_range->nst, &s_range->sst, FNum)) == EOF) {
 
-        // This means that state file is empty (=end of the calculations)
-		    fprintf (stderr, "State file empty: nothing to do...\n");
-		    fclose (state);
-		    return;
-
+	   // This means that state file is empty (=end of the calculations)
+	   fprintf (stderr, "State file empty: nothing to do...\n");
+	   fclose (state);
+	   exit(EXIT_FAILURE);
+	   
       }
 
       fclose (state);

@@ -93,13 +93,11 @@ void search(
   // Allocate buffer for triggers
   sgnlv = (FLOAT_TYPE *)calloc(NPAR*2*sett->nfft, sizeof(FLOAT_TYPE));
 
-  // open mode for trig file (append only if checkpointing)
-  int tmode = O_WRONLY|O_CREAT;
-  if(opts->checkp_flag) tmode = O_WRONLY|O_CREAT|O_APPEND;
+  // open mode for trig file
+  int tmode = O_WRONLY|O_CREAT|O_APPEND;
 
   state = NULL;
-  if(opts->checkp_flag) 
-    state = fopen (opts->qname, "w");
+  if(opts->checkp_flag) state = fopen (opts->qname, "w");
   
   /* Loop over hemispheres */ 
   
@@ -107,6 +105,9 @@ void search(
 
     sprintf (outname, "%s/triggers_%03d_%04d%s_%d.bin", 
 	     opts->prefix, opts->ident, opts->band, opts->label, pm);
+    // remove existing trigger file if checkpointing is disabled
+    if(! opts->checkp_flag) remove(outname);
+
     totsgnl = 0;
     /* Two main loops over sky positions */ 
     
