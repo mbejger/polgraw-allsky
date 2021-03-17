@@ -1,4 +1,4 @@
-TARGET = gwsearch-cpu-omp-broadwell-dev7-sc
+TARGET = gwsearch-cpu-omp-haswell-dev7-sci-narrowspnd
 
 VER := $(shell git rev-parse HEAD)
 
@@ -15,9 +15,9 @@ CFLAGS = -DPREFIX="./candidates" -DCODEVER=$(VER) -DTIMERS=1 -D$(SINCOS) -UUSE_L
 CFLAGS += -I$(FFTW_DIR)/include 
 CFLAGS += -g -Wall -Wno-unused -fno-omit-frame-pointer \
 	  -O3 -funsafe-loop-optimizations -funroll-loops \
-	  -march=broadwell -mtune=broadwell -mavx2 -msse4.2 -mfma \
+	  -march=haswell -mtune=haswell -mavx2 -mfma \
 	  -ffast-math
-#
+#	  -march=broadwell -mtune=broadwell -mavx2 -msse4.2 -mfma \
 # 	  -march=sandybridge -mtune=sandybridge -mavx
 #	  -march=haswell -mtune=haswell -mavx2 -mfma
 #	  -march=corei7-avx -mtune=corei7-avx -mavx
