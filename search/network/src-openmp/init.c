@@ -901,13 +901,13 @@ void plan_fftw(
 
   sett->nfftf = sett->fftpad*sett->nfft;
 
-  // Change FFTW_MEASURE to FFTW_PATIENT for more optimized plan
-  // (takes more time to generate the wisdom file)
-  plans->plan = fftw_plan_dft_1d(sett->nfftf, fftw_arr->xa, fftw_arr->xa, FFTW_FORWARD, FFTW_MEASURE);
-  
 #if defined(_OPENMP)
   fftw_plan_with_nthreads(omp_get_max_threads());
 #endif
+  
+  // Change FFTW_MEASURE to FFTW_PATIENT for more optimized plan
+  // (takes more time to generate the wisdom file)
+  plans->plan = fftw_plan_dft_1d(sett->nfftf, fftw_arr->xa, fftw_arr->xa, FFTW_FORWARD, FFTW_MEASURE);
   
   plans->pl_int = fftw_plan_dft_1d(sett->nfft, fftw_arr->xa, fftw_arr->xa, FFTW_FORWARD, FFTW_MEASURE);
 	                             
