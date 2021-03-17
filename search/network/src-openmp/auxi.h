@@ -30,6 +30,8 @@ int ast2lin(FLOAT_TYPE alfa, FLOAT_TYPE delta, double epsm, double *be);
 void spline(complex double *, int, complex double *);
 complex double splint (complex double *, complex double *, int, double);
 void splintpad (complex double *, double *, int, int, complex double*);
+void linterp (complex double *, double *, int, int, complex double*);
+void triginterp (complex double *ya, complex double *yb, double *shftf, int N, int nfft, complex double *outa, complex double *outb);
 double var (double *, int);
 
 void gridr (double *, int *, int *, int *, double, double);

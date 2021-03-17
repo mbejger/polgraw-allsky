@@ -359,39 +359,39 @@ int job_core(int pm,                   // Hemisphere
 	fftw_arr->xa[i] = ifo[n].sig.xDatma[i];
 	fftw_arr->xb[i] = ifo[n].sig.xDatmb[i];
       }
- 
+
       // Zero-padding (filling with 0s up to sett->nfft, 
       // the nearest power of 2)
 #pragma omp for schedule(static,CHUNK)
       for (i=sett->N; i<sett->nfft; ++i) {
-	fftw_arr->xa[i] = 0.;
-	fftw_arr->xb[i] = 0.;
+	   fftw_arr->xa[i] = 0.;
+	   fftw_arr->xb[i] = 0.;
       }
       
     } //omp parallel
 
+    //printf("before xdatma: %f  %f   %f   %f   %f\n", creal(ifo[n].sig.xDatma[2100]), cimag(ifo[n].sig.xDatma[2100]),  
+    //	   creal(ifo[n].sig.xDatma[5000]), cimag(ifo[n].sig.xDatma[5000]), ifo[n].sig.shftf[2100] );
+
     fftw_execute_dft(plans->pl_int,fftw_arr->xa,fftw_arr->xa);  //forward fft (len nfft)
     fftw_execute_dft(plans->pl_int,fftw_arr->xb,fftw_arr->xb);  //forward fft (len nfft)
 
+#if 1
     // move frequencies from second half of spectrum; 
     // and zero frequencies higher than nyquist
     // loop length: nfft - nyqst = nfft - nfft/2 - 1 = nfft/2 - 1
 
-    for(i=nyqst + sett->Ninterp - sett->nfft, j=nyqst; i<sett->Ninterp; ++i, ++j) {
-      fftw_arr->xa[i] = fftw_arr->xa[j];
-      //fftw_arr->xa[j] = 0.;
-    }
-    for(i=nyqst; i<nyqst + sett->Ninterp - sett->nfft; ++i) {
-      fftw_arr->xa[i] = 0.;
-    }
+    for(i=nyqst + sett->Ninterp - sett->nfft, j=nyqst; i<sett->Ninterp; ++i, ++j)
+	 fftw_arr->xa[i] = fftw_arr->xa[j];
 
-    for(i=nyqst + sett->Ninterp - sett->nfft, j=nyqst; i<sett->Ninterp; ++i, ++j) {
-      fftw_arr->xb[i] = fftw_arr->xb[j];
-      //fftw_arr->xb[j] = 0.;
-    }
-    for(i=nyqst; i<nyqst + sett->Ninterp - sett->nfft; ++i) {
-      fftw_arr->xb[i] = 0.;
-    }
+    for(i=nyqst; i<nyqst + sett->Ninterp - sett->nfft; ++i)
+	 fftw_arr->xa[i] = 0.;
+    
+    for(i=nyqst + sett->Ninterp - sett->nfft, j=nyqst; i<sett->Ninterp; ++i, ++j)
+	 fftw_arr->xb[i] = fftw_arr->xb[j];
+
+    for(i=nyqst; i<nyqst + sett->Ninterp - sett->nfft; ++i)
+	 fftw_arr->xb[i] = 0.;
 
     // Backward fft (len Ninterp = nfft*interpftpad)
     fftw_execute_dft(plans->pl_inv,fftw_arr->xa,fftw_arr->xa);
@@ -410,6 +410,23 @@ int job_core(int pm,                   // Hemisphere
 	      sett->interpftpad, ifo[n].sig.xDatma);   
     splintpad(fftw_arr->xb, ifo[n].sig.shftf, sett->N, 
 	      sett->interpftpad, ifo[n].sig.xDatmb);
+
+/*
+    // alternative linear interpolation
+    linterp(fftw_arr->xa, ifo[n].sig.shftf, sett->N, 
+	      sett->interpftpad, ifo[n].sig.xDatma);   
+    linterp(fftw_arr->xb, ifo[n].sig.shftf, sett->N, 
+	      sett->interpftpad, ifo[n].sig.xDatmb);
+*/
+#endif
+#if 0
+    // alternative trigonometric interpolation
+    triginterp(fftw_arr->xa, fftw_arr->xb, ifo[n].sig.shftf, sett->N, sett->nfft, ifo[n].sig.xDatma, ifo[n].sig.xDatmb);
+    printf("after xdatma: %f  %f   %f   %f\n", creal(ifo[n].sig.xDatma[2100]), cimag(ifo[n].sig.xDatma[2100]),  
+	   creal(ifo[n].sig.xDatma[5000]), cimag(ifo[n].sig.xDatma[5000] ) );
+//    exit(1);
+#endif
+
 
   } // end of detector loop 
 
@@ -707,24 +724,20 @@ int job_core(int pm,                   // Hemisphere
       (*FNum)++;
 
       
-#if 0
-      FILE *f1 = fopen("fraw-1.dat", "w");
-      for(i=sett->nmin; i<sett->nmax; i++)
-	fprintf(f1, "%d   %lf   %lf\n", i, F[i], 2.*M_PI*i/((double) sett->fftpad*sett->nfft) + sgnl0);
-      fclose(f1);
-#endif 
+#undef FSTATDEB
+#ifdef FSTATDEB
+      // warning: use with nthreads=1
+      static double *fraw;
+      static int ifile=0;
+      if (!fraw) fraw = (double *) malloc((sett->nmax-sett->nmin)*sizeof(double));
+      memcpy(fraw, F+sett->nmin, (sett->nmax-sett->nmin)*sizeof(double));
+#endif
 
 #ifndef NORMTOMAX
-      //#define NAVFSTAT 4096
+      double pxout=0.;
       // Normalize F-statistics 
       if(!(opts->white_flag))  // if the noise is not white noise
-        FStat(F + sett->nmin, sett->nmax - sett->nmin, NAVFSTAT, 0);
-
-      // f1 = fopen("fnorm-4096-1.dat", "w");
-      //for(i=sett->nmin; i<sett->nmax; i++)
-      //fprintf(f1, "%d   %lf   %lf\n", i, F[i], 2.*M_PI*i/((double) sett->fftpad*sett->nfft) + sgnl0);
-      //fclose(f1);
-      //      exit(EXIT_SUCCESS);
+	   pxout=FStat(F + sett->nmin, sett->nmax - sett->nmin, NAVFSTAT, 0);
 
       for(i=sett->nmin; i<sett->nmax; i++) {
         if ((Fc = F[i]) > opts->trl) { // if F-stat exceeds trl (critical value)
@@ -742,6 +755,32 @@ int job_core(int pm,                   // Hemisphere
 	  // Signal-to-noise ratio
 	  sgnlt[4] = sqrt(2.*(Fc-sett->nd));
 	  
+#ifdef FSTATDEB
+	  if (pxout < 0.6) {
+	       printf("pxout  mm=%d  nn=%d  ss=%d\n", mm, nn, ss );
+	  }
+	  //if (sgnlt[4] > 7.1 && sgnlt[0]< 2.984513) {
+	  //if ( (mm==-10 && nn==-18 && ss==100) || (mm==-10 && nn==-18 && ss==-175)) {
+	  if ( (mm==-61 && nn==-32 && ss==273) ) {
+	       char f1name[32];
+	       ifile++;
+	       sprintf(f1name, "fraw-%d.dat", ifile);
+	       FILE *f1 = fopen(f1name, "w");
+	       for(i=0; i<(sett->nmax-sett->nmin); i++)
+		    fprintf(f1, "%d   %lf   %lf  %lf  %lf  %lf %lf\n", i, fraw[i], 2.*M_PI*i/((double) sett->fftpad*sett->nfft) + sgnl0, 
+			    //	    sqr(creal(fxa[i])), sqr(cimag(fxa[i])), sqr(creal(fxb[i])), sqr(cimag(fxb[i])) );
+			    sqr(creal( ifo[0].sig.xDatma[2*i] )), sqr(cimag(ifo[0].sig.xDatmb[2*i])), sqr(creal(ifo[1].sig.xDatma[2*i])), sqr(cimag(ifo[1].sig.xDatmb[2*i])) );
+	       fclose(f1);
+
+	       sprintf(f1name, "fnorm-%d.dat", ifile);
+	       f1 = fopen(f1name, "w");
+	       for(i=sett->nmin; i<sett->nmax; i++)
+		    fprintf(f1, "%d   %lf   %lf\n", i, F[i], 2.*M_PI*i/((double) sett->fftpad*sett->nfft) + sgnl0);
+	       fclose(f1);
+	       printf("Dump mm=%d  nn=%d  ss=%d  al1=%.17g   al2=%.17g   oms=%.17g   one=%.17g\n", mm, nn, ss, al1, al2, sett->oms, (sqr(al1)+sqr(al2))/sqr(sett->oms) );
+	       //exit(EXIT_SUCCESS);
+	  }
+#endif
 	  // Checking if signal is within a known instrumental line 
 	  int k, veto_status = 0; 
 	  for(k=0; k<sett->numlines_band; k++){

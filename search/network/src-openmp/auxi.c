@@ -132,6 +132,79 @@ void splintpad (complex double *ya, double *shftf, int N, int interpftpad,
 } /* splintpad */
 
 
+// pci test
+void linterp (complex double *ya, double *shftf, int N, int interpftpad,
+	      complex double *out) {
+     /* linear interpolation
+	Input:
+	ya[i] - value of the function being interpolated in x_i = i,
+	for i = 0 .. (interpftpad*N-1)
+	Interpolating spline will be calculated at the points interpftpad*(i-shftf[i]), for i = 0 .. (N-1);
+	N - number of output data points.
+	Output:
+	out[i] - value of the interpolating function at interpftpad*(i-shftf[i]).
+     */
+     
+     double x;
+     int i;
+     
+     for (i=0; i<N; ++i) {
+	  x = interpftpad*(i-shftf[i]);
+	  int i1 = (int) x;
+	  int i2 = i1+1;
+	  double dx = x-i1;
+	  double dya_abs = cabs(ya[i2]) - cabs(ya[i1]);
+	  double dya_arg = carg(ya[i2]) - carg(ya[i1]);
+	  //out[i] = (ya[i2]-ya[i1])*dx;
+	  out[i] = dya_abs*dx*cexp(dya_arg*dx*I);
+     }
+     
+}
+
+
+
+// test version
+void triginterp (complex double *ya, complex double *yb, double *shftf, int N, int nfft, complex double *outa, complex double *outb) {
+     /* trigonometric interpolation - direct sum of fourier modes
+	Input:
+	ya[i], yb[i] - value of the function being interpolated in x_i = i,
+	for i = 0 .. (N-1)
+	Interpolating spline will be calculated at the points (i-shftf[i]), for i = 0 .. (N-1);
+	N - number of output data points.
+	Output:
+	outa[i], outb[i] - value of the interpolating function at (i-shftf[i]).
+     */
+     
+     double x;
+     int i, k;
+     complex double ef, ff, oua, oub;
+     double invnfft = 1./nfft;
+
+     ef = 2*M_PI*invnfft*I;
+     
+     for (i=0; i<N; ++i) {
+	  x = (double)i-shftf[i];
+	  ff = ef*x;
+	  oua = 0.;
+	  oub = 0.;
+#if defined(_OPENMP)
+#pragma omp parallel for default(shared) schedule(static) reduction(+:oua,oub)
+#endif
+	  for (k=0; k<nfft; ++k) {
+	       oua += ya[k] * cexp(ff*k);
+	       oub += yb[k] * cexp(ff*k);
+	  }
+
+	  outa[i] = oua*invnfft;
+	  outb[i] = oub*invnfft;
+	  //printf("i=%d   ya = %f %f   out = %f %f\n", i, creal(ya[i]), cimag(ya[i]), creal(out[i]), cimag(out[i]) );
+     }
+     //i=2100;
+     //printf("i=%d   ya = %f %f   out = %f %f\n", i, creal(ya[i]), cimag(ya[i]), creal(outa[i]), cimag(outa[i]) );
+}
+
+
+
 double var (double *x, int n) {
   /* var(x, n) returns the variance (square of the standard deviation)
      of a given vector x of length n.
@@ -231,7 +304,7 @@ double FStat (double *F, int nfft, int nav, int indx) {
   // indx - block index
 
   int i, j;
-  double mu, *fr, pxout=0.;
+  double mu, *fr, pxout=100.;
 
   indx /= nav;
   fr = F;
@@ -240,8 +313,8 @@ double FStat (double *F, int nfft, int nav, int indx) {
     for (i=0; i<nav; i++)
       mu += *fr++;
     mu /= 2.*nav;
-    if (j == indx)
-      pxout = mu;
+    if (mu<0.6) pxout=mu; // pci test
+    //if (j == indx) pxout = mu;
     fr -= nav;
     for (i=0; i<nav; i++)
       *fr++ /= mu;
