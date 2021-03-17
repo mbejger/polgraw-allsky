@@ -42,12 +42,15 @@ void search_settings(Search_settings* sett) {
   Smax = 2.*M_PI*(sett->fpo + B)*dt*dt/(2.*Smin);   
   */
 
+  double fdotmin, fdotmax;
+#if 0
   //#mb ranges of spindown (RDC O1)
-  double fdotmin, fdotmax; 
-  //fdotmin = 0.5e-8; 
-  //fdotmax = 0.5e-9; 
-  fdotmin = 3e-10; 
-  fdotmax = 1e-10; 
+  fdotmin = 5.e-9; 
+  fdotmax = 5.e-10; 
+#else
+  fdotmin = 3e-10;
+  fdotmax = 5e-11;
+#endif
 
   Smax = 2.*M_PI*fdotmin*dt*dt;
   Smin = 2.*M_PI*fdotmax*dt*dt;
