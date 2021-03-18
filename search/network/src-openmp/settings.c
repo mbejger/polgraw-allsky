@@ -43,13 +43,13 @@ void search_settings(Search_settings* sett) {
   */
 
   double fdotmin, fdotmax;
-#if 0
+#if 1
   //#mb ranges of spindown (RDC O1)
   fdotmin = 5.e-9; 
   fdotmax = 5.e-10; 
 #else
-  fdotmin = 3e-10;
-  fdotmax = 5e-11;
+  fdotmin = 1e-10;
+  fdotmax = 1e-11;
 #endif
 
   Smax = 2.*M_PI*fdotmin*dt*dt;
