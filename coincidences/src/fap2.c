@@ -11,6 +11,8 @@
 #include "settings.h"
 #include "struct.h"
 
+#define MAXCOMB 1.e9
+
 int FalseAlarmProb(int, int, double, int*, double *);
 
 
@@ -332,7 +334,7 @@ int FalseAlarmProb(
 	double P[5], Q[5], Ctmp[5]={0.};
 
 	double ncomb = gsl_sf_choose(L,i);
-	if ( ncomb < 1.e9 ) {
+	if ( ncomb < MAXCOMB ) {
 	    printf("[ncomb=%.1e][exa]", ncomb);
 	    cp = gsl_combination_calloc(L, i);
 	    cq = gsl_combination_alloc(L, L-i);
