@@ -55,6 +55,9 @@ fap_new_coi_header: fap_new_coi_header.o settings.o auxi.o
 fap_new_coi_header_hyper_improved: fap_new_coi_header_hyper_improved.o settings.o auxi.o
 	$(CC) -o $@ $^ -lc -lrt -lm -lgsl -lgslcblas -lfftw3
 
+fap2: fap2.o settings.o auxi.o
+	$(CC) -o $@ $^ -lc -lrt -lm -lgsl -lgslcblas -lfftw3
+
 doc:
 	doxygen ../doc/Doxyfile
 
