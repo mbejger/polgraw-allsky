@@ -35,7 +35,7 @@ int main (int argc, char *argv[]) {
 
     // Initial value of the band number is set to 0 
     opts.band = 0; 
-    opts.overlap = 0.1;
+    opts.overlap = -1.;
     
     opts.help_flag=0;
     static int help_flag=0;  
@@ -156,7 +156,7 @@ int main (int argc, char *argv[]) {
     
     
     // Check if sett.nod was set up, if not, exit
-    if(!(sett.nod)||!(opts.band)|!(opts.overlap)) { 
+    if(!(sett.nod)||!(opts.band)|(opts.overlap < 0.)) { 
         printf("Number of days or band number not set... Exiting\n"); 
 	exit(EXIT_FAILURE); 
     } 
@@ -166,13 +166,13 @@ int main (int argc, char *argv[]) {
     printf("Input data: %s\n", datafile);
     printf("Grid matrix data directory: %s\n", griddir);
 
-    printf("Band number: %04d (veto fraction: %f)\n", opts.band, vetofrac);
-
     // Starting band frequency:
     //sett.fpo = 10. + 0.96875*opts.band*(0.5/sett.dt);
     sett.fpo = 10. + (1. - opts.overlap)*opts.band*(0.5/sett.dt);
 
-    printf("The reference frequency fpo: %f\n", sett.fpo);
+    printf("Band number, reference frequency fpo: %04d , %f\n", opts.band, sett.fpo);
+    printf("Band veto fraction: %f\n", vetofrac);
+
     printf("The data sampling time dt: %f\n", sett.dt); 
     printf("FAP threshold: %f\n", threshold); 
 
@@ -205,7 +205,6 @@ int main (int argc, char *argv[]) {
 
 /*
   printf("gamrn matrix from grid.bin:\n");
-
   printf("%e %e %e %e\n", gamrn[0], gamrn[1], gamrn[2], gamrn[3]);
   printf("%e %e %e %e\n", gamrn[4], gamrn[5], gamrn[6], gamrn[7]);
   printf("%e %e %e %e\n", gamrn[8], gamrn[9], gamrn[10], gamrn[11]);
@@ -274,7 +273,10 @@ int main (int argc, char *argv[]) {
 
 	FalseAlarmProb(noc, nof, Nc, &Nku[0], &fap[0]);
 
-	fprintf(stderr, "FAP results:\n%d %d ", nof, Nkall);
+	printf("FAP results:\n");
+	fflush(stdout);
+
+	fprintf(stderr, "%d %d ", nof, Nkall);
 
 	for(i=noc; i<=nof; i++) {
 	    //#mb hack - fabs because for nonphysical noc FAP equals -inf  
@@ -326,12 +328,12 @@ int FalseAlarmProb(
     // Calculate C[i] - probability of i coincidences in any given call (and l-th correction for shifts)
     for(i=noc; i<=L; i++) {
 
-	fprintf(stderr, "n=%3d ", i);
+	printf("n=%3d ", i);
 	double P[5], Q[5], Ctmp[5]={0.};
 
 	double ncomb = gsl_sf_choose(L,i);
 	if ( ncomb < 1.e9 ) {
-	    fprintf(stderr,"[ncomb=%.1e][exa]", ncomb);
+	    printf("[ncomb=%.1e][exa]", ncomb);
 	    cp = gsl_combination_calloc(L, i);
 	    cq = gsl_combination_alloc(L, L-i);
 	    gsl_combination_init_last(cq);
@@ -367,18 +369,18 @@ int FalseAlarmProb(
 	       
 	} else {
 
-	    fprintf(stderr,"[ncomb=%8e][avg]", ncomb);
+	    printf("[ncomb=%8e][avg]", ncomb);
 	    for(l=0; l<5; l++)
 		Ctmp[l]= ncomb*pow(eeavg[l],i)*pow(1.-eeavg[l],L-i);
 
 	}
 
-	fprintf(stderr, " C[%3d] = [ ", i);
+	printf(" C[%3d] = [ ", i);
 	for(l=0; l<5; l++){
 	    C[i][l] = Ctmp[l]; // probability of i coincidences between L frames
-	    fprintf(stderr, "%12.6e  ", C[i][l]);
+	    printf("%12.6e  ", C[i][l]);
 	}
-	fprintf(stderr, "]\n");
+	printf("]\n");
 
     } // i
 
@@ -386,7 +388,7 @@ int FalseAlarmProb(
     // pf - probability of i or more coincidences in any given cell
     for(i=noc; i<=L; i++) {  
 	for(l=0; l<5; l++){
-#if 1
+#if 0
 	    // like in the old version
 	    pf[i][l] = C[i][l];
 #else
@@ -419,9 +421,9 @@ int FalseAlarmProb(
     }
 
 #if 0
-    fprintf(stderr,"FAP results:\n");
+    printf("FAP results:\n");
     for(i=noc; i<=L; i++){
-	fprintf(stderr, "%hu %le ", i, fap[i]);
+	printf("%hu %le ", i, fap[i]);
     }
     printf("\n");
 
