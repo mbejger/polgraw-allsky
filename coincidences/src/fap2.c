@@ -253,50 +253,76 @@ int main (int argc, char *argv[]) {
     // Read the coincidence data 
     //--------------------------  
 
-    if ((data=fopen (datafile, "r")) != NULL) {
-
-	short int i, shift, nof, band, hemi;
-	double fpofile;  
-
-	status = fscanf(data, "%hu", &nof); 
-
-	int Nk[nof], Nku[nof], frn[nof], Nkall=0;
-
-	// Frames information: frame number, no. of candidates, no. of unique candidates 
-	for(i=0; i<nof; i++) { 
-	    status = fscanf(data, "%d %d %d", &frn[i], &Nk[i], &Nku[i]);
-	    //fprintf(stderr,"%d %d %d ", frn[i], Nk[i], Nku[i]); 
-	    Nkall += Nku[i]; 
-	} 
-
-
-	double *fap;
-	fap = (double *)malloc( (nof+1)*sizeof(double)  );
-
-	FalseAlarmProb(noc, nof, Nc, &Nku[0], &fap[0]);
-
-	printf("FAP results:\n");
-	fflush(stdout);
-
-	fprintf(stderr, "%d %d ", nof, Nkall);
-
-	for(i=noc; i<=nof; i++) {
-	    //#mb hack - fabs because for nonphysical noc FAP equals -inf  
-	    //if(fabs(FAP) < threshold) 
-	    fprintf(stderr, "%hu %le ", i, fap[i]); 
-	}
-    
-	fprintf(stderr, "\n"); 
- 
-    } else {
+    if ((data=fopen (datafile, "r")) == NULL) {
 	perror (filename);
 	exit(EXIT_FAILURE);
     }
-  
-    fclose (data);
-  
-    return 0;
- 
+
+    
+    char *line, str[32], bandstr[5], *shift, hemi[1], *rest, *t_;
+    ssize_t lsize;
+    size_t len=0;
+    sprintf(bandstr, "%04d", opts.band);
+    double f;
+    int nof, ncoinc, offset;
+
+
+    while ((lsize = getline(&line, &len, data)) != -1) {
+	if( line[0] == '%') continue;
+	strcpy(str, strtok(line," \r\n"));
+	if ( strstr(str, bandstr) == NULL ) continue;
+	strcpy(hemi, &str[5]);
+
+	shift = strtok(NULL," \r\n");
+        //printf("band=%s hemi=%s shift=%s\n", bandstr, hemi, shift);
+	//printf("rest=%s\n ", shift + strlen(shift)+1 );
+	f = atof(strtok(NULL," \r\n")); // fpo
+	if (fabs(sett.fpo-f) > 1.e-10 ) {
+	    printf("Inconsistency! Calculated fpo = %f  differs from value in the input file: %f\n", sett.fpo, f);
+	}
+	nof = atoi(strtok(NULL," \r\n"));
+	ncoinc = atoi(strtok(NULL," \r\n"));
+	strtok(NULL," \r\n"); // f of coincidence
+	strtok(NULL," \r\n"); // spindown of coincidence
+	strtok(NULL," \r\n"); // dec of coincidence
+	strtok(NULL," \r\n"); // ra of coincidence
+	t_ = strtok(NULL," \r\n"); // snr of coincidence
+	rest = t_ + strlen(t_) + 1;
+
+	printf( "%f %d %d\n", f, nof, ncoinc);
+
+	int Nk[nof], Nku[nof], frn[nof], Nkall=0;    
+	// Frames information: frame number, no. of candidates, no. of unique candidates 
+	for(i=0; i<nof; i++) {
+	    sscanf(rest, "%d %d %d%n", &frn[i], &Nk[i], &Nku[i], &offset);
+	    //printf("%d %d %d ", frn[i], Nk[i], Nku[i]);
+	    Nkall += Nku[i]; 
+	    rest += offset;
+	}
+    
+	double *fap;
+	fap = (double *)malloc( (nof+1)*sizeof(double) );
+    
+	FalseAlarmProb(noc, nof, Nc, &Nku[0], &fap[0]);
+    
+	printf("FAP results:\n");
+	fflush(stdout);
+    
+	fprintf(stderr, "%04d %s %s %d %d ", opts.band, hemi, shift, nof, Nkall);
+    
+	for(i=noc; i<=nof; i++) {
+	    //#mb hack - fabs because for nonphysical noc FAP equals -inf  
+	    //if(fabs(FAP) < threshold) 
+	    fprintf(stderr, "%ld %le ", i, fap[i]); 
+	}
+    
+	fprintf(stderr, "\n"); 
+    
+	fclose (data);
+    }
+
+    exit(EXIT_SUCCESS);
+
 }
 
 
@@ -371,7 +397,7 @@ int FalseAlarmProb(
 	       
 	} else {
 
-	    printf("[ncomb=%8e][avg]", ncomb);
+	    printf("[ncomb=%.1e][avg]", ncomb);
 	    for(l=0; l<5; l++)
 		Ctmp[l]= ncomb*pow(eeavg[l],i)*pow(1.-eeavg[l],L-i);
 
