@@ -3,13 +3,12 @@ TARGET=coincidences-haswell-dev7
 SEARCH_DIR=../../search/network/src-openmp
 
 # FFTW_DIR - fftw location, remember to compile it with optimizations (e.g. avx)
-#FFTW_DIR = /opt/fftw/3.3.5/gnu-omp-devtoolset3
 FFTW_DIR = /opt/fftw/3.3.7-gcc7.2-mvapich2.2
 
 CC = gcc -std=gnu11 -static-libgcc
 # pre-processor flags: TIMERS, VERBOSE (rich stdout output)
 #CFLAGS = -DPREFIX="./candidates" -DTIMERS
-CFLAGS = -I$(SEARCH_DIR) -I$(FFTW_DIR)/include
+CFLAGS = -I$(SEARCH_DIR) -I$(FFTW_DIR)/include $(shell gsl-config --cflags)
 CFLAGS += -g -Wall -Wno-unused -fno-omit-frame-pointer \
 	  -O3 -funsafe-loop-optimizations -funroll-loops \
 	  -march=haswell -mtune=haswell -mavx2 -mfma
@@ -22,11 +21,11 @@ CFLAGS += -g -Wall -Wno-unused -fno-omit-frame-pointer \
 #westmere (plgrid)
 	#-march=corei7 -mtune=corei7
 
-LDFLAGS = -L$(FFTW_DIR)/lib
+LDFLAGS=-L$(FFTW_DIR)/lib -L$(shell gsl-config --prefix)/lib
 
-LOADLIBES = -Wl,--dynamic-linker=/lib64/ld-linux-x86-64.so.2 \
-	    -static -lfftw3 -lgsl -lgslcblas \
-	    -Wl,-Bdynamic -lc -lrt -lm
+LOADLIBES=-Wl,--dynamic-linker=/lib64/ld-linux-x86-64.so.2 \
+	  -static -lfftw3 -lgsl -lgslcblas \
+	  -Wl,-Bdynamic -lc -lrt -lm
 
 
 all: $(TARGET)
@@ -44,7 +43,6 @@ init.o: $(SEARCH_DIR)/init.c  $(SEARCH_DIR)/settings.h $(SEARCH_DIR)/struct.h $(
 
 auxi.o: $(SEARCH_DIR)/auxi.c $(SEARCH_DIR)/auxi.h
 	$(CC) $(CFLAGS) -c -o $@ $<
-#$(CC) -c -g -O3 -Wall -o $@ $<
 
 fap: fap.o settings.o auxi.o
 	$(CC) -o $@ $^ -lc -lrt -lm -lgsl -lgslcblas -lfftw3
@@ -56,7 +54,7 @@ fap_new_coi_header_hyper_improved: fap_new_coi_header_hyper_improved.o settings.
 	$(CC) -o $@ $^ -lc -lrt -lm -lgsl -lgslcblas -lfftw3
 
 fap2: fap2.o settings.o auxi.o
-	$(CC) -o $@ $^ -lc -lrt -lm -lgsl -lgslcblas -lfftw3
+	$(CC) $(LDFLAGS) $^ $(LOADLIBES) -o $@
 
 doc:
 	doxygen ../doc/Doxyfile

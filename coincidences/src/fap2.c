@@ -5,13 +5,15 @@
 #include <gsl/gsl_linalg.h>
 #include <gsl/gsl_sf_gamma.h>
 #include <gsl/gsl_combination.h>
+#include <gsl/gsl_statistics_int.h>
 #include <getopt.h>
 
 #include "auxi.h"
 #include "settings.h"
 #include "struct.h"
 
-#define MAXCOMB 1.e9
+#define MAXCOMB 1.e10
+#define AVG_MEDIAN
 
 int FalseAlarmProb(int, int, double, int*, double *);
 
@@ -184,7 +186,7 @@ int main (int argc, char *argv[]) {
     // Search settings
     //----------------
 
-    search_settings(&sett); 
+    search_settings(&sett);
 
     // Observation time  
     To = sett.N*sett.dt;
@@ -235,6 +237,7 @@ int main (int argc, char *argv[]) {
     // Values of fdotmin and fdotmax recovered from settings.c 
     fdotmin = sett.Smax/(2*M_PI*sett.dt*sett.dt); 
     fdotmax = sett.Smin/(2*M_PI*sett.dt*sett.dt); 
+    printf("fdotmin, fdotmax: %e , %e\n", fdotmin, fdotmax);
 
     f_max = sett.fpo + sett.B; f_min = sett.fpo; 
 
@@ -262,10 +265,11 @@ int main (int argc, char *argv[]) {
     char *line, str[32], bandstr[5], *shift, hemi[1], *rest, *t_;
     ssize_t lsize;
     size_t len=0;
-    sprintf(bandstr, "%04d", opts.band);
     double f;
     int nof, ncoinc, offset;
+    double *fap=NULL;
 
+    sprintf(bandstr, "%04d", opts.band);
 
     while ((lsize = getline(&line, &len, data)) != -1) {
 	if( line[0] == '%') continue;
@@ -289,21 +293,18 @@ int main (int argc, char *argv[]) {
 	t_ = strtok(NULL," \r\n"); // snr of coincidence
 	rest = t_ + strlen(t_) + 1;
 
-	printf( "%f %d %d\n", f, nof, ncoinc);
-
-	int Nk[nof], Nku[nof], frn[nof], Nkall=0;    
+	int Nk_, Nku[nof], frn_, Nkall=0;
 	// Frames information: frame number, no. of candidates, no. of unique candidates 
 	for(i=0; i<nof; i++) {
-	    sscanf(rest, "%d %d %d%n", &frn[i], &Nk[i], &Nku[i], &offset);
+	    sscanf(rest, "%d %d %d%n", &frn_, &Nk_, &Nku[i], &offset);
 	    //printf("%d %d %d ", frn[i], Nk[i], Nku[i]);
-	    Nkall += Nku[i]; 
+	    Nkall += Nku[i];
 	    rest += offset;
 	}
     
-	double *fap;
 	fap = (double *)malloc( (nof+1)*sizeof(double) );
     
-	FalseAlarmProb(noc, nof, Nc, &Nku[0], &fap[0]);
+	FalseAlarmProb(noc, nof, Nc, &Nku[0], fap);
     
 	printf("FAP results:\n");
 	fflush(stdout);
@@ -311,16 +312,15 @@ int main (int argc, char *argv[]) {
 	fprintf(stderr, "%04d %s %s %d %d ", opts.band, hemi, shift, nof, Nkall);
     
 	for(i=noc; i<=nof; i++) {
-	    //#mb hack - fabs because for nonphysical noc FAP equals -inf  
-	    //if(fabs(FAP) < threshold) 
 	    fprintf(stderr, "%ld %le ", i, fap[i]); 
 	}
     
 	fprintf(stderr, "\n"); 
-    
-	fclose (data);
-    }
+	free(fap);
+    } // while
 
+    fclose (data);
+    
     exit(EXIT_SUCCESS);
 
 }
@@ -337,21 +337,32 @@ int FalseAlarmProb(
     ) {
      
     int i, j, k, l;
-    double ee[L][5], eeavg[5]={0.};
+    double ee[L][5], eemean[5]={0.}, eemedian[5]={0.}, *eeavg, Nkmedian;
     double C[L+1][5], pf[L+1][5];
-
+    
     gsl_combination *cp, *cq;
     size_t *cpd, *cqd;
 
 
     for(i=0; i<L; i++){    //#mb length(Nk)
 	for(l=0; l<5; l++){
-	    ee[i][l] = Nk[i]/(Nc*pow(2,l));
-	    eeavg[l] += ee[i][l];
+	    ee[i][l] = (double)Nk[i]/(Nc*pow(2,l));
+	    eemean[l] += ee[i][l];
 	}
     }
     for(l=0; l<5; l++)
-	eeavg[l] /= L;
+	eemean[l] /= L;
+    Nkmedian = (double)gsl_stats_int_median(Nk, 1, L);
+    for(l=0; l<5; l++)
+	eemedian[l] =  Nkmedian/(Nc*pow(2,l));
+    printf("ee_median[0]=%f    ee_mean[0]=%f   Nc=%f\n", Nkmedian/Nc, eemean[0], Nc);
+#ifdef AVG_MEAN
+    printf("Averaging ee with mean!\n");
+    eeavg = eemean;
+#else
+    printf("Averaging ee with median!\n");
+    eeavg = eemedian;
+#endif
 
     // Calculate C[i] - probability of i coincidences in any given call (and l-th correction for shifts)
     for(i=noc; i<=L; i++) {
