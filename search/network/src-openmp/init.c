@@ -513,7 +513,9 @@ void add_signal(
     // the grid size and the reference frame 
     // (for which the signal freq. is not spun-down/up)
 
-    fscanf (data, "%s", amporsnr);    
+    do {  
+	fscanf (data, "%s", amporsnr);
+    } while ( strcmp(amporsnr, "amp")!=0 && strcmp(amporsnr, "snr")!=0 );
 
     if(!strcmp(amporsnr, "amp")) { 
       fscanf (data, "%le %d %d", &h0, &gsize, &reffr); 
