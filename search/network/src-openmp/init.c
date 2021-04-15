@@ -548,8 +548,11 @@ void add_signal(
   sgnlo[0] += -2.*sgnlo[1]*(sett->N)*(reffr - opts->ident); 
  
   // Check if the signal is in band 
+/*
   if(sgnlo[0]<0) exit(171);          // &laquo;  
   else if (sgnlo[0]>M_PI) exit(187); // &raquo;
+*/
+
 
   cof = sett->oms + sgnlo[0]; 
   
@@ -602,6 +605,12 @@ void add_signal(
   printf("%d %d %d %d %d %d %d %d\n", \
    s_range->spndr[0], s_range->spndr[1], s_range->nr[0], s_range->nr[1],
    s_range->mr[0], s_range->mr[1], s_range->pmr[0], s_range->pmr[1]);
+
+
+  if( sgnlo[0]<0 || sgnlo[0]>M_PI ) {
+      printf("add_signal(): signal out of band, f=%le\n", sgnlo[0]);
+      return;
+  }
 
   // sgnlo[2]: declination, sgnlo[3]: right ascension 
   sindadd = sin(sgnlo[2]); 
