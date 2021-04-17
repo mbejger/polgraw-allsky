@@ -553,7 +553,6 @@ void add_signal(
   else if (sgnlo[0]>M_PI) exit(187); // &raquo;
 */
 
-
   cof = sett->oms + sgnlo[0]; 
   
   for(i=0; i<2; i++) sgnlol[i] = sgnlo[i]; 
@@ -585,8 +584,8 @@ void add_signal(
   gsl_linalg_LU_solve (&m.matrix, p, &b.vector, x);
   
   s_range->spndr[0] = round(gsl_vector_get(x,1)); 
-  s_range->nr[0] 	= round(gsl_vector_get(x,2));
-  s_range->mr[0] 	= round(gsl_vector_get(x,3));
+  s_range->nr[0]    = round(gsl_vector_get(x,2));
+  s_range->mr[0]    = round(gsl_vector_get(x,3));
   
   gsl_permutation_free (p);
   gsl_vector_free (x);
@@ -606,9 +605,9 @@ void add_signal(
    s_range->spndr[0], s_range->spndr[1], s_range->nr[0], s_range->nr[1],
    s_range->mr[0], s_range->mr[1], s_range->pmr[0], s_range->pmr[1]);
 
-
+  // Check if the signal is in band 
   if( sgnlo[0]<0 || sgnlo[0]>M_PI ) {
-      printf("add_signal(): signal out of band, f=%le\n", sgnlo[0]);
+      printf("add_signal(): signal out of band f=%le s=%le\n", sgnlo[0], sgnlo[1]);
       return;
   }
 
