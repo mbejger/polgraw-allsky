@@ -34,7 +34,7 @@ void search_settings(Search_settings* sett) {
   nfft = 1 << (int)ceil(log(N)/log(2.));    // length of FFT
   s = 1;                                    // No. of spindowns
 
-  /*
+  /* 
   Smin = 1000.*C_YEARSEC;                   // Minimum spindown time 
                                             // [sec.]
 
@@ -42,16 +42,18 @@ void search_settings(Search_settings* sett) {
   Smax = 2.*M_PI*(sett->fpo + B)*dt*dt/(2.*Smin);   
   */
 
+  // spindown range of NS
+  // we assume minimum NS age 1000 yr
   double fdotmin, fdotmax;
-#if 1
-  //#mb ranges of spindown (RDC O1)
-  fdotmin = 5.e-9; 
-  fdotmax = 5.e-10; 
-#else
-  fdotmin = 1e-10;
-  fdotmax = 1e-11;
-#endif
+  if (sett->fpo < 200.) {
+      fdotmin = (sett->fpo+B)/(2.*1000.*C_YEARSEC);
+      fdotmax = 0.;
+  } else {
+      fdotmin = 1e-10;
+      fdotmax = 1e-11;
+  }
 
+  // dimensionless spindown range
   Smax = 2.*M_PI*fdotmin*dt*dt;
   Smin = 2.*M_PI*fdotmax*dt*dt;
 
@@ -77,17 +79,15 @@ void search_settings(Search_settings* sett) {
   // The value of sett->fftpad (zero padding - original grids: 2, new grids: 1) 
   // is read from the grid.bin file in read_grid() (see init.c)
   
-#if 1 
   sett->nmin = sett->fftpad*NAV*sett->B;
   sett->nmax = (sett->nfft/2 - NAV*sett->B)*sett->fftpad;
-#else
-  sett->nmin = pow(2,-6)*sett->nfft/2*sett->fftpad;
-  sett->nmax = (1 - pow(2,-6))*sett->nfft/2*sett->fftpad;
-#endif
-  printf("------------------------ Settings -------------------------\n");
-  printf(" B         N          nfft         Fstat_nmin    Fstat_nmax\n");
-  printf("%6.3f  %9d  %9d  %9d       %9d\n", sett->B, sett->N, sett->nfft, sett->nmin, sett->nmax);
-  printf("-----------------------------------------------------------\n");
+
+  printf("------------------------ Settings --------------------------\n");
+  printf(" B         N            nfft         Fstat_nmin   Fstat_nmax\n");
+  printf(" %-9.3f %-12d %-12d %-12d %-12d\n", sett->B, sett->N, sett->nfft, sett->nmin, sett->nmax);
+  printf(" fpo       -fdotmin     fdotmax      Smin         -Smax\n");
+  printf(" %-9.3f %-12.4e %-12.4e %-12.4e %-12.4e\n", sett->fpo, fdotmin, fdotmax, sett->Smin, sett->Smax);
+  printf("------------------------------------------------------------\n");
     
   // initial value of number of known instrumental lines in band 
   sett->numlines_band=0; 
