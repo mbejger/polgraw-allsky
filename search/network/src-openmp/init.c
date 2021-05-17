@@ -592,8 +592,8 @@ void add_signal(
   free (MM);
   
   // Define the grid range in which the signal will be looked for
-  s_range->spndr[1] = s_range->spndr[0] + gsize; 
-  s_range->spndr[0] -= gsize;
+  s_range->spndr[1] = s_range->spndr[0] + 2*gsize; 
+  s_range->spndr[0] -= 2*gsize;
   s_range->nr[1] = s_range->nr[0] + gsize; 
   s_range->nr[0] -= gsize;
   s_range->mr[1] = s_range->mr[0] + gsize; 
