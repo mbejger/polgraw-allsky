@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <dirent.h>
+#include <float.h>
 
 #include "settings.h"
 #include "auxi.h"
@@ -259,21 +260,23 @@ void modvir(double sinal, double cosal, double sindel, double cosdel,
   c2d = sqr(cosdel);
   c2sd = sindel*cosdel;
 
-  // Modulation factor for every data point 
-  for (t=0; t<Np; t++) { 
+  // Modulation factors aa, bb for every NON-ZERO data point
+  for (t=0; t<Np; t++) {
+      if ( fabs(ifo->sig.xDat[t]) > DBL_MIN ) {
+	  c = cosalfr*aux->cosmodf[t] + sinalfr*aux->sinmodf[t];
+	  s = sinalfr*aux->cosmodf[t] - cosalfr*aux->sinmodf[t];
+	  c2s = 2.*sqr(c);
+	  cs = c*s;
+	  
+	  ifo->sig.aa[t] = c1*(2.-c2d)*c2s + c2*(2.-c2d)*2.*cs +
+	      c3*c2sd*c + c4*c2sd*s - c1*(2.-c2d) + c5*c2d;
 
-    c = cosalfr*aux->cosmodf[t] + sinalfr*aux->sinmodf[t];
-    s = sinalfr*aux->cosmodf[t] - cosalfr*aux->sinmodf[t];
-    c2s = 2.*sqr(c);
-    cs = c*s;
-
-    // modulation factors aa and bb  
-    ifo->sig.aa[t] = c1*(2.-c2d)*c2s + c2*(2.-c2d)*2.*cs +
-           c3*c2sd*c + c4*c2sd*s - c1*(2.-c2d) + c5*c2d;
-
-    ifo->sig.bb[t] = c6*sindel*c2s + c7*sindel*2.*cs + 
-           c8*cosdel*c + c9*cosdel*s - c6*sindel;
-
+	  ifo->sig.bb[t] = c6*sindel*c2s + c7*sindel*2.*cs + 
+	      c8*cosdel*c + c9*cosdel*s - c6*sindel;
+      } else {
+	  ifo->sig.aa[t] = 0.;
+	  ifo->sig.bb[t] = 0.;
+      }
   } 
 
 } // modvir
