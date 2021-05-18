@@ -12,10 +12,10 @@
 #include "settings.h"
 #include "struct.h"
 
-#define MAXCOMB 1.e10
+#define MAXCOMB 1.e9
 #define AVG_MEDIAN
 
-int FalseAlarmProb(int, int, double, int*, double *);
+int FalseAlarmProb(int, int, double, int*, double, double *);
 
 
 int main (int argc, char *argv[]) {
@@ -29,6 +29,7 @@ int main (int argc, char *argv[]) {
     char filename[512], datafile[512], griddir[512];
     double gamrn[16], vetofrac=0, threshold=0.1; 
     double f_min, f_max, fdotmin, fdotmax, detgamrn, vol4, vl, vc, Nc;
+    double maxcomb=MAXCOMB;
     FILE *data;
     
     // Default initial value of the data sampling time 
@@ -75,8 +76,10 @@ int main (int argc, char *argv[]) {
 	    {"vetofrac", required_argument, 0, 'v'},
 	    // number of days in the time-domain segment 
 	    {"nod", required_argument, 0, 'y'},
-	    // number of coincidences  
+	    // min number of coincidences to start with
 	    {"noc", required_argument, 0, 'n'},
+	    // max number of combinations for exact calculation
+	    {"mcomb", required_argument, 0, 'm'},
 	    {0, 0, 0, 0}
 	};
 	
@@ -97,7 +100,8 @@ int main (int argc, char *argv[]) {
 	    printf("-threshold    FAP threshold (default value: 0.1) [-t]\n");
 	    printf("-nod          Number of days [-y]\n");
 	    printf("-vetofrac     Vetoed fraction of the band (default value: 0) [-v]\n");
-	    printf("-noc          Number of coincidences [-n]\n\n");
+	    printf("-noc          Min number of coincidences [-n]\n");
+	    printf("-mcomb        Max number of combinations (default %e)[-m]\n\n", MAXCOMB);
 	    
 	    printf("Also:\n\n");
 	    printf("--help            This help [-h]\n");
@@ -151,6 +155,9 @@ int main (int argc, char *argv[]) {
 	case 'n': // Number of coincidences   
 	    noc = atoi(optarg);
 	    break;
+	case 'm': // Number of combinations
+	    maxcomb = atof(optarg);
+	    break;
 	case '?':
 	    break;
 	default:
@@ -180,9 +187,10 @@ int main (int argc, char *argv[]) {
     printf("The data sampling time dt: %f\n", sett.dt); 
     printf("FAP threshold: %f\n", threshold); 
 
-    printf("Cell sizes: f=%d s=%d d=%d a=%d\n", cellf, cells, celld, cella); 
+    printf("Cell sizes: f=%d s=%d d=%d a=%d\n", cellf, cells, celld, cella);
 
-	
+    printf("Approximating for > %e combinations.\n", maxcomb);
+
     // Search settings
     //----------------
 
@@ -278,7 +286,7 @@ int main (int argc, char *argv[]) {
 	strcpy(hemi, &str[5]);
 
 	shift = strtok(NULL," \r\n");
-        //printf("band=%s hemi=%s shift=%s\n", bandstr, hemi, shift);
+        printf("\nInput: band=%s hemi=%s shift=%s\n", bandstr, hemi, shift);
 	//printf("rest=%s\n ", shift + strlen(shift)+1 );
 	f = atof(strtok(NULL," \r\n")); // fpo
 	if (fabs(sett.fpo-f) > 1.e-10 ) {
@@ -304,7 +312,7 @@ int main (int argc, char *argv[]) {
     
 	fap = (double *)malloc( (nof+1)*sizeof(double) );
     
-	FalseAlarmProb(noc, nof, Nc, &Nku[0], fap);
+	FalseAlarmProb(noc, nof, Nc, &Nku[0], maxcomb, fap);
     
 	printf("FAP results:\n");
 	fflush(stdout);
@@ -333,6 +341,7 @@ int FalseAlarmProb(
     int L,        // number of all frames = maximum number of coincidences
     double Nc,    // number of cells in each frame
     int *Nk,      // array with numbers of unique candidates in each frame
+    double maxcomb,      // max number of coincidences fro exact calculation
     double *fap   // array: false alarm probablility of n coincidences for noc..L
     ) {
      
@@ -371,7 +380,7 @@ int FalseAlarmProb(
 	double P[5], Q[5], Ctmp[5]={0.};
 
 	double ncomb = gsl_sf_choose(L,i);
-	if ( ncomb < MAXCOMB ) {
+	if ( ncomb < maxcomb ) {
 	    printf("[ncomb=%.1e][exa]", ncomb);
 	    cp = gsl_combination_calloc(L, i);
 	    cq = gsl_combination_alloc(L, L-i);
