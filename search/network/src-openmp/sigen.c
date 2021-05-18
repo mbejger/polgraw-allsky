@@ -16,13 +16,13 @@ double get_rand() ;
 
 int main(int argc, char *argv[]) {
   
-  int i, numl=0, freq_line_check, c, pm, gsize=2, band=0, reffr; 
+  int i, numl=0, freq_line_check, c, pm, gsize=2, band=0, reffr, nfrinband; 
   char filename[512], dtaprefix[512], *wd=NULL ; 
   double amp=0, snr=0;
   double freql[32768], linew[32768], sgnlo[8], rrn[2], 
-    dvr, fpo_val, be1, be2, fr, lw, freqlp, freqlm, f1, f2,  
-    sepsm, cepsm, sinalt, cosalt, sindelt, cosdelt, 
-    iota, ph_o, psik, hop, hoc ; 
+      dvr, fpo_val, be1, be2, fr, lw, freqlp, freqlm,
+      sepsm, cepsm, sinalt, cosalt, sindelt, cosdelt,
+      iota, ph_o, psik, hop, hoc, overlap;
   
   FILE *data ;
   
@@ -47,6 +47,9 @@ int main(int argc, char *argv[]) {
   // Initial value of the number of days is set to 0
   sett.nod = 0; 
   
+  overlap = -1.;
+  nfrinband = 0;
+  
   while (1) {
     static struct option long_options[] = {
       {"help", no_argument, &help_flag, 1},			
@@ -56,6 +59,8 @@ int main(int argc, char *argv[]) {
       {"snr", required_argument, 0, 'n'},
       // frequency band number 
       {"band", required_argument, 0, 'b'},
+      // band overlap 
+      {"overlap", required_argument, 0, 'v'},
       // change directory parameter
       {"cwd", required_argument, 0, 'c'},
       // fpo value
@@ -66,6 +71,8 @@ int main(int argc, char *argv[]) {
       {"dt", required_argument, 0, 's'},
       // reference frame () 
       {"reffr", required_argument, 0, 'r'},
+      // +/- frames from reference to keep the signal inband
+      {"nfrinband", required_argument, 0, 'i'},
       // number of days in the time-domain segment 
       {"nod", required_argument, 0, 'y'}, 
       {0, 0, 0, 0}
@@ -79,24 +86,26 @@ int main(int argc, char *argv[]) {
       printf("-amp      GW amplitude of the injected (mutually exclusive with -snr)\n"); 
       printf("-snr      SNR of the injected signal (mutually exclusive with -amp)\n"); 
       printf("-band     Band number\n"); 
+      printf("-overlap  Band overlap\n"); 
       printf("-cwd      Change to directory <dir>\n");     
       printf("-fpo      fpo (starting frequency) value\n");
       printf("-gsize    Grid search range (default value: 2)\n");
       printf("-dt       Data sampling time dt (default value: 0.5)\n");
       printf("-nod      Number of days\n");
-      printf("-reffr    Reference frame (default value: 1)\n\n");
+      printf("-reffr    Reference frame (default value: 1)\n");
+      printf("-nfrinband  Force the signal to stay inband for +/- frames \n\n");
       
       printf("--help    This help\n"); 		
       exit (0);
     }
 
     int option_index = 0;
-    c = getopt_long_only (argc, argv, "a:n:b:c:p:g:s:r:y:", long_options, &option_index);
+    c = getopt_long_only (argc, argv, "a:n:b:v:c:p:g:s:r:i:y:", long_options, &option_index);
     
     if (c == -1)
       break;
     switch (c) {
-    case 'a':
+     case 'a':
       amp  = atof (optarg);
       break; 
     case 'n':
@@ -104,6 +113,9 @@ int main(int argc, char *argv[]) {
       break; 
     case 'b':
       band = atoi (optarg);
+      break;
+    case 'v':
+      overlap = atof (optarg);
       break;
     case 'c':
       wd = (char *) malloc (1+strlen(optarg));
@@ -120,6 +132,9 @@ int main(int argc, char *argv[]) {
       break;
     case 'r':
       reffr = atof(optarg);
+      break;
+    case 'i':
+      nfrinband = atoi(optarg);
       break;
     case 'y':
       sett.nod = atoi(optarg);
@@ -159,10 +174,14 @@ int main(int argc, char *argv[]) {
   // fpo_val is optionally read from the command line
   // Its initial value is set to -1 
   if(fpo_val>=0)
-    sett.fpo = fpo_val;
+      sett.fpo = fpo_val;
   else
-    //#mb change to the O3 overlap definition 
-    sett.fpo = 10. + 0.9*band*(0.5/sett.dt);
+      if (band > 0 && overlap >=0.) {
+	  sett.fpo = 10. + (1.-overlap)*band*(0.5/sett.dt);
+      } else {
+	  printf("Band AND overlap or fpo must be specified!\n");
+	  exit(EXIT_FAILURE);
+      }
 
   // Search settings
   search_settings(&sett);
@@ -179,13 +198,26 @@ int main(int argc, char *argv[]) {
 
   // Random signal parameters 
   //------------------------- 
+  double f1,f2;
+  int inband=0;
+  do {
+      // Frequency derivative 
+      sgnlo[1] = sett.Smin - (sett.Smin + sett.Smax)*get_rand();
+  
+      // Frequency in (0, \pi) range  
+      sgnlo[0] =  get_rand()*(rrn[1] - rrn[0]) + rrn[0];
 
-  // Frequency derivative 
-  sgnlo[1] = sett.Smin - (sett.Smin + sett.Smax)*get_rand();
+      f1 = sgnlo[0] + 2.*sgnlo[1]*sett.N*nfrinband;
+      f2 = sgnlo[0] - 2.*sgnlo[1]*sett.N*nfrinband;
+ 
+      // Check if the signal is in band 
+      inband = ((f1>0) && (f1<M_PI) && (f2<M_PI) && (f2>0));
+      //printf("bad: f1=%f   f2=%f  spnd=%e  N=%d   nfrinband=%d\n", f1, f2, sgnlo[1], sett.N, nfrinband);
+
+  } while (inband != 1);
   
-  // Frequency in (0, \pi) range  
-  sgnlo[0] =  get_rand()*(rrn[1] - rrn[0]) + rrn[0] ; 
-  
+  //printf("f1=%f    f2=%f   spnd=%e  N=%d\n", f1, f2, sgnlo[1], sett.N);
+
   // Hemisphere 
   pm = round(get_rand()) + 1 ;
   
