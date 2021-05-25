@@ -1,5 +1,6 @@
 #TARGET=coincidences
-TARGET=coincidences-haswell-dev7
+TARGET=coincidences-haswell-dev7-grid
+
 SEARCH_DIR=../../search/network/src-openmp
 
 # FFTW_DIR - fftw location, remember to compile it with optimizations (e.g. avx)
@@ -33,7 +34,10 @@ all: $(TARGET)
 $(TARGET): coincidences.o settings.o auxi.o init.o
 	$(CC) $(LDFLAGS) $^ $(LOADLIBES) -o $@
 
-coincidences.o: coincidences.c
+grid: coincidences-grid.o settings.o auxi.o cinit.o
+	$(CC) $(LDFLAGS) $^ $(LOADLIBES) -o $(TARGET)-grid
+
+#coincidences.o: coincidences.c
 
 settings.o: $(SEARCH_DIR)/settings.c
 	$(CC) $(CFLAGS) -c -o $@ $<
