@@ -14,33 +14,31 @@ The coinc_0340_hemi1.in file contains a list of input trigger files with corresp
 
 Hemisphere in trigger file names can be 0,1 or *. In the last case both hemispheres are read.
 
-## major changes in O3
+## Major changes in O3
 
 * read trigger file names from file (before we used all files in the current directory)
 * use grids for network of detectors (consistent with search)
 * apply veto lines in coincidences (before we did this during the search step)
 * coincidence cells are based on the same grid matrix as in search
 
-# Fap code
+# False Alarm Probability (FAP) calculation code
 
 ## Example call for O3
 
 `./fap2-grid -nod 6 -band 44 -o 0.1 -vetofrac 0.0 -cellf 16 -cells 8 -celld 2 -cella 2 -threshold 15.5 -noc 3 -mcomb 1e7 -grid /work/chuck/virgo/O3/allsky_o3_c01/029/grids/grid_029_0044_H1L1c.bin -data coinc-summary-grid-th15.5-16-8-2-2.txt`
 
-## major changes in O3
+## Major changes in O3
 
 * major cleaning and simplification of the code
 * approximate probabilities with median if the number of combinations is too large (-mcomb parameter)
 * parameter space volume consisten with coincidences (new grid matrix)
 
 
-# --- tools ---
+# --- Tools ---
 
 ## coi_digger.py 
 
-Script to read the `.coi` files, calculate the False Alarm Probability for the candidates 
-with a given coincidence multiplicity, extract information (also from the trigger files) 
-for followup. 
+Script to read the `.coi` files, calculate the False Alarm Probability for the candidates with a given coincidence multiplicity, extract information (also from the trigger files) for followup. 
 
 `coi_digger.py` calls the `fap` code (run `make fap-many`) to compile. 
 
