@@ -12,8 +12,8 @@ Additionally, linked with the LAL in can generate the emphemerids for the detect
 
 ## Major changes in O3
 
-* major code reorganization
-* outliers removed from the final time series (before - from smaller chunks, out files)
+* major code reorganization -> new version called genseg
+* outliers removed from the whole time series (before - from smaller chunks covered by out files, 200 * 512s)
 * use only data with science flag
 * when large outliers are found at the edges of science region - narrow it down
 * Tukey window is applied to science segments (window taper size = 600 s for O3)
