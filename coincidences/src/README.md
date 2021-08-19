@@ -1,17 +1,15 @@
 # coincidences code
 
 ## Example call for O3
-`./coincidences-haswell-dev7-grid -nod 6 -dt 2 -v 0.1 -mincoin 3 -snrcutoff 5.1961 -narrowdown 0.45 -refr 029 -b 0044 -scale 16,8,2,2 -refgrid /work/chuck/virgo/O3/allsky_o3_c01/029/grids/grid_029_0044_H1L1c.bin -output . -shift 0010 -infile coinc_0044_hemi2.in`
+`./coincidences-haswell-dev7-grid -nod 6 -dt 2 -v 0.1 -mincoin 3 -snrcutoff 5.1961 -narrowdown 0.45 -refr 029 -b 0340 -scale 16,8,2,2 -refgrid /work/chuck/virgo/O3/allsky_o3_c01/029/grids/grid_029_0340_H1L1c.bin -output . -shift 0000 -infile coinc_0340_hemi1.in`
 
 Band (-b) and overlap (-v) are required.
 
-The coinc.in file contains a list of input trigger files with corresponding veto files.
-
+The coinc_0340_hemi1.in file contains a list of input trigger files with corresponding veto files.
 ```
 /work/chuck/virgo/O3/allsky_o3_c01-results2/0340/triggers_001_0340_1.bin /work/chuck/virgo/O3/allsky_o3_c01-results2/0340/triggers_001_0340.vlines
 /work/chuck/virgo/O3/allsky_o3_c01-results2/0340/triggers_002_0340_1.bin /work/chuck/virgo/O3/allsky_o3_c01-results2/0340/triggers_002_0340.vlines
 /work/chuck/virgo/O3/allsky_o3_c01-results2/0340/triggers_004_0340_1.bin /work/chuck/virgo/O3/allsky_o3_c01-results2/0340/triggers_004_0340.vlines
-...
 ```
 
 Hemisphere in trigger file names can be 0,1 or *. In the last case both hemispheres are read.
@@ -34,8 +32,6 @@ Hemisphere in trigger file names can be 0,1 or *. In the last case both hemisphe
 * major cleaning and simplification of the code
 * approximate probabilities with median if number of combinations is too large (-mcomb parameter)
 * parameter space volume consisten with coincidences (new grid)
-
-
 
 
 # --- tools ---
