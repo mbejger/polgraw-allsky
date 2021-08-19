@@ -1,4 +1,4 @@
-# coincidences code
+#Ccoincidences code
 
 ## Example call for O3
 `./coincidences-haswell-dev7-grid -nod 6 -dt 2 -v 0.1 -mincoin 3 -snrcutoff 5.1961 -narrowdown 0.45 -refr 029 -b 0340 -scale 16,8,2,2 -refgrid /work/chuck/virgo/O3/allsky_o3_c01/029/grids/grid_029_0340_H1L1c.bin -output . -shift 0000 -infile coinc_0340_hemi1.in`
@@ -21,7 +21,7 @@ Hemisphere in trigger file names can be 0,1 or *. In the last case both hemisphe
 * apply veto lines in coincidences (before we did this during the search step)
 * coincidence cells are based on the same grid matrix as in search
 
-# fap code
+# Fap code
 
 ## Example call for O3
 
@@ -30,8 +30,8 @@ Hemisphere in trigger file names can be 0,1 or *. In the last case both hemisphe
 ## major changes in O3
 
 * major cleaning and simplification of the code
-* approximate probabilities with median if number of combinations is too large (-mcomb parameter)
-* parameter space volume consisten with coincidences (new grid)
+* approximate probabilities with median if the number of combinations is too large (-mcomb parameter)
+* parameter space volume consisten with coincidences (new grid matrix)
 
 
 # --- tools ---
