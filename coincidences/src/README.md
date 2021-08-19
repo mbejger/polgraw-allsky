@@ -1,6 +1,6 @@
 # coincidences code
 
-## Exsample of O3 call
+## Example call for O3
 `./coincidences-haswell-dev7-grid -nod 6 -dt 2 -v 0.1 -mincoin 3 -snrcutoff 5.1961 -narrowdown 0.45 -refr 029 -b 0044 -scale 16,8,2,2 -refgrid /work/chuck/virgo/O3/allsky_o3_c01/029/grids/grid_029_0044_H1L1c.bin -output . -shift 0010 -infile coinc_0044_hemi2.in`
 
 Band (-b) and overlap (-v) are required.
@@ -25,7 +25,7 @@ Hemisphere in trigger file names can be 0,1 or *. In the last case both hemisphe
 
 # fap code
 
-## Exsample of O3 call
+## Example call for O3
 
 `./fap2-grid -nod 6 -band 44 -o 0.1 -vetofrac 0.0 -cellf 16 -cells 8 -celld 2 -cella 2 -threshold 15.5 -noc 3 -mcomb 1e7 -grid /work/chuck/virgo/O3/allsky_o3_c01/029/grids/grid_029_0044_H1L1c.bin -data coinc-summary-grid-th15.5-16-8-2-2.txt`
 
@@ -38,9 +38,9 @@ Hemisphere in trigger file names can be 0,1 or *. In the last case both hemisphe
 
 
 
---- tools ---
+# --- tools ---
 
-# coi_digger.py 
+## coi_digger.py 
 
 Script to read the `.coi` files, calculate the False Alarm Probability for the candidates 
 with a given coincidence multiplicity, extract information (also from the trigger files) 
@@ -48,7 +48,7 @@ for followup.
 
 `coi_digger.py` calls the `fap` code (run `make fap-many`) to compile. 
 
-## Sample call: 
+### Sample call: 
 
 ```
 python coi_digger.py config.ini 0081 1
