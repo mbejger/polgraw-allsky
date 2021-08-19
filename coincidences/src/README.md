@@ -1,4 +1,4 @@
-#Ccoincidences code
+# Coincidences code
 
 ## Example call for O3
 `./coincidences-haswell-dev7-grid -nod 6 -dt 2 -v 0.1 -mincoin 3 -snrcutoff 5.1961 -narrowdown 0.45 -refr 029 -b 0340 -scale 16,8,2,2 -refgrid /work/chuck/virgo/O3/allsky_o3_c01/029/grids/grid_029_0340_H1L1c.bin -output . -shift 0000 -infile coinc_0340_hemi1.in`
